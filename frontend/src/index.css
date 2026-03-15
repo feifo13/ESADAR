@@ -1362,7 +1362,7 @@ button,
   --field-placeholder: #5c6871;
 }
 
-:root[data-theme='comic-sharp'] {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) {
   --bg: #f7df57;
   --surface: #fffdf4;
   --surface-soft: #fff4c1;
@@ -1379,6 +1379,1137 @@ button,
   --field-option-bg: #fffef8;
   --field-text: #0d1520;
   --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.18);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff8a3f;
+  --button-primary-text: #fffef7;
+  --focus-ring: rgba(14, 86, 216, 0.18);
+  --card-bg: #fffef8;
+  --gallery-dot: rgba(18, 187, 255, 0.16);
+  --gallery-bg: #fffef8;
+  --pill-featured-bg: var(--aqua);
+  --pill-featured-text: #fffef7;
+  --pill-offer-bg: #ffec7a;
+  --pill-offer-text: var(--text);
+  --pill-discount-bg: var(--orange);
+  --pill-discount-text: #fffef7;
+  --title-shadow: rgba(18, 187, 255, 0.18);
+  --hero-dot: rgba(255, 91, 58, 0.14);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: #0b3f9e;
+}
+
+:root[data-theme='comic-sharp-light-01'] {
+  --bg: #fff27a;
+  --surface: #fffdf7;
+  --surface-soft: #fff3bf;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #10bff4;
+  --orange: #ff5b3a;
+  --navy: #1254d7;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fffdf7;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff5b3a;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #10bff4 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #fff3bf;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #10bff4 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5b3a 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #1254d7 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-02'] {
+  --bg: #dffaf4;
+  --surface: #fafffd;
+  --surface-soft: #c7f2e8;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #0ea5c6;
+  --orange: #ff7a1f;
+  --navy: #0d3f8f;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fafffd;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff7a1f;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #0ea5c6 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #c7f2e8;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #0ea5c6 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7a1f 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #0d3f8f 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-03'] {
+  --bg: #ffe5d6;
+  --surface: #fffaf7;
+  --surface-soft: #ffd3bc;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #0fb8d8;
+  --orange: #ff5b4d;
+  --navy: #193ca6;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fffaf7;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff5b4d;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #0fb8d8 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #ffd3bc;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #0fb8d8 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5b4d 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #193ca6 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-04'] {
+  --bg: #dff1ff;
+  --surface: #f8fcff;
+  --surface-soft: #c6e6ff;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #16a6ff;
+  --orange: #ff6f3f;
+  --navy: #0f49b7;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #f8fcff;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff6f3f;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #16a6ff 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #c6e6ff;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #16a6ff 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6f3f 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #0f49b7 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-05'] {
+  --bg: #eff7b8;
+  --surface: #fbfdf1;
+  --surface-soft: #dce999;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00a8b8;
+  --orange: #ff6b2f;
+  --navy: #183c8c;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fbfdf1;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff6b2f;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00a8b8 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #dce999;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00a8b8 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6b2f 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #183c8c 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-06'] {
+  --bg: #ffd6df;
+  --surface: #fff8fb;
+  --surface-soft: #ffc1cf;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #14b7ff;
+  --orange: #ff4d70;
+  --navy: #2344b3;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fff8fb;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff4d70;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #14b7ff 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #ffc1cf;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #14b7ff 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff4d70 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #2344b3 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-07'] {
+  --bg: #fff0c8;
+  --surface: #fffdf8;
+  --surface-soft: #ffe3a0;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #0c9ec8;
+  --orange: #ff7e11;
+  --navy: #1f45aa;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fffdf8;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff7e11;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #0c9ec8 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #ffe3a0;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #0c9ec8 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7e11 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #1f45aa 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-08'] {
+  --bg: #d8f8ff;
+  --surface: #f8feff;
+  --surface-soft: #bbeef8;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00b6df;
+  --orange: #ff5f45;
+  --navy: #15308f;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #f8feff;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff5f45;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00b6df 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #bbeef8;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00b6df 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5f45 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #15308f 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-09'] {
+  --bg: #ffe2f6;
+  --surface: #fff9fd;
+  --surface-soft: #ffc9ec;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #12a8ff;
+  --orange: #ff5c9a;
+  --navy: #4d2fb3;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fff9fd;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff5c9a;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #12a8ff 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #ffc9ec;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #12a8ff 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5c9a 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #4d2fb3 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-10'] {
+  --bg: #fbe7bd;
+  --surface: #fffbf4;
+  --surface-soft: #f8d797;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00afc2;
+  --orange: #ff6e1f;
+  --navy: #14437f;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fffbf4;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff6e1f;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00afc2 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #f8d797;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00afc2 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6e1f 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #14437f 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-11'] {
+  --bg: #d9ffe8;
+  --surface: #f8fff9;
+  --surface-soft: #bff5d0;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00a5a8;
+  --orange: #ff6a48;
+  --navy: #1f3ca5;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #f8fff9;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff6a48;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00a5a8 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #bff5d0;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00a5a8 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6a48 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #1f3ca5 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-12'] {
+  --bg: #e6e0ff;
+  --surface: #fbfaff;
+  --surface-soft: #d2c7ff;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00a8ff;
+  --orange: #ff6b3d;
+  --navy: #4a32c5;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fbfaff;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff6b3d;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00a8ff 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #d2c7ff;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00a8ff 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6b3d 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #4a32c5 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-13'] {
+  --bg: #fff8da;
+  --surface: #fffef9;
+  --surface-soft: #ffefb6;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #0db7cc;
+  --orange: #ff4f2a;
+  --navy: #103872;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fffef9;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff4f2a;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #0db7cc 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #ffefb6;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #0db7cc 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff4f2a 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #103872 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-14'] {
+  --bg: #dff7ea;
+  --surface: #f9fffb;
+  --surface-soft: #c5eed3;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #12bfe3;
+  --orange: #ff7f50;
+  --navy: #0d4aa6;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #f9fffb;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff7f50;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #12bfe3 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #c5eed3;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #12bfe3 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7f50 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #0d4aa6 82%, black);
+}
+
+:root[data-theme='comic-sharp-light-15'] {
+  --bg: #e7f5ff;
+  --surface: #fbfdff;
+  --surface-soft: #d0ebff;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #00a7d8;
+  --orange: #ff723b;
+  --navy: #2440ad;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fbfdff;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+  --comic-dot: rgba(13, 21, 32, 0.16);
+  --comic-sheen-top: rgba(255, 255, 255, 0.18);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(13, 21, 32, 0.95);
+  --button-primary-end: #ff723b;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--navy) 18%, transparent);
+  --card-bg: #fffef8;
+  --gallery-dot: color-mix(in srgb, #00a7d8 16%, transparent);
+  --gallery-bg: #fffef8;
+  --pill-offer-bg: #d0ebff;
+  --pill-offer-text: #0d1520;
+  --title-shadow: color-mix(in srgb, #00a7d8 20%, transparent);
+  --hero-dot: color-mix(in srgb, #ff723b 14%, transparent);
+  --hero-bg: #fffef8;
+  --offer-dot: rgba(255, 255, 255, 0.16);
+  --offer-grad-end: color-mix(in srgb, #2440ad 82%, black);
+}
+
+:root[data-theme='comic-sharp-dark-01'] {
+  --bg: #0d1224;
+  --surface: #131a30;
+  --surface-soft: #1b2240;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #1fd6ff;
+  --orange: #ff6a3d;
+  --navy: #4b70ff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff6a3d;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #1fd6ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #1fd6ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6a3d 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #4b70ff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-02'] {
+  --bg: #150f1f;
+  --surface: #1d1529;
+  --surface-soft: #2a1c39;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #2de2e6;
+  --orange: #ff7b5c;
+  --navy: #6f6dff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff7b5c;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #2de2e6 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #2de2e6 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7b5c 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #6f6dff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-03'] {
+  --bg: #101a1f;
+  --surface: #16242b;
+  --surface-soft: #1e323a;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #3de1d1;
+  --orange: #ff8440;
+  --navy: #2563eb;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff8440;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #3de1d1 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #3de1d1 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff8440 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #2563eb 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-04'] {
+  --bg: #180f13;
+  --surface: #26161c;
+  --surface-soft: #351f27;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #28c7ff;
+  --orange: #ff5d6c;
+  --navy: #7f5cff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff5d6c;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #28c7ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #28c7ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5d6c 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #7f5cff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-05'] {
+  --bg: #12131a;
+  --surface: #1a1d27;
+  --surface-soft: #242939;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #70d7ff;
+  --orange: #ff8a3d;
+  --navy: #3c6bff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff8a3d;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #70d7ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #70d7ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff8a3d 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #3c6bff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-06'] {
+  --bg: #0f1d1b;
+  --surface: #152925;
+  --surface-soft: #1d3a34;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #24e3b4;
+  --orange: #ff7a33;
+  --navy: #2563c9;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff7a33;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #24e3b4 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #24e3b4 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7a33 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #2563c9 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-07'] {
+  --bg: #1b1220;
+  --surface: #271a2e;
+  --surface-soft: #382241;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #3ad8ff;
+  --orange: #ff9966;
+  --navy: #965cff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff9966;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #3ad8ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #3ad8ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff9966 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #965cff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-08'] {
+  --bg: #0b1620;
+  --surface: #122332;
+  --surface-soft: #1a3346;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #12cfff;
+  --orange: #ff6438;
+  --navy: #00a2ff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff6438;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #12cfff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #12cfff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6438 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #00a2ff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-09'] {
+  --bg: #1a1610;
+  --surface: #262015;
+  --surface-soft: #392f1e;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #2ec7ff;
+  --orange: #ff9d2f;
+  --navy: #2954d1;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff9d2f;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #2ec7ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #2ec7ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff9d2f 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #2954d1 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-10'] {
+  --bg: #10111a;
+  --surface: #181b28;
+  --surface-soft: #23283a;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #00dfd8;
+  --orange: #ff6b57;
+  --navy: #5e7cff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff6b57;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #00dfd8 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #00dfd8 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6b57 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #5e7cff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-11'] {
+  --bg: #131820;
+  --surface: #1b2430;
+  --surface-soft: #243242;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #46d4ff;
+  --orange: #ff7f3c;
+  --navy: #3958e8;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff7f3c;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #46d4ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #46d4ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7f3c 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #3958e8 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-12'] {
+  --bg: #15111a;
+  --surface: #211826;
+  --surface-soft: #31223a;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #54d0ff;
+  --orange: #ff5c88;
+  --navy: #7a57ff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff5c88;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #54d0ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #54d0ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff5c88 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #7a57ff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-13'] {
+  --bg: #0f1410;
+  --surface: #182019;
+  --surface-soft: #233126;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #38d989;
+  --orange: #ff7c47;
+  --navy: #2f63d6;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff7c47;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #38d989 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #38d989 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff7c47 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #2f63d6 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-14'] {
+  --bg: #14111f;
+  --surface: #1d1830;
+  --surface-soft: #282246;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #28d7f7;
+  --orange: #ff874d;
+  --navy: #5470ff;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff874d;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #28d7f7 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #28d7f7 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff874d 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #5470ff 70%, black);
+}
+
+:root[data-theme='comic-sharp-dark-15'] {
+  --bg: #0d1822;
+  --surface: #142430;
+  --surface-soft: #1d3443;
+  --text: #f6f8fc;
+  --muted: #c8d1df;
+  --border: #05070c;
+  --aqua: #4bd7ff;
+  --orange: #ff6d33;
+  --navy: #2563eb;
+  --shadow: 8px 8px 0 rgba(5, 7, 12, 0.96);
+  --radius: 0px;
+  --field-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-bg-soft: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
+  --field-option-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --field-text: #f6f8fc;
+  --field-placeholder: #b8c0ce;
+  --comic-dot: rgba(255, 255, 255, 0.10);
+  --comic-sheen-top: rgba(255, 255, 255, 0.04);
+  --comic-sheen-bottom: rgba(255, 255, 255, 0);
+  --comic-shadow-color: rgba(5, 7, 12, 0.96);
+  --button-primary-end: #ff6d33;
+  --button-primary-text: #fffef7;
+  --focus-ring: color-mix(in srgb, var(--aqua) 28%, transparent);
+  --card-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --gallery-dot: color-mix(in srgb, #4bd7ff 18%, transparent);
+  --gallery-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --pill-featured-text: #08131a;
+  --pill-offer-bg: color-mix(in srgb, var(--surface-soft) 82%, white);
+  --pill-offer-text: #0d1520;
+  --pill-discount-text: #fffef7;
+  --title-shadow: color-mix(in srgb, #4bd7ff 26%, transparent);
+  --hero-dot: color-mix(in srgb, #ff6d33 20%, transparent);
+  --hero-bg: color-mix(in srgb, var(--surface) 92%, black);
+  --offer-dot: rgba(255, 255, 255, 0.12);
+  --offer-grad-end: color-mix(in srgb, #2563eb 70%, black);
 }
 
 body {
@@ -1839,8 +2970,8 @@ body {
 /* === Comic Pop theme === */
 :root[data-theme='comic-pop'] body {
   background:
-    radial-gradient(circle at 2px 2px, rgba(13, 21, 32, 0.18) 1.4px, transparent 1.5px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 2px 2px, var(--comic-dot) 1.4px, transparent 1.5px),
+    linear-gradient(180deg, var(--comic-sheen-top), var(--comic-sheen-bottom)),
     var(--bg);
   background-size: 18px 18px, auto, auto;
 }
@@ -1850,7 +2981,7 @@ body {
 :root[data-theme='comic-pop'] .theme-dock {
   background: color-mix(in srgb, var(--surface) 94%, white 6%);
   border: 3px solid var(--border);
-  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95);
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
 }
 
 :root[data-theme='comic-pop'] .site-header {
@@ -1885,7 +3016,7 @@ body {
 :root[data-theme='comic-pop'] .brand-block--large {
   border-radius: 18px !important;
   border: 3px solid var(--border) !important;
-  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 8px 8px 0 var(--comic-shadow-color) !important;
 }
 
 :root[data-theme='comic-pop'] .button,
@@ -1903,15 +3034,15 @@ body {
 :root[data-theme='comic-pop'] .theme-swatch:hover,
 :root[data-theme='comic-pop'] .article-card:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 10px 10px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 10px 10px 0 var(--comic-shadow-color) !important;
 }
 
 :root[data-theme='comic-pop'] .button-primary,
 :root[data-theme='comic-pop'] .view-toggle button.active,
 :root[data-theme='comic-pop'] .admin-tab.active {
-  background: linear-gradient(135deg, var(--orange), #ff8a3f);
+  background: linear-gradient(135deg, var(--orange), var(--button-primary-end));
   border-color: var(--border) !important;
-  color: #fffef7;
+  color: var(--button-primary-text);
 }
 
 :root[data-theme='comic-pop'] .button-secondary,
@@ -1929,7 +3060,7 @@ body {
 :root[data-theme='comic-pop'] .sort-select:focus,
 :root[data-theme='comic-pop'] .gallery-thumb.active {
   border-color: var(--navy) !important;
-  box-shadow: 0 0 0 4px rgba(14, 86, 216, 0.18), 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 0 0 0 4px var(--focus-ring), 8px 8px 0 var(--comic-shadow-color) !important;
 }
 
 :root[data-theme='comic-pop'] .article-grid,
@@ -1972,18 +3103,18 @@ body {
 }
 
 :root[data-theme='comic-pop'] .pill-featured {
-  background: #12bbff;
-  color: #fffef7;
+  background: var(--pill-featured-bg);
+  color: var(--pill-featured-text);
 }
 
 :root[data-theme='comic-pop'] .pill-offer {
-  background: #ffec7a;
-  color: var(--text);
+  background: var(--pill-offer-bg);
+  color: var(--pill-offer-text);
 }
 
 :root[data-theme='comic-pop'] .pill-discount {
-  background: #ff5b3a;
-  color: #fffef7;
+  background: var(--pill-discount-bg);
+  color: var(--pill-discount-text);
 }
 
 :root[data-theme='comic-pop'] .section-kicker,
@@ -2005,7 +3136,7 @@ body {
 :root[data-theme='comic-pop'] .article-card-title,
 :root[data-theme='comic-pop'] .brand-main {
   font-weight: 800;
-  text-shadow: 2px 2px 0 rgba(18, 187, 255, 0.18);
+  text-shadow: 2px 2px 0 var(--title-shadow);
 }
 
 :root[data-theme='comic-pop'] .hero-strip--logo .brand-block--large {
@@ -2022,13 +3153,13 @@ body {
 }
 
 :root[data-theme='comic-pop'] .about-card {
-  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95);
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
 }
 
 :root[data-theme='comic-pop'] .offer-page .detail-sidebar-article {
   background:
-    radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.16) 1.2px, transparent 1.3px),
-    linear-gradient(180deg, var(--navy), #0b3f9e);
+    radial-gradient(circle at 2px 2px, var(--offer-dot) 1.2px, transparent 1.3px),
+    linear-gradient(180deg, var(--navy), var(--offer-grad-end));
   background-size: 16px 16px, auto;
 }
 
@@ -2041,175 +3172,175 @@ body {
   :root[data-theme='comic-pop'] .theme-dock,
   :root[data-theme='comic-pop'] .catalog-topbar-shell,
   :root[data-theme='comic-pop'] .brand-block--large {
-    box-shadow: 5px 5px 0 rgba(13, 21, 32, 0.95) !important;
+    box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
   }
 }
 
 
 /* === Comic Sharp theme === */
-:root[data-theme='comic-sharp'] body {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) body {
   background:
-    radial-gradient(circle at 2px 2px, rgba(13, 21, 32, 0.18) 1.4px, transparent 1.5px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 2px 2px, var(--comic-dot) 1.4px, transparent 1.5px),
+    linear-gradient(180deg, var(--comic-sheen-top), var(--comic-sheen-bottom)),
     var(--bg);
   background-size: 18px 18px, auto, auto;
 }
 
-:root[data-theme='comic-sharp'] .site-header,
-:root[data-theme='comic-sharp'] .catalog-topbar-shell,
-:root[data-theme='comic-sharp'] .theme-dock {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .site-header,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .catalog-topbar-shell,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-dock {
   background: color-mix(in srgb, var(--surface) 94%, white 6%);
   border: 3px solid var(--border);
-  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95);
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
 }
 
-:root[data-theme='comic-sharp'] .site-header {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .site-header {
   border-inline: 0;
   border-top: 0;
 }
 
-:root[data-theme='comic-sharp'] .theme-dock {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-dock {
   padding: 12px;
 }
 
-:root[data-theme='comic-sharp'] .section-card,
-:root[data-theme='comic-sharp'] .nested-card,
-:root[data-theme='comic-sharp'] .input,
-:root[data-theme='comic-sharp'] .button,
-:root[data-theme='comic-sharp'] .ghost-button,
-:root[data-theme='comic-sharp'] .admin-tab,
-:root[data-theme='comic-sharp'] .badge,
-:root[data-theme='comic-sharp'] .article-card,
-:root[data-theme='comic-sharp'] .gallery-main,
-:root[data-theme='comic-sharp'] .gallery-thumb,
-:root[data-theme='comic-sharp'] .checkout-item,
-:root[data-theme='comic-sharp'] .radio-card,
-:root[data-theme='comic-sharp'] .stat-card,
-:root[data-theme='comic-sharp'] .sticky-panel,
-:root[data-theme='comic-sharp'] .view-toggle button,
-:root[data-theme='comic-sharp'] .checkbox-chip,
-:root[data-theme='comic-sharp'] .catalog-topbar-shell,
-:root[data-theme='comic-sharp'] .theme-swatch,
-:root[data-theme='comic-sharp'] .offer-page .detail-sidebar-article,
-:root[data-theme='comic-sharp'] .admin-row-card,
-:root[data-theme='comic-sharp'] .brand-block--large,
-:root[data-theme='comic-sharp'] .pill,
-:root[data-theme='comic-sharp'] .about-card,
-:root[data-theme='comic-sharp'] .checkout-item img,
-:root[data-theme='comic-sharp'] .admin-row-card img,
-:root[data-theme='comic-sharp'] .article-card-media,
-:root[data-theme='comic-sharp'] .gallery-arrows button {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .section-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .nested-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .input,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .ghost-button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-tab,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .badge,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-main,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-thumb,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .checkout-item,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .radio-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .stat-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .sticky-panel,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .view-toggle button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .checkbox-chip,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .catalog-topbar-shell,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-swatch,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .offer-page .detail-sidebar-article,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-row-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-block--large,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .pill,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .about-card,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .checkout-item img,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-row-card img,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card-media,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-arrows button {
   border-radius: 0 !important;
   border: 3px solid var(--border) !important;
-  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 8px 8px 0 var(--comic-shadow-color) !important;
 }
 
-:root[data-theme='comic-sharp'] .button,
-:root[data-theme='comic-sharp'] .ghost-button,
-:root[data-theme='comic-sharp'] .admin-tab,
-:root[data-theme='comic-sharp'] .view-toggle button,
-:root[data-theme='comic-sharp'] .theme-swatch {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .ghost-button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-tab,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .view-toggle button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-swatch {
   transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
 }
 
-:root[data-theme='comic-sharp'] .button:hover,
-:root[data-theme='comic-sharp'] .ghost-button:hover,
-:root[data-theme='comic-sharp'] .admin-tab:hover,
-:root[data-theme='comic-sharp'] .view-toggle button:hover,
-:root[data-theme='comic-sharp'] .theme-swatch:hover,
-:root[data-theme='comic-sharp'] .article-card:hover {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button:hover,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .ghost-button:hover,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-tab:hover,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .view-toggle button:hover,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-swatch:hover,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 10px 10px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 10px 10px 0 var(--comic-shadow-color) !important;
 }
 
-:root[data-theme='comic-sharp'] .button-primary,
-:root[data-theme='comic-sharp'] .view-toggle button.active,
-:root[data-theme='comic-sharp'] .admin-tab.active {
-  background: linear-gradient(135deg, var(--orange), #ff8a3f);
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button-primary,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .view-toggle button.active,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .admin-tab.active {
+  background: linear-gradient(135deg, var(--orange), var(--button-primary-end));
   border-color: var(--border) !important;
-  color: #fffef7;
+  color: var(--button-primary-text);
 }
 
-:root[data-theme='comic-sharp'] .button-secondary,
-:root[data-theme='comic-sharp'] .ghost-button,
-:root[data-theme='comic-sharp'] .checkbox-chip,
-:root[data-theme='comic-sharp'] .view-toggle button,
-:root[data-theme='comic-sharp'] .input,
-:root[data-theme='comic-sharp'] .sort-select,
-:root[data-theme='comic-sharp'] .filters-sidebar .input,
-:root[data-theme='comic-sharp'] .filters-sidebar select.input {
-  background: #fffef8;
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button-secondary,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .ghost-button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .checkbox-chip,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .view-toggle button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .input,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .sort-select,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .filters-sidebar .input,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .filters-sidebar select.input {
+  background: var(--field-bg);
 }
 
-:root[data-theme='comic-sharp'] .input:focus,
-:root[data-theme='comic-sharp'] .sort-select:focus,
-:root[data-theme='comic-sharp'] .gallery-thumb.active {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .input:focus,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .sort-select:focus,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-thumb.active {
   border-color: var(--navy) !important;
-  box-shadow: 0 0 0 4px rgba(14, 86, 216, 0.18), 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+  box-shadow: 0 0 0 4px var(--focus-ring), 8px 8px 0 var(--comic-shadow-color) !important;
 }
 
-:root[data-theme='comic-sharp'] .article-grid,
-:root[data-theme='comic-sharp'] .rail-scroller,
-:root[data-theme='comic-sharp'] .gallery-thumbs,
-:root[data-theme='comic-sharp'] .about-collage {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-grid,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .rail-scroller,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-thumbs,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .about-collage {
   gap: 22px;
 }
 
-:root[data-theme='comic-sharp'] .article-card {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card {
   overflow: hidden;
-  background: #fffef8;
+  background: var(--field-bg);
   border-top-width: 3px !important;
 }
 
-:root[data-theme='comic-sharp'] .article-card-body {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card-body {
   padding: 16px;
 }
 
-:root[data-theme='comic-sharp'] .gallery-main {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-main {
   background:
     radial-gradient(circle at 2px 2px, rgba(18, 187, 255, 0.16) 1.2px, transparent 1.3px),
     #fffef8;
   background-size: 16px 16px;
 }
 
-:root[data-theme='comic-sharp'] .pill-featured {
-  background: #12bbff;
-  color: #fffef7;
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .pill-featured {
+  background: var(--pill-featured-bg);
+  color: var(--pill-featured-text);
 }
 
-:root[data-theme='comic-sharp'] .pill-offer {
-  background: #ffec7a;
-  color: var(--text);
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .pill-offer {
+  background: var(--pill-offer-bg);
+  color: var(--pill-offer-text);
 }
 
-:root[data-theme='comic-sharp'] .pill-discount {
-  background: #ff5b3a;
-  color: #fffef7;
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .pill-discount {
+  background: var(--pill-discount-bg);
+  color: var(--pill-discount-text);
 }
 
-:root[data-theme='comic-sharp'] .section-kicker,
-:root[data-theme='comic-sharp'] .eyebrow,
-:root[data-theme='comic-sharp'] .theme-dock-label,
-:root[data-theme='comic-sharp'] .article-card-title,
-:root[data-theme='comic-sharp'] .detail-titlebar h1,
-:root[data-theme='comic-sharp'] .catalog-summary-row h2,
-:root[data-theme='comic-sharp'] .brand-main,
-:root[data-theme='comic-sharp'] .brand-kicker,
-:root[data-theme='comic-sharp'] .button,
-:root[data-theme='comic-sharp'] .ghost-button {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .section-kicker,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .eyebrow,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-dock-label,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card-title,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .detail-titlebar h1,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .catalog-summary-row h2,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-main,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-kicker,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .button,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .ghost-button {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-:root[data-theme='comic-sharp'] .detail-titlebar h1,
-:root[data-theme='comic-sharp'] .catalog-summary-row h2,
-:root[data-theme='comic-sharp'] .article-card-title,
-:root[data-theme='comic-sharp'] .brand-main {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .detail-titlebar h1,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .catalog-summary-row h2,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card-title,
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-main {
   font-weight: 800;
-  text-shadow: 2px 2px 0 rgba(18, 187, 255, 0.18);
+  text-shadow: 2px 2px 0 var(--title-shadow);
 }
 
-:root[data-theme='comic-sharp'] .hero-strip--logo .brand-block--large {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .hero-strip--logo .brand-block--large {
   max-width: min(980px, 100%);
   padding: clamp(18px, 3vw, 28px);
   background:
@@ -2218,26 +3349,26 @@ body {
   background-size: 18px 18px;
 }
 
-:root[data-theme='comic-sharp'] .brand-logo--large {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-logo--large {
   filter: drop-shadow(6px 6px 0 rgba(13, 21, 32, 0.22));
 }
 
-:root[data-theme='comic-sharp'] .offer-page .detail-sidebar-article {
+:root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .offer-page .detail-sidebar-article {
   background:
-    radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.16) 1.2px, transparent 1.3px),
-    linear-gradient(180deg, var(--navy), #0b3f9e);
+    radial-gradient(circle at 2px 2px, var(--offer-dot) 1.2px, transparent 1.3px),
+    linear-gradient(180deg, var(--navy), var(--offer-grad-end));
   background-size: 16px 16px, auto;
 }
 
 @media (max-width: 640px) {
-  :root[data-theme='comic-sharp'] .section-card,
-  :root[data-theme='comic-sharp'] .nested-card,
-  :root[data-theme='comic-sharp'] .article-card,
-  :root[data-theme='comic-sharp'] .gallery-main,
-  :root[data-theme='comic-sharp'] .sticky-panel,
-  :root[data-theme='comic-sharp'] .theme-dock,
-  :root[data-theme='comic-sharp'] .catalog-topbar-shell,
-  :root[data-theme='comic-sharp'] .brand-block--large {
-    box-shadow: 5px 5px 0 rgba(13, 21, 32, 0.95) !important;
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .section-card,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .nested-card,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .article-card,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .gallery-main,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .sticky-panel,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .theme-dock,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .catalog-topbar-shell,
+  :root:is([data-theme='comic-sharp'], [data-theme^='comic-sharp-']) .brand-block--large {
+    box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
   }
 }
