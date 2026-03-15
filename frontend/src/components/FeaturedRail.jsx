@@ -4,7 +4,7 @@ export default function FeaturedRail({ title, items }) {
   if (!items?.length) return null;
 
   return (
-    <section className="featured-rail">
+    <section className="featured-rail container">
       <div className="section-heading">
         <div>
           <p className="section-kicker">Selección</p>

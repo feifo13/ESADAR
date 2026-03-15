@@ -1,8 +1,6 @@
 import { BRAND_OPTIONS, CATEGORY_OPTIONS, SIZE_OPTIONS } from '../constants/lookups.js';
 
 const defaultFilters = {
-  search: '',
-  sort: 'intake_desc',
   categoryId: '',
   brandId: '',
   sizeId: '',
@@ -19,61 +17,86 @@ export default function ArticleFilters({ value, onChange, onReset }) {
   }
 
   return (
-    <div className="filters-bar">
-      <div className="filters-row">
-        <input
-          type="search"
+    <aside className="filters-sidebar">
+      <div className="filters-sidebar-head">
+        <p className="section-kicker">Filtros</p>
+        <button type="button" className="ghost-button" onClick={onReset}>Limpiar</button>
+      </div>
+
+      <div className="filters-sidebar-group">
+        <label className="field-label" htmlFor="filter-category">Categoría</label>
+        <select
+          id="filter-category"
           className="input"
-          placeholder="Buscar por título, marca o categoría"
-          value={filters.search}
-          onChange={(event) => updateField('search', event.target.value)}
-        />
-
-        <select className="input" value={filters.sort} onChange={(event) => updateField('sort', event.target.value)}>
-          <option value="intake_desc">Ingreso más reciente</option>
-          <option value="intake_asc">Ingreso más antiguo</option>
-          <option value="price_asc">Precio menor a mayor</option>
-          <option value="price_desc">Precio mayor a menor</option>
-        </select>
-
-        <select className="input" value={filters.categoryId} onChange={(event) => updateField('categoryId', event.target.value)}>
+          value={filters.categoryId}
+          onChange={(event) => updateField('categoryId', event.target.value)}
+        >
           <option value="">Todas las categorías</option>
           {CATEGORY_OPTIONS.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
+      </div>
 
-        <select className="input" value={filters.brandId} onChange={(event) => updateField('brandId', event.target.value)}>
+      <div className="filters-sidebar-group">
+        <label className="field-label" htmlFor="filter-brand">Marca</label>
+        <select
+          id="filter-brand"
+          className="input"
+          value={filters.brandId}
+          onChange={(event) => updateField('brandId', event.target.value)}
+        >
           <option value="">Todas las marcas</option>
           {BRAND_OPTIONS.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
+      </div>
 
-        <select className="input" value={filters.sizeId} onChange={(event) => updateField('sizeId', event.target.value)}>
+      <div className="filters-sidebar-group">
+        <label className="field-label" htmlFor="filter-size">Talle</label>
+        <select
+          id="filter-size"
+          className="input"
+          value={filters.sizeId}
+          onChange={(event) => updateField('sizeId', event.target.value)}
+        >
           <option value="">Todos los talles</option>
           {SIZE_OPTIONS.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
+      </div>
 
-        <div className="filters-inline-toggles">
-          <label className="checkbox-chip">
-            <input type="checkbox" checked={filters.discounted} onChange={(event) => updateField('discounted', event.target.checked)} />
-            <span>Promociones</span>
+      <div className="filters-sidebar-group">
+        <span className="field-label">Estados</span>
+        <div className="filters-sidebar-checks">
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={filters.discounted}
+              onChange={(event) => updateField('discounted', event.target.checked)}
+            />
+            <span>Promociones / descuentos</span>
           </label>
-          <label className="checkbox-chip checkbox-chip-accent">
-            <input type="checkbox" checked={filters.offerable} onChange={(event) => updateField('offerable', event.target.checked)} />
+          <label className="checkbox-row checkbox-row-accent">
+            <input
+              type="checkbox"
+              checked={filters.offerable}
+              onChange={(event) => updateField('offerable', event.target.checked)}
+            />
             <span>Ofrezco</span>
           </label>
-          <label className="checkbox-chip">
-            <input type="checkbox" checked={filters.featured} onChange={(event) => updateField('featured', event.target.checked)} />
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={filters.featured}
+              onChange={(event) => updateField('featured', event.target.checked)}
+            />
             <span>Destacados</span>
           </label>
         </div>
-
-        <button type="button" className="ghost-button" onClick={onReset}>Limpiar</button>
       </div>
-    </div>
+    </aside>
   );
 }

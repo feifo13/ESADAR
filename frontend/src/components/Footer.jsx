@@ -1,12 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="container footer-grid">
         <div>
-          <p className="footer-title">Miami Closet</p>
-          <p className="footer-copy">Segunda mano americana curada. Sin modelos. Solo prendas que hablan por sí mismas.</p>
+          <p className="footer-title">ESADAR</p>
         </div>
         <div>
           <p className="footer-title">Navegación</p>
@@ -18,7 +17,9 @@ export default function Footer() {
         </div>
         <div>
           <p className="footer-title">Firma</p>
-          <p className="footer-copy">Sportswear + ropa moderna seleccionada en EE. UU.</p>
+          <p className="footer-copy">
+            Sportswear + ropa moderna seleccionada en EE. UU.
+          </p>
         </div>
       </div>
     </footer>

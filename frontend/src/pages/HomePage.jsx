@@ -102,90 +102,126 @@ export default function HomePage() {
     setFilters(nextFilters);
   }
 
+  function updateFilterField(name, nextValue) {
+    applyFilters({ ...filters, [name]: nextValue });
+  }
+
   const canLoadMore = items.length < Number(pagination.total || 0);
 
   return (
-    <div className="container page-stack">
-      <section className="hero-panel">
+    <div className="home-page page-stack page-stack-wide">
+      <section className="hero-strip container">
         <div>
-          <p className="section-kicker">Curated second hand</p>
+          <p className="section-kicker">ESADAR</p>
           <h1>Sportswear y ropa moderna seleccionada en Estados Unidos.</h1>
-          <p className="hero-copy">
-            Sin modelos. Sin ruido. Solo prendas elegidas una a una para que la
-            ropa hable por sí misma.
-          </p>
         </div>
-        {/* <div className="hero-stats">
-          <div className="stat-card"><span>Catálogo vivo</span><strong>{pagination.total || items.length}</strong></div>
-          <div className="stat-card"><span>Ofertas activas</span><strong>{items.filter((item) => item.allowOffers).length}</strong></div>
-          <div className="stat-card"><span>Descuentos</span><strong>{items.filter((item) => item.discountType !== 'NONE').length}</strong></div>
-        </div> */}
-      </section>
-
-      <section className="catalog-shell">
-        <div className="catalog-toolbar sticky-panel">
-          <ArticleFilters
-            value={filters}
-            onChange={applyFilters}
-            onReset={() => applyFilters(initialFilters)}
-          />
-          <div className="view-toggle">
-            <button
-              type="button"
-              className={view === "grid" ? "active" : ""}
-              onClick={() => setView("grid")}
-            >
-              Grilla
-            </button>
-            <button
-              type="button"
-              className={view === "list" ? "active" : ""}
-              onClick={() => setView("list")}
-            >
-              Lista
-            </button>
-          </div>
-        </div>
+        {/* <p className="hero-copy">
+          Sin modelos. Sin ruido. Solo prendas elegidas una a una para que la
+          ropa hable por sí misma.
+        </p> */}
       </section>
 
       <FeaturedRail
         title="Destacados y descuentos"
         items={featuredItems.slice(0, 8)}
       />
+      <section className="catalog-topbar sticky-panel container">
+        <input
+          type="search"
+          className="input search-input-main"
+          placeholder="Buscar por título, marca o categoría"
+          value={filters.search}
+          onChange={(event) => updateFilterField("search", event.target.value)}
+        />
 
-      <section className="catalog-shell">
-        {error ? <div className="section-card error-card">{error}</div> : null}
+        <select
+          className="input sort-select"
+          value={filters.sort}
+          onChange={(event) => updateFilterField("sort", event.target.value)}
+        >
+          <option value="intake_desc">Ingreso más reciente</option>
+          <option value="intake_asc">Ingreso más antiguo</option>
+          <option value="price_asc">Precio menor a mayor</option>
+          <option value="price_desc">Precio mayor a menor</option>
+        </select>
 
-        {loading ? (
-          <div className="section-card centered-card">Cargando artículos…</div>
-        ) : (
-          <>
-            <div className={view === "grid" ? "article-grid" : "article-list"}>
-              {items.map((article) => (
-                <ArticleCard key={article.id} article={article} view={view} />
-              ))}
+        <div className="view-toggle">
+          <button
+            type="button"
+            className={view === "grid" ? "active" : ""}
+            onClick={() => setView("grid")}
+          >
+            Grilla
+          </button>
+          <button
+            type="button"
+            className={view === "list" ? "active" : ""}
+            onClick={() => setView("list")}
+          >
+            Lista
+          </button>
+        </div>
+      </section>
+
+      <section className="catalog-wide container">
+        <ArticleFilters
+          value={filters}
+          onChange={applyFilters}
+          onReset={() => applyFilters(initialFilters)}
+        />
+
+        <div className="catalog-content">
+          <div className="catalog-summary-row">
+            <div>
+              <p className="section-kicker">Catálogo</p>
+              <h2>{pagination.total || items.length} artículos disponibles</h2>
             </div>
+            <div className="catalog-summary-metrics">
+              <span>
+                {items.filter((item) => item.allowOffers).length} con ofertas
+              </span>
+              <span>
+                {items.filter((item) => item.discountType !== "NONE").length}{" "}
+                con descuento
+              </span>
+            </div>
+          </div>
 
-            {!items.length ? (
-              <div className="section-card centered-card">
-                No encontramos artículos con esos filtros.
-              </div>
-            ) : null}
+          {error ? <div className="error-inline">{error}</div> : null}
 
-            {canLoadMore ? (
-              <div className="load-more-row">
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={() => setPage((current) => current + 1)}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? "Cargando…" : "Ver más artículos"}
-                </button>
+          {loading ? (
+            <div className="catalog-status">Cargando artículos…</div>
+          ) : (
+            <>
+              <div
+                className={view === "grid" ? "article-grid" : "article-list"}
+              >
+                {items.map((article) => (
+                  <ArticleCard key={article.id} article={article} view={view} />
+                ))}
               </div>
-            ) : null}
-          </>
-        )}
+
+              {!items.length ? (
+                <div className="catalog-status">
+                  No encontramos artículos con esos filtros.
+                </div>
+              ) : null}
+
+              {canLoadMore ? (
+                <div className="load-more-row load-more-row-left">
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={() => setPage((current) => current + 1)}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? "Cargando…" : "Ver más artículos"}
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       </section>
     </div>
   );
