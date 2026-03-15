@@ -20,7 +20,7 @@ export default function ArticleFilters({ value, onChange, onReset }) {
 
   return (
     <div className="filters-bar">
-      <div className="filters-topline">
+      <div className="filters-row">
         <input
           type="search"
           className="input"
@@ -28,15 +28,14 @@ export default function ArticleFilters({ value, onChange, onReset }) {
           value={filters.search}
           onChange={(event) => updateField('search', event.target.value)}
         />
+
         <select className="input" value={filters.sort} onChange={(event) => updateField('sort', event.target.value)}>
           <option value="intake_desc">Ingreso más reciente</option>
           <option value="intake_asc">Ingreso más antiguo</option>
           <option value="price_asc">Precio menor a mayor</option>
           <option value="price_desc">Precio mayor a menor</option>
         </select>
-      </div>
 
-      <div className="filters-grid">
         <select className="input" value={filters.categoryId} onChange={(event) => updateField('categoryId', event.target.value)}>
           <option value="">Todas las categorías</option>
           {CATEGORY_OPTIONS.map((option) => (
@@ -72,10 +71,8 @@ export default function ArticleFilters({ value, onChange, onReset }) {
             <span>Destacados</span>
           </label>
         </div>
-      </div>
 
-      <div className="filters-actions">
-        <button type="button" className="ghost-button" onClick={onReset}>Limpiar filtros</button>
+        <button type="button" className="ghost-button" onClick={onReset}>Limpiar</button>
       </div>
     </div>
   );

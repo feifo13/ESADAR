@@ -23,7 +23,12 @@ export default function App() {
         <Route path="articles/:slugOrId/offer" element={<OfferPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
-        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="checkout" element={<Navigate to="/checkout/resumen" replace />} />
+        <Route path="checkout/resumen" element={<CheckoutPage />} />
+        <Route path="checkout/comprador" element={<CheckoutPage />} />
+        <Route path="checkout/pago" element={<CheckoutPage />} />
+        <Route path="checkout/envio" element={<CheckoutPage />} />
+        <Route path="checkout/confirmacion" element={<CheckoutPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route

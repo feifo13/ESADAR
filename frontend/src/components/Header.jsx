@@ -31,7 +31,7 @@ export default function Header() {
             {theme === 'default' ? 'Modo alternativo' : 'Modo default'}
           </button>
 
-          <button type="button" className="ghost-button" onClick={() => navigate('/checkout')}>
+          <button type="button" className="ghost-button" onClick={() => navigate('/checkout/resumen')}>
             Carro <span className="badge">{cartCount}</span>
           </button>
 
