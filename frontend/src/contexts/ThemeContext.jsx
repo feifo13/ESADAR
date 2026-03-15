@@ -45,6 +45,25 @@ export const THEME_OPTIONS = [
   'white-atlantic',
 ];
 
+
+const DARK_THEMES = new Set([
+  'default',
+  'marine',
+  'aqua',
+  'sunset',
+  'dolphin-night',
+  'midnight-pool',
+  'teal-gold',
+  'peach-club',
+  'blue-hour',
+  'electric-sea',
+  'tangerine-night',
+  'retro-coast',
+  'steel-aqua',
+  'neon-harbor',
+  'warm-current',
+]);
+
 function normalizeTheme(rawTheme) {
   if (rawTheme === 'alt') return 'marine';
   if (THEME_OPTIONS.includes(rawTheme)) return rawTheme;
@@ -60,6 +79,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.colorMode = DARK_THEMES.has(theme) ? 'dark' : 'light';
     storage.set('miami-closet-theme', theme);
   }, [theme]);
 
