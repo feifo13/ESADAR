@@ -3372,3 +3372,162 @@ body {
     box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
   }
 }
+
+
+/* === Theme dock grouped layout === */
+.theme-dock {
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(76vh, 720px);
+  overflow: auto;
+}
+
+.theme-dock-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.theme-dock-group {
+  display: grid;
+  gap: 8px;
+}
+
+.theme-dock-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+}
+
+.theme-dock-group-title,
+.theme-dock-group-description {
+  margin: 0;
+}
+
+.theme-dock-group-title {
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.theme-dock-group-description {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.theme-dock-group-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+}
+
+.theme-dock-buttons {
+  justify-content: start;
+}
+
+@media (max-width: 640px) {
+  .theme-dock {
+    width: min(100vw - 16px, 420px);
+    max-height: min(72vh, 560px);
+  }
+
+  .theme-dock-buttons {
+    grid-template-columns: repeat(4, auto);
+  }
+}
+
+/* === Checkout white cards across every theme === */
+.checkout-white-context {
+  --checkout-card-bg: #ffffff;
+  --checkout-card-bg-soft: #f4f6f8;
+  --checkout-card-text: #102b34;
+  --checkout-card-muted: #56737a;
+  --checkout-card-border: rgba(16, 43, 52, 0.12);
+  --checkout-card-border-strong: rgba(16, 43, 52, 0.18);
+  --checkout-card-aqua: #008e97;
+  --checkout-card-navy: #002244;
+}
+
+.checkout-white-context .checkout-white-card,
+.checkout-white-context .checkout-white-card.section-card,
+.checkout-white-context .checkout-white-card.nested-card {
+  background: var(--checkout-card-bg) !important;
+  color: var(--checkout-card-text) !important;
+  border-color: var(--checkout-card-border) !important;
+}
+
+.checkout-white-context .checkout-white-card .muted-copy,
+.checkout-white-context .checkout-white-card .section-kicker,
+.checkout-white-context .checkout-white-card .field-group span,
+.checkout-white-context .checkout-white-card .detail-meta-list span,
+.checkout-white-context .checkout-white-card .checkout-shell-copy,
+.checkout-white-context .checkout-white-card .inline-note,
+.checkout-white-context .checkout-white-card p:not(.summary-line):not(.error-copy):not(.success-copy) {
+  color: var(--checkout-card-muted);
+}
+
+.checkout-white-context .checkout-white-card h1,
+.checkout-white-context .checkout-white-card h2,
+.checkout-white-context .checkout-white-card h3,
+.checkout-white-context .checkout-white-card strong,
+.checkout-white-context .checkout-white-card .summary-line,
+.checkout-white-context .checkout-white-card .summary-line strong,
+.checkout-white-context .checkout-white-card .checkout-item-title {
+  color: var(--checkout-card-text);
+}
+
+.checkout-white-context .checkout-white-card .section-kicker {
+  color: var(--checkout-card-aqua) !important;
+}
+
+.checkout-white-context .checkout-white-card .input,
+.checkout-white-context .checkout-white-card .textarea,
+.checkout-white-context .checkout-white-card .sort-select,
+.checkout-white-context .checkout-white-card select.input {
+  background: var(--checkout-card-bg) !important;
+  color: var(--checkout-card-text) !important;
+  border-color: var(--checkout-card-border-strong) !important;
+}
+
+.checkout-white-context .checkout-white-card .input::placeholder,
+.checkout-white-context .checkout-white-card .textarea::placeholder {
+  color: var(--checkout-card-muted) !important;
+}
+
+.checkout-white-context .checkout-white-card select.input option,
+.checkout-white-context .checkout-white-card .sort-select option {
+  background: #ffffff;
+  color: var(--checkout-card-text);
+}
+
+.checkout-white-context .checkout-white-card .radio-card,
+.checkout-white-context .checkout-white-card .radio-card-plain,
+.checkout-white-context .checkout-white-card .checkout-item,
+.checkout-white-context .checkout-white-card .order-summary-card {
+  background: var(--checkout-card-bg) !important;
+  color: var(--checkout-card-text) !important;
+  border-color: var(--checkout-card-border) !important;
+}
+
+.checkout-white-context .checkout-white-card .summary-line.total {
+  border-top-color: var(--checkout-card-border) !important;
+}
+
+.checkout-white-context .checkout-white-card .ghost-button,
+.checkout-white-context .checkout-white-card .button-secondary {
+  color: var(--checkout-card-text);
+  border-color: var(--checkout-card-border);
+  background: transparent;
+}
+
+.checkout-white-context .checkout-white-card a {
+  color: var(--checkout-card-navy);
+}
