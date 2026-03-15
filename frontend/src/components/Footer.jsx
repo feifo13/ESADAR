@@ -12,10 +12,12 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="container footer-grid footer-grid-logo">
         <div className="footer-brand-block">
-          <img src={esadarWordmark} alt="ESADAR" className="footer-logo-image" />
-          <p className="footer-copy">
-            Sportswear + ropa moderna seleccionada en EE. UU.
-          </p>
+          <img
+            src={esadarWordmark}
+            alt="ESADAR"
+            className="footer-logo-image"
+          />
+          <p className="footer-copy">Mile y Fede ♥ sentados en un arbol</p>
         </div>
 
         <div>
@@ -30,9 +32,7 @@ export default function Footer() {
 
         <div>
           <p className="footer-title">Firma</p>
-          <p className="footer-copy">
-            Curated second hand con carácter deportivo, moderno y visual limpio.
-          </p>
+          <p className="footer-copy">B-E-S-A-N-D-O-S-E</p>
         </div>
       </div>
     </footer>
