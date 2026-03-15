@@ -1,14 +1,19 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
 
 export default function RootLayout() {
+  const location = useLocation();
+  const [heroLogoVisible, setHeroLogoVisible] = useState(false);
+  const isHome = location.pathname === '/';
+
   return (
     <div className="app-shell">
-      <Header />
+      <Header hideBrand={isHome && heroLogoVisible} />
       <main className="page-shell">
-        <Outlet />
+        <Outlet context={{ setHeroLogoVisible }} />
       </main>
       <Footer />
       <ThemeDock />

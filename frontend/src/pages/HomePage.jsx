@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../lib/api.js";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleFilters from "../components/ArticleFilters.jsx";
 import FeaturedRail from "../components/FeaturedRail.jsx";
+import { useOutletContext } from "react-router-dom";
+import esadarWordmark from "../assets/esadar-wordmark.png";
 
 const initialFilters = {
   search: "",
@@ -16,6 +18,8 @@ const initialFilters = {
 };
 
 export default function HomePage() {
+  const heroRef = useRef(null);
+  const { setHeroLogoVisible } = useOutletContext();
   const [filters, setFilters] = useState(initialFilters);
   const [view, setView] = useState("grid");
   const [featuredItems, setFeaturedItems] = useState([]);
@@ -108,14 +112,39 @@ export default function HomePage() {
 
   const canLoadMore = items.length < Number(pagination.total || 0);
 
+  useEffect(() => {
+    const node = heroRef.current;
+    if (!node) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeroLogoVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.18,
+        rootMargin: "-48px 0px 0px 0px",
+      },
+    );
+
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      setHeroLogoVisible(false);
+    };
+  }, [setHeroLogoVisible]);
+
   return (
     <div className="home-page page-stack page-stack-wide">
-      {/* <section className="hero-strip container">
-        <div>
-          <p className="section-kicker">ESADAR</p>
-          <h1>Sportswear y ropa moderna seleccionada en Estados Unidos.</h1>
+      <section ref={heroRef} className="hero-strip hero-strip--logo container">
+        <div className="brand-block brand-block--large">
+          <img
+            src={esadarWordmark}
+            alt="ESADAR"
+            className="brand-logo brand-logo--large"
+          />
         </div>
-      </section> */}
+      </section>
 
       <section className="catalog-topbar-shell">
         <div className="container catalog-topbar-row">
@@ -124,9 +153,7 @@ export default function HomePage() {
             className="input search-input-main"
             placeholder="Buscar por título, marca o categoría"
             value={filters.search}
-            onChange={(event) =>
-              updateFilterField("search", event.target.value)
-            }
+            onChange={(event) => updateFilterField("search", event.target.value)}
           />
 
           <select
