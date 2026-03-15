@@ -2,7 +2,28 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { storage } from '../lib/storage.js';
 
 const ThemeContext = createContext(null);
-export const THEME_OPTIONS = ['default', 'marine', 'aqua', 'sunset'];
+
+export const THEME_OPTIONS = [
+  'default',
+  'marine',
+  'aqua',
+  'sunset',
+  'orange-sand',
+  'orange-pop',
+  'orange-cream',
+  'orange-court',
+  'orange-punch',
+  'sky-glass',
+  'sky-mint',
+  'sky-board',
+  'sky-fade',
+  'sky-powder',
+  'harbor',
+  'whiteout',
+  'storm',
+  'dolphin-night',
+  'coral-reef',
+];
 
 function normalizeTheme(rawTheme) {
   if (rawTheme === 'alt') return 'marine';

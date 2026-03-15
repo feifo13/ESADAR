@@ -48,8 +48,8 @@ export default function OfferPage() {
   return (
     <div className="container article-page-shell page-stack offer-page">
       <section className="detail-shell detail-shell-article">
-        <div className="detail-titlebar">
-          <p className="section-kicker">Vista ofertar</p>
+        <div className="detail-titlebar detail-titlebar-offer">
+          <p className="section-kicker">Ofertar artículo</p>
           <h1>Estás ofertando por: {article.title}</h1>
         </div>
 
@@ -58,7 +58,7 @@ export default function OfferPage() {
             <ImageGallery images={article.images} title={article.title} />
           </div>
 
-          <aside className="detail-sidebar detail-sidebar-article section-card offer-sidebar">
+          <aside className="detail-sidebar detail-sidebar-article section-card offer-sidebar-flat">
             <div className="detail-meta-list">
               <div><span>Categoría</span><strong>{article.categoryName}</strong></div>
               <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
@@ -69,6 +69,8 @@ export default function OfferPage() {
             <div className="detail-pricing">
               <strong className="price-current price-current-large">{formatCurrency(article.salePrice)}</strong>
             </div>
+
+            {article.description ? <p className="muted-copy">{article.description}</p> : null}
 
             <label className="field-group">
               <span>Tu oferta</span>
@@ -82,17 +84,22 @@ export default function OfferPage() {
               />
             </label>
 
-            <button
-              type="button"
-              className="button button-primary button-compact"
-              onClick={() => setMessage('La pantalla quedó preparada. El endpoint de ofertas se conecta en el siguiente paso.')}
-            >
-              Ofertar
-            </button>
+            <div className="detail-actions detail-actions-article">
+              <button
+                type="button"
+                className="button button-primary button-compact"
+                onClick={() => setMessage('La pantalla quedó preparada. El endpoint de ofertas se conecta en el siguiente paso.')}
+              >
+                Ofertar
+              </button>
+
+              <Link to={`/articles/${article.slug || article.id}`} className="button button-secondary button-compact">
+                Volver al artículo
+              </Link>
+            </div>
 
             {message ? <p className="success-copy">{message}</p> : null}
-            <p className="muted-copy">Esta vista ya tiene identidad propia. Falta conectar el backend real de ofertas.</p>
-            <Link to={`/articles/${article.slug || article.id}`} className="ghost-button linklike button-compact">Volver al artículo</Link>
+            <p className="muted-copy">Esta vista ya tiene identidad propia, pero ahora quedó alineada con el resto del catálogo.</p>
           </aside>
         </div>
       </section>
