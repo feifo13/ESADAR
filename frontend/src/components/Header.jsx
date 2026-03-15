@@ -1,13 +1,11 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
-import { useTheme } from "../contexts/ThemeContext.jsx";
 
 export default function Header() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount } = useCart();
-  const { theme, toggleTheme } = useTheme();
 
   const isAdmin = user?.roles?.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
@@ -23,16 +21,10 @@ export default function Header() {
 
         <nav className="primary-nav">
           <NavLink to="/">Inicio</NavLink>
-          {/* <NavLink to="/about">Nosotros</NavLink> */}
-          {/* <NavLink to="/contact">Contacto</NavLink> */}
           {isAdmin ? <NavLink to="/admin/articles">Backoffice</NavLink> : null}
         </nav>
 
         <div className="header-actions">
-          <button type="button" className="ghost-button" onClick={toggleTheme}>
-            {theme === "default" ? "Modo alternativo" : "Modo default"}
-          </button>
-
           <button
             type="button"
             className="ghost-button"

@@ -46,19 +46,19 @@ export default function OfferPage() {
   }
 
   return (
-    <div className="container page-stack offer-page">
-      <section className="detail-shell">
+    <div className="container article-page-shell page-stack offer-page">
+      <section className="detail-shell detail-shell-article">
         <div className="detail-titlebar">
           <p className="section-kicker">Vista ofertar</p>
           <h1>Estás ofertando por: {article.title}</h1>
         </div>
 
-        <div className="detail-grid">
-          <div>
+        <div className="detail-grid detail-grid-article">
+          <div className="detail-gallery-column">
             <ImageGallery images={article.images} title={article.title} />
           </div>
 
-          <aside className="detail-sidebar section-card offer-sidebar">
+          <aside className="detail-sidebar detail-sidebar-article section-card offer-sidebar">
             <div className="detail-meta-list">
               <div><span>Categoría</span><strong>{article.categoryName}</strong></div>
               <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
@@ -84,7 +84,7 @@ export default function OfferPage() {
 
             <button
               type="button"
-              className="button button-primary"
+              className="button button-primary button-compact"
               onClick={() => setMessage('La pantalla quedó preparada. El endpoint de ofertas se conecta en el siguiente paso.')}
             >
               Ofertar
@@ -92,7 +92,7 @@ export default function OfferPage() {
 
             {message ? <p className="success-copy">{message}</p> : null}
             <p className="muted-copy">Esta vista ya tiene identidad propia. Falta conectar el backend real de ofertas.</p>
-            <Link to={`/articles/${article.slug || article.id}`} className="ghost-button linklike">Volver al artículo</Link>
+            <Link to={`/articles/${article.slug || article.id}`} className="ghost-button linklike button-compact">Volver al artículo</Link>
           </aside>
         </div>
       </section>
@@ -104,6 +104,7 @@ export default function OfferPage() {
             <h2>Más prendas abiertas a negociación</h2>
           </div>
         </div>
+
         <div className="article-grid">
           {related.map((item) => (
             <ArticleCard key={item.id} article={item} />

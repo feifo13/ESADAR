@@ -115,53 +115,52 @@ export default function HomePage() {
           <p className="section-kicker">ESADAR</p>
           <h1>Sportswear y ropa moderna seleccionada en Estados Unidos.</h1>
         </div>
-        {/* <p className="hero-copy">
-          Sin modelos. Sin ruido. Solo prendas elegidas una a una para que la
-          ropa hable por sí misma.
-        </p> */}
+      </section>
+
+      <section className="catalog-topbar-shell">
+        <div className="container catalog-topbar-row">
+          <input
+            type="search"
+            className="input search-input-main"
+            placeholder="Buscar por título, marca o categoría"
+            value={filters.search}
+            onChange={(event) => updateFilterField("search", event.target.value)}
+          />
+
+          <select
+            className="input sort-select"
+            value={filters.sort}
+            onChange={(event) => updateFilterField("sort", event.target.value)}
+          >
+            <option value="intake_desc">Ingreso más reciente</option>
+            <option value="intake_asc">Ingreso más antiguo</option>
+            <option value="price_asc">Precio menor a mayor</option>
+            <option value="price_desc">Precio mayor a menor</option>
+          </select>
+
+          <div className="view-toggle">
+            <button
+              type="button"
+              className={view === "grid" ? "active" : ""}
+              onClick={() => setView("grid")}
+            >
+              Grilla
+            </button>
+            <button
+              type="button"
+              className={view === "list" ? "active" : ""}
+              onClick={() => setView("list")}
+            >
+              Lista
+            </button>
+          </div>
+        </div>
       </section>
 
       <FeaturedRail
         title="Destacados y descuentos"
         items={featuredItems.slice(0, 8)}
       />
-      <section className="catalog-topbar sticky-panel container">
-        <input
-          type="search"
-          className="input search-input-main"
-          placeholder="Buscar por título, marca o categoría"
-          value={filters.search}
-          onChange={(event) => updateFilterField("search", event.target.value)}
-        />
-
-        <select
-          className="input sort-select"
-          value={filters.sort}
-          onChange={(event) => updateFilterField("sort", event.target.value)}
-        >
-          <option value="intake_desc">Ingreso más reciente</option>
-          <option value="intake_asc">Ingreso más antiguo</option>
-          <option value="price_asc">Precio menor a mayor</option>
-          <option value="price_desc">Precio mayor a menor</option>
-        </select>
-
-        <div className="view-toggle">
-          <button
-            type="button"
-            className={view === "grid" ? "active" : ""}
-            onClick={() => setView("grid")}
-          >
-            Grilla
-          </button>
-          <button
-            type="button"
-            className={view === "list" ? "active" : ""}
-            onClick={() => setView("list")}
-          >
-            Lista
-          </button>
-        </div>
-      </section>
 
       <section className="catalog-wide container">
         <ArticleFilters

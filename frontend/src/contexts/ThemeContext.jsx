@@ -2,9 +2,20 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { storage } from '../lib/storage.js';
 
 const ThemeContext = createContext(null);
+export const THEME_OPTIONS = ['default', 'marine', 'aqua', 'sunset'];
+
+function normalizeTheme(rawTheme) {
+  if (rawTheme === 'alt') return 'marine';
+  if (THEME_OPTIONS.includes(rawTheme)) return rawTheme;
+  return 'default';
+}
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => storage.get('miami-closet-theme', 'default'));
+  const [theme, setThemeState] = useState(() => normalizeTheme(storage.get('miami-closet-theme', 'default')));
+
+  function setTheme(nextTheme) {
+    setThemeState(normalizeTheme(nextTheme));
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -14,8 +25,13 @@ export function ThemeProvider({ children }) {
   const value = useMemo(
     () => ({
       theme,
+      themes: THEME_OPTIONS,
       setTheme,
-      toggleTheme: () => setTheme((current) => (current === 'default' ? 'alt' : 'default')),
+      cycleTheme: () => {
+        const currentIndex = THEME_OPTIONS.indexOf(theme);
+        const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length;
+        setTheme(THEME_OPTIONS[nextIndex]);
+      },
     }),
     [theme],
   );

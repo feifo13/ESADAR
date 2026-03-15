@@ -59,19 +59,19 @@ export default function ArticlePage() {
   const finalPrice = getDiscountedPrice(article);
 
   return (
-    <div className="container page-stack">
-      <section className="detail-shell">
+    <div className="container article-page-shell page-stack">
+      <section className="detail-shell detail-shell-article">
         <div className="detail-titlebar">
           <p className="section-kicker">Artículo</p>
           <h1>{article.title}</h1>
         </div>
 
-        <div className="detail-grid">
-          <div>
+        <div className="detail-grid detail-grid-article">
+          <div className="detail-gallery-column">
             <ImageGallery images={article.images} title={article.title} />
           </div>
 
-          <aside className="detail-sidebar section-card">
+          <aside className="detail-sidebar detail-sidebar-article section-card">
             <div className="detail-meta-list">
               <div><span>Categoría</span><strong>{article.categoryName}</strong></div>
               <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
@@ -87,10 +87,10 @@ export default function ArticlePage() {
             {article.description ? <p className="muted-copy">{article.description}</p> : null}
             {feedback ? <p className="success-copy">{feedback}</p> : null}
 
-            <div className="detail-actions">
+            <div className="detail-actions detail-actions-article">
               <button
                 type="button"
-                className="button button-primary"
+                className="button button-primary button-compact"
                 onClick={() => {
                   addItem(article);
                   setFeedback(isInCart(article.id) ? 'El artículo ya estaba en el carro.' : 'Artículo agregado al carro.');
@@ -100,7 +100,7 @@ export default function ArticlePage() {
               </button>
 
               {article.allowOffers ? (
-                <Link to={`/articles/${article.slug || article.id}/offer`} className="button button-secondary">
+                <Link to={`/articles/${article.slug || article.id}/offer`} className="button button-secondary button-compact">
                   Ofertar
                 </Link>
               ) : null}
