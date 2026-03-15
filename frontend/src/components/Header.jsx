@@ -1,6 +1,7 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import { useCart } from '../contexts/CartContext.jsx';
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useCart } from "../contexts/CartContext.jsx";
+import esadarWordmark from "../assets/esadar-wordmark.png";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -9,21 +10,22 @@ export default function Header() {
 
   return (
     <header className="site-header">
-      <div className="container header-inner header-inner-minimal">
-        <Link to="/" className="brand-mark">
-          <span className="brand-kicker">ESADAR</span>
-          <span className="brand-main">Curated Second Hand</span>
+      <div className="container header-inner">
+        <Link to="/" className="brand-mark brand-mark-logo" aria-label="ESADAR · Inicio">
+          <img src={esadarWordmark} alt="ESADAR" className="brand-logo-image" />
         </Link>
 
-        <div className="header-spacer" />
+        <nav className="primary-nav" aria-label="Navegación principal" />
 
-        <div className="header-actions header-actions-ordered">
-          {isAuthenticated ? <span className="user-greeting">Hola, {user.firstName}</span> : null}
+        <div className="header-actions">
+          {isAuthenticated ? (
+            <span className="user-greeting">Hola, {user.firstName}</span>
+          ) : null}
 
           <button
             type="button"
             className="ghost-button"
-            onClick={() => navigate('/checkout/resumen')}
+            onClick={() => navigate("/checkout/resumen")}
           >
             Carro <span className="badge">{cartCount}</span>
           </button>
@@ -33,9 +35,11 @@ export default function Header() {
               Salir
             </button>
           ) : (
-            <NavLink to="/login" className="ghost-button linklike">
-              Ingresar
-            </NavLink>
+            <div className="header-user">
+              <NavLink to="/login" className="ghost-button linklike">
+                Ingresar
+              </NavLink>
+            </div>
           )}
         </div>
       </div>

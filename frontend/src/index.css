@@ -884,186 +884,6 @@ button,
   --navy: #162c4b;
 }
 
-:root[data-theme='orange-sand'] {
-  --bg: #f7d0b4;
-  --surface: #fff1e4;
-  --surface-soft: #ffdcbf;
-  --text: #17314a;
-  --muted: #5a6d7c;
-  --border: rgba(23, 49, 74, 0.14);
-  --aqua: #0b8ea0;
-  --orange: #fc4c02;
-  --navy: #123050;
-}
-
-:root[data-theme='orange-pop'] {
-  --bg: #ffb17a;
-  --surface: #ffd1af;
-  --surface-soft: #ffc296;
-  --text: #15283f;
-  --muted: #4f6173;
-  --border: rgba(21, 40, 63, 0.16);
-  --aqua: #007d8a;
-  --orange: #ff5c10;
-  --navy: #16375a;
-}
-
-:root[data-theme='orange-cream'] {
-  --bg: #ffe3cf;
-  --surface: #fff6ef;
-  --surface-soft: #ffe9d8;
-  --text: #163047;
-  --muted: #66798a;
-  --border: rgba(22, 48, 71, 0.13);
-  --aqua: #008e97;
-  --orange: #ef6b1e;
-  --navy: #15385b;
-}
-
-:root[data-theme='orange-court'] {
-  --bg: #f38b4a;
-  --surface: #ffb988;
-  --surface-soft: #f6a368;
-  --text: #0d2336;
-  --muted: #31485c;
-  --border: rgba(13, 35, 54, 0.18);
-  --aqua: #007f92;
-  --orange: #db4a00;
-  --navy: #0f3559;
-}
-
-:root[data-theme='orange-punch'] {
-  --bg: #ff7d36;
-  --surface: #ffab73;
-  --surface-soft: #ff9252;
-  --text: #0e2234;
-  --muted: #334b61;
-  --border: rgba(14, 34, 52, 0.18);
-  --aqua: #007f8c;
-  --orange: #f24f00;
-  --navy: #11385b;
-}
-
-:root[data-theme='sky-glass'] {
-  --bg: #d9f5f8;
-  --surface: #f3fdff;
-  --surface-soft: #e5f8fb;
-  --text: #143246;
-  --muted: #61798a;
-  --border: rgba(20, 50, 70, 0.12);
-  --aqua: #008e97;
-  --orange: #ff7a1f;
-  --navy: #10385e;
-}
-
-:root[data-theme='sky-mint'] {
-  --bg: #bfecef;
-  --surface: #e3fbfd;
-  --surface-soft: #d0f4f7;
-  --text: #123146;
-  --muted: #5a7487;
-  --border: rgba(18, 49, 70, 0.13);
-  --aqua: #008b9f;
-  --orange: #ff8240;
-  --navy: #12395c;
-}
-
-:root[data-theme='sky-board'] {
-  --bg: #8fdde3;
-  --surface: #d8f5f7;
-  --surface-soft: #bfecef;
-  --text: #112b40;
-  --muted: #466171;
-  --border: rgba(17, 43, 64, 0.14);
-  --aqua: #007f92;
-  --orange: #ff6d21;
-  --navy: #103456;
-}
-
-:root[data-theme='sky-fade'] {
-  --bg: #e8fbfc;
-  --surface: #ffffff;
-  --surface-soft: #f2fcfd;
-  --text: #173246;
-  --muted: #61798b;
-  --border: rgba(23, 50, 70, 0.1);
-  --aqua: #00a7b3;
-  --orange: #fc4c02;
-  --navy: #10385f;
-}
-
-:root[data-theme='sky-powder'] {
-  --bg: #cfeff5;
-  --surface: #edf9fc;
-  --surface-soft: #dcf4f8;
-  --text: #133049;
-  --muted: #597589;
-  --border: rgba(19, 48, 73, 0.12);
-  --aqua: #0095a6;
-  --orange: #ff8b3d;
-  --navy: #144466;
-}
-
-:root[data-theme='harbor'] {
-  --bg: #f4f8fb;
-  --surface: #ffffff;
-  --surface-soft: #edf3f7;
-  --text: #17314b;
-  --muted: #64788c;
-  --border: rgba(23, 49, 75, 0.1);
-  --aqua: #0094a5;
-  --orange: #ff6a13;
-  --navy: #12395c;
-}
-
-:root[data-theme='whiteout'] {
-  --bg: #ffffff;
-  --surface: #f7fbfd;
-  --surface-soft: #eef6fa;
-  --text: #183146;
-  --muted: #65798d;
-  --border: rgba(24, 49, 70, 0.08);
-  --aqua: #009cab;
-  --orange: #ff6e1a;
-  --navy: #113558;
-}
-
-:root[data-theme='storm'] {
-  --bg: #d8e1e8;
-  --surface: #eef3f7;
-  --surface-soft: #e2e8ee;
-  --text: #172d41;
-  --muted: #5c7082;
-  --border: rgba(23, 45, 65, 0.12);
-  --aqua: #00899a;
-  --orange: #ff8240;
-  --navy: #27445d;
-}
-
-:root[data-theme='dolphin-night'] {
-  --bg: #13263a;
-  --surface: #1b3249;
-  --surface-soft: #223c56;
-  --text: #f2f7fb;
-  --muted: #adc0d1;
-  --border: rgba(242, 247, 251, 0.12);
-  --aqua: #23d3d6;
-  --orange: #ff6f1f;
-  --navy: #061c30;
-}
-
-:root[data-theme='coral-reef'] {
-  --bg: #f8efe7;
-  --surface: #fff9f4;
-  --surface-soft: #fbe4d5;
-  --text: #183149;
-  --muted: #6c7f8e;
-  --border: rgba(24, 49, 73, 0.11);
-  --aqua: #00a7b3;
-  --orange: #ff5e1a;
-  --navy: #123b61;
-}
-
 body {
   background: linear-gradient(180deg, rgba(0, 34, 68, 0.28), transparent 180px), var(--bg);
 }
@@ -1328,7 +1148,6 @@ body {
   display: grid;
   gap: 8px;
   padding: 10px;
-  max-width: 220px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   border: 1px solid var(--border);
 }
@@ -1343,11 +1162,7 @@ body {
 
 .theme-dock-buttons {
   display: grid;
-  grid-template-columns: repeat(4, auto);
   gap: 8px;
-  max-height: min(56vh, 420px);
-  overflow: auto;
-  padding-right: 2px;
 }
 
 .theme-swatch {
@@ -1380,10 +1195,6 @@ body {
 }
 
 @media (max-width: 960px) {
-  .theme-dock-buttons {
-    grid-template-columns: repeat(3, auto);
-  }
-
   .catalog-topbar-row {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1434,5 +1245,48 @@ body {
   .theme-dock {
     right: 8px;
     bottom: 8px;
+  }
+}
+
+
+.brand-mark-logo {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+}
+
+.brand-logo-image {
+  display: block;
+  height: 58px;
+  width: auto;
+  object-fit: contain;
+}
+
+.footer-grid-logo {
+  align-items: start;
+}
+
+.footer-brand-block {
+  display: grid;
+  gap: 12px;
+}
+
+.footer-logo-image {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+}
+
+.site-footer .footer-copy {
+  max-width: 40ch;
+}
+
+@media (max-width: 820px) {
+  .brand-logo-image {
+    height: 46px;
+  }
+
+  .footer-logo-image {
+    width: min(100%, 260px);
   }
 }
