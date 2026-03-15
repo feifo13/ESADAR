@@ -110,12 +110,12 @@ export default function HomePage() {
 
   return (
     <div className="home-page page-stack page-stack-wide">
-      <section className="hero-strip container">
+      {/* <section className="hero-strip container">
         <div>
           <p className="section-kicker">ESADAR</p>
           <h1>Sportswear y ropa moderna seleccionada en Estados Unidos.</h1>
         </div>
-      </section>
+      </section> */}
 
       <section className="catalog-topbar-shell">
         <div className="container catalog-topbar-row">
@@ -124,7 +124,9 @@ export default function HomePage() {
             className="input search-input-main"
             placeholder="Buscar por título, marca o categoría"
             value={filters.search}
-            onChange={(event) => updateFilterField("search", event.target.value)}
+            onChange={(event) =>
+              updateFilterField("search", event.target.value)
+            }
           />
 
           <select
