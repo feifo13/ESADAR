@@ -43,6 +43,7 @@ export const THEME_OPTIONS = [
   'white-flare',
   'white-boardwalk',
   'white-atlantic',
+  'comic-pop',
 ];
 
 

@@ -45,6 +45,7 @@ const OPTIONS = [
   { id: 'white-flare', label: 'White Flare', swatch: ['#ffffff', '#00a7b3', '#fc4c02'] },
   { id: 'white-boardwalk', label: 'White Boardwalk', swatch: ['#fffefb', '#12496f', '#ff7a1f'] },
   { id: 'white-atlantic', label: 'White Atlantic', swatch: ['#f8fbff', '#008da3', '#ff7340'] },
+  { id: 'comic-pop', label: 'Comic Pop', swatch: ['#ffe55c', '#12bbff', '#ff5b3a'] },
 ];
 
 export default function ThemeDock() {
