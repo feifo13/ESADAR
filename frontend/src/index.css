@@ -1362,6 +1362,25 @@ button,
   --field-placeholder: #5c6871;
 }
 
+:root[data-theme='comic-sharp'] {
+  --bg: #f7df57;
+  --surface: #fffdf4;
+  --surface-soft: #fff4c1;
+  --text: #0d1520;
+  --muted: #4f5d68;
+  --border: #0d1520;
+  --aqua: #12bbff;
+  --orange: #ff5b3a;
+  --navy: #0e56d8;
+  --shadow: 8px 8px 0 #0d1520;
+  --radius: 0px;
+  --field-bg: #fffef8;
+  --field-bg-soft: #fff7d5;
+  --field-option-bg: #fffef8;
+  --field-text: #0d1520;
+  --field-placeholder: #5c6871;
+}
+
 body {
   background: linear-gradient(180deg, rgba(0, 34, 68, 0.28), transparent 180px), var(--bg);
 }
@@ -2022,6 +2041,203 @@ body {
   :root[data-theme='comic-pop'] .theme-dock,
   :root[data-theme='comic-pop'] .catalog-topbar-shell,
   :root[data-theme='comic-pop'] .brand-block--large {
+    box-shadow: 5px 5px 0 rgba(13, 21, 32, 0.95) !important;
+  }
+}
+
+
+/* === Comic Sharp theme === */
+:root[data-theme='comic-sharp'] body {
+  background:
+    radial-gradient(circle at 2px 2px, rgba(13, 21, 32, 0.18) 1.4px, transparent 1.5px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+    var(--bg);
+  background-size: 18px 18px, auto, auto;
+}
+
+:root[data-theme='comic-sharp'] .site-header,
+:root[data-theme='comic-sharp'] .catalog-topbar-shell,
+:root[data-theme='comic-sharp'] .theme-dock {
+  background: color-mix(in srgb, var(--surface) 94%, white 6%);
+  border: 3px solid var(--border);
+  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95);
+}
+
+:root[data-theme='comic-sharp'] .site-header {
+  border-inline: 0;
+  border-top: 0;
+}
+
+:root[data-theme='comic-sharp'] .theme-dock {
+  padding: 12px;
+}
+
+:root[data-theme='comic-sharp'] .section-card,
+:root[data-theme='comic-sharp'] .nested-card,
+:root[data-theme='comic-sharp'] .input,
+:root[data-theme='comic-sharp'] .button,
+:root[data-theme='comic-sharp'] .ghost-button,
+:root[data-theme='comic-sharp'] .admin-tab,
+:root[data-theme='comic-sharp'] .badge,
+:root[data-theme='comic-sharp'] .article-card,
+:root[data-theme='comic-sharp'] .gallery-main,
+:root[data-theme='comic-sharp'] .gallery-thumb,
+:root[data-theme='comic-sharp'] .checkout-item,
+:root[data-theme='comic-sharp'] .radio-card,
+:root[data-theme='comic-sharp'] .stat-card,
+:root[data-theme='comic-sharp'] .sticky-panel,
+:root[data-theme='comic-sharp'] .view-toggle button,
+:root[data-theme='comic-sharp'] .checkbox-chip,
+:root[data-theme='comic-sharp'] .catalog-topbar-shell,
+:root[data-theme='comic-sharp'] .theme-swatch,
+:root[data-theme='comic-sharp'] .offer-page .detail-sidebar-article,
+:root[data-theme='comic-sharp'] .admin-row-card,
+:root[data-theme='comic-sharp'] .brand-block--large,
+:root[data-theme='comic-sharp'] .pill,
+:root[data-theme='comic-sharp'] .about-card,
+:root[data-theme='comic-sharp'] .checkout-item img,
+:root[data-theme='comic-sharp'] .admin-row-card img,
+:root[data-theme='comic-sharp'] .article-card-media,
+:root[data-theme='comic-sharp'] .gallery-arrows button {
+  border-radius: 0 !important;
+  border: 3px solid var(--border) !important;
+  box-shadow: 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+}
+
+:root[data-theme='comic-sharp'] .button,
+:root[data-theme='comic-sharp'] .ghost-button,
+:root[data-theme='comic-sharp'] .admin-tab,
+:root[data-theme='comic-sharp'] .view-toggle button,
+:root[data-theme='comic-sharp'] .theme-swatch {
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease;
+}
+
+:root[data-theme='comic-sharp'] .button:hover,
+:root[data-theme='comic-sharp'] .ghost-button:hover,
+:root[data-theme='comic-sharp'] .admin-tab:hover,
+:root[data-theme='comic-sharp'] .view-toggle button:hover,
+:root[data-theme='comic-sharp'] .theme-swatch:hover,
+:root[data-theme='comic-sharp'] .article-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 rgba(13, 21, 32, 0.95) !important;
+}
+
+:root[data-theme='comic-sharp'] .button-primary,
+:root[data-theme='comic-sharp'] .view-toggle button.active,
+:root[data-theme='comic-sharp'] .admin-tab.active {
+  background: linear-gradient(135deg, var(--orange), #ff8a3f);
+  border-color: var(--border) !important;
+  color: #fffef7;
+}
+
+:root[data-theme='comic-sharp'] .button-secondary,
+:root[data-theme='comic-sharp'] .ghost-button,
+:root[data-theme='comic-sharp'] .checkbox-chip,
+:root[data-theme='comic-sharp'] .view-toggle button,
+:root[data-theme='comic-sharp'] .input,
+:root[data-theme='comic-sharp'] .sort-select,
+:root[data-theme='comic-sharp'] .filters-sidebar .input,
+:root[data-theme='comic-sharp'] .filters-sidebar select.input {
+  background: #fffef8;
+}
+
+:root[data-theme='comic-sharp'] .input:focus,
+:root[data-theme='comic-sharp'] .sort-select:focus,
+:root[data-theme='comic-sharp'] .gallery-thumb.active {
+  border-color: var(--navy) !important;
+  box-shadow: 0 0 0 4px rgba(14, 86, 216, 0.18), 8px 8px 0 rgba(13, 21, 32, 0.95) !important;
+}
+
+:root[data-theme='comic-sharp'] .article-grid,
+:root[data-theme='comic-sharp'] .rail-scroller,
+:root[data-theme='comic-sharp'] .gallery-thumbs,
+:root[data-theme='comic-sharp'] .about-collage {
+  gap: 22px;
+}
+
+:root[data-theme='comic-sharp'] .article-card {
+  overflow: hidden;
+  background: #fffef8;
+  border-top-width: 3px !important;
+}
+
+:root[data-theme='comic-sharp'] .article-card-body {
+  padding: 16px;
+}
+
+:root[data-theme='comic-sharp'] .gallery-main {
+  background:
+    radial-gradient(circle at 2px 2px, rgba(18, 187, 255, 0.16) 1.2px, transparent 1.3px),
+    #fffef8;
+  background-size: 16px 16px;
+}
+
+:root[data-theme='comic-sharp'] .pill-featured {
+  background: #12bbff;
+  color: #fffef7;
+}
+
+:root[data-theme='comic-sharp'] .pill-offer {
+  background: #ffec7a;
+  color: var(--text);
+}
+
+:root[data-theme='comic-sharp'] .pill-discount {
+  background: #ff5b3a;
+  color: #fffef7;
+}
+
+:root[data-theme='comic-sharp'] .section-kicker,
+:root[data-theme='comic-sharp'] .eyebrow,
+:root[data-theme='comic-sharp'] .theme-dock-label,
+:root[data-theme='comic-sharp'] .article-card-title,
+:root[data-theme='comic-sharp'] .detail-titlebar h1,
+:root[data-theme='comic-sharp'] .catalog-summary-row h2,
+:root[data-theme='comic-sharp'] .brand-main,
+:root[data-theme='comic-sharp'] .brand-kicker,
+:root[data-theme='comic-sharp'] .button,
+:root[data-theme='comic-sharp'] .ghost-button {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme='comic-sharp'] .detail-titlebar h1,
+:root[data-theme='comic-sharp'] .catalog-summary-row h2,
+:root[data-theme='comic-sharp'] .article-card-title,
+:root[data-theme='comic-sharp'] .brand-main {
+  font-weight: 800;
+  text-shadow: 2px 2px 0 rgba(18, 187, 255, 0.18);
+}
+
+:root[data-theme='comic-sharp'] .hero-strip--logo .brand-block--large {
+  max-width: min(980px, 100%);
+  padding: clamp(18px, 3vw, 28px);
+  background:
+    radial-gradient(circle at 2px 2px, rgba(255, 91, 58, 0.14) 1.2px, transparent 1.3px),
+    #fffef8;
+  background-size: 18px 18px;
+}
+
+:root[data-theme='comic-sharp'] .brand-logo--large {
+  filter: drop-shadow(6px 6px 0 rgba(13, 21, 32, 0.22));
+}
+
+:root[data-theme='comic-sharp'] .offer-page .detail-sidebar-article {
+  background:
+    radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.16) 1.2px, transparent 1.3px),
+    linear-gradient(180deg, var(--navy), #0b3f9e);
+  background-size: 16px 16px, auto;
+}
+
+@media (max-width: 640px) {
+  :root[data-theme='comic-sharp'] .section-card,
+  :root[data-theme='comic-sharp'] .nested-card,
+  :root[data-theme='comic-sharp'] .article-card,
+  :root[data-theme='comic-sharp'] .gallery-main,
+  :root[data-theme='comic-sharp'] .sticky-panel,
+  :root[data-theme='comic-sharp'] .theme-dock,
+  :root[data-theme='comic-sharp'] .catalog-topbar-shell,
+  :root[data-theme='comic-sharp'] .brand-block--large {
     box-shadow: 5px 5px 0 rgba(13, 21, 32, 0.95) !important;
   }
 }

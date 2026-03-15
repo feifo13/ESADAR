@@ -44,6 +44,7 @@ export const THEME_OPTIONS = [
   'white-boardwalk',
   'white-atlantic',
   'comic-pop',
+  'comic-sharp',
 ];
 
 
