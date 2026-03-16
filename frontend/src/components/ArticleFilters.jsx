@@ -1,6 +1,8 @@
 import { BRAND_OPTIONS, CATEGORY_OPTIONS, SIZE_OPTIONS } from '../constants/lookups.js';
 
 const defaultFilters = {
+  search: '',
+  sort: 'intake_desc',
   categoryId: '',
   brandId: '',
   sizeId: '',
@@ -9,7 +11,7 @@ const defaultFilters = {
   featured: false,
 };
 
-export default function ArticleFilters({ value, onChange, onReset }) {
+export default function ArticleFilters({ value, onChange, onReset, activeCount = 0 }) {
   const filters = { ...defaultFilters, ...value };
 
   function updateField(name, nextValue) {
@@ -19,8 +21,13 @@ export default function ArticleFilters({ value, onChange, onReset }) {
   return (
     <aside className="filters-sidebar">
       <div className="filters-sidebar-head">
-        <p className="section-kicker">Filtros</p>
-        <button type="button" className="ghost-button" onClick={onReset}>Limpiar</button>
+        <div>
+          <p className="section-kicker">Filtros</p>
+          <p className="filters-sidebar-meta">{activeCount} activos</p>
+        </div>
+        <button type="button" className="ghost-button" onClick={onReset}>
+          Limpiar
+        </button>
       </div>
 
       <div className="filters-sidebar-group">

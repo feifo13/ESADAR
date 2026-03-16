@@ -1,46 +1,59 @@
+import { useMemo, useState } from 'react';
+import { storage } from '../lib/storage.js';
 import { useTheme } from '../contexts/ThemeContext.jsx';
-import { THEME_DOCK_OPTIONS } from '../constants/themeOptions.js';
 
-const THEME_GROUPS = [
-  {
-    id: 'base',
-    label: 'Base',
-    description: 'Paletas generales',
-    options: THEME_DOCK_OPTIONS.filter((option) => !option.id.startsWith('comic-sharp-')),
-  },
-  {
-    id: 'comic-sharp-light',
-    label: 'Comic Sharp Light',
-    description: 'Variantes claras',
-    options: THEME_DOCK_OPTIONS.filter((option) => option.id.startsWith('comic-sharp-light-')),
-  },
-  {
-    id: 'comic-sharp-dark',
-    label: 'Comic Sharp Dark',
-    description: 'Variantes oscuras',
-    options: THEME_DOCK_OPTIONS.filter((option) => option.id.startsWith('comic-sharp-dark-')),
-  },
-].filter((group) => group.options.length > 0);
+const DOCK_STORAGE_KEY = 'esadar-theme-dock-hidden';
 
 export default function ThemeDock() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, themeGroups, randomTheme } = useTheme();
+  const [hidden, setHidden] = useState(() => storage.get(DOCK_STORAGE_KEY, false));
+  const groups = useMemo(() => themeGroups || [], [themeGroups]);
+
+  function toggleHidden() {
+    const nextValue = !hidden;
+    setHidden(nextValue);
+    storage.set(DOCK_STORAGE_KEY, nextValue);
+  }
+
+  if (hidden) {
+    return (
+      <button
+        type="button"
+        className="theme-dock-toggle"
+        onClick={toggleHidden}
+        aria-label="Mostrar themes"
+      >
+        Themes
+      </button>
+    );
+  }
 
   return (
     <aside className="theme-dock" aria-label="Selector de paleta">
-      <div className="theme-dock-label">Paletas</div>
-      <div className="theme-dock-groups">
-        {THEME_GROUPS.map((group) => (
-          <section key={group.id} className="theme-dock-group" aria-label={group.label}>
-            <div className="theme-dock-group-head">
-              <div>
-                <p className="theme-dock-group-title">{group.label}</p>
-                <p className="theme-dock-group-description">{group.description}</p>
-              </div>
-              <span className="theme-dock-group-count">{group.options.length}</span>
-            </div>
+      <div className="theme-dock-head">
+        <div>
+          <div className="theme-dock-label">Themes</div>
+          <p className="theme-dock-copy">Base + Comic Sharp + Sharp Lab</p>
+        </div>
+        <div className="theme-dock-actions">
+          <button type="button" className="theme-dock-mini-button" onClick={randomTheme}>
+            Random
+          </button>
+          <button type="button" className="theme-dock-mini-button" onClick={toggleHidden}>
+            Ocultar
+          </button>
+        </div>
+      </div>
 
+      <div className="theme-dock-groups">
+        {groups.map((group) => (
+          <section key={group.section} className="theme-dock-group">
+            <div className="theme-dock-group-head">
+              <strong>{group.section}</strong>
+              <span>{group.items.length}</span>
+            </div>
             <div className="theme-dock-buttons">
-              {group.options.map((option) => (
+              {group.items.map((option) => (
                 <button
                   key={option.id}
                   type="button"
@@ -50,7 +63,7 @@ export default function ThemeDock() {
                   aria-label={option.label}
                 >
                   {option.swatch.map((color) => (
-                    <span key={color} style={{ background: color }} />
+                    <span key={`${option.id}-${color}`} style={{ background: color }} />
                   ))}
                 </button>
               ))}

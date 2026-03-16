@@ -201,7 +201,7 @@ export default function CheckoutPage() {
   function renderSummaryStep() {
     return (
       <div className="checkout-step-grid">
-        <div className="checkout-items-block">
+        <div className="checkout-items-block section-card nested-card">
           <div className="section-heading compact-heading">
             <div>
               <p className="section-kicker">Resumen</p>
@@ -238,7 +238,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <aside className="checkout-side-summary section-card nested-card checkout-white-card">
+        <aside className="checkout-side-summary section-card nested-card">
           <p className="section-kicker">Totales</p>
           <div className="order-summary-card checkout-summary-plain">
             <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p>
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
   function renderBuyerStep() {
     if (isAuthenticated) {
       return (
-        <div className="section-card nested-card checkout-white-card">
+        <div className="section-card nested-card">
           <p className="section-kicker">Comprador autenticado</p>
           <h2>{user.firstName} {user.lastName}</h2>
           <div className="detail-meta-list checkout-meta-list">
@@ -267,7 +267,7 @@ export default function CheckoutPage() {
     }
 
     return (
-      <div className="section-card nested-card checkout-white-card">
+      <div className="section-card nested-card">
         <p className="section-kicker">Datos del comprador</p>
         <div className="form-grid-two">
           <label className="field-group"><span>Nombre</span><input className="input" value={guest.firstName} onChange={(event) => setGuest((current) => ({ ...current, firstName: event.target.value }))} required /></label>
@@ -285,7 +285,7 @@ export default function CheckoutPage() {
 
   function renderPaymentStep() {
     return (
-      <div className="section-card nested-card checkout-white-card">
+      <div className="section-card nested-card">
         <p className="section-kicker">Medio seleccionado</p>
         <div className="stack-gap-sm">
           {PAYMENT_METHOD_OPTIONS.map((option) => (
@@ -308,7 +308,7 @@ export default function CheckoutPage() {
 
   function renderShippingStep() {
     return (
-      <div className="section-card nested-card checkout-white-card">
+      <div className="section-card nested-card">
         <p className="section-kicker">Envío</p>
         <div className="stack-gap-sm">
           {SHIPPING_METHOD_OPTIONS.map((option) => (
@@ -329,7 +329,7 @@ export default function CheckoutPage() {
   function renderConfirmationStep() {
     return (
       <div className="checkout-confirmation-grid">
-        <div className="section-card nested-card checkout-confirm-panel checkout-white-card">
+        <div className="section-card nested-card checkout-confirm-panel">
           <p className="section-kicker">Orden pendiente de aprobación</p>
           <div className="detail-meta-list checkout-meta-list">
             <div><span>Artículos</span><strong>{items.length}</strong></div>
@@ -342,7 +342,7 @@ export default function CheckoutPage() {
           <p className="muted-copy">La reserva dura 24 horas y la orden será validada manualmente desde backoffice.</p>
         </div>
 
-        <aside className="section-card nested-card checkout-confirm-summary checkout-white-card">
+        <aside className="section-card nested-card checkout-confirm-summary">
           <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p>
           <p className="summary-line"><span>Envío</span><strong>{formatCurrency(shipping?.cost || 0)}</strong></p>
           <p className="summary-line total"><span>Total</span><strong>{formatCurrency(total)}</strong></p>
@@ -373,7 +373,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container page-stack checkout-page-stack checkout-white-context">
+    <div className="container page-stack checkout-page-stack">
       <section className="section-card checkout-shell">
         <div className="checkout-shell-header">
           <div>

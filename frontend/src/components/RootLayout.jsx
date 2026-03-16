@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
+import ScrollChrome from './ScrollChrome.jsx';
 
 export default function RootLayout() {
   const location = useLocation();
@@ -17,6 +18,7 @@ export default function RootLayout() {
       </main>
       <Footer />
       <ThemeDock />
+      <ScrollChrome />
     </div>
   );
 }
