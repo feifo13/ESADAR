@@ -21,23 +21,23 @@ export default function ThemeDock() {
         type="button"
         className="theme-dock-toggle"
         onClick={toggleHidden}
-        aria-label="Mostrar themes"
+        aria-label="Mostrar temas"
       >
-        Themes
+        Temas
       </button>
     );
   }
 
   return (
-    <aside className="theme-dock" aria-label="Selector de paleta">
+    <aside className="theme-dock" aria-label="Selector de temas">
       <div className="theme-dock-head">
         <div>
-          <div className="theme-dock-label">Themes</div>
-          <p className="theme-dock-copy">Base + Comic Sharp + Sharp Lab</p>
+          <div className="theme-dock-label">Temas</div>
+          <p className="theme-dock-copy">Base + Comic Sharp + Laboratorio Sharp</p>
         </div>
         <div className="theme-dock-actions">
           <button type="button" className="theme-dock-mini-button" onClick={randomTheme}>
-            Random
+            Aleatorio
           </button>
           <button type="button" className="theme-dock-mini-button" onClick={toggleHidden}>
             Ocultar

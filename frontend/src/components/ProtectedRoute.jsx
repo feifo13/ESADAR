@@ -18,7 +18,7 @@ export default function ProtectedRoute({ children, roles = [] }) {
       <div className="container">
         <div className="section-card centered-card">
           <h2>No tienes acceso a esta vista</h2>
-          <p>Necesitas un rol de backoffice para continuar.</p>
+          <p>Necesitas un perfil de administración para continuar.</p>
         </div>
       </div>
     );

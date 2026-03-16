@@ -5,6 +5,13 @@ import { apiFetch } from '../../lib/api.js';
 import { formatCurrency } from '../../lib/format.js';
 import { resolveAssetUrl } from '../../lib/api.js';
 
+const ARTICLE_STATUS_LABELS = {
+  ACTIVE: 'Activa',
+  INACTIVE: 'Inactiva',
+  RESERVED: 'Reservada',
+  SOLD_OUT: 'Agotada',
+};
+
 export default function AdminArticlesPage() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
@@ -32,12 +39,12 @@ export default function AdminArticlesPage() {
   }, []);
 
   return (
-    <div className="container page-stack">
+    <div className="container page-stack admin-page-shell">
       <AdminToolbar />
       <section className="section-card page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Backoffice</p>
+            <p className="section-kicker">Administración</p>
             <h1>Artículos</h1>
           </div>
           <Link to="/admin/articles/new" className="button button-primary">Nuevo artículo</Link>
@@ -58,7 +65,7 @@ export default function AdminArticlesPage() {
               <div>
                 <p className="eyebrow">{article.categoryName}{article.brandName ? ` · ${article.brandName}` : ''}</p>
                 <h3>{article.title}</h3>
-                <p className="muted-copy">Estado: {article.status} · Stock disponible: {article.quantityAvailable}</p>
+                <p className="muted-copy">Estado: {ARTICLE_STATUS_LABELS[article.status] || article.status} · Stock disponible: {article.quantityAvailable}</p>
               </div>
               <div className="admin-row-actions">
                 <strong>{formatCurrency(article.discountedPrice || article.salePrice)}</strong>

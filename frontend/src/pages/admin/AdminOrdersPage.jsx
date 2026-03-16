@@ -33,21 +33,21 @@ export default function AdminOrdersPage() {
   }, [status]);
 
   return (
-    <div className="container page-stack">
+    <div className="container page-stack admin-page-shell">
       <AdminToolbar />
       <section className="section-card page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Backoffice</p>
+            <p className="section-kicker">Administración</p>
             <h1>Órdenes</h1>
           </div>
           <select className="input input-inline" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Todos los estados</option>
-            <option value="RESERVED">RESERVED</option>
-            <option value="APPROVED">APPROVED</option>
-            <option value="SHIPPED">SHIPPED</option>
-            <option value="CANCELLED">CANCELLED</option>
-            <option value="EXPIRED">EXPIRED</option>
+            <option value="RESERVED">Reservadas</option>
+            <option value="APPROVED">Aprobadas</option>
+            <option value="SHIPPED">Enviadas</option>
+            <option value="CANCELLED">Canceladas</option>
+            <option value="EXPIRED">Vencidas</option>
           </select>
         </div>
 
@@ -67,7 +67,7 @@ export default function AdminOrdersPage() {
               <div className="admin-row-actions">
                 <OrderStatusBadge status={order.orderStatus} />
                 <strong>{formatCurrency(order.total)}</strong>
-                <Link to={`/admin/orders/${order.id}`} className="button button-secondary">Ver detalle</Link>
+                <Link to={`/admin/orders/${order.id}`} className="button button-secondary">Ver orden</Link>
               </div>
             </article>
           ))}

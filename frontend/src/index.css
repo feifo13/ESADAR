@@ -3762,3 +3762,184 @@ body {
     box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
   }
 }
+
+
+/* === Visual polish pass: transiciones, transparencias, carrito y administración === */
+html {
+  scroll-behavior: smooth;
+}
+
+body,
+.page-shell,
+.app-shell {
+  background-color: var(--bg);
+  transition: background-color var(--motion-smooth) var(--ease-smooth), color var(--motion-smooth) var(--ease-smooth);
+}
+
+.page-transition-shell {
+  min-height: 100%;
+  animation: page-fade-in 340ms var(--ease-smooth);
+  will-change: opacity, transform;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.996);
+    filter: saturate(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: saturate(1);
+  }
+}
+
+.site-header,
+.sticky-panel,
+.theme-dock,
+.catalog-topbar-shell {
+  background: color-mix(in srgb, var(--surface) 74%, transparent) !important;
+}
+
+.modal-overlay {
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.button,
+.ghost-button,
+.admin-tab,
+.view-toggle button,
+.quick-filter-chip,
+.active-filter-chip,
+.theme-dock-mini-button,
+.theme-dock-toggle,
+.back-to-top-button {
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.button-primary,
+.button.button-primary,
+button.button-primary,
+a.button.button-primary {
+  color: var(--button-primary-text) !important;
+}
+
+.button-secondary,
+.ghost-button,
+.admin-tab,
+.view-toggle button,
+.quick-filter-chip,
+.active-filter-chip,
+.theme-dock-mini-button,
+.theme-dock-toggle,
+.back-to-top-button {
+  color: var(--button-secondary-text) !important;
+}
+
+.gallery-thumb,
+.gallery-thumb img,
+.checkout-item img,
+.admin-row-card img {
+  border-radius: 0 !important;
+}
+
+.cart-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.cart-button--pulse {
+  animation: cart-button-bump 760ms cubic-bezier(.2,.9,.2,1);
+}
+
+.badge--pulse {
+  animation: cart-badge-pop 760ms cubic-bezier(.16,1,.3,1);
+}
+
+.button-cart-added {
+  animation: add-to-cart-pop 820ms cubic-bezier(.16,1,.3,1);
+}
+
+@keyframes add-to-cart-pop {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(0,0,0,0); }
+  28% { transform: scale(1.04) translateY(-1px); box-shadow: 0 12px 28px rgba(0,0,0,0.16); }
+  55% { transform: scale(0.985); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(0,0,0,0); }
+}
+
+@keyframes cart-button-bump {
+  0% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-1px) scale(1.03); }
+  55% { transform: translateY(0) scale(0.99); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes cart-badge-pop {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(252, 76, 2, 0); }
+  30% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(252, 76, 2, 0.12); }
+  60% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(252, 76, 2, 0); }
+  100% { transform: scale(1); }
+}
+
+.admin-page-shell .section-card,
+.admin-page-shell .nested-card,
+.admin-page-shell .history-row,
+.admin-page-shell .checkout-side-summary,
+.admin-page-shell .checkout-confirm-summary {
+  background: #ffffff !important;
+  color: #102b34 !important;
+  border-color: rgba(16, 43, 52, 0.12) !important;
+}
+
+.admin-page-shell .input,
+.admin-page-shell .textarea,
+.admin-page-shell select.input,
+.admin-page-shell input.input {
+  background: #ffffff !important;
+  color: #102b34 !important;
+  border-color: rgba(16, 43, 52, 0.16) !important;
+}
+
+.admin-page-shell .muted-copy,
+.admin-page-shell .inline-note,
+.admin-page-shell .field-label,
+.admin-page-shell .section-kicker,
+.admin-page-shell .history-row span {
+  color: #56737a !important;
+}
+
+.admin-page-shell .admin-row-card strong,
+.admin-page-shell .section-card h1,
+.admin-page-shell .section-card h2,
+.admin-page-shell .section-card h3,
+.admin-page-shell .section-card h4 {
+  color: #102b34 !important;
+}
+
+.admin-page-shell .admin-toolbar {
+  padding: 6px;
+  border-radius: 20px;
+  background: color-mix(in srgb, #ffffff 88%, transparent);
+  border: 1px solid rgba(16, 43, 52, 0.1);
+}
+
+.admin-page-shell .admin-tab {
+  background: rgba(255,255,255,0.84);
+}
+
+.admin-page-shell .admin-tab.active {
+  background: var(--navy);
+  color: #ffffff !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-shell,
+  .button-cart-added,
+  .cart-button--pulse,
+  .badge--pulse {
+    animation: none !important;
+  }
+}

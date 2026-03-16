@@ -133,12 +133,12 @@ export default function AdminArticleFormPage() {
   }
 
   return (
-    <div className="container page-stack">
+    <div className="container page-stack admin-page-shell">
       <AdminToolbar />
       <form className="section-card page-stack" onSubmit={handleSubmit}>
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Backoffice</p>
+            <p className="section-kicker">Administración</p>
             <h1>{isEdit ? 'Editar artículo' : 'Nuevo artículo'}</h1>
           </div>
           <Link to="/admin/articles" className="ghost-button linklike">Volver</Link>
@@ -165,7 +165,7 @@ export default function AdminArticleFormPage() {
           <label className="field-group"><span>Cantidad disponible</span><input className="input" type="number" min="0" value={form.quantityAvailable} onChange={(event) => update('quantityAvailable', event.target.value)} /></label>
           <label className="field-group"><span>Cantidad reservada</span><input className="input" type="number" min="0" value={form.quantityReserved} onChange={(event) => update('quantityReserved', event.target.value)} /></label>
           <label className="field-group"><span>Cantidad vendida</span><input className="input" type="number" min="0" value={form.quantitySold} onChange={(event) => update('quantitySold', event.target.value)} /></label>
-          <label className="field-group"><span>Estado</span><select className="input" value={form.status} onChange={(event) => update('status', event.target.value)}><option value="ACTIVE">ACTIVA</option><option value="INACTIVE">INACTIVA</option><option value="RESERVED">RESERVED</option><option value="SOLD_OUT">SOLD_OUT</option></select></label>
+          <label className="field-group"><span>Estado</span><select className="input" value={form.status} onChange={(event) => update('status', event.target.value)}><option value="ACTIVE">ACTIVA</option><option value="INACTIVE">INACTIVA</option><option value="RESERVED">RESERVADA</option><option value="SOLD_OUT">AGOTADA</option></select></label>
           <label className="field-group"><span>Imágenes</span><input className="input" type="file" multiple accept="image/*" onChange={(event) => setImages(event.target.files || [])} /></label>
           <label className="field-group checkbox-field"><input type="checkbox" checked={form.isFeatured} onChange={(event) => update('isFeatured', event.target.checked)} /><span>Destacado</span></label>
           <label className="field-group checkbox-field"><input type="checkbox" checked={form.allowOffers && !(form.discountType !== 'NONE' && Number(form.discountValue) > 0)} onChange={(event) => update('allowOffers', event.target.checked)} disabled={form.discountType !== 'NONE' && Number(form.discountValue) > 0} /><span>Permite ofertas</span></label>

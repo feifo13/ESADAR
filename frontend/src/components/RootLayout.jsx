@@ -14,7 +14,9 @@ export default function RootLayout() {
     <div className="app-shell">
       <Header hideBrand={isHome && heroLogoVisible} />
       <main className="page-shell">
-        <Outlet context={{ setHeroLogoVisible }} />
+        <div key={location.pathname} className="page-transition-shell">
+          <Outlet context={{ setHeroLogoVisible }} />
+        </div>
       </main>
       <Footer />
       <ThemeDock />

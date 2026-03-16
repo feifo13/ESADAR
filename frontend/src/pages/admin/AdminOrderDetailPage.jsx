@@ -5,6 +5,15 @@ import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
 import { apiFetch, resolveAssetUrl } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
+const HISTORY_STATUS_LABELS = {
+  RESERVED: 'Reservada',
+  PENDING: 'Pendiente',
+  APPROVED: 'Aprobada',
+  SHIPPED: 'Enviada',
+  CANCELLED: 'Cancelada',
+  EXPIRED: 'Vencida',
+};
+
 export default function AdminOrderDetailPage() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
@@ -72,7 +81,7 @@ export default function AdminOrderDetailPage() {
   }
 
   return (
-    <div className="container page-stack">
+    <div className="container page-stack admin-page-shell">
       <AdminToolbar />
       <section className="section-card page-stack">
         <div className="section-heading">
@@ -96,7 +105,7 @@ export default function AdminOrderDetailPage() {
             </div>
 
             <div className="section-card nested-card">
-              <h3>Items</h3>
+              <h3>Artículos</h3>
               <div className="admin-list compact-list">
                 {order.items.map((item) => (
                   <article key={item.id} className="admin-row-card compact-row">
@@ -116,7 +125,7 @@ export default function AdminOrderDetailPage() {
               <div className="history-list">
                 {order.history.map((entry) => (
                   <div key={entry.id} className="history-row">
-                    <strong>{entry.toStatus}</strong>
+                    <strong>{HISTORY_STATUS_LABELS[entry.toStatus] || entry.toStatus}</strong>
                     <span>{entry.reason}</span>
                     <span>{formatDate(entry.changedAt)}</span>
                   </div>
@@ -155,7 +164,7 @@ export default function AdminOrderDetailPage() {
               ) : null}
 
               {order.orderStatus === 'APPROVED' ? (
-                <button type="button" className="button button-primary" onClick={() => runAction('ship')}>Marcar enviada</button>
+                <button type="button" className="button button-primary" onClick={() => runAction('ship')}>Marcar como enviada</button>
               ) : null}
             </div>
           </aside>

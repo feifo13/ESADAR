@@ -43,7 +43,7 @@ export default function ContactPage() {
         <div className="modal-backdrop" onClick={() => setSent(false)}>
           <div className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h2>Consulta enviada</h2>
-            <p>Gracias por escribir. Te responderemos desde el backoffice.</p>
+            <p>Gracias por escribir. Te responderemos desde administración.</p>
             <button type="button" className="button button-primary" onClick={() => setSent(false)}>Cerrar</button>
           </div>
         </div>

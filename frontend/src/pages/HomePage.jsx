@@ -49,7 +49,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [copyState, setCopyState] = useState('');
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -180,7 +179,6 @@ export default function HomePage() {
   }
 
   function resetFilters() {
-    setCopyState('');
     applyFilters({ ...initialFilters });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -190,26 +188,6 @@ export default function HomePage() {
     applyFilters({ ...filters, [key]: resetValue });
   }
 
-  async function copyCurrentSearch() {
-    try {
-      const params = new URLSearchParams();
-      if (filters.search) params.set('search', filters.search);
-      if (filters.sort && filters.sort !== initialFilters.sort) params.set('sort', filters.sort);
-      if (filters.categoryId) params.set('categoryId', filters.categoryId);
-      if (filters.brandId) params.set('brandId', filters.brandId);
-      if (filters.sizeId) params.set('sizeId', filters.sizeId);
-      if (filters.discounted) params.set('discounted', 'true');
-      if (filters.offerable) params.set('offerable', 'true');
-      if (filters.featured) params.set('featured', 'true');
-      const shareUrl = `${window.location.origin}/${params.toString() ? `?${params.toString()}` : ''}`;
-      await navigator.clipboard.writeText(shareUrl);
-      setCopyState('Búsqueda copiada');
-      window.setTimeout(() => setCopyState(''), 1800);
-    } catch {
-      setCopyState('No se pudo copiar');
-      window.setTimeout(() => setCopyState(''), 1800);
-    }
-  }
 
   return (
     <div className="home-page page-stack page-stack-wide">
@@ -249,15 +227,6 @@ export default function HomePage() {
               Lista
             </button>
           </div>
-
-          <div className="catalog-topbar-actions">
-            <button type="button" className="ghost-button" onClick={copyCurrentSearch}>
-              Copiar búsqueda
-            </button>
-            <button type="button" className="ghost-button" onClick={resetFilters}>
-              Limpiar todo
-            </button>
-          </div>
         </div>
       </section>
 
@@ -276,7 +245,6 @@ export default function HomePage() {
               <span>{items.filter((item) => item.allowOffers).length} con ofertas</span>
               <span>{items.filter((item) => item.discountType !== 'NONE').length} con descuento</span>
               <span>{activeFilterCount} filtros activos</span>
-              {copyState ? <span className="catalog-copy-state">{copyState}</span> : null}
             </div>
           </div>
 

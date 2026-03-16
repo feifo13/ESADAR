@@ -339,7 +339,7 @@ export default function CheckoutPage() {
             <div><span>Instrucciones de pago</span><strong>{payment?.instructions}</strong></div>
             <div><span>Entrega</span><strong>{shipping?.instructions}</strong></div>
           </div>
-          <p className="muted-copy">La reserva dura 24 horas y la orden será validada manualmente desde backoffice.</p>
+          <p className="muted-copy">La reserva dura 24 horas y la orden será validada manualmente desde administración.</p>
         </div>
 
         <aside className="section-card nested-card checkout-confirm-summary">

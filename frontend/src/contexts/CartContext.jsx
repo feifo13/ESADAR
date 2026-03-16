@@ -6,6 +6,7 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState(() => storage.get('miami-closet-cart', []));
+  const [cartFx, setCartFx] = useState({ tick: 0, articleId: null, title: '' });
 
   function persist(nextItems) {
     setItems(nextItems);
@@ -16,6 +17,7 @@ export function CartProvider({ children }) {
     () => ({
       items,
       addItem(article, quantity = 1) {
+        setCartFx({ tick: Date.now(), articleId: article.id, title: article.title });
         const existing = items.find((item) => item.articleId === article.id);
         if (existing) {
           persist(
@@ -61,9 +63,10 @@ export function CartProvider({ children }) {
         return items.some((item) => item.articleId === articleId);
       },
       cartCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      cartFx,
       subtotal: items.reduce((sum, item) => sum + Number(item.discountedPrice || 0) * item.quantity, 0),
     }),
-    [items],
+    [items, cartFx],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

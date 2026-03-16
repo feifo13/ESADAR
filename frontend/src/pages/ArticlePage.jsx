@@ -14,6 +14,7 @@ export default function ArticlePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -46,6 +47,12 @@ export default function ArticlePage() {
       ignore = true;
     };
   }, [slugOrId]);
+
+  useEffect(() => {
+    if (!justAdded) return undefined;
+    const timeoutId = window.setTimeout(() => setJustAdded(false), 820);
+    return () => window.clearTimeout(timeoutId);
+  }, [justAdded]);
 
   if (loading) {
     return <div className="container section-card centered-card">Cargando artículo…</div>;
@@ -90,10 +97,11 @@ export default function ArticlePage() {
             <div className="detail-actions detail-actions-article">
               <button
                 type="button"
-                className="button button-primary button-compact"
+                className={`button button-primary button-compact${justAdded ? ' button-cart-added' : ''}`}
                 onClick={() => {
                   addItem(article);
                   setFeedback(isInCart(article.id) ? 'El artículo ya estaba en el carro.' : 'Artículo agregado al carro.');
+                  setJustAdded(true);
                 }}
               >
                 Lo quiero

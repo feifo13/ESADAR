@@ -25,7 +25,7 @@ export default function Footer() {
           <div className="footer-links">
             <Link to="/contact">Contacto</Link>
             <Link to="/about">Sobre nosotros</Link>
-            {isAdmin ? <Link to="/admin/articles">Backoffice</Link> : null}
+            {isAdmin ? <Link to="/admin/articles">Administración</Link> : null}
             <a href="#top">Volver arriba</a>
           </div>
         </div>
