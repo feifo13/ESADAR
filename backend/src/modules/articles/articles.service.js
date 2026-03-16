@@ -47,7 +47,7 @@ function buildPublicFilters(query, includeInactive = false) {
   const params = [];
 
   if (!includeInactive) {
-    clauses.push(`a.status = 'ACTIVE'`);
+    clauses.push(`a.status IN ('ACTIVE', 'SOLD_OUT')`);
   }
 
   if (query.search) {
@@ -84,9 +84,6 @@ function buildPublicFilters(query, includeInactive = false) {
     clauses.push('a.allow_offers = 1');
   }
 
-  if (!includeInactive && query.inStock !== 'false') {
-    clauses.push('a.quantity_available > 0');
-  }
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   return { where, params };
@@ -141,7 +138,7 @@ export async function listPublicArticles({ filters, pagination }) {
 export async function getPublicArticleBySlugOrId(slugOrId) {
   const [rows] = await pool.execute(
     `${publicBaseSelect}
-     WHERE a.status = 'ACTIVE' AND (a.slug = ? OR a.id = ?)
+     WHERE a.status IN ('ACTIVE', 'SOLD_OUT') AND (a.slug = ? OR a.id = ?)
      LIMIT 1`,
     [slugOrId, Number(slugOrId) || 0],
   );

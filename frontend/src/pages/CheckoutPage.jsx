@@ -52,6 +52,9 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [stockDialog, setStockDialog] = useState(null);
+  const [orderDialog, setOrderDialog] = useState(null);
+  const [fireworksActive, setFireworksActive] = useState(false);
 
   const currentStepKey = location.pathname.split('/')[2] || 'resumen';
   const currentStepIndex = Math.max(0, steps.findIndex((step) => step.key === currentStepKey));
@@ -99,7 +102,7 @@ export default function CheckoutPage() {
   }, [guest, shippingMethodId, paymentMethod, notes]);
 
   useEffect(() => {
-    if (!items.length && currentStepKey !== 'resumen') {
+    if (!items.length && currentStepKey !== 'resumen' && !orderDialog) {
       navigate('/checkout/resumen', { replace: true });
       return;
     }
@@ -107,7 +110,7 @@ export default function CheckoutPage() {
     if (currentStepIndex > maxAllowedStepIndex) {
       navigate(`/checkout/${steps[maxAllowedStepIndex].key}`, { replace: true });
     }
-  }, [items.length, currentStepIndex, currentStepKey, maxAllowedStepIndex, navigate]);
+  }, [items.length, currentStepIndex, currentStepKey, maxAllowedStepIndex, navigate, orderDialog]);
 
   function goToStep(index) {
     if (index > maxAllowedStepIndex) return;
@@ -118,7 +121,7 @@ export default function CheckoutPage() {
     setError('');
 
     if (currentStepKey === 'resumen' && !items.length) {
-      setError('Tu carro está vacío.');
+      setError('Tu carrito está vacío.');
       return false;
     }
 
@@ -189,13 +192,40 @@ export default function CheckoutPage() {
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(STORAGE_KEY);
       }
-      setSuccess(`Orden ${response.order.orderNumber} creada. Será redirigido al inicio.`);
-      setTimeout(() => navigate('/'), 1800);
+      setOrderDialog({
+        orderNumber: response.order.orderNumber,
+        message: 'La orden fue registrada correctamente y quedó pendiente de validación.',
+      });
+      setSuccess('Orden creada correctamente.');
     } catch (err) {
       setError(err.message || 'No se pudo crear la orden');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function showStockDialog(result) {
+    if (!result || result.ok) return;
+    if (result.code === 'OUT_OF_STOCK') {
+      setStockDialog({
+        title: 'Sin stock disponible',
+        message: 'Este artículo ya no tiene unidades disponibles para la compra.',
+      });
+      return;
+    }
+
+    setStockDialog({
+      title: 'Cantidad máxima disponible',
+      message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} de este artículo con el stock actual.`,
+    });
+  }
+
+  function acceptOrderCelebration() {
+    setOrderDialog(null);
+    setFireworksActive(true);
+    window.setTimeout(() => {
+      navigate('/', { replace: true, state: { replayIntro: true, replayIntroReason: 'order-complete' } });
+    }, 1800);
   }
 
   function renderSummaryStep() {
@@ -223,8 +253,12 @@ export default function CheckoutPage() {
                         className="input input-small"
                         type="number"
                         min="1"
+                        max={item.maxQuantity || item.quantity}
                         value={item.quantity}
-                        onChange={(event) => updateQuantity(item.articleId, Number(event.target.value || 1))}
+                        onChange={(event) => {
+                          const result = updateQuantity(item.articleId, Number(event.target.value || 1));
+                          showStockDialog(result);
+                        }}
                       />
                     </label>
                     <button type="button" className="ghost-button" onClick={() => removeItem(item.articleId)}>
@@ -360,11 +394,11 @@ export default function CheckoutPage() {
     return renderSummaryStep();
   }
 
-  if (!items.length) {
+  if (!items.length && !orderDialog) {
     return (
       <div className="container">
         <div className="section-card centered-card checkout-empty-card">
-          <h1>Tu carro está vacío</h1>
+          <h1>Tu carrito está vacío</h1>
           <p>Cuando agregues prendas aparecerán aquí con resumen de orden.</p>
           <Link className="button button-primary" to="/">Volver al catálogo</Link>
         </div>
@@ -373,70 +407,113 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container page-stack checkout-page-stack">
-      <section className="section-card checkout-shell">
-        <div className="checkout-shell-header">
-          <div>
-            <p className="section-kicker">Proceso de compra</p>
-            <h1>{currentStep.label}</h1>
-          </div>
-          <p className="muted-copy checkout-shell-copy">Paso {currentStepIndex + 1} de {steps.length}</p>
-        </div>
-
-        <div className="checkout-steps-row">
-          {steps.map((step, index) => {
-            const isActive = index === currentStepIndex;
-            const isEnabled = index <= maxAllowedStepIndex;
-            const isDone = index < currentStepIndex && index <= maxAllowedStepIndex;
-
-            return (
-              <button
-                key={step.key}
-                type="button"
-                className={`checkout-step-chip${isActive ? ' active' : ''}${isDone ? ' done' : ''}`}
-                disabled={!isEnabled}
-                onClick={() => goToStep(index)}
-              >
-                <span>{step.kicker}</span>
-                <strong>{step.label}</strong>
-              </button>
-            );
-          })}
-        </div>
-
-        {renderCurrentStep()}
-
-        <div className="checkout-navigation">
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={handleBack}
-            disabled={currentStepIndex === 0 || submitting}
-          >
-            Anterior
-          </button>
-
-          <div className="checkout-navigation-status">
-            {error ? <p className="error-copy">{error}</p> : null}
-            {success ? <p className="success-copy">{success}</p> : null}
+    <>
+      <div className="container page-stack checkout-page-stack">
+        <section className="section-card checkout-shell">
+          <div className="checkout-shell-header">
+            <div>
+              <p className="section-kicker">Proceso de compra</p>
+              <h1>{currentStep.label}</h1>
+            </div>
+            <p className="muted-copy checkout-shell-copy">Paso {currentStepIndex + 1} de {steps.length}</p>
           </div>
 
-          {currentStepKey === 'confirmacion' ? (
+          <div className="checkout-steps-row">
+            {steps.map((step, index) => {
+              const isActive = index === currentStepIndex;
+              const isEnabled = index <= maxAllowedStepIndex;
+              const isDone = index < currentStepIndex && index <= maxAllowedStepIndex;
+
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  className={`checkout-step-chip${isActive ? ' active' : ''}${isDone ? ' done' : ''}`}
+                  disabled={!isEnabled}
+                  onClick={() => goToStep(index)}
+                >
+                  <span>{step.kicker}</span>
+                  <strong>{step.label}</strong>
+                </button>
+              );
+            })}
+          </div>
+
+          {renderCurrentStep()}
+
+          <div className="checkout-navigation">
             <button
               type="button"
-              className="button button-primary"
-              onClick={handleConfirmOrder}
-              disabled={submitting}
+              className="button button-secondary"
+              onClick={handleBack}
+              disabled={currentStepIndex === 0 || submitting}
             >
-              {submitting ? 'Creando orden…' : 'Confirmar orden'}
+              Anterior
             </button>
-          ) : (
-            <button type="button" className="button button-primary" onClick={handleNext}>
-              Siguiente
-            </button>
-          )}
+
+            <div className="checkout-navigation-status">
+              {error ? <p className="error-copy">{error}</p> : null}
+              {success ? <p className="success-copy">{success}</p> : null}
+            </div>
+
+            {currentStepKey === 'confirmacion' ? (
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={handleConfirmOrder}
+                disabled={submitting}
+              >
+                {submitting ? 'Creando orden…' : 'Confirmar orden'}
+              </button>
+            ) : (
+              <button type="button" className="button button-primary" onClick={handleNext}>
+                Siguiente
+              </button>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {stockDialog ? (
+        <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
+          <div className="dialog-card" onClick={(event) => event.stopPropagation()}>
+            <p className="section-kicker">Carrito</p>
+            <h3>{stockDialog.title}</h3>
+            <p className="muted-copy dialog-copy">{stockDialog.message}</p>
+            <div className="dialog-actions">
+              <button type="button" className="button button-primary" onClick={() => setStockDialog(null)}>
+                Entendido
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
-    </div>
+      ) : null}
+
+      {orderDialog ? (
+        <div className="dialog-backdrop" onClick={(event) => event.stopPropagation()}>
+          <div className="dialog-card dialog-card--success" onClick={(event) => event.stopPropagation()}>
+            <p className="section-kicker">Orden confirmada</p>
+            <h3>{orderDialog.orderNumber}</h3>
+            <p className="muted-copy dialog-copy">{orderDialog.message}</p>
+            <div className="dialog-actions">
+              <button type="button" className="button button-primary" onClick={acceptOrderCelebration}>
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {fireworksActive ? (
+        <div className="fireworks-overlay" aria-hidden="true">
+          <span className="firework firework--one" />
+          <span className="firework firework--two" />
+          <span className="firework firework--three" />
+          <span className="firework firework--four" />
+          <span className="firework firework--five" />
+          <span className="firework firework--six" />
+        </div>
+      ) : null}
+    </>
   );
 }

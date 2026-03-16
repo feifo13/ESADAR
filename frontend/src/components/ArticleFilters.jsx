@@ -11,7 +11,7 @@ const defaultFilters = {
   featured: false,
 };
 
-export default function ArticleFilters({ value, onChange, onReset, activeCount = 0 }) {
+export default function ArticleFilters({ value, onChange, onReset }) {
   const filters = { ...defaultFilters, ...value };
 
   function updateField(name, nextValue) {
@@ -23,7 +23,6 @@ export default function ArticleFilters({ value, onChange, onReset, activeCount =
       <div className="filters-sidebar-head">
         <div>
           <p className="section-kicker">Filtros</p>
-          <p className="filters-sidebar-meta">{activeCount} activos</p>
         </div>
         <button type="button" className="ghost-button" onClick={onReset}>
           Limpiar

@@ -4,6 +4,43 @@ import { THEME_IDS, THEME_MAP, THEME_OPTIONS, getThemeGroups } from '../constant
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'miami-closet-theme';
+const FONT_STORAGE_KEY = 'esadar-theme-font';
+
+const FONT_OPTIONS = [
+  {
+    id: 'plex',
+    label: 'Plex Sans',
+    body: "'IBM Plex Sans', system-ui, sans-serif",
+    display: "'IBM Plex Sans', system-ui, sans-serif",
+  },
+  {
+    id: 'sport',
+    label: 'Sport Condensed',
+    body: "'Arial Narrow', 'Helvetica Neue', Arial, sans-serif",
+    display: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
+  },
+  {
+    id: 'editorial',
+    label: 'Editorial Serif',
+    body: "Georgia, 'Times New Roman', serif",
+    display: "Georgia, 'Times New Roman', serif",
+  },
+  {
+    id: 'neo',
+    label: 'Neo Grotesk',
+    body: "'Trebuchet MS', 'Segoe UI', sans-serif",
+    display: "'Trebuchet MS', 'Segoe UI', sans-serif",
+  },
+  {
+    id: 'mono',
+    label: 'Mono Accent',
+    body: "'IBM Plex Sans', system-ui, sans-serif",
+    display: "'Courier New', monospace",
+  },
+];
+
+const FONT_IDS = FONT_OPTIONS.map((font) => font.id);
+const FONT_MAP = Object.fromEntries(FONT_OPTIONS.map((font) => [font.id, font]));
 
 const THEME_VARIABLE_KEYS = Array.from(
   new Set(
@@ -32,10 +69,23 @@ function getThemeMode(theme) {
   return luminance < 0.58 ? 'dark' : 'light';
 }
 
+function normalizeFont(rawFont) {
+  if (FONT_IDS.includes(rawFont)) return rawFont;
+  return 'plex';
+}
+
 function normalizeTheme(rawTheme) {
   if (rawTheme === 'alt') return 'marine';
   if (THEME_IDS.includes(rawTheme)) return rawTheme;
   return 'default';
+}
+
+function applyFontVariables(fontId) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const font = FONT_MAP[fontId] || FONT_MAP.plex;
+  root.style.setProperty('--font-body', font.body);
+  root.style.setProperty('--font-display', font.display);
 }
 
 function applyThemeVariables(themeId) {
@@ -55,9 +105,14 @@ function applyThemeVariables(themeId) {
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => normalizeTheme(storage.get(STORAGE_KEY, 'default')));
+  const [font, setFontState] = useState(() => normalizeFont(storage.get(FONT_STORAGE_KEY, 'plex')));
 
   function setTheme(nextTheme) {
     setThemeState(normalizeTheme(nextTheme));
+  }
+
+  function setFont(nextFont) {
+    setFontState(normalizeFont(nextFont));
   }
 
   useEffect(() => {
@@ -68,12 +123,20 @@ export function ThemeProvider({ children }) {
     storage.set(STORAGE_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    applyFontVariables(font);
+    storage.set(FONT_STORAGE_KEY, font);
+  }, [font]);
+
   const value = useMemo(
     () => ({
       theme,
       themes: THEME_OPTIONS,
       themeGroups: getThemeGroups(),
       setTheme,
+      font,
+      fonts: FONT_OPTIONS,
+      setFont,
       cycleTheme: () => {
         const currentIndex = THEME_IDS.indexOf(theme);
         const nextIndex = (currentIndex + 1) % THEME_IDS.length;
@@ -84,7 +147,7 @@ export function ThemeProvider({ children }) {
         setTheme(THEME_IDS[nextIndex]);
       },
     }),
-    [theme],
+    [font, theme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

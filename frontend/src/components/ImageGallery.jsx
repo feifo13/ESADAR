@@ -13,6 +13,7 @@ export default function ImageGallery({ images = [], title }) {
   }, [images]);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const active = normalized[activeIndex] || normalized[0];
 
   function move(delta) {
@@ -23,6 +24,14 @@ export default function ImageGallery({ images = [], title }) {
     <div className="gallery-shell">
       <div className="gallery-main">
         <img src={active.src} alt={title} />
+        <button
+          type="button"
+          className="gallery-zoom-button"
+          onClick={() => setZoomOpen(true)}
+          aria-label="Ampliar imagen"
+        >
+          Zoom
+        </button>
         {normalized.length > 1 ? (
           <div className="gallery-arrows">
             <button type="button" onClick={() => move(-1)}>←</button>
@@ -43,6 +52,28 @@ export default function ImageGallery({ images = [], title }) {
               <img src={image.src} alt={`${title} ${index + 1}`} />
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {zoomOpen ? (
+        <div className="gallery-zoom-backdrop" onClick={() => setZoomOpen(false)}>
+          <div className="gallery-zoom-dialog" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="gallery-zoom-close"
+              onClick={() => setZoomOpen(false)}
+              aria-label="Cerrar zoom"
+            >
+              ×
+            </button>
+            <img src={active.src} alt={title} className="gallery-zoom-image" />
+            {normalized.length > 1 ? (
+              <div className="gallery-zoom-nav">
+                <button type="button" onClick={() => move(-1)}>Anterior</button>
+                <button type="button" onClick={() => move(1)}>Siguiente</button>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>

@@ -7,10 +7,12 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1512436991641-6745cdb1
 export default function ArticleCard({ article, view = 'grid' }) {
   const discounted = hasDiscount(article);
   const price = getDiscountedPrice(article);
+  const isSoldOut = Number(article.quantityAvailable || 0) <= 0 || article.status === 'SOLD_OUT';
 
   return (
-    <article className={cn('article-card', view === 'list' && 'article-card-list')}>
+    <article className={cn('article-card', view === 'list' && 'article-card-list', isSoldOut && 'article-card--sold-out')}>
       <Link className="article-card-media" to={`/articles/${article.slug || article.id}`}>
+        {isSoldOut ? <span className="article-card-ribbon">Agotado</span> : null}
         <img
           src={resolveAssetUrl(article.primaryImage) || FALLBACK_IMAGE}
           alt={article.title}
@@ -23,6 +25,7 @@ export default function ArticleCard({ article, view = 'grid' }) {
           {article.isFeatured ? <span className="pill pill-featured">Destacado</span> : null}
           {article.allowOffers ? <span className="pill pill-offer">Ofrezco</span> : null}
           {discounted ? <span className="pill pill-discount">Descuento</span> : null}
+          {isSoldOut ? <span className="pill pill-soldout">Agotado</span> : null}
         </div>
 
         <div className="article-card-copy">

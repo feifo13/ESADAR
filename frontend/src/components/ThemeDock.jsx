@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext.jsx';
 const DOCK_STORAGE_KEY = 'esadar-theme-dock-hidden';
 
 export default function ThemeDock() {
-  const { theme, setTheme, themeGroups, randomTheme } = useTheme();
+  const { theme, setTheme, themeGroups, randomTheme, font, fonts, setFont } = useTheme();
   const [hidden, setHidden] = useState(() => storage.get(DOCK_STORAGE_KEY, false));
   const groups = useMemo(() => themeGroups || [], [themeGroups]);
 
@@ -46,6 +46,28 @@ export default function ThemeDock() {
       </div>
 
       <div className="theme-dock-groups">
+
+        <section className="theme-dock-group">
+          <div className="theme-dock-group-head">
+            <strong>Tipografía</strong>
+            <span>{fonts.length}</span>
+          </div>
+          <div className="theme-font-grid">
+            {fonts.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={font === option.id ? 'theme-font-swatch active' : 'theme-font-swatch'}
+                onClick={() => setFont(option.id)}
+                title={option.label}
+                aria-label={option.label}
+              >
+                <span className="theme-font-swatch__name">{option.label}</span>
+                <span className="theme-font-swatch__sample" style={{ fontFamily: option.display }}>Aa</span>
+              </button>
+            ))}
+          </div>
+        </section>
         {groups.map((group) => (
           <section key={group.section} className="theme-dock-group">
             <div className="theme-dock-group-head">

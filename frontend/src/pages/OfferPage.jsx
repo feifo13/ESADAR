@@ -14,6 +14,10 @@ export default function OfferPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [slugOrId]);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadArticle() {
