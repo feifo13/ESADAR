@@ -201,7 +201,7 @@ export default function CheckoutPage() {
   function renderSummaryStep() {
     return (
       <div className="checkout-step-grid">
-        <div className="checkout-items-block section-card nested-card checkout-white-card">
+        <div className="checkout-items-block">
           <div className="section-heading compact-heading">
             <div>
               <p className="section-kicker">Resumen</p>

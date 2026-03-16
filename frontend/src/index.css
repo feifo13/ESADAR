@@ -513,6 +513,11 @@ select.input:disabled,
   gap: 16px;
 }
 
+.checkout-items-block {
+  display: grid;
+  gap: 16px;
+}
+
 .checkout-items-block,
 .checkout-side-summary,
 .checkout-confirm-panel,
@@ -3511,7 +3516,8 @@ body {
 .checkout-white-context .checkout-white-card .radio-card,
 .checkout-white-context .checkout-white-card .radio-card-plain,
 .checkout-white-context .checkout-white-card .checkout-item,
-.checkout-white-context .checkout-white-card .order-summary-card {
+.checkout-white-context .checkout-white-card .order-summary-card,
+.checkout-white-context .checkout-items-block .checkout-item {
   background: var(--checkout-card-bg) !important;
   color: var(--checkout-card-text) !important;
   border-color: var(--checkout-card-border) !important;
@@ -3530,4 +3536,22 @@ body {
 
 .checkout-white-context .checkout-white-card a {
   color: var(--checkout-card-navy);
+}
+
+.admin-row-card {
+  background: #ffffff !important;
+  color: #102b34 !important;
+}
+
+.admin-row-card h1,
+.admin-row-card h2,
+.admin-row-card h3,
+.admin-row-card h4,
+.admin-row-card strong,
+.admin-row-card p,
+.admin-row-card span,
+.admin-row-card a,
+.admin-row-card .muted-copy,
+.admin-row-card .eyebrow {
+  color: inherit !important;
 }
