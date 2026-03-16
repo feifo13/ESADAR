@@ -16,7 +16,7 @@ export default function Header({ hideBrand = false }) {
     if (!cartFx?.tick) return undefined;
 
     setCartPulse(true);
-    const timeoutId = window.setTimeout(() => setCartPulse(false), 1100);
+    const timeoutId = window.setTimeout(() => setCartPulse(false), 900);
 
     const sourceRect = cartFx.sourceRect;
     const targetRect = cartButtonRef.current?.getBoundingClientRect();
@@ -40,7 +40,7 @@ export default function Header({ hideBrand = false }) {
         },
       });
 
-      const flyTimer = window.setTimeout(() => setFlyFx(null), 1180);
+      const flyTimer = window.setTimeout(() => setFlyFx(null), 960);
       return () => {
         window.clearTimeout(timeoutId);
         window.clearTimeout(flyTimer);

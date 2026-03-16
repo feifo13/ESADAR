@@ -7,6 +7,7 @@ import { resolveAssetUrl, apiFetch } from '../lib/api.js';
 import { PAYMENT_METHOD_OPTIONS, SHIPPING_METHOD_OPTIONS } from '../constants/lookups.js';
 
 const STORAGE_KEY = 'esadar-checkout-draft';
+const COMPLETE_STORAGE_KEY = 'esadar-checkout-complete';
 
 const initialGuest = {
   firstName: '',
@@ -38,10 +39,11 @@ function readDraft() {
   }
 }
 
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, subtotal, removeItem, updateQuantity, clearCart } = useCart();
+  const { items, subtotal, removeItem, updateQuantity } = useCart();
   const { user, isAuthenticated } = useAuth();
 
   const savedDraft = readDraft();
@@ -53,8 +55,6 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [stockDialog, setStockDialog] = useState(null);
-  const [orderDialog, setOrderDialog] = useState(null);
-  const [fireworksActive, setFireworksActive] = useState(false);
 
   const currentStepKey = location.pathname.split('/')[2] || 'resumen';
   const currentStepIndex = Math.max(0, steps.findIndex((step) => step.key === currentStepKey));
@@ -101,8 +101,9 @@ export default function CheckoutPage() {
     );
   }, [guest, shippingMethodId, paymentMethod, notes]);
 
+
   useEffect(() => {
-    if (!items.length && currentStepKey !== 'resumen' && !orderDialog) {
+    if (!items.length && currentStepKey !== 'resumen') {
       navigate('/checkout/resumen', { replace: true });
       return;
     }
@@ -110,7 +111,7 @@ export default function CheckoutPage() {
     if (currentStepIndex > maxAllowedStepIndex) {
       navigate(`/checkout/${steps[maxAllowedStepIndex].key}`, { replace: true });
     }
-  }, [items.length, currentStepIndex, currentStepKey, maxAllowedStepIndex, navigate, orderDialog]);
+  }, [items.length, currentStepIndex, currentStepKey, maxAllowedStepIndex, navigate]);
 
   function goToStep(index) {
     if (index > maxAllowedStepIndex) return;
@@ -139,6 +140,7 @@ export default function CheckoutPage() {
       setError('Selecciona un método de envío para continuar.');
       return false;
     }
+
 
     return true;
   }
@@ -188,15 +190,21 @@ export default function CheckoutPage() {
         body: payload,
       });
 
-      clearCart();
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem(STORAGE_KEY);
+      const orderNumber = response?.order?.orderNumber;
+      if (!orderNumber) {
+        throw new Error('La orden fue creada, pero no se pudo obtener el número de confirmación.');
       }
-      setOrderDialog({
-        orderNumber: response.order.orderNumber,
-        message: 'La orden fue registrada correctamente y quedó pendiente de validación.',
+
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(
+          COMPLETE_STORAGE_KEY,
+          JSON.stringify({ orderNumber: orderNumber }),
+        );
+      }
+      navigate('/checkout/completa', {
+        replace: true,
+        state: { orderNumber },
       });
-      setSuccess('Orden creada correctamente.');
     } catch (err) {
       setError(err.message || 'No se pudo crear la orden');
     } finally {
@@ -220,13 +228,6 @@ export default function CheckoutPage() {
     });
   }
 
-  function acceptOrderCelebration() {
-    setOrderDialog(null);
-    setFireworksActive(true);
-    window.setTimeout(() => {
-      navigate('/', { replace: true, state: { replayIntro: true, replayIntroReason: 'order-complete' } });
-    }, 1800);
-  }
 
   function renderSummaryStep() {
     return (
@@ -386,6 +387,7 @@ export default function CheckoutPage() {
     );
   }
 
+
   function renderCurrentStep() {
     if (currentStepKey === 'comprador') return renderBuyerStep();
     if (currentStepKey === 'pago') return renderPaymentStep();
@@ -394,7 +396,7 @@ export default function CheckoutPage() {
     return renderSummaryStep();
   }
 
-  if (!items.length && !orderDialog) {
+  if (!items.length) {
     return (
       <div className="container">
         <div className="section-card centered-card checkout-empty-card">
@@ -442,34 +444,34 @@ export default function CheckoutPage() {
           {renderCurrentStep()}
 
           <div className="checkout-navigation">
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={handleBack}
-              disabled={currentStepIndex === 0 || submitting}
-            >
-              Anterior
-            </button>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={handleBack}
+                  disabled={currentStepIndex === 0 || submitting}
+                >
+                  Anterior
+                </button>
 
-            <div className="checkout-navigation-status">
-              {error ? <p className="error-copy">{error}</p> : null}
-              {success ? <p className="success-copy">{success}</p> : null}
-            </div>
+                <div className="checkout-navigation-status">
+                  {error ? <p className="error-copy">{error}</p> : null}
+                  {success ? <p className="success-copy">{success}</p> : null}
+                </div>
 
-            {currentStepKey === 'confirmacion' ? (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={handleConfirmOrder}
-                disabled={submitting}
-              >
-                {submitting ? 'Creando orden…' : 'Confirmar orden'}
-              </button>
-            ) : (
-              <button type="button" className="button button-primary" onClick={handleNext}>
-                Siguiente
-              </button>
-            )}
+                {currentStepKey === 'confirmacion' ? (
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={handleConfirmOrder}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Creando orden…' : 'Confirmar orden'}
+                  </button>
+                ) : (
+                  <button type="button" className="button button-primary" onClick={handleNext}>
+                    Siguiente
+                  </button>
+                )}
           </div>
         </section>
       </div>
@@ -486,32 +488,6 @@ export default function CheckoutPage() {
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
-
-      {orderDialog ? (
-        <div className="dialog-backdrop" onClick={(event) => event.stopPropagation()}>
-          <div className="dialog-card dialog-card--success" onClick={(event) => event.stopPropagation()}>
-            <p className="section-kicker">Orden confirmada</p>
-            <h3>{orderDialog.orderNumber}</h3>
-            <p className="muted-copy dialog-copy">{orderDialog.message}</p>
-            <div className="dialog-actions">
-              <button type="button" className="button button-primary" onClick={acceptOrderCelebration}>
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {fireworksActive ? (
-        <div className="fireworks-overlay" aria-hidden="true">
-          <span className="firework firework--one" />
-          <span className="firework firework--two" />
-          <span className="firework firework--three" />
-          <span className="firework firework--four" />
-          <span className="firework firework--five" />
-          <span className="firework firework--six" />
         </div>
       ) : null}
     </>

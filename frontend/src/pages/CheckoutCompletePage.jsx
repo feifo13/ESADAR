@@ -1,91 +1,99 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useCart } from '../contexts/CartContext.jsx';
 
-const BURST_COUNT = 18;
-const SPARKS_PER_BURST = 10;
+const COMPLETE_STORAGE_KEY = 'esadar-checkout-complete';
 
-function buildBursts() {
-  return Array.from({ length: BURST_COUNT }, (_, index) => {
-    const top = 12 + (index % 6) * 12 + ((index * 7) % 5);
-    const left = 8 + ((index * 17) % 82);
-    const delay = (index % 9) * 0.22;
-    const duration = 2.6 + (index % 5) * 0.35;
-    const hue = [190, 24, 202, 48, 176, 12][index % 6];
+function readCompletedOrder() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
-    return {
-      id: index,
-      top,
-      left,
-      delay,
-      duration,
-      hue,
-      sparks: Array.from({ length: SPARKS_PER_BURST }, (_, sparkIndex) => ({
-        id: `${index}-${sparkIndex}`,
-        angle: (360 / SPARKS_PER_BURST) * sparkIndex,
-        distance: 38 + ((sparkIndex * 9 + index * 5) % 34),
-        duration: duration + (sparkIndex % 3) * 0.2,
-        delay: delay + sparkIndex * 0.03,
-      })),
-    };
-  });
+  try {
+    return JSON.parse(window.sessionStorage.getItem(COMPLETE_STORAGE_KEY) || 'null');
+  } catch {
+    return null;
+  }
 }
 
 export default function CheckoutCompletePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const orderNumber = location.state?.orderNumber || null;
-  const bursts = useMemo(() => buildBursts(), []);
+  const { clearCart } = useCart();
+  const didCleanupRef = useRef(false);
+
+  const completedOrder = useMemo(
+    () => (location.state?.orderNumber ? { orderNumber: location.state.orderNumber } : readCompletedOrder()),
+    [location.state?.orderNumber],
+  );
+
+  useEffect(() => {
+    if (!completedOrder?.orderNumber) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    if (didCleanupRef.current) {
+      return;
+    }
+
+    didCleanupRef.current = true;
+    clearCart();
+
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('esadar-checkout-draft');
+    }
+  }, [clearCart, completedOrder?.orderNumber, navigate]);
+
+  function handleAccept() {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(COMPLETE_STORAGE_KEY);
+    }
+
+    navigate('/', {
+      replace: true,
+      state: { replayIntro: true, replayIntroReason: 'order-complete' },
+    });
+  }
+
+  if (!completedOrder?.orderNumber) {
+    return null;
+  }
 
   return (
-    <div className="checkout-complete-screen">
-      <div className="checkout-fireworks-layer" aria-hidden="true">
-        {bursts.map((burst) => (
-          <div
-            key={burst.id}
-            className="checkout-firework-burst"
-            style={{
-              top: `${burst.top}%`,
-              left: `${burst.left}%`,
-              '--burst-delay': `${burst.delay}s`,
-              '--burst-duration': `${burst.duration}s`,
-              '--burst-hue': burst.hue,
-            }}
-          >
-            <span className="checkout-firework-core" />
-            {burst.sparks.map((spark) => (
-              <span
-                key={spark.id}
-                className="checkout-firework-spark"
-                style={{
-                  '--spark-angle': `${spark.angle}deg`,
-                  '--spark-distance': `${spark.distance}px`,
-                  '--spark-duration': `${spark.duration}s`,
-                  '--spark-delay': `${spark.delay}s`,
-                }}
-              />
-            ))}
+    <div className="container page-stack checkout-complete-page">
+      <div className="checkout-complete-screen">
+        <div className="checkout-fireworks-layer" aria-hidden="true">
+          <span className="firework firework--one" />
+          <span className="firework firework--two" />
+          <span className="firework firework--three" />
+          <span className="firework firework--four" />
+          <span className="firework firework--five" />
+          <span className="firework firework--six" />
+        </div>
+
+        <section className="section-card checkout-complete-card">
+          <p className="section-kicker">Compra confirmada</p>
+          <h1>Muchas gracias por tu compra</h1>
+          <p className="checkout-complete-copy">
+            Tu orden quedó registrada correctamente y permanece pendiente de validación manual.
+          </p>
+          <p className="checkout-complete-copy">
+            Tienes <strong>24 horas</strong> para completar el pago.
+          </p>
+          <p className="checkout-complete-order">Orden <strong>{completedOrder.orderNumber}</strong></p>
+
+          <div className="checkout-complete-actions">
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={handleAccept}
+            >
+              Aceptar
+            </button>
           </div>
-        ))}
+        </section>
       </div>
-
-      <section className="section-card checkout-complete-card">
-        <p className="section-kicker">Orden recibida</p>
-        <h1>Muchas gracias por tu compra</h1>
-        <p className="checkout-complete-copy">
-          Tu orden quedó registrada correctamente. Tienes <strong>24 hs</strong> para completar el pago.
-        </p>
-        {orderNumber ? (
-          <p className="checkout-complete-order">Orden <strong>{orderNumber}</strong></p>
-        ) : null}
-
-        <button
-          type="button"
-          className="button button-primary"
-          onClick={() => navigate('/', { replace: true })}
-        >
-          Aceptar
-        </button>
-      </section>
     </div>
   );
 }

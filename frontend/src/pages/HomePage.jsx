@@ -47,6 +47,7 @@ function getLabel(options, id, fallback) {
 export default function HomePage() {
   const heroRef = useRef(null);
   const searchInputRef = useRef(null);
+  const catalogSectionRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
   const [filters, setFilters] = useState(initialFilters);
   const [view, setView] = useState(() => storage.get(VIEW_STORAGE_KEY, "grid"));
@@ -210,7 +211,14 @@ export default function HomePage() {
 
   function resetFilters() {
     applyFilters({ ...initialFilters });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    window.requestAnimationFrame(() => {
+      catalogSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      catalogSectionRef.current?.focus({ preventScroll: true });
+    });
   }
 
   function removeFilterChip(key) {
@@ -288,11 +296,10 @@ export default function HomePage() {
         items={featuredItems.slice(0, 8)}
       />
 
-      <section className="catalog-wide container">
+      <section ref={catalogSectionRef} className="catalog-wide container" tabIndex={-1}>
         <ArticleFilters
           value={filters}
           onChange={applyFilters}
-          onReset={resetFilters}
         />
 
         <div className="catalog-content">

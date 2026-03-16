@@ -4901,3 +4901,109 @@ a.button.button-primary {
     opacity: 0;
   }
 }
+
+
+/* === ESADAR refinements: March 2026 === */
+.catalog-wide:focus {
+  outline: none;
+}
+
+.featured-rail .rail-scroller {
+  grid-auto-columns: minmax(220px, 280px);
+}
+
+.featured-rail .rail-item {
+  min-width: 0;
+}
+
+.featured-rail .article-card-media {
+  aspect-ratio: 4 / 4.8;
+}
+
+.featured-rail .article-card-body {
+  padding: 16px;
+}
+
+.brand-mark {
+  width: 348px;
+  min-width: 348px;
+  height: 86px;
+}
+
+.brand-mark__logo {
+  height: 68px;
+}
+
+
+.checkout-complete-page {
+  min-height: min(78vh, 880px);
+}
+
+.checkout-complete-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.checkout-complete-screen {
+  position: relative;
+  display: grid;
+  min-height: 380px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.checkout-complete-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 620px);
+  text-align: center;
+  display: grid;
+  gap: 14px;
+  padding: 36px 30px;
+}
+
+.checkout-complete-copy,
+.checkout-complete-order {
+  margin: 0;
+}
+
+.checkout-fireworks-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+}
+
+@media (max-width: 980px) {
+  .brand-mark {
+    width: 304px;
+    min-width: 304px;
+    height: 76px;
+  }
+
+  .brand-mark__logo {
+    height: 60px;
+  }
+
+  .featured-rail .rail-scroller {
+    grid-auto-columns: minmax(210px, 250px);
+  }
+}
+
+@media (max-width: 720px) {
+  .brand-mark {
+    width: 252px;
+    min-width: 252px;
+    height: 64px;
+  }
+
+  .brand-mark__logo {
+    height: 52px;
+  }
+
+  .featured-rail .rail-scroller {
+    grid-auto-columns: minmax(190px, 220px);
+  }
+}

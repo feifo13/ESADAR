@@ -10,6 +10,8 @@ const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
 const INTRO_REPLAY_VISIBLE_MS = 1700;
 const INTRO_REPLAY_FADE_MS = 520;
+const CART_REPLAY_VISIBLE_MS = 650;
+const CART_REPLAY_FADE_MS = 350;
 
 export default function RootLayout() {
   const location = useLocation();
@@ -45,8 +47,19 @@ export default function RootLayout() {
       return undefined;
     }
 
-    const visibleMs = shouldShowInitial ? INTRO_INITIAL_VISIBLE_MS : INTRO_REPLAY_VISIBLE_MS;
-    const fadeMs = shouldShowInitial ? INTRO_INITIAL_FADE_MS : INTRO_REPLAY_FADE_MS;
+    const replayReason = location.state?.replayIntroReason;
+    const isCartReplay = replayReason === 'cart';
+
+    const visibleMs = shouldShowInitial
+      ? INTRO_INITIAL_VISIBLE_MS
+      : isCartReplay
+        ? CART_REPLAY_VISIBLE_MS
+        : INTRO_REPLAY_VISIBLE_MS;
+    const fadeMs = shouldShowInitial
+      ? INTRO_INITIAL_FADE_MS
+      : isCartReplay
+        ? CART_REPLAY_FADE_MS
+        : INTRO_REPLAY_FADE_MS;
 
     setIntroDuration(visibleMs);
     setIntroFadeDuration(fadeMs);

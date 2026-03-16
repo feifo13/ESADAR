@@ -11,7 +11,7 @@ const defaultFilters = {
   featured: false,
 };
 
-export default function ArticleFilters({ value, onChange, onReset }) {
+export default function ArticleFilters({ value, onChange }) {
   const filters = { ...defaultFilters, ...value };
 
   function updateField(name, nextValue) {
@@ -24,9 +24,6 @@ export default function ArticleFilters({ value, onChange, onReset }) {
         <div>
           <p className="section-kicker">Filtros</p>
         </div>
-        <button type="button" className="ghost-button" onClick={onReset}>
-          Limpiar
-        </button>
       </div>
 
       <div className="filters-sidebar-group">
