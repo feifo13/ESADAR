@@ -12,6 +12,17 @@ function getStoredToken() {
   }
 }
 
+function getAuthHeaders(headers = {}, tokenOverride) {
+  const headersInstance = new Headers(headers);
+  const token = tokenOverride ?? getStoredToken();
+
+  if (token) {
+    headersInstance.set('Authorization', `Bearer ${token}`);
+  }
+
+  return headersInstance;
+}
+
 export function resolveAssetUrl(path) {
   if (!path) return '';
   const normalized = String(path).trim().replace(/\\/g, '/');
@@ -21,15 +32,10 @@ export function resolveAssetUrl(path) {
 
 export async function apiFetch(path, options = {}) {
   const isFormData = options.body instanceof FormData;
-  const headers = new Headers(options.headers || {});
-  const token = options.token ?? getStoredToken();
+  const headers = getAuthHeaders(options.headers || {}, options.token);
 
   if (!isFormData) {
     headers.set('Content-Type', 'application/json');
-  }
-
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -55,4 +61,44 @@ export async function apiFetch(path, options = {}) {
   }
 
   return payload;
+}
+
+export async function apiDownload(path, options = {}) {
+  const headers = getAuthHeaders(options.headers || {}, options.token);
+  const response = await fetch(`${API_URL}${path}`, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body,
+  });
+
+  if (!response.ok) {
+    let payload = null;
+
+    try {
+      payload = await response.json();
+    } catch {
+      payload = null;
+    }
+
+    const message = payload?.message || payload?.error || 'Ocurrio un error al exportar';
+    const error = new Error(message);
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const matchedFileName = disposition.match(/filename="([^"]+)"/i)?.[1];
+  const fileName = options.fileName || matchedFileName || 'export.bin';
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+
+  return { fileName };
 }

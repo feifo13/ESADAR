@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import AdminPagination from '../../components/admin/AdminPagination.jsx';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
+import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
+import { buildQueryString } from '../../lib/query.js';
 
 const OFFER_STATUS_LABELS = {
   PENDING: 'Pendiente',
@@ -12,14 +15,32 @@ const OFFER_STATUS_LABELS = {
   EXPIRED: 'Vencida',
 };
 
+const initialFilters = {
+  q: '',
+  status: '',
+  categoryId: '',
+  brandId: '',
+  dateFrom: '',
+  dateTo: '',
+  sortBy: 'createdAt',
+  sortDir: 'desc',
+  page: 1,
+  pageSize: 25,
+};
+
 export default function AdminOffersPage() {
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const { categoryOptions, brandOptions } = useLookups();
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [filters, setFilters] = useState(initialFilters);
   const [offers, setOffers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  const query = useMemo(() => buildQueryString(filters), [filters]);
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.pageSize || 25)));
 
   useEffect(() => {
     let ignore = false;
@@ -28,9 +49,7 @@ export default function AdminOffersPage() {
       try {
         setLoading(true);
         setError('');
-        const params = new URLSearchParams({ page: String(page) });
-        if (status) params.set('status', status);
-        const response = await apiFetch(`/api/admin/offers?${params.toString()}`);
+        const response = await apiFetch(`/api/admin/offers?${query}`);
         if (ignore) return;
         setOffers(response.items || []);
         setPagination(response.pagination || { page: 1, pageSize: 25, total: 0 });
@@ -45,7 +64,30 @@ export default function AdminOffersPage() {
     return () => {
       ignore = true;
     };
-  }, [page, status]);
+  }, [query, refreshNonce]);
+
+  function updateDraft(name, value) {
+    setDraftFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  function applyFilters() {
+    setFilters((current) => ({ ...current, ...draftFilters, page: 1 }));
+  }
+
+  function clearFilters() {
+    setDraftFilters(initialFilters);
+    setFilters(initialFilters);
+  }
+
+  function changePage(nextPage) {
+    setFilters((current) => ({ ...current, page: nextPage }));
+  }
+
+  function changePageSize(nextPageSize) {
+    const numericSize = Number(nextPageSize) || 25;
+    setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
+    setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
 
   async function handleStatusChange(offerId, nextStatus) {
     try {
@@ -56,40 +98,114 @@ export default function AdminOffersPage() {
         body: { status: nextStatus },
       });
       setMessage('La oferta fue actualizada correctamente.');
-      const params = new URLSearchParams({ page: String(page) });
-      if (status) params.set('status', status);
-      const response = await apiFetch(`/api/admin/offers?${params.toString()}`);
-      setOffers(response.items || []);
-      setPagination(response.pagination || { page: 1, pageSize: 25, total: 0 });
+      setRefreshNonce((current) => current + 1);
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la oferta');
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.pageSize || 25)));
-
   return (
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
       <section className="section-card page-stack">
-        <div className="section-heading">
+        <div className="section-heading section-heading-wrap">
           <div>
-            <p className="section-kicker">Administración</p>
+            <p className="section-kicker">Administracion</p>
             <h1>Ofertas</h1>
+            <p className="muted-copy">Listado con filtros por estado, articulo, categoria, marca y fecha.</p>
           </div>
-          <select className="input input-inline" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
-            <option value="">Todos los estados</option>
-            <option value="PENDING">Pendientes</option>
-            <option value="ACCEPTED">Aceptadas</option>
-            <option value="REJECTED">Rechazadas</option>
-            <option value="CANCELLED">Canceladas</option>
-            <option value="EXPIRED">Vencidas</option>
-          </select>
+        </div>
+
+        <div className="admin-filter-grid">
+          <label className="field-group">
+            <span>Buscar</span>
+            <input
+              className="input"
+              placeholder="Articulo, codigo, contacto, email"
+              value={draftFilters.q}
+              onChange={(event) => updateDraft('q', event.target.value)}
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Estado</span>
+            <select className="input" value={draftFilters.status} onChange={(event) => updateDraft('status', event.target.value)}>
+              <option value="">Todos</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="ACCEPTED">Aceptadas</option>
+              <option value="REJECTED">Rechazadas</option>
+              <option value="CANCELLED">Canceladas</option>
+              <option value="EXPIRED">Vencidas</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Categoria</span>
+            <select className="input" value={draftFilters.categoryId} onChange={(event) => updateDraft('categoryId', event.target.value)}>
+              <option value="">Todas</option>
+              {categoryOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Marca</span>
+            <select className="input" value={draftFilters.brandId} onChange={(event) => updateDraft('brandId', event.target.value)}>
+              <option value="">Todas</option>
+              {brandOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Desde</span>
+            <input className="input" type="date" value={draftFilters.dateFrom} onChange={(event) => updateDraft('dateFrom', event.target.value)} />
+          </label>
+
+          <label className="field-group">
+            <span>Hasta</span>
+            <input className="input" type="date" value={draftFilters.dateTo} onChange={(event) => updateDraft('dateTo', event.target.value)} />
+          </label>
+
+          <label className="field-group">
+            <span>Orden</span>
+            <select className="input" value={draftFilters.sortBy} onChange={(event) => updateDraft('sortBy', event.target.value)}>
+              <option value="createdAt">Fecha</option>
+              <option value="offeredAmount">Monto</option>
+              <option value="status">Estado</option>
+              <option value="articleTitle">Articulo</option>
+              <option value="contactName">Contacto</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Direccion</span>
+            <select className="input" value={draftFilters.sortDir} onChange={(event) => updateDraft('sortDir', event.target.value)}>
+              <option value="desc">Descendente</option>
+              <option value="asc">Ascendente</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Page size</span>
+            <select className="input" value={draftFilters.pageSize} onChange={(event) => changePageSize(event.target.value)}>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="toolbar-inline">
+          <button type="button" className="button button-primary" onClick={applyFilters}>Aplicar filtros</button>
+          <button type="button" className="button button-secondary" onClick={clearFilters}>Limpiar</button>
         </div>
 
         {message ? <p className="success-copy">{message}</p> : null}
         {error ? <p className="error-copy">{error}</p> : null}
-        {loading ? <div className="centered-card">Cargando…</div> : null}
+        {loading ? <div className="centered-card">Cargando...</div> : null}
 
         {!loading ? (
           <div className="table-shell">
@@ -97,7 +213,7 @@ export default function AdminOffersPage() {
               <thead>
                 <tr>
                   <th>Fecha</th>
-                  <th>Artículo</th>
+                  <th>Articulo</th>
                   <th>Contacto</th>
                   <th>Monto</th>
                   <th>Estado</th>
@@ -111,14 +227,17 @@ export default function AdminOffersPage() {
                     <td>
                       <div className="cell-stack">
                         <strong>{offer.article.title}</strong>
-                        <span className="muted-copy">#{offer.article.id}</span>
+                        <span className="muted-copy">{offer.article.internalCode || `#${offer.article.id}`}</span>
+                        <span className="muted-copy">
+                          {offer.article.categoryName || 'Sin categoria'} - {offer.article.brandName || 'Sin marca'}
+                        </span>
                       </div>
                     </td>
                     <td>
                       <div className="cell-stack">
                         <strong>{offer.contact.firstName} {offer.contact.lastName}</strong>
                         <span className="muted-copy">{offer.contact.email || 'Sin email'}</span>
-                        <span className="muted-copy">{offer.contact.phone || 'Sin teléfono'}</span>
+                        <span className="muted-copy">{offer.contact.phone || 'Sin telefono'}</span>
                       </div>
                     </td>
                     <td>{formatCurrency(offer.offeredAmount)}</td>
@@ -136,9 +255,12 @@ export default function AdminOffersPage() {
                     </td>
                   </tr>
                 ))}
+
                 {!offers.length ? (
                   <tr>
-                    <td colSpan="6"><p className="muted-copy">No hay ofertas para mostrar.</p></td>
+                    <td colSpan="6">
+                      <p className="muted-copy">No hay ofertas para mostrar.</p>
+                    </td>
                   </tr>
                 ) : null}
               </tbody>
@@ -146,13 +268,14 @@ export default function AdminOffersPage() {
           </div>
         ) : null}
 
-        <div className="pagination-row">
-          <span className="muted-copy">Página {page} de {totalPages}</span>
-          <div className="table-actions">
-            <button type="button" className="button button-secondary" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1 || loading}>Anterior</button>
-            <button type="button" className="button button-secondary" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages || loading}>Siguiente</button>
-          </div>
-        </div>
+        <AdminPagination
+          page={Number(filters.page || 1)}
+          totalPages={totalPages}
+          totalItems={Number(pagination.total || 0)}
+          loading={loading}
+          onPrevious={() => changePage(Math.max(1, Number(filters.page || 1) - 1))}
+          onNext={() => changePage(Math.min(totalPages, Number(filters.page || 1) + 1))}
+        />
       </section>
     </div>
   );

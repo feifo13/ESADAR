@@ -1,16 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AdminPagination from '../../components/admin/AdminPagination.jsx';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
-import SmartImage from '../../components/SmartImage.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
+import SmartImage from '../../components/SmartImage.jsx';
+import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
+import { buildQueryString } from '../../lib/query.js';
+
+const initialFilters = {
+  q: '',
+  status: '',
+  paymentStatus: '',
+  categoryId: '',
+  brandId: '',
+  dateFrom: '',
+  dateTo: '',
+  sortBy: 'createdAt',
+  sortDir: 'desc',
+  page: 1,
+  pageSize: 25,
+};
 
 export default function AdminOrdersPage() {
-  const [status, setStatus] = useState('');
+  const { categoryOptions, brandOptions } = useLookups();
+  const [draftFilters, setDraftFilters] = useState(initialFilters);
+  const [filters, setFilters] = useState(initialFilters);
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const query = useMemo(() => buildQueryString(filters), [filters]);
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.pageSize || 25)));
 
   useEffect(() => {
     let ignore = false;
@@ -18,8 +41,11 @@ export default function AdminOrdersPage() {
     async function loadOrders() {
       try {
         setLoading(true);
-        const response = await apiFetch(`/api/admin/orders${status ? `?status=${status}` : ''}`);
-        if (!ignore) setOrders(response.items || []);
+        setError('');
+        const response = await apiFetch(`/api/admin/orders?${query}`);
+        if (ignore) return;
+        setOrders(response.items || []);
+        setPagination(response.pagination || { page: 1, pageSize: 25, total: 0 });
       } catch (err) {
         if (!ignore) setError(err.message || 'No se pudo cargar ordenes');
       } finally {
@@ -28,51 +54,194 @@ export default function AdminOrdersPage() {
     }
 
     loadOrders();
+
     return () => {
       ignore = true;
     };
-  }, [status]);
+  }, [query]);
+
+  function updateDraft(name, value) {
+    setDraftFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  function applyFilters() {
+    setFilters((current) => ({ ...current, ...draftFilters, page: 1 }));
+  }
+
+  function clearFilters() {
+    setDraftFilters(initialFilters);
+    setFilters(initialFilters);
+  }
+
+  function changePage(nextPage) {
+    setFilters((current) => ({ ...current, page: nextPage }));
+  }
+
+  function changePageSize(nextPageSize) {
+    const numericSize = Number(nextPageSize) || 25;
+    setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
+    setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
 
   return (
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
+
       <section className="section-card page-stack">
-        <div className="section-heading">
+        <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
             <h1>Ordenes</h1>
+            <p className="muted-copy">Busqueda, filtros y ordenamiento real desde backend.</p>
           </div>
-          <select className="input input-inline" value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="">Todos los estados</option>
-            <option value="RESERVED">Reservadas</option>
-            <option value="APPROVED">Aprobadas</option>
-            <option value="SHIPPED">Enviadas</option>
-            <option value="CANCELLED">Canceladas</option>
-            <option value="EXPIRED">Vencidas</option>
-          </select>
+        </div>
+
+        <div className="admin-filter-grid">
+          <label className="field-group">
+            <span>Buscar</span>
+            <input
+              className="input"
+              placeholder="Numero, cliente, email, articulo"
+              value={draftFilters.q}
+              onChange={(event) => updateDraft('q', event.target.value)}
+            />
+          </label>
+
+          <label className="field-group">
+            <span>Estado de orden</span>
+            <select className="input" value={draftFilters.status} onChange={(event) => updateDraft('status', event.target.value)}>
+              <option value="">Todos</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="RESERVED">Reservadas</option>
+              <option value="APPROVED">Aprobadas</option>
+              <option value="SHIPPED">Enviadas</option>
+              <option value="CANCELLED">Canceladas</option>
+              <option value="EXPIRED">Vencidas</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Estado de pago</span>
+            <select className="input" value={draftFilters.paymentStatus} onChange={(event) => updateDraft('paymentStatus', event.target.value)}>
+              <option value="">Todos</option>
+              <option value="PENDING">Pendiente</option>
+              <option value="PAID">Pagado</option>
+              <option value="FAILED">Fallido</option>
+              <option value="REFUNDED">Reintegrado</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Categoria</span>
+            <select className="input" value={draftFilters.categoryId} onChange={(event) => updateDraft('categoryId', event.target.value)}>
+              <option value="">Todas</option>
+              {categoryOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Marca</span>
+            <select className="input" value={draftFilters.brandId} onChange={(event) => updateDraft('brandId', event.target.value)}>
+              <option value="">Todas</option>
+              {brandOptions.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Desde</span>
+            <input className="input" type="date" value={draftFilters.dateFrom} onChange={(event) => updateDraft('dateFrom', event.target.value)} />
+          </label>
+
+          <label className="field-group">
+            <span>Hasta</span>
+            <input className="input" type="date" value={draftFilters.dateTo} onChange={(event) => updateDraft('dateTo', event.target.value)} />
+          </label>
+
+          <label className="field-group">
+            <span>Orden</span>
+            <select className="input" value={draftFilters.sortBy} onChange={(event) => updateDraft('sortBy', event.target.value)}>
+              <option value="createdAt">Fecha</option>
+              <option value="orderNumber">Numero</option>
+              <option value="total">Total</option>
+              <option value="orderStatus">Estado de orden</option>
+              <option value="paymentStatus">Estado de pago</option>
+              <option value="customerName">Cliente</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Direccion</span>
+            <select className="input" value={draftFilters.sortDir} onChange={(event) => updateDraft('sortDir', event.target.value)}>
+              <option value="desc">Descendente</option>
+              <option value="asc">Ascendente</option>
+            </select>
+          </label>
+
+          <label className="field-group">
+            <span>Page size</span>
+            <select className="input" value={draftFilters.pageSize} onChange={(event) => changePageSize(event.target.value)}>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="toolbar-inline">
+          <button type="button" className="button button-primary" onClick={applyFilters}>Aplicar filtros</button>
+          <button type="button" className="button button-secondary" onClick={clearFilters}>Limpiar</button>
         </div>
 
         {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
-        <div className="admin-list">
-          {orders.map((order) => (
-            <article key={order.id} className="admin-row-card">
-              <SmartImage src={order.previewImage} alt={order.previewTitle} fallbackLabel={order.previewTitle} />
-              <div>
-                <p className="eyebrow">{order.orderNumber}</p>
-                <h3>{order.previewTitle}</h3>
-                <p className="muted-copy">{order.customer.firstName} {order.customer.lastName} - {order.customer.email || 'Sin email'}</p>
-                <p className="muted-copy">Ingreso: {formatDate(order.createdAt)}</p>
+        {!loading ? (
+          <div className="admin-list">
+            {orders.map((order) => (
+              <article key={order.id} className="admin-row-card admin-row-card-wide">
+                <SmartImage src={order.previewImage} alt={order.previewTitle} fallbackLabel={order.previewTitle || order.orderNumber} />
+
+                <div className="page-stack stack-gap-xs">
+                  <div>
+                    <p className="eyebrow">{order.orderNumber}</p>
+                    <h3>{order.previewTitle || 'Orden sin items'}</h3>
+                  </div>
+                  <p className="muted-copy">
+                    {order.customer.firstName} {order.customer.lastName} - {order.customer.email || 'Sin email'}
+                  </p>
+                  <p className="muted-copy">
+                    Ingreso: {formatDate(order.createdAt)} - Items: {order.itemCount}
+                  </p>
+                </div>
+
+                <div className="admin-row-actions">
+                  <OrderStatusBadge status={order.orderStatus} />
+                  <strong>{formatCurrency(order.total)}</strong>
+                  <Link to={`/admin/orders/${order.id}`} className="button button-secondary">Ver orden</Link>
+                </div>
+              </article>
+            ))}
+
+            {!orders.length ? (
+              <div className="centered-card nested-card">
+                <p className="muted-copy">No hay ordenes para los filtros seleccionados.</p>
               </div>
-              <div className="admin-row-actions">
-                <OrderStatusBadge status={order.orderStatus} />
-                <strong>{formatCurrency(order.total)}</strong>
-                <Link to={`/admin/orders/${order.id}`} className="button button-secondary">Ver orden</Link>
-              </div>
-            </article>
-          ))}
-        </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <AdminPagination
+          page={Number(filters.page || 1)}
+          totalPages={totalPages}
+          totalItems={Number(pagination.total || 0)}
+          loading={loading}
+          onPrevious={() => changePage(Math.max(1, Number(filters.page || 1) - 1))}
+          onNext={() => changePage(Math.min(totalPages, Number(filters.page || 1) + 1))}
+        />
       </section>
     </div>
   );
