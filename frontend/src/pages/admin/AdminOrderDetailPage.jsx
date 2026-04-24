@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
-import { apiFetch, resolveAssetUrl } from '../../lib/api.js';
+import SmartImage from '../../components/SmartImage.jsx';
+import { apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
 const HISTORY_STATUS_LABELS = {
@@ -55,7 +56,7 @@ export default function AdminOrderDetailPage() {
       setError('');
       setMessage('');
       if (action === 'cancel' && !cancelReason.trim()) {
-        setError('Escribe un motivo de cancelación.');
+        setError('Escribe un motivo de cancelacion.');
         return;
       }
 
@@ -91,7 +92,7 @@ export default function AdminOrderDetailPage() {
         body: {},
       });
       setOrder(response.order);
-      setMessage('El pago interno quedó registrado.');
+      setMessage('El pago interno quedo registrado.');
     } catch (err) {
       setError(err.message || 'No se pudo registrar el pago');
     } finally {
@@ -100,7 +101,7 @@ export default function AdminOrderDetailPage() {
   }
 
   if (loading) {
-    return <div className="container section-card centered-card">Cargando orden…</div>;
+    return <div className="container section-card centered-card">Cargando orden...</div>;
   }
 
   if (error && !order) {
@@ -127,19 +128,19 @@ export default function AdminOrderDetailPage() {
             <div className="section-card nested-card">
               <h3>Cliente</h3>
               <p>{order.customer.firstName} {order.customer.lastName}</p>
-              <p className="muted-copy">{order.customer.email || 'Sin email'} · {order.customer.phone || 'Sin teléfono'}</p>
-              <p className="muted-copy">{order.customer.address || 'Sin dirección'}</p>
+              <p className="muted-copy">{order.customer.email || 'Sin email'} - {order.customer.phone || 'Sin telefono'}</p>
+              <p className="muted-copy">{order.customer.address || 'Sin direccion'}</p>
             </div>
 
             <div className="section-card nested-card">
-              <h3>Artículos</h3>
+              <h3>Articulos</h3>
               <div className="admin-list compact-list">
                 {order.items.map((item) => (
                   <article key={item.id} className="admin-row-card compact-row">
-                    <img src={resolveAssetUrl(item.image)} alt={item.articleTitle} />
+                    <SmartImage src={item.image} alt={item.articleTitle} fallbackLabel={item.articleTitle} />
                     <div>
                       <h4>{item.articleTitle}</h4>
-                      <p className="muted-copy">{item.brandName || 'Sin marca'} · {item.size || 'Sin talle'}</p>
+                      <p className="muted-copy">{item.brandName || 'Sin marca'} - {item.size || 'Sin talle'}</p>
                     </div>
                     <strong>{formatCurrency(item.lineTotal)}</strong>
                   </article>
@@ -166,7 +167,7 @@ export default function AdminOrderDetailPage() {
               <h3>Resumen</h3>
               <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(order.subtotal)}</strong></p>
               <p className="summary-line"><span>Descuento</span><strong>{formatCurrency(order.discountTotal)}</strong></p>
-              <p className="summary-line"><span>Envío</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
+              <p className="summary-line"><span>Envio</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
               <p className="summary-line total"><span>Total</span><strong>{formatCurrency(order.total)}</strong></p>
               <p className="muted-copy">Creada: {formatDate(order.createdAt)}</p>
               <p className="muted-copy">Aprobada: {formatDate(order.approvedAt)}</p>
@@ -182,19 +183,19 @@ export default function AdminOrderDetailPage() {
                   {order.payments.map((payment) => (
                     <div key={payment.id} className="history-row">
                       <strong>{payment.providerName || payment.paymentMethod}</strong>
-                      <span>{formatCurrency(payment.amount)} · {payment.providerReference || 'Sin referencia'}</span>
+                      <span>{formatCurrency(payment.amount)} - {payment.providerReference || 'Sin referencia'}</span>
                       <span><StatusBadge status={payment.status} labels={PAYMENT_STATUS_LABELS} /></span>
                       <span>{formatDate(payment.paidAt || payment.createdAt)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="muted-copy">Todavía no hay pagos registrados para esta orden.</p>
+                <p className="muted-copy">Todavia no hay pagos registrados para esta orden.</p>
               )}
 
               {!order.payments.length && order.orderStatus === 'APPROVED' ? (
                 <button type="button" className="button button-secondary" onClick={handleRegisterPayment} disabled={paymentSubmitting}>
-                  {paymentSubmitting ? 'Registrando pago…' : 'Registrar pago interno'}
+                  {paymentSubmitting ? 'Registrando pago...' : 'Registrar pago interno'}
                 </button>
               ) : null}
             </div>
@@ -208,7 +209,7 @@ export default function AdminOrderDetailPage() {
                 <>
                   <button type="button" className="button button-primary" onClick={() => runAction('approve')}>Aprobar</button>
                   <label className="field-group">
-                    <span>Motivo de cancelación</span>
+                    <span>Motivo de cancelacion</span>
                     <textarea className="input textarea" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} />
                   </label>
                   <button type="button" className="button button-secondary" onClick={() => runAction('cancel')}>Cancelar</button>

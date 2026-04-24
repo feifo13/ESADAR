@@ -2,6 +2,7 @@ import path from 'node:path';
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
+import { buildArticleUploadPublicPath, normalizePublicAssetPath } from '../../utils/assets.js';
 import { uniqueSlug } from '../../utils/slug.js';
 import { logAudit } from '../audit/audit.service.js';
 
@@ -442,7 +443,7 @@ export async function addArticleImages(articleId, files, auditContext) {
     const nextSortOrder = images.length;
 
     for (const [index, file] of files.entries()) {
-      const relativePath = `uploads/${path.basename(file.path)}`;
+      const relativePath = buildArticleUploadPublicPath(path.basename(file.path));
       await connection.execute(
         `
           INSERT INTO article_images (
@@ -507,7 +508,11 @@ export async function getArticleImages(articleId, connection = pool) {
     [articleId],
   );
 
-  return rows.map((row) => ({ ...row, isPrimary: Boolean(row.isPrimary) }));
+  return rows.map((row) => ({
+    ...row,
+    filePath: normalizePublicAssetPath(row.filePath),
+    isPrimary: Boolean(row.isPrimary),
+  }));
 }
 
 function normalizeArticleRows(rows) {
@@ -534,7 +539,7 @@ function normalizeArticleRows(rows) {
     brand: row.brandId ? { id: row.brandId, name: row.brandName } : null,
     size: row.sizeId ? { id: row.sizeId, code: row.sizeCode } : null,
     sizeText: row.sizeText,
-    primaryImage: row.primaryImage,
+    primaryImage: normalizePublicAssetPath(row.primaryImage),
   }));
 }
 

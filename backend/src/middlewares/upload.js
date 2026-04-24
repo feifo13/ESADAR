@@ -4,10 +4,10 @@ import multer from 'multer';
 import { randomUUID } from 'node:crypto';
 import { env } from '../config/env.js';
 
-fs.mkdirSync(env.uploadDir, { recursive: true });
+fs.mkdirSync(env.articleUploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, env.uploadDir),
+  destination: (_req, _file, cb) => cb(null, env.articleUploadDir),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
     cb(null, `${Date.now()}-${randomUUID()}${ext}`);

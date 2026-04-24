@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
+import SmartImage from '../../components/SmartImage.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
-import { apiFetch, resolveAssetUrl } from '../../lib/api.js';
+import { apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
 export default function AdminOrdersPage() {
@@ -20,7 +21,7 @@ export default function AdminOrdersPage() {
         const response = await apiFetch(`/api/admin/orders${status ? `?status=${status}` : ''}`);
         if (!ignore) setOrders(response.items || []);
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudo cargar órdenes');
+        if (!ignore) setError(err.message || 'No se pudo cargar ordenes');
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -38,8 +39,8 @@ export default function AdminOrdersPage() {
       <section className="section-card page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Administración</p>
-            <h1>Órdenes</h1>
+            <p className="section-kicker">Administracion</p>
+            <h1>Ordenes</h1>
           </div>
           <select className="input input-inline" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Todos los estados</option>
@@ -52,16 +53,16 @@ export default function AdminOrdersPage() {
         </div>
 
         {error ? <p className="error-copy">{error}</p> : null}
-        {loading ? <div className="centered-card">Cargando…</div> : null}
+        {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <div className="admin-list">
           {orders.map((order) => (
             <article key={order.id} className="admin-row-card">
-              <img src={resolveAssetUrl(order.previewImage)} alt={order.previewTitle} />
+              <SmartImage src={order.previewImage} alt={order.previewTitle} fallbackLabel={order.previewTitle} />
               <div>
                 <p className="eyebrow">{order.orderNumber}</p>
                 <h3>{order.previewTitle}</h3>
-                <p className="muted-copy">{order.customer.firstName} {order.customer.lastName} · {order.customer.email || 'Sin email'}</p>
+                <p className="muted-copy">{order.customer.firstName} {order.customer.lastName} - {order.customer.email || 'Sin email'}</p>
                 <p className="muted-copy">Ingreso: {formatDate(order.createdAt)}</p>
               </div>
               <div className="admin-row-actions">

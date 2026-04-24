@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react';
-import { resolveAssetUrl } from '../lib/api.js';
-
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=1200&q=80';
+import SmartImage from './SmartImage.jsx';
 
 export default function ImageGallery({ images = [], title }) {
   const normalized = useMemo(() => {
-    if (!images.length) return [{ id: 'fallback', src: FALLBACK_IMAGE }];
+    if (!images.length) return [{ id: 'fallback', src: '' }];
+
     return images.map((image, index) => ({
       id: image.id || index,
-      src: resolveAssetUrl(image.filePath || image.file_path || image.src) || FALLBACK_IMAGE,
+      src: image.filePath || image.file_path || image.src || '',
     }));
   }, [images]);
 
@@ -23,7 +22,7 @@ export default function ImageGallery({ images = [], title }) {
   return (
     <div className="gallery-shell">
       <div className="gallery-main">
-        <img src={active.src} alt={title} />
+        <SmartImage src={active.src} alt={title} fallbackLabel={title} />
         <button
           type="button"
           className="gallery-zoom-button"
@@ -34,8 +33,8 @@ export default function ImageGallery({ images = [], title }) {
         </button>
         {normalized.length > 1 ? (
           <div className="gallery-arrows">
-            <button type="button" onClick={() => move(-1)}>←</button>
-            <button type="button" onClick={() => move(1)}>→</button>
+            <button type="button" onClick={() => move(-1)}>Prev</button>
+            <button type="button" onClick={() => move(1)}>Next</button>
           </div>
         ) : null}
       </div>
@@ -49,7 +48,7 @@ export default function ImageGallery({ images = [], title }) {
               className={index === activeIndex ? 'gallery-thumb active' : 'gallery-thumb'}
               onClick={() => setActiveIndex(index)}
             >
-              <img src={image.src} alt={`${title} ${index + 1}`} />
+              <SmartImage src={image.src} alt={`${title} ${index + 1}`} fallbackLabel={title} />
             </button>
           ))}
         </div>
@@ -64,9 +63,9 @@ export default function ImageGallery({ images = [], title }) {
               onClick={() => setZoomOpen(false)}
               aria-label="Cerrar zoom"
             >
-              ×
+              X
             </button>
-            <img src={active.src} alt={title} className="gallery-zoom-image" />
+            <SmartImage src={active.src} alt={title} fallbackLabel={title} className="gallery-zoom-image" />
             {normalized.length > 1 ? (
               <div className="gallery-zoom-nav">
                 <button type="button" onClick={() => move(-1)}>Anterior</button>

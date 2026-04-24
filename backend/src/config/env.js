@@ -33,5 +33,7 @@ export const env = {
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   uploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads'),
+  articleUploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads', 'articles'),
+  bundledUploadDir: path.resolve(process.cwd(), 'public', 'uploads'),
   maxUploadBytes: toNumber(process.env.MAX_UPLOAD_MB, 10) * 1024 * 1024,
 };

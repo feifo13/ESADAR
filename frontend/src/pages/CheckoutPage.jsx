@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useLookups } from '../contexts/LookupsContext.jsx';
+import SmartImage from '../components/SmartImage.jsx';
 import { formatCurrency } from '../lib/format.js';
-import { resolveAssetUrl, apiFetch } from '../lib/api.js';
+import { apiFetch } from '../lib/api.js';
 
 const STORAGE_KEY = 'esadar-checkout-draft';
 const COMPLETE_STORAGE_KEY = 'esadar-checkout-complete';
@@ -257,10 +258,10 @@ export default function CheckoutPage() {
           <div className="checkout-items">
             {items.map((item) => (
               <div key={item.articleId} className="checkout-item">
-                <img src={resolveAssetUrl(item.image)} alt={item.title} />
+                <SmartImage src={item.image} alt={item.title} fallbackLabel={item.title} />
                 <div>
                   <p className="checkout-item-title">{item.title}</p>
-                  <p className="muted-copy">{item.brandName || 'Sin marca'} {item.sizeLabel ? `· ${item.sizeLabel}` : ''}</p>
+                  <p className="muted-copy">{item.brandName || 'Sin marca'} {item.sizeLabel ? ` - ${item.sizeLabel}` : ''}</p>
                   <div className="quantity-row">
                     <label>
                       Cantidad

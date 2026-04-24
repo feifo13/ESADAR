@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import { env } from './config/env.js';
@@ -15,6 +16,7 @@ import { adminRouter as adminContactRoutes, publicRouter as publicContactRoutes 
 import cartRoutes from './modules/cart/cart.routes.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
+fs.mkdirSync(env.articleUploadDir, { recursive: true });
 
 export function createApp() {
   const app = express();
@@ -25,6 +27,9 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(requestContext);
   app.use('/uploads', express.static(env.uploadDir));
+  if (path.resolve(env.bundledUploadDir) !== path.resolve(env.uploadDir)) {
+    app.use('/uploads', express.static(env.bundledUploadDir));
+  }
 
   app.get('/', (_req, res) => {
     res.json({ ok: true, name: 'ESADAR Backend' });

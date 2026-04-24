@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
+import SmartImage from '../../components/SmartImage.jsx';
 import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 
@@ -40,6 +41,8 @@ export default function AdminArticleFormPage() {
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const [form, setForm] = useState(toFormState(null));
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [selectedPreviews, setSelectedPreviews] = useState([]);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -58,7 +61,10 @@ export default function AdminArticleFormPage() {
       try {
         setLoading(true);
         const response = await apiFetch(`/api/admin/articles/${id}`);
-        if (!ignore) setForm(toFormState(response.article));
+        if (!ignore) {
+          setForm(toFormState(response.article));
+          setExistingImages(response.article.images || []);
+        }
       } catch (err) {
         if (!ignore) setError(err.message || 'No se pudo cargar el artículo');
       } finally {
@@ -71,6 +77,20 @@ export default function AdminArticleFormPage() {
       ignore = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    const nextPreviews = Array.from(images || []).map((file) => ({
+      id: `${file.name}-${file.size}-${file.lastModified}`,
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }));
+
+    setSelectedPreviews(nextPreviews);
+
+    return () => {
+      nextPreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [images]);
 
   const totalPurchasePrice = useMemo(
     () => Number(form.purchasePriceItem || 0) + Number(form.purchasePriceShipping || 0) + Number(form.purchasePriceCourier || 0),
@@ -121,6 +141,10 @@ export default function AdminArticleFormPage() {
         const formData = new FormData();
         Array.from(images).forEach((file) => formData.append('images', file));
         await apiFetch(`/api/admin/articles/${articleId}/images`, { method: 'POST', body: formData });
+        setImages([]);
+
+        const refreshed = await apiFetch(`/api/admin/articles/${articleId}`);
+        setExistingImages(refreshed.article.images || []);
       }
 
       setMessage(isEdit ? 'Artículo actualizado correctamente.' : 'Artículo creado correctamente.');
@@ -149,6 +173,39 @@ export default function AdminArticleFormPage() {
           </div>
           <Link to="/admin/articles" className="ghost-button linklike">Volver</Link>
         </div>
+
+        {(existingImages.length || selectedPreviews.length) ? (
+          <div className="image-preview-section">
+            <div className="stack-gap-xs">
+              <p className="section-kicker">Imagenes</p>
+              <h2>Preview</h2>
+            </div>
+
+            <div className="image-preview-grid">
+              {existingImages.map((image) => (
+                <figure key={`existing-${image.id}`} className="image-preview-card">
+                  <SmartImage
+                    src={image.filePath || image.file_path}
+                    alt={image.altText || form.title}
+                    fallbackLabel={form.title || 'ESADAR'}
+                  />
+                  <figcaption>Actual</figcaption>
+                </figure>
+              ))}
+
+              {selectedPreviews.map((preview) => (
+                <figure key={preview.id} className="image-preview-card image-preview-card--pending">
+                  <SmartImage
+                    src={preview.url}
+                    alt={preview.name}
+                    fallbackLabel={form.title || preview.name}
+                  />
+                  <figcaption>Por subir</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="form-grid-two">
           <label className="field-group"><span>Título</span><input className="input" value={form.title} onChange={(event) => update('title', event.target.value)} required /></label>

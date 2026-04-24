@@ -14,8 +14,9 @@ function getStoredToken() {
 
 export function resolveAssetUrl(path) {
   if (!path) return '';
-  if (/^https?:\/\//i.test(path)) return path;
-  return `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
+  const normalized = String(path).trim().replace(/\\/g, '/');
+  if (/^(https?:|data:|blob:)/i.test(normalized)) return normalized;
+  return `${API_URL}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
 }
 
 export async function apiFetch(path, options = {}) {

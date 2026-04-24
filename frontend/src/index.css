@@ -427,6 +427,30 @@ select.input option,
 .status-refunded,
 .status-archived { background: rgba(71, 84, 103, 0.12); color: #475467; }
 .checkbox-field { display: flex; align-items: center; gap: 10px; padding-top: 28px; }
+.image-preview-section { display: grid; gap: 14px; }
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+.image-preview-card { display: grid; gap: 8px; }
+.image-preview-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.image-preview-card figcaption {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.image-preview-card--pending figcaption { color: var(--orange); }
+
+img[data-fallback='true'] {
+  background: linear-gradient(180deg, rgba(0, 34, 68, 0.18), rgba(0, 167, 179, 0.08));
+  object-fit: cover;
+}
 
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: grid; place-items: center; padding: 20px; z-index: 80;
