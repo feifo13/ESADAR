@@ -30,3 +30,30 @@ export const uploadArticleImages = multer({
     files: 10,
   },
 });
+
+function importFileFilter(_req, file, cb) {
+  const allowedMimeTypes = [
+    'text/csv',
+    'application/csv',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+
+  const fileName = String(file.originalname || '').toLowerCase();
+  const hasAllowedExtension = ['.csv', '.xlsx', '.xls'].some((extension) => fileName.endsWith(extension));
+
+  if (!allowedMimeTypes.includes(file.mimetype) && !hasAllowedExtension) {
+    return cb(new Error('Only csv, xls and xlsx files are allowed'));
+  }
+
+  return cb(null, true);
+}
+
+export const uploadArticleImportFile = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: importFileFilter,
+  limits: {
+    fileSize: env.maxUploadBytes,
+    files: 1,
+  },
+});

@@ -303,7 +303,7 @@ CREATE TABLE article_images (
 
 CREATE TABLE article_import_batches (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  batch_type ENUM('CSV','MANUAL_BATCH') NOT NULL,
+  batch_type ENUM('CSV','XLSX','MANUAL_BATCH') NOT NULL,
   source_file_name VARCHAR(255) NULL,
   rows_received INT UNSIGNED NOT NULL DEFAULT 0,
   rows_created INT UNSIGNED NOT NULL DEFAULT 0,

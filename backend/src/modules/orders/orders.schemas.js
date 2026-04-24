@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import {
+  optionalDateString,
+  optionalEnum,
+  optionalPositiveInt,
+  optionalTrimmedString,
+  pageSchema,
+  pageSizeSchema,
+  sortDirSchema,
+} from '../../utils/listing.js';
 
 const guestSchema = z.object({
   firstName: z.string().trim().min(2).max(100),
@@ -34,4 +43,25 @@ export const createOrderPaymentSchema = z.object({
   providerName: z.string().trim().max(100).optional().nullable(),
   providerReference: z.string().trim().max(150).optional().nullable(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'FAILED', 'REFUNDED']).default('APPROVED'),
+});
+
+export const adminOrderListQuerySchema = z.object({
+  q: optionalTrimmedString(150),
+  status: optionalEnum(['PENDING', 'RESERVED', 'APPROVED', 'SHIPPED', 'CANCELLED', 'EXPIRED']),
+  paymentStatus: optionalEnum(['PENDING', 'PAID', 'FAILED', 'REFUNDED']),
+  categoryId: optionalPositiveInt,
+  brandId: optionalPositiveInt,
+  dateFrom: optionalDateString,
+  dateTo: optionalDateString,
+  sortBy: optionalEnum([
+    'createdAt',
+    'orderNumber',
+    'total',
+    'orderStatus',
+    'paymentStatus',
+    'customerName',
+  ]),
+  sortDir: sortDirSchema,
+  page: pageSchema,
+  pageSize: pageSizeSchema(25),
 });

@@ -3,6 +3,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { buildArticleUploadPublicPath, normalizePublicAssetPath } from '../../utils/assets.js';
+import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { uniqueSlug } from '../../utils/slug.js';
 import { logAudit } from '../audit/audit.service.js';
 
@@ -42,6 +43,18 @@ const publicBaseSelect = `
   LEFT JOIN brands b ON b.id = a.brand_id
   LEFT JOIN sizes s ON s.id = a.size_id
 `;
+
+const ADMIN_ARTICLE_SORTS = {
+  intakeDate: (direction) => `a.intake_date ${direction}, a.id ${direction}`,
+  title: (direction) => `a.title ${direction}, a.id DESC`,
+  salePrice: (direction) => `a.sale_price ${direction}, a.id DESC`,
+  discountedPrice: (direction) => `a.discounted_price ${direction}, a.id DESC`,
+  status: (direction) => `a.status ${direction}, a.id DESC`,
+  quantityAvailable: (direction) => `a.quantity_available ${direction}, a.id DESC`,
+  categoryName: (direction) => `c.name ${direction}, a.id DESC`,
+  brandName: (direction) => `COALESCE(b.name, '') ${direction}, a.id DESC`,
+  internalCode: (direction) => `a.internal_code ${direction}, a.id DESC`,
+};
 
 function buildPublicFilters(query, includeInactive = false) {
   const clauses = [];
@@ -104,6 +117,74 @@ function resolveArticleSort(sort) {
   }
 }
 
+function buildAdminArticleFilters(filters) {
+  const clauses = [];
+  const params = [];
+  const searchTerm = filters.q || filters.search;
+
+  if (searchTerm) {
+    const like = buildLikeValue(searchTerm);
+    clauses.push(`(
+      a.internal_code LIKE ?
+      OR a.title LIKE ?
+      OR a.slug LIKE ?
+      OR a.description LIKE ?
+      OR c.name LIKE ?
+      OR COALESCE(b.name, '') LIKE ?
+      OR COALESCE(s.code, '') LIKE ?
+      OR COALESCE(a.size_text, '') LIKE ?
+    )`);
+    params.push(like, like, like, like, like, like, like, like);
+  }
+
+  if (filters.status) {
+    clauses.push('a.status = ?');
+    params.push(filters.status);
+  }
+
+  if (filters.categoryId) {
+    clauses.push('a.category_id = ?');
+    params.push(filters.categoryId);
+  }
+
+  if (filters.brandId) {
+    clauses.push('a.brand_id = ?');
+    params.push(filters.brandId);
+  }
+
+  if (filters.sizeId) {
+    clauses.push('a.size_id = ?');
+    params.push(filters.sizeId);
+  }
+
+  appendDateRangeFilters('a.intake_date', filters, clauses, params);
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  return { where, params };
+}
+
+function resolveAdminArticleSort(filters) {
+  if (filters.sortBy) {
+    return resolveSortClause({
+      sortBy: filters.sortBy,
+      sortDir: filters.sortDir,
+      sortMap: ADMIN_ARTICLE_SORTS,
+      fallbackKey: 'intakeDate',
+    });
+  }
+
+  if (filters.sort) {
+    return resolveArticleSort(filters.sort);
+  }
+
+  return resolveSortClause({
+    sortBy: 'intakeDate',
+    sortDir: filters.sortDir,
+    sortMap: ADMIN_ARTICLE_SORTS,
+    fallbackKey: 'intakeDate',
+  });
+}
+
 export async function listPublicArticles({ filters, pagination }) {
   const { where, params } = buildPublicFilters(filters, false);
   const orderBy = resolveArticleSort(filters.sort);
@@ -154,8 +235,8 @@ export async function getPublicArticleBySlugOrId(slugOrId) {
 }
 
 export async function listAdminArticles({ filters, pagination }) {
-  const { where, params } = buildPublicFilters(filters, true);
-  const orderBy = resolveArticleSort(filters.sort);
+  const { where, params } = buildAdminArticleFilters(filters);
+  const orderBy = resolveAdminArticleSort(filters);
 
   const [items] = await pool.query(
     `${publicBaseSelect}
@@ -183,6 +264,79 @@ export async function listAdminArticles({ filters, pagination }) {
       total: countRows[0].total,
     },
   };
+}
+
+export async function listAdminArticlesForExport({ filters }) {
+  const { where, params } = buildAdminArticleFilters(filters);
+  const orderBy = resolveAdminArticleSort(filters);
+
+  const [rows] = await pool.query(
+    `
+      SELECT
+        a.id,
+        a.internal_code AS internalCode,
+        a.slug,
+        a.title,
+        a.category_id AS categoryId,
+        c.name AS categoryName,
+        a.brand_id AS brandId,
+        b.name AS brandName,
+        a.size_id AS sizeId,
+        s.code AS sizeCode,
+        a.size_text AS sizeText,
+        a.measurements_text AS measurementsText,
+        a.description,
+        a.purchase_price_item AS purchasePriceItem,
+        a.purchase_price_shipping AS purchasePriceShipping,
+        a.purchase_price_courier AS purchasePriceCourier,
+        a.purchase_price_total AS purchasePriceTotal,
+        a.sale_price AS salePrice,
+        a.discount_type AS discountType,
+        a.discount_value AS discountValue,
+        a.discounted_price AS discountedPrice,
+        a.allow_offers AS allowOffers,
+        a.is_featured AS isFeatured,
+        a.intake_date AS intakeDate,
+        a.quantity_total AS quantityTotal,
+        a.quantity_available AS quantityAvailable,
+        a.quantity_reserved AS quantityReserved,
+        a.quantity_sold AS quantitySold,
+        a.status,
+        a.origin_notes AS originNotes,
+        (
+          SELECT ai.file_path
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS primaryImage
+      FROM articles a
+      INNER JOIN categories c ON c.id = a.category_id
+      LEFT JOIN brands b ON b.id = a.brand_id
+      LEFT JOIN sizes s ON s.id = a.size_id
+      ${where}
+      ORDER BY ${orderBy}
+    `,
+    params,
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    purchasePriceItem: Number(row.purchasePriceItem),
+    purchasePriceShipping: Number(row.purchasePriceShipping),
+    purchasePriceCourier: Number(row.purchasePriceCourier),
+    purchasePriceTotal: Number(row.purchasePriceTotal),
+    salePrice: Number(row.salePrice),
+    discountValue: Number(row.discountValue),
+    discountedPrice: Number(row.discountedPrice),
+    allowOffers: Boolean(row.allowOffers),
+    isFeatured: Boolean(row.isFeatured),
+    quantityTotal: Number(row.quantityTotal),
+    quantityAvailable: Number(row.quantityAvailable),
+    quantityReserved: Number(row.quantityReserved),
+    quantitySold: Number(row.quantitySold),
+    primaryImage: normalizePublicAssetPath(row.primaryImage),
+  }));
 }
 
 export async function getAdminArticleById(id) {

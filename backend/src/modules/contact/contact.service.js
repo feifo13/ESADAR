@@ -1,7 +1,15 @@
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { notFound } from '../../utils/app-error.js';
+import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
+
+const CONTACT_MESSAGE_SORTS = {
+  createdAt: (direction) => `cm.created_at ${direction}, cm.id ${direction}`,
+  status: (direction) => `cm.status ${direction}, cm.id DESC`,
+  name: (direction) => `cm.last_name ${direction}, cm.first_name ${direction}, cm.id DESC`,
+  email: (direction) => `cm.email ${direction}, cm.id DESC`,
+};
 
 export async function createContactMessage(input, auditContext) {
   return withTransaction(async (connection) => {
@@ -49,24 +57,50 @@ export async function createContactMessage(input, auditContext) {
   });
 }
 
-export async function listContactMessages({ page, pageSize, offset, status, search }) {
+export async function listContactMessages({ filters, pagination }) {
+  const {
+    q,
+    search,
+    status,
+    dateFrom,
+    dateTo,
+    sortBy,
+    sortDir,
+  } = filters;
+  const { page, pageSize, offset } = pagination;
   const whereClauses = [];
   const params = [];
+  const searchTerm = q || search;
 
   if (status) {
     whereClauses.push('cm.status = ?');
     params.push(status);
   }
 
-  if (search) {
+  if (searchTerm) {
     whereClauses.push(
-      '(cm.first_name LIKE ? OR cm.last_name LIKE ? OR cm.email LIKE ? OR cm.message_text LIKE ?)',
+      `(
+        cm.first_name LIKE ?
+        OR cm.last_name LIKE ?
+        OR cm.email LIKE ?
+        OR cm.phone LIKE ?
+        OR cm.instagram LIKE ?
+        OR cm.message_text LIKE ?
+      )`,
     );
-    const like = `%${search}%`;
-    params.push(like, like, like, like);
+    const like = buildLikeValue(searchTerm);
+    params.push(like, like, like, like, like, like);
   }
 
+  appendDateRangeFilters('cm.created_at', { dateFrom, dateTo }, whereClauses, params);
+
   const where = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const orderBy = resolveSortClause({
+    sortBy,
+    sortDir,
+    sortMap: CONTACT_MESSAGE_SORTS,
+    fallbackKey: 'createdAt',
+  });
 
   const [rows] = await pool.query(
     `
@@ -87,7 +121,7 @@ export async function listContactMessages({ page, pageSize, offset, status, sear
       FROM contact_messages cm
       LEFT JOIN users u ON u.id = cm.handled_by
       ${where}
-      ORDER BY cm.id DESC
+      ORDER BY ${orderBy}
       LIMIT ${pageSize} OFFSET ${offset}
     `,
     params,

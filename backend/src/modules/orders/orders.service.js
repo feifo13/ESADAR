@@ -2,12 +2,22 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { generateOrderNumber } from '../../utils/order-number.js';
+import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
 import { convertActiveCartForUser } from '../cart/cart.service.js';
 import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
 } from '../customers/customer-helpers.js';
+
+const ORDER_SORTS = {
+  createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
+  orderNumber: (direction) => `o.order_number ${direction}, o.id DESC`,
+  total: (direction) => `o.total_snapshot ${direction}, o.id DESC`,
+  orderStatus: (direction) => `o.order_status ${direction}, o.id DESC`,
+  paymentStatus: (direction) => `o.payment_status ${direction}, o.id DESC`,
+  customerName: (direction) => `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
+};
 
 export async function createOrder(input, actor, auditContext) {
   return withTransaction(async (connection) => {
@@ -241,13 +251,88 @@ export async function createOrder(input, actor, auditContext) {
   });
 }
 
-export async function listOrders({ page, pageSize, offset, status }) {
+export async function listOrders({ filters, pagination }) {
+  const {
+    q,
+    status,
+    paymentStatus,
+    categoryId,
+    brandId,
+    dateFrom,
+    dateTo,
+    sortBy,
+    sortDir,
+  } = filters;
+  const { page, pageSize, offset } = pagination;
   const params = [];
-  let where = '';
+  const clauses = [];
+
   if (status) {
-    where = 'WHERE o.order_status = ?';
+    clauses.push('o.order_status = ?');
     params.push(status);
   }
+
+  if (paymentStatus) {
+    clauses.push('o.payment_status = ?');
+    params.push(paymentStatus);
+  }
+
+  if (categoryId) {
+    clauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM order_items oi_filter
+        INNER JOIN articles a_filter ON a_filter.id = oi_filter.article_id
+        WHERE oi_filter.order_id = o.id
+          AND a_filter.category_id = ?
+      )
+    `);
+    params.push(categoryId);
+  }
+
+  if (brandId) {
+    clauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM order_items oi_filter
+        INNER JOIN articles a_filter ON a_filter.id = oi_filter.article_id
+        WHERE oi_filter.order_id = o.id
+          AND a_filter.brand_id = ?
+      )
+    `);
+    params.push(brandId);
+  }
+
+  if (q) {
+    const like = buildLikeValue(q);
+    clauses.push(`(
+      o.order_number LIKE ?
+      OR o.payment_method LIKE ?
+      OR COALESCE(c.first_name, pc.first_name) LIKE ?
+      OR COALESCE(c.last_name, pc.last_name) LIKE ?
+      OR COALESCE(c.email, pc.email) LIKE ?
+      OR EXISTS (
+        SELECT 1
+        FROM order_items oi_search
+        WHERE oi_search.order_id = o.id
+          AND (
+            oi_search.article_title_snapshot LIKE ?
+            OR oi_search.article_slug_snapshot LIKE ?
+          )
+      )
+    )`);
+    params.push(like, like, like, like, like, like, like);
+  }
+
+  appendDateRangeFilters('o.created_at', { dateFrom, dateTo }, clauses, params);
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const orderBy = resolveSortClause({
+    sortBy,
+    sortDir,
+    sortMap: ORDER_SORTS,
+    fallbackKey: 'createdAt',
+  });
 
   const [rows] = await pool.query(
     `
@@ -292,14 +377,20 @@ export async function listOrders({ page, pageSize, offset, status }) {
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       ${where}
-      ORDER BY o.id DESC
+      ORDER BY ${orderBy}
       LIMIT ${pageSize} OFFSET ${offset}
     `,
     params,
   );
 
   const [countRows] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM orders o ${where}`,
+    `
+      SELECT COUNT(*) AS total
+      FROM orders o
+      LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
+      ${where}
+    `,
     params,
   );
 

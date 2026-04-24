@@ -2,12 +2,21 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { getPagination } from '../../utils/pagination.js';
+import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
   createPotentialCustomerFromInput,
   ensureCustomerForUser,
   findCustomerByUserId,
 } from '../customers/customer-helpers.js';
+
+const OFFER_SORTS = {
+  createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
+  offeredAmount: (direction) => `o.offered_price ${direction}, o.id DESC`,
+  status: (direction) => `o.status ${direction}, o.id DESC`,
+  articleTitle: (direction) => `a.title ${direction}, o.id DESC`,
+  contactName: (direction) => `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
+};
 
 export async function createOffer(input, actor, auditContext) {
   return withTransaction(async (connection) => {
@@ -84,14 +93,60 @@ export async function createOffer(input, actor, auditContext) {
   });
 }
 
-export async function listOffers({ page, pageSize, offset, status }) {
+export async function listOffers({ filters, pagination }) {
+  const {
+    q,
+    status,
+    categoryId,
+    brandId,
+    dateFrom,
+    dateTo,
+    sortBy,
+    sortDir,
+  } = filters;
+  const { page, pageSize, offset } = pagination;
   const params = [];
-  let where = '';
+  const clauses = [];
 
   if (status) {
-    where = 'WHERE o.status = ?';
+    clauses.push('o.status = ?');
     params.push(status);
   }
+
+  if (categoryId) {
+    clauses.push('a.category_id = ?');
+    params.push(categoryId);
+  }
+
+  if (brandId) {
+    clauses.push('a.brand_id = ?');
+    params.push(brandId);
+  }
+
+  if (q) {
+    const like = buildLikeValue(q);
+    clauses.push(`(
+      a.title LIKE ?
+      OR a.internal_code LIKE ?
+      OR o.notes LIKE ?
+      OR COALESCE(c.first_name, pc.first_name) LIKE ?
+      OR COALESCE(c.last_name, pc.last_name) LIKE ?
+      OR COALESCE(c.email, pc.email) LIKE ?
+      OR COALESCE(c.phone, pc.phone) LIKE ?
+      OR COALESCE(c.instagram, pc.instagram) LIKE ?
+    )`);
+    params.push(like, like, like, like, like, like, like, like);
+  }
+
+  appendDateRangeFilters('o.created_at', { dateFrom, dateTo }, clauses, params);
+
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const orderBy = resolveSortClause({
+    sortBy,
+    sortDir,
+    sortMap: OFFER_SORTS,
+    fallbackKey: 'createdAt',
+  });
 
   const [rows] = await pool.query(
     `
@@ -100,6 +155,9 @@ export async function listOffers({ page, pageSize, offset, status }) {
         o.article_id AS articleId,
         a.title AS articleTitle,
         a.slug AS articleSlug,
+        a.internal_code AS articleInternalCode,
+        cat.name AS categoryName,
+        b.name AS brandName,
         o.customer_id AS customerId,
         o.potential_customer_id AS potentialCustomerId,
         o.offered_price AS offeredAmount,
@@ -118,17 +176,28 @@ export async function listOffers({ page, pageSize, offset, status }) {
         COALESCE(c.instagram, pc.instagram) AS contactInstagram
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN categories cat ON cat.id = a.category_id
+      LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       ${where}
-      ORDER BY o.id DESC
+      ORDER BY ${orderBy}
       LIMIT ${pageSize} OFFSET ${offset}
     `,
     params,
   );
 
   const [countRows] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM offers o ${where}`,
+    `
+      SELECT COUNT(*) AS total
+      FROM offers o
+      INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN categories cat ON cat.id = a.category_id
+      LEFT JOIN brands b ON b.id = a.brand_id
+      LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
+      ${where}
+    `,
     params,
   );
 
@@ -341,6 +410,9 @@ function normalizeOfferRow(row) {
       id: row.articleId,
       title: row.articleTitle,
       slug: row.articleSlug,
+      internalCode: row.articleInternalCode,
+      categoryName: row.categoryName,
+      brandName: row.brandName,
     },
     customerId: row.customerId,
     potentialCustomerId: row.potentialCustomerId,

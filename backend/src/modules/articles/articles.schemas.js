@@ -1,4 +1,14 @@
 import { z } from 'zod';
+import {
+  optionalDateString,
+  optionalBooleanish,
+  optionalEnum,
+  optionalPositiveInt,
+  optionalTrimmedString,
+  pageSchema,
+  pageSizeSchema,
+  sortDirSchema,
+} from '../../utils/listing.js';
 
 const numericMoney = z.coerce.number().min(0);
 const optionalId = z.union([z.coerce.number().int().positive(), z.null()]).optional();
@@ -119,6 +129,40 @@ export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, c
 
 export const articleStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+});
+
+export const adminArticleListQuerySchema = z.object({
+  q: optionalTrimmedString(150),
+  search: optionalTrimmedString(150),
+  status: optionalEnum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+  categoryId: optionalPositiveInt,
+  brandId: optionalPositiveInt,
+  sizeId: optionalPositiveInt,
+  dateFrom: optionalDateString,
+  dateTo: optionalDateString,
+  sort: optionalTrimmedString(40),
+  sortBy: optionalEnum([
+    'intakeDate',
+    'title',
+    'salePrice',
+    'discountedPrice',
+    'status',
+    'quantityAvailable',
+    'categoryName',
+    'brandName',
+    'internalCode',
+  ]),
+  sortDir: sortDirSchema,
+  page: pageSchema,
+  pageSize: pageSizeSchema(25),
+});
+
+export const articleImportOptionsSchema = z.object({
+  updateExisting: optionalBooleanish,
+});
+
+export const articleExportQuerySchema = adminArticleListQuerySchema.extend({
+  format: z.enum(['csv', 'xlsx']).default('xlsx'),
 });
 
 function quantityTotalIsInvalid(total, available, reserved, sold) {

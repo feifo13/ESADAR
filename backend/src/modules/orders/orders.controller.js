@@ -11,6 +11,7 @@ import {
   createOrderPaymentSchema,
   createOrderSchema,
   cancelOrderSchema,
+  adminOrderListQuerySchema,
 } from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 
@@ -31,8 +32,9 @@ export async function createPublicOrder(req, res) {
 }
 
 export async function getAdminOrders(req, res) {
-  const pagination = getPagination(req.query, { pageSize: 25 });
-  const result = await listOrders({ ...pagination, status: req.query.status || null });
+  const filters = adminOrderListQuerySchema.parse(req.query);
+  const pagination = getPagination(filters, { pageSize: 25 });
+  const result = await listOrders({ filters, pagination });
   return res.json({ ok: true, ...result });
 }
 

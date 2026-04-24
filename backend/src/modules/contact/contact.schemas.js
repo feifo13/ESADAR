@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  optionalDateString,
+  optionalEnum,
+  optionalTrimmedString,
+  pageSchema,
+  pageSizeSchema,
+  sortDirSchema,
+} from '../../utils/listing.js';
 
 export const createContactMessageSchema = z.object({
   firstName: z.string().trim().min(2).max(100),
@@ -12,4 +20,16 @@ export const createContactMessageSchema = z.object({
 
 export const updateContactMessageStatusSchema = z.object({
   status: z.enum(['NEW', 'READ', 'REPLIED', 'ARCHIVED']),
+});
+
+export const adminContactMessageListQuerySchema = z.object({
+  q: optionalTrimmedString(150),
+  search: optionalTrimmedString(150),
+  status: optionalEnum(['NEW', 'READ', 'REPLIED', 'ARCHIVED']),
+  dateFrom: optionalDateString,
+  dateTo: optionalDateString,
+  sortBy: optionalEnum(['createdAt', 'status', 'name', 'email']),
+  sortDir: sortDirSchema,
+  page: pageSchema,
+  pageSize: pageSizeSchema(25),
 });

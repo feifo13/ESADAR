@@ -1,4 +1,5 @@
 import { getPagination } from "../../utils/pagination.js";
+import { badRequest } from '../../utils/app-error.js';
 import {
   addArticleImages,
   changeArticleStatus,
@@ -10,10 +11,18 @@ import {
   updateArticle,
 } from "./articles.service.js";
 import {
+  adminArticleListQuerySchema,
   articleCreateSchema,
+  articleExportQuerySchema,
+  articleImportOptionsSchema,
   articleStatusSchema,
   articleUpdateSchema,
 } from "./articles.schemas.js";
+import {
+  buildArticleExport,
+  previewArticleImport,
+  runArticleImport,
+} from './articles.batch.service.js';
 
 function getAuditContext(req) {
   return {
@@ -37,14 +46,63 @@ export async function getPublicArticle(req, res) {
 }
 
 export async function getAdminArticles(req, res) {
-  const pagination = getPagination(req.query, { pageSize: 25 });
-  const result = await listAdminArticles({ filters: req.query, pagination });
+  const filters = adminArticleListQuerySchema.parse(req.query);
+  const pagination = getPagination(filters, { pageSize: 25 });
+  const result = await listAdminArticles({ filters, pagination });
   return res.json({ ok: true, ...result });
 }
 
 export async function getAdminArticle(req, res) {
   const article = await getAdminArticleById(Number(req.params.id));
   return res.json({ ok: true, article });
+}
+
+export async function previewAdminArticleImport(req, res) {
+  if (!req.file) {
+    throw badRequest('Debes adjuntar un archivo CSV o XLSX');
+  }
+
+  const options = articleImportOptionsSchema.parse(req.body);
+  const result = await previewArticleImport({
+    file: req.file,
+    options: {
+      updateExisting: Boolean(options.updateExisting),
+    },
+  });
+
+  return res.json({ ok: true, ...result });
+}
+
+export async function importAdminArticles(req, res) {
+  if (!req.file) {
+    throw badRequest('Debes adjuntar un archivo CSV o XLSX');
+  }
+
+  const options = articleImportOptionsSchema.parse(req.body);
+  const result = await runArticleImport({
+    file: req.file,
+    options: {
+      updateExisting: Boolean(options.updateExisting),
+    },
+    auditContext: getAuditContext(req),
+  });
+
+  return res.status(201).json({ ok: true, ...result });
+}
+
+export async function exportAdminArticles(req, res) {
+  const query = articleExportQuerySchema.parse(req.query);
+  const { format, ...filters } = query;
+  const result = await buildArticleExport({
+    filters,
+    format,
+    auditContext: getAuditContext(req),
+  });
+
+  res.setHeader('Content-Type', result.contentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+  res.setHeader('X-Export-Count', String(result.itemCount));
+  return res.send(result.payload);
 }
 
 export async function createAdminArticle(req, res) {

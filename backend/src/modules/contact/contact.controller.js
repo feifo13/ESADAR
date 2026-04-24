@@ -1,5 +1,6 @@
 import { getPagination } from '../../utils/pagination.js';
 import {
+  adminContactMessageListQuerySchema,
   createContactMessageSchema,
   updateContactMessageStatusSchema,
 } from './contact.schemas.js';
@@ -26,11 +27,11 @@ export async function createPublicContactMessage(req, res) {
 }
 
 export async function getAdminContactMessages(req, res) {
-  const pagination = getPagination(req.query, { pageSize: 25 });
+  const filters = adminContactMessageListQuerySchema.parse(req.query);
+  const pagination = getPagination(filters, { pageSize: 25 });
   const result = await listContactMessages({
-    ...pagination,
-    status: req.query.status || null,
-    search: req.query.search ? String(req.query.search).trim() : null,
+    filters,
+    pagination,
   });
   return res.json({ ok: true, ...result });
 }
