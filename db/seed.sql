@@ -14,18 +14,18 @@ START TRANSACTION;
 -- =========================================================
 -- 1) Base users and roles
 -- Demo password for seeded users: 123456
--- Hash below is a bcrypt-style demo hash expected to match 123456
+-- Hash below is a bcrypt hash confirmed to match 123456
 -- Replace it if your auth stack requires a different algorithm/version
 -- =========================================================
 
-SET @demo_password_hash := '$2a$10$TvhkMBuBfkdy0dlbhgp6YuH9atDgxkSUTFy9nYkBIrpfiDK5HH8a6';
+SET @demo_password_hash := '$2b$10$7fkvkYZGeCW7mGrswngQHeW.eQEedJm.AXQgWSBvy4jR/AcnckCci';
 
 INSERT INTO users (
   first_name, last_name, birth_date, email, password_hash, address, phone, instagram,
   is_active, created_by, updated_by
 )
 SELECT
-  'Admin', 'Miami Closet', '1990-01-15', 'admin@miamicloset.test', @demo_password_hash,
+  'Admin', 'ESADAR', '1990-01-15', 'admin@miamicloset.test', @demo_password_hash,
   'Montevideo, Uruguay', '099100001', '@miamicloset_admin',
   1, NULL, NULL
 WHERE NOT EXISTS (
@@ -662,7 +662,7 @@ INSERT INTO audit_log (
   before_json, after_json, metadata_json, source, ip_address, user_agent, created_at
 )
 SELECT
-  @admin_user_id, 'Admin Miami Closet', 'ARTICLE_CREATED', 'articles', @art_1,
+  @admin_user_id, 'Admin ESADAR', 'ARTICLE_CREATED', 'articles', @art_1,
   NULL,
   JSON_OBJECT('internal_code','ART-0001','status','ACTIVE','sale_price',1590.00),
   JSON_OBJECT('module','backoffice','note','seed demo'),
@@ -676,7 +676,7 @@ INSERT INTO audit_log (
   before_json, after_json, metadata_json, source, ip_address, user_agent, created_at
 )
 SELECT
-  @admin_user_id, 'Admin Miami Closet', 'ORDER_CREATED', 'orders', @ord_1,
+  @admin_user_id, 'Admin ESADAR', 'ORDER_CREATED', 'orders', @ord_1,
   NULL,
   JSON_OBJECT('order_number','ORD-20260315-0001','order_status','RESERVED','total_snapshot',2370.00),
   JSON_OBJECT('module','checkout','reservation_hours',24),

@@ -1,4 +1,4 @@
-import { cn } from '../lib/format.js';
+import StatusBadge from './StatusBadge.jsx';
 
 const STATUS_LABELS = {
   RESERVED: 'Reservada',
@@ -10,6 +10,5 @@ const STATUS_LABELS = {
 };
 
 export default function OrderStatusBadge({ status }) {
-  const normalized = String(status || '').toUpperCase();
-  return <span className={cn('status-badge', `status-${String(status || '').toLowerCase()}`)}>{STATUS_LABELS[normalized] || normalized}</span>;
+  return <StatusBadge status={status} labels={STATUS_LABELS} />;
 }

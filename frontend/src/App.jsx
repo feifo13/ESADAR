@@ -14,6 +14,9 @@ import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
 import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage.jsx';
+import AdminOffersPage from './pages/admin/AdminOffersPage.jsx';
+import AdminContactMessagesPage from './pages/admin/AdminContactMessagesPage.jsx';
+import AdminAuditPage from './pages/admin/AdminAuditPage.jsx';
 
 export default function App() {
   return (
@@ -70,6 +73,30 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminOrderDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/offers"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminOffersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/contact-messages"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminContactMessagesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/audit"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminAuditPage />
             </ProtectedRoute>
           }
         />

@@ -10,6 +10,14 @@ export function notFoundHandler(req, res) {
 }
 
 export function errorHandler(error, req, res, _next) {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return res.status(400).json({
+      ok: false,
+      message: 'Invalid JSON body',
+      requestId: req.requestId,
+    });
+  }
+
   if (error instanceof ZodError) {
     return res.status(400).json({
       ok: false,

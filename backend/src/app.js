@@ -9,6 +9,10 @@ import authRoutes from './modules/auth/auth.routes.js';
 import { adminRouter as adminArticleRoutes, publicRouter as publicArticleRoutes } from './modules/articles/articles.routes.js';
 import { adminRouter as adminOrderRoutes, publicRouter as publicOrderRoutes } from './modules/orders/orders.routes.js';
 import auditRoutes from './modules/audit/audit.routes.js';
+import lookupsRoutes from './modules/lookups/lookups.routes.js';
+import { adminRouter as adminOfferRoutes, publicRouter as publicOfferRoutes } from './modules/offers/offers.routes.js';
+import { adminRouter as adminContactRoutes, publicRouter as publicContactRoutes } from './modules/contact/contact.routes.js';
+import cartRoutes from './modules/cart/cart.routes.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 
@@ -23,14 +27,20 @@ export function createApp() {
   app.use('/uploads', express.static(env.uploadDir));
 
   app.get('/', (_req, res) => {
-    res.json({ ok: true, name: 'Miami Closet Backend Starter' });
+    res.json({ ok: true, name: 'ESADAR Backend' });
   });
 
   app.use('/api/health', healthRoutes);
   app.use('/api/auth', authRoutes);
+  app.use('/api/cart', cartRoutes);
+  app.use('/api/public/lookups', lookupsRoutes);
   app.use('/api/public/articles', publicArticleRoutes);
+  app.use('/api/public/offers', publicOfferRoutes);
+  app.use('/api/public/contact-messages', publicContactRoutes);
   app.use('/api/public/orders', publicOrderRoutes);
   app.use('/api/admin/articles', adminArticleRoutes);
+  app.use('/api/admin/offers', adminOfferRoutes);
+  app.use('/api/admin/contact-messages', adminContactRoutes);
   app.use('/api/admin/orders', adminOrderRoutes);
   app.use('/api/admin/audit', auditRoutes);
 

@@ -28,3 +28,10 @@ export const createOrderSchema = z.object({
 export const cancelOrderSchema = z.object({
   reason: z.string().trim().min(2).max(500),
 });
+
+export const createOrderPaymentSchema = z.object({
+  amount: z.coerce.number().positive().optional(),
+  providerName: z.string().trim().max(100).optional().nullable(),
+  providerReference: z.string().trim().max(150).optional().nullable(),
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'FAILED', 'REFUNDED']).default('APPROVED'),
+});

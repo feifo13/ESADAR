@@ -5,6 +5,7 @@ import { requireRole } from '../../middlewares/require-role.js';
 import {
   approveAdminOrder,
   cancelAdminOrder,
+  createAdminOrderPayment,
   createPublicOrder,
   getAdminOrder,
   getAdminOrders,
@@ -19,6 +20,7 @@ publicRouter.post('/', optionalAuth, asyncHandler(createPublicOrder));
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));
 adminRouter.get('/:id', asyncHandler(getAdminOrder));
+adminRouter.post('/:id/payments', asyncHandler(createAdminOrderPayment));
 adminRouter.patch('/:id/approve', asyncHandler(approveAdminOrder));
 adminRouter.patch('/:id/cancel', asyncHandler(cancelAdminOrder));
 adminRouter.patch('/:id/ship', asyncHandler(shipAdminOrder));

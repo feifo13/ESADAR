@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useLookups } from '../contexts/LookupsContext.jsx';
 import { formatCurrency } from '../lib/format.js';
 import { resolveAssetUrl, apiFetch } from '../lib/api.js';
-import { PAYMENT_METHOD_OPTIONS, SHIPPING_METHOD_OPTIONS } from '../constants/lookups.js';
 
 const STORAGE_KEY = 'esadar-checkout-draft';
 const COMPLETE_STORAGE_KEY = 'esadar-checkout-complete';
@@ -39,17 +39,17 @@ function readDraft() {
   }
 }
 
-
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { items, subtotal, removeItem, updateQuantity } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const { shippingMethodOptions, paymentMethodOptions, lookupError } = useLookups();
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
-  const [shippingMethodId, setShippingMethodId] = useState(savedDraft?.shippingMethodId || 1);
-  const [paymentMethod, setPaymentMethod] = useState(savedDraft?.paymentMethod || 'BANK_TRANSFER');
+  const [shippingMethodId, setShippingMethodId] = useState(savedDraft?.shippingMethodId || '');
+  const [paymentMethod, setPaymentMethod] = useState(savedDraft?.paymentMethod || '');
   const [notes, setNotes] = useState(savedDraft?.notes || '');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -60,12 +60,28 @@ export default function CheckoutPage() {
   const currentStepIndex = Math.max(0, steps.findIndex((step) => step.key === currentStepKey));
   const currentStep = steps[currentStepIndex] || steps[0];
 
+  useEffect(() => {
+    if (!shippingMethodOptions.length) return;
+
+    if (!shippingMethodId || !shippingMethodOptions.some((item) => Number(item.id) === Number(shippingMethodId))) {
+      setShippingMethodId(shippingMethodOptions[0].id);
+    }
+  }, [shippingMethodId, shippingMethodOptions]);
+
+  useEffect(() => {
+    if (!paymentMethodOptions.length) return;
+
+    if (!paymentMethod || !paymentMethodOptions.some((item) => item.id === paymentMethod)) {
+      setPaymentMethod(paymentMethodOptions[0].id);
+    }
+  }, [paymentMethod, paymentMethodOptions]);
+
   const shipping = useMemo(
-    () => SHIPPING_METHOD_OPTIONS.find((item) => item.id === Number(shippingMethodId)) || SHIPPING_METHOD_OPTIONS[0],
-    [shippingMethodId],
+    () => shippingMethodOptions.find((item) => Number(item.id) === Number(shippingMethodId)) || shippingMethodOptions[0] || null,
+    [shippingMethodId, shippingMethodOptions],
   );
 
-  const payment = PAYMENT_METHOD_OPTIONS.find((item) => item.id === paymentMethod);
+  const payment = paymentMethodOptions.find((item) => item.id === paymentMethod) || paymentMethodOptions[0] || null;
   const total = subtotal + Number(shipping?.cost || 0);
 
   const buyerComplete = isAuthenticated
@@ -100,7 +116,6 @@ export default function CheckoutPage() {
       JSON.stringify({ guest, shippingMethodId, paymentMethod, notes }),
     );
   }, [guest, shippingMethodId, paymentMethod, notes]);
-
 
   useEffect(() => {
     if (!items.length && currentStepKey !== 'resumen') {
@@ -140,7 +155,6 @@ export default function CheckoutPage() {
       setError('Selecciona un método de envío para continuar.');
       return false;
     }
-
 
     return true;
   }
@@ -198,9 +212,10 @@ export default function CheckoutPage() {
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(
           COMPLETE_STORAGE_KEY,
-          JSON.stringify({ orderNumber: orderNumber }),
+          JSON.stringify({ orderNumber }),
         );
       }
+
       navigate('/checkout/completa', {
         replace: true,
         state: { orderNumber },
@@ -227,7 +242,6 @@ export default function CheckoutPage() {
       message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} de este artículo con el stock actual.`,
     });
   }
-
 
   function renderSummaryStep() {
     return (
@@ -322,8 +336,9 @@ export default function CheckoutPage() {
     return (
       <div className="section-card nested-card">
         <p className="section-kicker">Medio seleccionado</p>
+        {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
         <div className="stack-gap-sm">
-          {PAYMENT_METHOD_OPTIONS.map((option) => (
+          {paymentMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">
               <input type="radio" name="paymentMethod" checked={paymentMethod === option.id} onChange={() => setPaymentMethod(option.id)} />
               <div>
@@ -345,10 +360,11 @@ export default function CheckoutPage() {
     return (
       <div className="section-card nested-card">
         <p className="section-kicker">Envío</p>
+        {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
         <div className="stack-gap-sm">
-          {SHIPPING_METHOD_OPTIONS.map((option) => (
+          {shippingMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">
-              <input type="radio" name="shippingMethodId" checked={Number(shippingMethodId) === option.id} onChange={() => setShippingMethodId(option.id)} />
+              <input type="radio" name="shippingMethodId" checked={Number(shippingMethodId) === Number(option.id)} onChange={() => setShippingMethodId(option.id)} />
               <div>
                 <strong>{option.label}</strong>
                 <p>{formatCurrency(option.cost)}</p>
@@ -386,7 +402,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
 
   function renderCurrentStep() {
     if (currentStepKey === 'comprador') return renderBuyerStep();
@@ -444,34 +459,34 @@ export default function CheckoutPage() {
           {renderCurrentStep()}
 
           <div className="checkout-navigation">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={handleBack}
-                  disabled={currentStepIndex === 0 || submitting}
-                >
-                  Anterior
-                </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={handleBack}
+              disabled={currentStepIndex === 0 || submitting}
+            >
+              Anterior
+            </button>
 
-                <div className="checkout-navigation-status">
-                  {error ? <p className="error-copy">{error}</p> : null}
-                  {success ? <p className="success-copy">{success}</p> : null}
-                </div>
+            <div className="checkout-navigation-status">
+              {error ? <p className="error-copy">{error}</p> : null}
+              {success ? <p className="success-copy">{success}</p> : null}
+            </div>
 
-                {currentStepKey === 'confirmacion' ? (
-                  <button
-                    type="button"
-                    className="button button-primary"
-                    onClick={handleConfirmOrder}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Creando orden…' : 'Confirmar orden'}
-                  </button>
-                ) : (
-                  <button type="button" className="button button-primary" onClick={handleNext}>
-                    Siguiente
-                  </button>
-                )}
+            {currentStepKey === 'confirmacion' ? (
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={handleConfirmOrder}
+                disabled={submitting}
+              >
+                {submitting ? 'Creando orden…' : 'Confirmar orden'}
+              </button>
+            ) : (
+              <button type="button" className="button button-primary" onClick={handleNext}>
+                Siguiente
+              </button>
+            )}
           </div>
         </section>
       </div>

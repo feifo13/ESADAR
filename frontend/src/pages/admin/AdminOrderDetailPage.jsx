@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
+import StatusBadge from '../../components/StatusBadge.jsx';
 import { apiFetch, resolveAssetUrl } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
@@ -14,6 +15,15 @@ const HISTORY_STATUS_LABELS = {
   EXPIRED: 'Vencida',
 };
 
+const PAYMENT_STATUS_LABELS = {
+  PENDING: 'Pendiente',
+  APPROVED: 'Aprobado',
+  REJECTED: 'Rechazado',
+  FAILED: 'Fallido',
+  REFUNDED: 'Reintegrado',
+  PAID: 'Pagado',
+};
+
 export default function AdminOrderDetailPage() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
@@ -21,6 +31,7 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [cancelReason, setCancelReason] = useState('');
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
   async function loadOrder() {
     try {
@@ -55,9 +66,7 @@ export default function AdminOrderDetailPage() {
             ? `/api/admin/orders/${id}/ship`
             : `/api/admin/orders/${id}/cancel`;
 
-      const options = {
-        method: 'PATCH',
-      };
+      const options = { method: 'PATCH' };
 
       if (action === 'cancel') {
         options.body = { reason: cancelReason };
@@ -69,6 +78,24 @@ export default function AdminOrderDetailPage() {
       setCancelReason('');
     } catch (err) {
       setError(err.message || 'No se pudo actualizar la orden');
+    }
+  }
+
+  async function handleRegisterPayment() {
+    try {
+      setPaymentSubmitting(true);
+      setError('');
+      setMessage('');
+      const response = await apiFetch(`/api/admin/orders/${id}/payments`, {
+        method: 'POST',
+        body: {},
+      });
+      setOrder(response.order);
+      setMessage('El pago interno quedó registrado.');
+    } catch (err) {
+      setError(err.message || 'No se pudo registrar el pago');
+    } finally {
+      setPaymentSubmitting(false);
     }
   }
 
@@ -145,6 +172,31 @@ export default function AdminOrderDetailPage() {
               <p className="muted-copy">Aprobada: {formatDate(order.approvedAt)}</p>
               <p className="muted-copy">Enviada: {formatDate(order.shippedAt)}</p>
               <p className="muted-copy">Cancelada: {formatDate(order.cancelledAt)}</p>
+              <p className="muted-copy">Estado de pago: <strong>{PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</strong></p>
+            </div>
+
+            <div className="section-card nested-card stack-gap-sm">
+              <h3>Pagos</h3>
+              {order.payments.length ? (
+                <div className="history-list">
+                  {order.payments.map((payment) => (
+                    <div key={payment.id} className="history-row">
+                      <strong>{payment.providerName || payment.paymentMethod}</strong>
+                      <span>{formatCurrency(payment.amount)} · {payment.providerReference || 'Sin referencia'}</span>
+                      <span><StatusBadge status={payment.status} labels={PAYMENT_STATUS_LABELS} /></span>
+                      <span>{formatDate(payment.paidAt || payment.createdAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted-copy">Todavía no hay pagos registrados para esta orden.</p>
+              )}
+
+              {!order.payments.length && order.orderStatus === 'APPROVED' ? (
+                <button type="button" className="button button-secondary" onClick={handleRegisterPayment} disabled={paymentSubmitting}>
+                  {paymentSubmitting ? 'Registrando pago…' : 'Registrar pago interno'}
+                </button>
+              ) : null}
             </div>
 
             {message ? <p className="success-copy">{message}</p> : null}

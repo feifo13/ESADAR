@@ -1,4 +1,4 @@
-import { BRAND_OPTIONS, CATEGORY_OPTIONS, SIZE_OPTIONS } from '../constants/lookups.js';
+import { useLookups } from '../contexts/LookupsContext.jsx';
 
 const defaultFilters = {
   search: '',
@@ -13,6 +13,7 @@ const defaultFilters = {
 
 export default function ArticleFilters({ value, onChange }) {
   const filters = { ...defaultFilters, ...value };
+  const { categoryOptions, brandOptions, sizeOptions } = useLookups();
 
   function updateField(name, nextValue) {
     onChange({ ...filters, [name]: nextValue });
@@ -35,7 +36,7 @@ export default function ArticleFilters({ value, onChange }) {
           onChange={(event) => updateField('categoryId', event.target.value)}
         >
           <option value="">Todas las categorías</option>
-          {CATEGORY_OPTIONS.map((option) => (
+          {categoryOptions.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
@@ -50,7 +51,7 @@ export default function ArticleFilters({ value, onChange }) {
           onChange={(event) => updateField('brandId', event.target.value)}
         >
           <option value="">Todas las marcas</option>
-          {BRAND_OPTIONS.map((option) => (
+          {brandOptions.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
@@ -65,7 +66,7 @@ export default function ArticleFilters({ value, onChange }) {
           onChange={(event) => updateField('sizeId', event.target.value)}
         >
           <option value="">Todos los talles</option>
-          {SIZE_OPTIONS.map((option) => (
+          {sizeOptions.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>

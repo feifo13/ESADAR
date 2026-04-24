@@ -2,11 +2,16 @@ import {
   approveOrder,
   cancelOrder,
   createOrder,
+  createOrderPayment,
   getOrderDetail,
   listOrders,
   shipOrder,
 } from './orders.service.js';
-import { createOrderSchema, cancelOrderSchema } from './orders.schemas.js';
+import {
+  createOrderPaymentSchema,
+  createOrderSchema,
+  cancelOrderSchema,
+} from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 
 function getAuditContext(req) {
@@ -50,4 +55,10 @@ export async function cancelAdminOrder(req, res) {
 export async function shipAdminOrder(req, res) {
   const order = await shipOrder(Number(req.params.id), getAuditContext(req));
   return res.json({ ok: true, order });
+}
+
+export async function createAdminOrderPayment(req, res) {
+  const input = createOrderPaymentSchema.parse(req.body);
+  const order = await createOrderPayment(Number(req.params.id), input, getAuditContext(req));
+  return res.status(201).json({ ok: true, order });
 }

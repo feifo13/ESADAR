@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
+import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { apiFetch } from '../../lib/api.js';
-import { BRAND_OPTIONS, CATEGORY_OPTIONS, SIZE_OPTIONS } from '../../constants/lookups.js';
 
 function toFormState(article) {
   return {
     internalCode: article?.internalCode || '',
     slug: article?.slug || '',
     title: article?.title || '',
-    categoryId: article?.categoryId || CATEGORY_OPTIONS[0].id,
+    categoryId: article?.categoryId || '',
     brandId: article?.brandId || '',
     sizeId: article?.sizeId || '',
     sizeText: article?.sizeText || '',
@@ -37,12 +37,18 @@ export default function AdminArticleFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const [form, setForm] = useState(toFormState(null));
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (form.categoryId || !categoryOptions.length) return;
+    setForm((current) => ({ ...current, categoryId: categoryOptions[0].id }));
+  }, [categoryOptions, form.categoryId]);
 
   useEffect(() => {
     let ignore = false;
@@ -149,15 +155,32 @@ export default function AdminArticleFormPage() {
           <label className="field-group"><span>Código interno</span><input className="input" value={form.internalCode} onChange={(event) => update('internalCode', event.target.value)} /></label>
           <label className="field-group"><span>Slug</span><input className="input" value={form.slug} onChange={(event) => update('slug', event.target.value)} /></label>
           <label className="field-group"><span>Fecha de ingreso</span><input className="input" type="date" value={form.intakeDate} onChange={(event) => update('intakeDate', event.target.value)} required /></label>
-          <label className="field-group"><span>Categoría</span><select className="input" value={form.categoryId} onChange={(event) => update('categoryId', event.target.value)}>{CATEGORY_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
-          <label className="field-group"><span>Marca</span><select className="input" value={form.brandId} onChange={(event) => update('brandId', event.target.value)}><option value="">Sin marca</option>{BRAND_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
-          <label className="field-group"><span>Talle normalizado</span><select className="input" value={form.sizeId} onChange={(event) => update('sizeId', event.target.value)}><option value="">Sin talle</option>{SIZE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select></label>
+          <label className="field-group">
+            <span>Categoría</span>
+            <select className="input" value={form.categoryId} onChange={(event) => update('categoryId', event.target.value)}>
+              {categoryOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field-group">
+            <span>Marca</span>
+            <select className="input" value={form.brandId} onChange={(event) => update('brandId', event.target.value)}>
+              <option value="">Sin marca</option>
+              {brandOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field-group">
+            <span>Talle normalizado</span>
+            <select className="input" value={form.sizeId} onChange={(event) => update('sizeId', event.target.value)}>
+              <option value="">Sin talle</option>
+              {sizeOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
           <label className="field-group"><span>Talle texto libre</span><input className="input" value={form.sizeText} onChange={(event) => update('sizeText', event.target.value)} /></label>
           <label className="field-group form-grid-span-two"><span>Medidas</span><input className="input" value={form.measurementsText} onChange={(event) => update('measurementsText', event.target.value)} /></label>
           <label className="field-group form-grid-span-two"><span>Descripción</span><textarea className="input textarea" value={form.description} onChange={(event) => update('description', event.target.value)} /></label>
           <label className="field-group"><span>Precio compra artículo</span><input className="input" type="number" min="0" value={form.purchasePriceItem} onChange={(event) => update('purchasePriceItem', event.target.value)} /></label>
           <label className="field-group"><span>Precio compra envío</span><input className="input" type="number" min="0" value={form.purchasePriceShipping} onChange={(event) => update('purchasePriceShipping', event.target.value)} /></label>
-          <label className="field-group"><span>Precio compra courrier</span><input className="input" type="number" min="0" value={form.purchasePriceCourier} onChange={(event) => update('purchasePriceCourier', event.target.value)} /></label>
+          <label className="field-group"><span>Precio compra courier</span><input className="input" type="number" min="0" value={form.purchasePriceCourier} onChange={(event) => update('purchasePriceCourier', event.target.value)} /></label>
           <label className="field-group"><span>Precio venta</span><input className="input" type="number" min="0" value={form.salePrice} onChange={(event) => update('salePrice', event.target.value)} required /></label>
           <label className="field-group"><span>Descuento tipo</span><select className="input" value={form.discountType} onChange={(event) => update('discountType', event.target.value)}><option value="NONE">Sin descuento</option><option value="PERCENT">Porcentaje</option><option value="FIXED">Monto fijo</option></select></label>
           <label className="field-group"><span>Descuento valor</span><input className="input" type="number" min="0" value={form.discountValue} onChange={(event) => update('discountValue', event.target.value)} /></label>

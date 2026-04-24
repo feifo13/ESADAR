@@ -3,6 +3,11 @@ import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { generateOrderNumber } from '../../utils/order-number.js';
 import { logAudit } from '../audit/audit.service.js';
+import { convertActiveCartForUser } from '../cart/cart.service.js';
+import {
+  createPotentialCustomerFromInput,
+  findCustomerByUserId,
+} from '../customers/customer-helpers.js';
 
 export async function createOrder(input, actor, auditContext) {
   return withTransaction(async (connection) => {
@@ -210,6 +215,10 @@ export async function createOrder(input, actor, auditContext) {
       `,
       [orderId, auditContext.actorUserId, auditContext.source],
     );
+
+    if (actor?.userId) {
+      await convertActiveCartForUser(actor.userId, connection);
+    }
 
     const order = await getOrderById(orderId, connection);
 
@@ -522,16 +531,90 @@ export async function shipOrder(id, auditContext) {
   });
 }
 
+export async function createOrderPayment(id, input, auditContext) {
+  return withTransaction(async (connection) => {
+    const before = await getOrderById(id, connection);
+
+    if (before.payments.length) {
+      throw badRequest('This order already has a registered payment');
+    }
+
+    const amount = Number(input.amount ?? before.total);
+    const orderPaymentStatus = mapOrderPaymentStatus(input.status);
+
+    const [insertResult] = await connection.execute(
+      `
+        INSERT INTO payments (
+          order_id,
+          payment_method,
+          provider_name,
+          provider_reference,
+          amount,
+          currency_code,
+          status,
+          paid_at,
+          raw_response_json,
+          created_by,
+          updated_by
+        ) VALUES (?, ?, ?, ?, ?, 'UYU', ?, ${input.status === 'APPROVED' ? 'NOW()' : 'NULL'}, ?, ?, ?)
+      `,
+      [
+        id,
+        before.paymentMethod,
+        input.providerName || 'Internal admin record',
+        input.providerReference || null,
+        amount,
+        input.status,
+        JSON.stringify({ origin: 'admin_manual' }),
+        auditContext.actorUserId,
+        auditContext.actorUserId,
+      ],
+    );
+
+    await connection.execute(
+      `
+        UPDATE orders
+        SET
+          payment_status = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [orderPaymentStatus, auditContext.actorUserId, id],
+    );
+
+    const after = await getOrderById(id, connection);
+    const payment = after.payments.find((entry) => entry.id === insertResult.insertId) || null;
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'PAYMENT_REGISTERED',
+        entityType: 'payments',
+        entityId: insertResult.insertId,
+        afterJson: payment,
+        metadataJson: {
+          orderId: id,
+          orderNumber: before.orderNumber,
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
+}
+
 async function resolveOrderOwner(input, actor, connection) {
   if (actor?.userId) {
-    const [customerRows] = await connection.execute(
-      'SELECT id FROM customers WHERE user_id = ? LIMIT 1',
-      [actor.userId],
-    );
+    const customer = await findCustomerByUserId(actor.userId, connection);
 
     return {
       userId: actor.userId,
-      customerId: customerRows[0]?.id || null,
+      customerId: customer?.id || null,
       potentialCustomerId: null,
     };
   }
@@ -540,34 +623,16 @@ async function resolveOrderOwner(input, actor, connection) {
     throw badRequest('Guest checkout data is required when there is no authenticated user');
   }
 
-  const [potentialInsert] = await connection.execute(
-    `
-      INSERT INTO potential_customers (
-        first_name,
-        last_name,
-        birth_date,
-        email,
-        address,
-        phone,
-        instagram,
-        source
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'CHECKOUT')
-    `,
-    [
-      input.guest.firstName,
-      input.guest.lastName,
-      input.guest.birthDate || null,
-      input.guest.email || null,
-      input.guest.address || null,
-      input.guest.phone || null,
-      input.guest.instagram || null,
-    ],
+  const potentialCustomer = await createPotentialCustomerFromInput(
+    input.guest,
+    { source: 'CHECKOUT' },
+    connection,
   );
 
   return {
     userId: null,
     customerId: null,
-    potentialCustomerId: potentialInsert.insertId,
+    potentialCustomerId: potentialCustomer.id,
   };
 }
 
@@ -677,6 +742,26 @@ async function getOrderById(id, connection) {
     [id],
   );
 
+  const [paymentRows] = await connection.execute(
+    `
+      SELECT
+        id,
+        payment_method AS paymentMethod,
+        provider_name AS providerName,
+        provider_reference AS providerReference,
+        amount,
+        currency_code AS currencyCode,
+        status,
+        paid_at AS paidAt,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM payments
+      WHERE order_id = ?
+      ORDER BY id ASC
+    `,
+    [id],
+  );
+
   order.items = itemRows.map((row) => ({
     ...row,
     salePrice: Number(row.salePrice),
@@ -685,7 +770,18 @@ async function getOrderById(id, connection) {
     lineTotal: Number(row.lineTotal),
   }));
   order.history = historyRows;
+  order.payments = paymentRows.map((row) => ({
+    ...row,
+    amount: Number(row.amount),
+  }));
   return order;
+}
+
+function mapOrderPaymentStatus(paymentStatus) {
+  if (paymentStatus === 'APPROVED') return 'PAID';
+  if (paymentStatus === 'REFUNDED') return 'REFUNDED';
+  if (paymentStatus === 'FAILED' || paymentStatus === 'REJECTED') return 'FAILED';
+  return 'PENDING';
 }
 
 function normalizeOrderListRow(row) {
@@ -748,5 +844,6 @@ function normalizeOrderDetailRow(row) {
     },
     items: [],
     history: [],
+    payments: [],
   };
 }

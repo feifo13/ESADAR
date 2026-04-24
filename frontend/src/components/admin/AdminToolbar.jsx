@@ -9,6 +9,15 @@ export default function AdminToolbar() {
       <NavLink to="/admin/orders" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
         Órdenes
       </NavLink>
+      <NavLink to="/admin/offers" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
+        Ofertas
+      </NavLink>
+      <NavLink to="/admin/contact-messages" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
+        Contactos
+      </NavLink>
+      <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
+        Auditoría
+      </NavLink>
     </div>
   );
 }
