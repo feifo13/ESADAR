@@ -29,6 +29,11 @@ const initialFilters = {
   pageSize: 25,
 };
 
+function formatPreviewList(values = []) {
+  if (!values.length) return 'Sin novedades';
+  return values.join(' | ');
+}
+
 export default function AdminArticlesPage() {
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
@@ -40,11 +45,14 @@ export default function AdminArticlesPage() {
   const [message, setMessage] = useState('');
   const [importFile, setImportFile] = useState(null);
   const [updateExisting, setUpdateExisting] = useState(false);
+  const [createMissingLookups, setCreateMissingLookups] = useState(false);
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [exportingFormat, setExportingFormat] = useState('');
+  const [downloadingTemplate, setDownloadingTemplate] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   const totalPages = Math.max(
     1,
@@ -111,12 +119,35 @@ export default function AdminArticlesPage() {
       setError('');
       setMessage('');
       const query = buildQueryString({ ...filters, format });
-      await apiDownload(`/api/admin/articles/export?${query}`);
+      const today = new Date().toISOString().slice(0, 10);
+      await apiDownload(`/api/admin/articles/export?${query}`, {
+        fileName: `esadar-articulos-${today}.${format}`,
+        extension: format,
+      });
       setMessage(`Exportacion ${format.toUpperCase()} generada correctamente.`);
     } catch (err) {
       setError(err.message || 'No se pudo exportar el catalogo');
     } finally {
       setExportingFormat('');
+    }
+  }
+
+  async function handleDownloadTemplate(format, type) {
+    const key = `${type}-${format}`;
+
+    try {
+      setDownloadingTemplate(key);
+      setError('');
+      setMessage('');
+      await apiDownload(`/api/admin/articles/import/template?format=${format}&type=${type}`, {
+        fileName: `esadar-plantilla-${type}.${format}`,
+        extension: format,
+      });
+      setMessage(`Plantilla ${type === 'simple' ? 'simple' : 'completa'} ${format.toUpperCase()} descargada.`);
+    } catch (err) {
+      setError(err.message || 'No se pudo descargar la plantilla');
+    } finally {
+      setDownloadingTemplate('');
     }
   }
 
@@ -133,6 +164,7 @@ export default function AdminArticlesPage() {
       const formData = new FormData();
       formData.append('file', importFile);
       formData.append('updateExisting', updateExisting ? 'true' : 'false');
+      formData.append('createMissingLookups', createMissingLookups ? 'true' : 'false');
       const response = await apiFetch('/api/admin/articles/import/preview', {
         method: 'POST',
         body: formData,
@@ -158,16 +190,18 @@ export default function AdminArticlesPage() {
       const formData = new FormData();
       formData.append('file', importFile);
       formData.append('updateExisting', updateExisting ? 'true' : 'false');
+      formData.append('createMissingLookups', createMissingLookups ? 'true' : 'false');
       const response = await apiFetch('/api/admin/articles/import', {
         method: 'POST',
         body: formData,
       });
 
       setMessage(
-        `Importacion lista. Creados: ${response.summary?.rowsCreated || 0}, actualizados: ${response.summary?.rowsUpdated || 0}, omitidos: ${response.summary?.rowsSkipped || 0}, errores: ${response.summary?.rowsFailed || 0}.`,
+        `Importacion lista. Creados: ${response.summary?.rowsCreated || 0}, actualizados: ${response.summary?.rowsUpdated || 0}, omitidos: ${response.summary?.rowsSkipped || 0}, errores: ${response.summary?.rowsFailed || 0}, advertencias: ${response.summary?.warningsCount || 0}.`,
       );
       setPreview(null);
       setImportFile(null);
+      setFileInputKey((current) => current + 1);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       setError(err.message || 'No se pudo completar la importacion');
@@ -185,7 +219,7 @@ export default function AdminArticlesPage() {
           <div>
             <p className="section-kicker">Administracion</p>
             <h1>Articulos</h1>
-            <p className="muted-copy">Busqueda, filtros reales, importacion batch y exportacion del catalogo.</p>
+            <p className="muted-copy">Busqueda, filtros reales, importacion batch amigable y exportacion del catalogo.</p>
           </div>
 
           <div className="toolbar-inline toolbar-inline-end">
@@ -283,6 +317,7 @@ export default function AdminArticlesPage() {
               <option value="status">Estado</option>
               <option value="categoryName">Categoria</option>
               <option value="brandName">Marca</option>
+              <option value="updatedAt">Actualizacion</option>
             </select>
           </label>
 
@@ -314,14 +349,32 @@ export default function AdminArticlesPage() {
             <div>
               <p className="section-kicker">Batch</p>
               <h2>Importar articulos</h2>
+              <p className="muted-copy">
+                Para carga rapida solo necesitas titulo y precio. El resto se completa con valores seguros.
+              </p>
             </div>
-            <p className="muted-copy">Compatible con CSV y XLSX. El import no se corta si alguna fila falla.</p>
+          </div>
+
+          <div className="template-download-grid">
+            <button type="button" className="button button-secondary" onClick={() => handleDownloadTemplate('xlsx', 'simple')} disabled={downloadingTemplate === 'simple-xlsx'}>
+              {downloadingTemplate === 'simple-xlsx' ? 'Descargando...' : 'Descargar plantilla simple XLSX'}
+            </button>
+            <button type="button" className="button button-secondary" onClick={() => handleDownloadTemplate('csv', 'simple')} disabled={downloadingTemplate === 'simple-csv'}>
+              {downloadingTemplate === 'simple-csv' ? 'Descargando...' : 'Descargar plantilla simple CSV'}
+            </button>
+            <button type="button" className="button button-secondary" onClick={() => handleDownloadTemplate('xlsx', 'full')} disabled={downloadingTemplate === 'full-xlsx'}>
+              {downloadingTemplate === 'full-xlsx' ? 'Descargando...' : 'Descargar plantilla completa XLSX'}
+            </button>
+            <button type="button" className="button button-secondary" onClick={() => handleDownloadTemplate('csv', 'full')} disabled={downloadingTemplate === 'full-csv'}>
+              {downloadingTemplate === 'full-csv' ? 'Descargando...' : 'Descargar plantilla completa CSV'}
+            </button>
           </div>
 
           <div className="admin-import-grid">
             <label className="field-group">
               <span>Archivo</span>
               <input
+                key={fileInputKey}
                 className="input"
                 type="file"
                 accept=".csv,.xlsx,.xls"
@@ -331,16 +384,30 @@ export default function AdminArticlesPage() {
                   setPreview(null);
                 }}
               />
+              <span className="field-helper">
+                {importFile ? `Seleccionado: ${importFile.name}` : 'CSV o XLSX con columnas simples o completas.'}
+              </span>
             </label>
 
-            <label className="field-group checkbox-field">
-              <input
-                type="checkbox"
-                checked={updateExisting}
-                onChange={(event) => setUpdateExisting(event.target.checked)}
-              />
-              <span>Actualizar por codigo si ya existe</span>
-            </label>
+            <div className="page-stack stack-gap-sm">
+              <label className="field-group checkbox-field checkbox-field-compact">
+                <input
+                  type="checkbox"
+                  checked={updateExisting}
+                  onChange={(event) => setUpdateExisting(event.target.checked)}
+                />
+                <span>Actualizar por codigo si ya existe</span>
+              </label>
+
+              <label className="field-group checkbox-field checkbox-field-compact">
+                <input
+                  type="checkbox"
+                  checked={createMissingLookups}
+                  onChange={(event) => setCreateMissingLookups(event.target.checked)}
+                />
+                <span>Crear categorias, marcas y talles faltantes</span>
+              </label>
+            </div>
           </div>
 
           <div className="toolbar-inline">
@@ -375,6 +442,14 @@ export default function AdminArticlesPage() {
                   <span>Errores</span>
                   <strong>{preview.summary?.rowsFailed || 0}</strong>
                 </div>
+                <div className="nested-card admin-kpi-card">
+                  <span>Advertencias</span>
+                  <strong>{preview.summary?.warningsCount || 0}</strong>
+                </div>
+              </div>
+
+              <div className="inline-note">
+                Tipo detectado: <strong>{preview.batchType || 'Sin dato'}</strong>. La preview muestra hasta 100 filas.
               </div>
 
               <div className="table-shell">
@@ -386,16 +461,18 @@ export default function AdminArticlesPage() {
                       <th>Codigo</th>
                       <th>Titulo</th>
                       <th>Errores</th>
+                      <th>Advertencias</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(preview.rows || []).map((row) => (
-                      <tr key={`${row.rowNumber}-${row.internalCode}`}>
+                      <tr key={`${row.rowNumber}-${row.internalCode || row.title || 'row'}`}>
                         <td>{row.rowNumber}</td>
                         <td>{row.action}</td>
-                        <td>{row.internalCode || 'Sin codigo'}</td>
+                        <td>{row.internalCode || 'Se genera automatico'}</td>
                         <td>{row.title || 'Sin titulo'}</td>
-                        <td>{row.errors?.length ? row.errors.join(' | ') : 'Sin errores'}</td>
+                        <td>{formatPreviewList(row.errors || [])}</td>
+                        <td>{formatPreviewList(row.warnings || [])}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -412,13 +489,17 @@ export default function AdminArticlesPage() {
         {!loading ? (
           <div className="admin-list">
             {items.map((article) => {
-              const categoryName = article.category?.name || 'Sin categoria';
-              const brandName = article.brand?.name || 'Sin marca';
-              const sizeName = article.size?.code || article.sizeText || 'Sin talle';
+              const categoryName = article.category?.name || article.categoryName || 'Sin categoria';
+              const brandName = article.brand?.name || article.brandName || 'Sin marca';
+              const sizeName = article.size?.code || article.sizeText || article.sizeCode || 'Sin talle';
 
               return (
                 <article key={article.id} className="admin-row-card admin-row-card-wide">
-                  <SmartImage src={article.primaryImage} alt={article.title} fallbackLabel={article.title} />
+                  <SmartImage
+                    src={article.primaryImageDetail || article.primaryImageThumb || article.primaryImage}
+                    alt={article.primaryImageAlt || article.title}
+                    fallbackLabel={article.title}
+                  />
 
                   <div className="page-stack stack-gap-xs">
                     <div>
@@ -426,11 +507,18 @@ export default function AdminArticlesPage() {
                       <h3>{article.title}</h3>
                     </div>
                     <p className="muted-copy">
-                      Codigo: <strong>{article.internalCode}</strong> - Talle: {sizeName}
+                      Codigo: <strong>{article.internalCode}</strong> · Talle: {sizeName}
                     </p>
                     <p className="muted-copy">
-                      Estado: {ARTICLE_STATUS_LABELS[article.status] || article.status} - Stock disponible: {article.quantityAvailable}
+                      Estado: {ARTICLE_STATUS_LABELS[article.status] || article.status} · Stock disponible: {article.quantityAvailable}
                     </p>
+                    {(article.conditionLabel || article.color || article.material) ? (
+                      <p className="muted-copy">
+                        {article.conditionLabel ? `Estado de prenda: ${article.conditionLabel}` : ''}
+                        {article.color ? `${article.conditionLabel ? ' · ' : ''}Color: ${article.color}` : ''}
+                        {article.material ? `${article.conditionLabel || article.color ? ' · ' : ''}Material: ${article.material}` : ''}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="admin-row-actions">

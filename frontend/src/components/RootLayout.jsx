@@ -4,6 +4,7 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
 import ScrollChrome from './ScrollChrome.jsx';
+import SeoHead from './SeoHead.jsx';
 import esadarWordmark from '../assets/esadar-wordmark.png';
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
@@ -24,6 +25,8 @@ export default function RootLayout() {
   const isHome = location.pathname === '/';
   const isCheckoutView = location.pathname.startsWith('/checkout');
   const isAdminView = location.pathname.startsWith('/admin');
+  const isAuthView = ['/login', '/register'].includes(location.pathname);
+  const shouldNoIndex = isCheckoutView || isAdminView || isAuthView;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -81,6 +84,13 @@ export default function RootLayout() {
     <div
       className={`app-shell${showIntro ? ' app-shell--intro-active' : ''}${isCheckoutView ? ' app-shell--checkout-view' : ''}${isAdminView ? ' app-shell--admin-view' : ''}`}
     >
+      {shouldNoIndex ? (
+        <SeoHead
+          title={`ESADAR | ${isAdminView ? 'Backoffice' : isCheckoutView ? 'Checkout' : 'Acceso'}`}
+          description="Vista interna o transaccional de ESADAR."
+          noindex
+        />
+      ) : null}
       <Header hideBrand={isHome && heroLogoVisible} />
       <main className="page-shell">
         <div className="page-transition-shell">

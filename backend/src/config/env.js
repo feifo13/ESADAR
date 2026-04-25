@@ -20,6 +20,9 @@ export const env = {
   isProduction: (process.env.NODE_ENV || 'development') === 'production',
   port: toNumber(process.env.PORT, 4000),
   appOrigin: process.env.APP_ORIGIN || 'http://localhost:5173',
+  publicSiteUrl: (process.env.PUBLIC_SITE_URL || 'http://localhost:5173').replace(/\/$/, ''),
+  storeName: process.env.STORE_NAME || 'ESADAR',
+  storeDescription: process.env.STORE_DESCRIPTION || 'Ropa second hand seleccionada: sportswear, vintage y prendas modernas.',
   db: {
     host: required('DB_HOST'),
     port: toNumber(process.env.DB_PORT, 3306),

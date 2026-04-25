@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import SeoHead from '../components/SeoHead.jsx';
 import { apiFetch } from '../lib/api.js';
 import { storage } from '../lib/storage.js';
 import { useLookups } from '../contexts/LookupsContext.jsx';
+import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
+import { buildOrganizationJsonLd, buildWebsiteJsonLd, toAbsoluteUrl } from '../lib/seo.js';
 import ArticleCard from '../components/ArticleCard.jsx';
 import ArticleFilters from '../components/ArticleFilters.jsx';
 import FeaturedRail from '../components/FeaturedRail.jsx';
@@ -24,11 +27,22 @@ const initialFilters = {
   featured: false,
 };
 
+const initialLeadForm = {
+  firstName: '',
+  email: '',
+  phone: '',
+  instagram: '',
+  preferredCategory: '',
+  preferredBrand: '',
+  preferredSize: '',
+  preferredColor: '',
+};
+
 const VIEW_STORAGE_KEY = 'esadar-catalog-view';
 
 const SORT_LABELS = {
-  intake_desc: 'Más reciente',
-  intake_asc: 'Más antiguo',
+  intake_desc: 'Mas reciente',
+  intake_asc: 'Mas antiguo',
   price_asc: 'Precio ↑',
   price_desc: 'Precio ↓',
 };
@@ -43,9 +57,11 @@ function getLabel(options, id, fallback) {
 export default function HomePage() {
   const heroRef = useRef(null);
   const searchInputRef = useRef(null);
+  const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } = useLookups();
+  const { site, pagesByRoute } = useSiteSeo();
   const [filters, setFilters] = useState(initialFilters);
   const [view, setView] = useState(() => storage.get(VIEW_STORAGE_KEY, 'grid'));
   const [featuredItems, setFeaturedItems] = useState([]);
@@ -59,6 +75,12 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [leadForm, setLeadForm] = useState(initialLeadForm);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadError, setLeadError] = useState('');
+  const [leadSuccess, setLeadSuccess] = useState('');
+
+  const homeSeo = pagesByRoute['/'] || null;
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -78,7 +100,7 @@ export default function HomePage() {
     const chips = [];
 
     if (filters.search) {
-      chips.push({ key: 'search', label: `Búsqueda: ${filters.search}` });
+      chips.push({ key: 'search', label: `Busqueda: ${filters.search}` });
     }
     if (filters.sort && filters.sort !== initialFilters.sort) {
       chips.push({
@@ -89,7 +111,7 @@ export default function HomePage() {
     if (filters.categoryId) {
       chips.push({
         key: 'categoryId',
-        label: `Categoría: ${getLabel(categoryOptions, filters.categoryId, 'Seleccionada')}`,
+        label: `Categoria: ${getLabel(categoryOptions, filters.categoryId, 'Seleccionada')}`,
       });
     }
     if (filters.brandId) {
@@ -157,7 +179,7 @@ export default function HomePage() {
             : [...current, ...(response.items || [])]
         ));
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudo cargar el catálogo');
+        if (!ignore) setError(err.message || 'No se pudo cargar el catalogo');
       } finally {
         if (!ignore) {
           setLoading(false);
@@ -225,9 +247,65 @@ export default function HomePage() {
     applyFilters({ ...filters, [key]: resetValue });
   }
 
+  function updateLeadField(name, value) {
+    setLeadForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleLeadSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setLeadSubmitting(true);
+      setLeadError('');
+      setLeadSuccess('');
+
+      await apiFetch('/api/public/leads/newsletter', {
+        method: 'POST',
+        body: {
+          firstName: leadForm.firstName || null,
+          email: leadForm.email || null,
+          phone: leadForm.phone || null,
+          instagram: leadForm.instagram || null,
+          preferredCategories: leadForm.preferredCategory ? [leadForm.preferredCategory] : [],
+          preferredBrands: leadForm.preferredBrand ? [leadForm.preferredBrand] : [],
+          preferredSizes: leadForm.preferredSize ? [leadForm.preferredSize] : [],
+          preferredColors: leadForm.preferredColor ? [leadForm.preferredColor] : [],
+        },
+      });
+
+      setLeadSuccess('Te vamos a avisar cuando entren prendas que encajen con tu estilo.');
+      setLeadForm(initialLeadForm);
+    } catch (err) {
+      setLeadError(err.message || 'No pudimos guardar tu preferencia ahora.');
+    } finally {
+      setLeadSubmitting(false);
+    }
+  }
+
+  function scrollToSection(ref) {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showOfferableCatalog() {
+    applyFilters({ ...filters, offerable: true });
+    window.requestAnimationFrame(() => scrollToSection(catalogSectionRef));
+  }
+
   return (
     <div className="home-page page-stack page-stack-wide">
-      <section ref={heroRef} className="hero-strip hero-strip--carousel" aria-label="Galería destacada">
+      <SeoHead
+        title={homeSeo?.title || `${site.name} | Ropa second hand seleccionada`}
+        description={homeSeo?.description || site.description}
+        canonical={homeSeo?.canonicalUrl || toAbsoluteUrl('/', site)}
+        url={toAbsoluteUrl('/', site)}
+        image={toAbsoluteUrl(HERO_IMAGES[0], site)}
+        jsonLd={[
+          { id: 'organization', data: buildOrganizationJsonLd(site) },
+          { id: 'website', data: buildWebsiteJsonLd(site) },
+        ]}
+      />
+
+      <section ref={heroRef} className="hero-strip hero-strip--carousel" aria-label="Galeria destacada">
         <div className="hero-carousel" aria-hidden="true">
           <div className="hero-carousel__track">
             {HERO_SEQUENCE.map((image, index) => (
@@ -244,13 +322,45 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="container value-hero-card section-card">
+        <div className="value-hero-copy">
+          <p className="section-kicker">ESADAR</p>
+          <h1>Ropa second hand seleccionada</h1>
+          <p className="hero-copy">
+            Sportswear, vintage y prendas modernas elegidas una por una.
+          </p>
+          <p className="hero-copy hero-copy-compact">
+            Stock limitado. Cada pieza es unica.
+          </p>
+        </div>
+
+        <div className="value-hero-actions">
+          <button type="button" className="button button-primary" onClick={() => scrollToSection(catalogSectionRef)}>
+            Ver catalogo
+          </button>
+          <button type="button" className="button button-secondary" onClick={() => scrollToSection(featuredSectionRef)}>
+            Prendas destacadas
+          </button>
+          <button type="button" className="button button-secondary" onClick={showOfferableCatalog}>
+            Ver ofertas
+          </button>
+        </div>
+      </section>
+
+      <section ref={featuredSectionRef}>
+        <FeaturedRail
+          title="Destacados y descuentos"
+          items={featuredItems.slice(0, 8)}
+        />
+      </section>
+
       <section className="catalog-topbar-shell">
         <div className="container catalog-topbar-row catalog-topbar-row--fancy">
           <input
             ref={searchInputRef}
             type="search"
             className="input search-input-main"
-            placeholder="Buscar por título, marca o categoría"
+            placeholder="Buscar por titulo, marca o categoria"
             value={filters.search}
             onChange={(event) => updateFilterField('search', event.target.value)}
           />
@@ -260,8 +370,8 @@ export default function HomePage() {
             value={filters.sort}
             onChange={(event) => updateFilterField('sort', event.target.value)}
           >
-            <option value="intake_desc">Ingreso más reciente</option>
-            <option value="intake_asc">Ingreso más antiguo</option>
+            <option value="intake_desc">Ingreso mas reciente</option>
+            <option value="intake_asc">Ingreso mas antiguo</option>
             <option value="price_asc">Precio menor a mayor</option>
             <option value="price_desc">Precio mayor a menor</option>
           </select>
@@ -285,11 +395,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <FeaturedRail
-        title="Destacados y descuentos"
-        items={featuredItems.slice(0, 8)}
-      />
-
       <section ref={catalogSectionRef} className="catalog-wide container" tabIndex={-1}>
         <ArticleFilters
           value={filters}
@@ -299,8 +404,8 @@ export default function HomePage() {
         <div className="catalog-content">
           <div className="catalog-summary-row">
             <div>
-              <p className="section-kicker">Catálogo</p>
-              <h2>{pagination.total || items.length} artículos disponibles</h2>
+              <p className="section-kicker">Catalogo</p>
+              <h2>{pagination.total || items.length} articulos disponibles</h2>
             </div>
           </div>
 
@@ -308,7 +413,7 @@ export default function HomePage() {
 
           <div
             className="catalog-quick-actions"
-            aria-label="Acciones rápidas del catálogo"
+            aria-label="Acciones rapidas del catalogo"
           >
             <button
               type="button"
@@ -367,7 +472,7 @@ export default function HomePage() {
                 <p className="section-kicker">Sin resultados</p>
                 <h2>No encontramos prendas con esos filtros.</h2>
                 <p className="muted-copy">
-                  Prueba quitar alguna selección o volver a mirar lo más reciente.
+                  Prueba quitar alguna seleccion o volver a mirar lo mas reciente.
                 </p>
                 <div>
                   <button type="button" className="button button-secondary" onClick={resetFilters}>
@@ -386,11 +491,80 @@ export default function HomePage() {
                 disabled={loadingMore}
                 onClick={() => setPage((current) => current + 1)}
               >
-                {loadingMore ? 'Cargando más…' : 'Ver más'}
+                {loadingMore ? 'Cargando mas…' : 'Ver mas'}
               </button>
             </div>
           ) : null}
         </div>
+      </section>
+
+      <section className="container section-card lead-capture-card">
+        <div className="lead-capture-copy">
+          <p className="section-kicker">Captacion</p>
+          <h2>¿Queres enterarte cuando entra nueva ropa?</h2>
+          <p className="muted-copy">
+            Dejanos un contacto y tus preferencias. Te avisamos cuando aparezcan prendas que encajen con tu estilo.
+          </p>
+        </div>
+
+        <form className="lead-capture-form" onSubmit={handleLeadSubmit}>
+          <div className="form-grid-two">
+            <label className="field-group">
+              <span>Nombre</span>
+              <input className="input" value={leadForm.firstName} onChange={(event) => updateLeadField('firstName', event.target.value)} />
+            </label>
+            <label className="field-group">
+              <span>Email</span>
+              <input className="input" type="email" value={leadForm.email} onChange={(event) => updateLeadField('email', event.target.value)} />
+            </label>
+            <label className="field-group">
+              <span>WhatsApp</span>
+              <input className="input" value={leadForm.phone} onChange={(event) => updateLeadField('phone', event.target.value)} />
+            </label>
+            <label className="field-group">
+              <span>Instagram</span>
+              <input className="input" value={leadForm.instagram} onChange={(event) => updateLeadField('instagram', event.target.value)} />
+            </label>
+            <label className="field-group">
+              <span>Categoria</span>
+              <select className="input" value={leadForm.preferredCategory} onChange={(event) => updateLeadField('preferredCategory', event.target.value)}>
+                <option value="">Sin preferencia</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.id} value={option.label}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Marca</span>
+              <select className="input" value={leadForm.preferredBrand} onChange={(event) => updateLeadField('preferredBrand', event.target.value)}>
+                <option value="">Sin preferencia</option>
+                {brandOptions.map((option) => (
+                  <option key={option.id} value={option.label}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Talle</span>
+              <select className="input" value={leadForm.preferredSize} onChange={(event) => updateLeadField('preferredSize', event.target.value)}>
+                <option value="">Sin preferencia</option>
+                {sizeOptions.map((option) => (
+                  <option key={option.id} value={option.label}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Color</span>
+              <input className="input" value={leadForm.preferredColor} onChange={(event) => updateLeadField('preferredColor', event.target.value)} placeholder="Ej: negro, azul, neutros" />
+            </label>
+          </div>
+
+          {leadError ? <p className="error-copy">{leadError}</p> : null}
+          {leadSuccess ? <p className="success-copy">{leadSuccess}</p> : null}
+
+          <button className="button button-primary" type="submit" disabled={leadSubmitting}>
+            {leadSubmitting ? 'Guardando…' : 'Avisarme'}
+          </button>
+        </form>
       </section>
     </div>
   );

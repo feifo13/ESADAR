@@ -6,6 +6,7 @@ import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { CartProvider } from './contexts/CartContext.jsx';
 import { LookupsProvider } from './contexts/LookupsContext.jsx';
+import { SiteSeoProvider } from './contexts/SiteSeoContext.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -14,9 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <AuthProvider>
           <LookupsProvider>
-            <CartProvider>
-              <App />
-            </CartProvider>
+            <SiteSeoProvider>
+              <CartProvider>
+                <App />
+              </CartProvider>
+            </SiteSeoProvider>
           </LookupsProvider>
         </AuthProvider>
       </ThemeProvider>

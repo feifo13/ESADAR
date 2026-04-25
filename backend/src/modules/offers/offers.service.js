@@ -5,9 +5,10 @@ import { getPagination } from '../../utils/pagination.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
-  createPotentialCustomerFromInput,
   ensureCustomerForUser,
   findCustomerByUserId,
+  findPotentialCustomerByContact,
+  upsertPotentialCustomerByContact,
 } from '../customers/customer-helpers.js';
 
 const OFFER_SORTS = {
@@ -295,9 +296,13 @@ async function resolveGuestOfferOwner(guest, connection) {
     throw badRequest('Guest contact data is required to create an offer');
   }
 
-  const potentialCustomer = await createPotentialCustomerFromInput(
+  const existingLead = await findPotentialCustomerByContact(guest, connection);
+  const potentialCustomer = await upsertPotentialCustomerByContact(
     guest,
-    { source: 'OFFER' },
+    {
+      source: 'OFFER',
+      leadStatus: existingLead?.leadStatus || 'NEW',
+    },
     connection,
   );
 

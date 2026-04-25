@@ -1,0 +1,133 @@
+import { useEffect, useMemo, useRef } from 'react';
+
+function upsertMetaTag(selector, attributes) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement('meta');
+    document.head.appendChild(element);
+  }
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value == null || value === '') {
+      element.removeAttribute(key);
+      return;
+    }
+    element.setAttribute(key, value);
+  });
+
+  return element;
+}
+
+function upsertLinkTag(selector, attributes) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement('link');
+    document.head.appendChild(element);
+  }
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (value == null || value === '') {
+      element.removeAttribute(key);
+      return;
+    }
+    element.setAttribute(key, value);
+  });
+
+  return element;
+}
+
+export default function SeoHead({
+  title,
+  description,
+  canonical,
+  image,
+  url,
+  type = 'website',
+  noindex = false,
+  jsonLd = [],
+}) {
+  const ownerRef = useRef(`seo-head-${Math.random().toString(36).slice(2)}`);
+
+  const normalizedJsonLd = useMemo(() => {
+    const list = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+    return list.filter(Boolean);
+  }, [jsonLd]);
+
+  useEffect(() => {
+    if (title) {
+      document.title = title;
+    }
+
+    upsertMetaTag('meta[name="description"]', {
+      name: 'description',
+      content: description || '',
+    });
+
+    upsertMetaTag('meta[name="robots"]', {
+      name: 'robots',
+      content: noindex ? 'noindex,nofollow' : 'index,follow',
+    });
+
+    upsertLinkTag('link[rel="canonical"]', {
+      rel: 'canonical',
+      href: canonical || url || '',
+    });
+
+    upsertMetaTag('meta[property="og:title"]', {
+      property: 'og:title',
+      content: title || '',
+    });
+    upsertMetaTag('meta[property="og:description"]', {
+      property: 'og:description',
+      content: description || '',
+    });
+    upsertMetaTag('meta[property="og:image"]', {
+      property: 'og:image',
+      content: image || '',
+    });
+    upsertMetaTag('meta[property="og:url"]', {
+      property: 'og:url',
+      content: canonical || url || '',
+    });
+    upsertMetaTag('meta[property="og:type"]', {
+      property: 'og:type',
+      content: type,
+    });
+
+    upsertMetaTag('meta[name="twitter:card"]', {
+      name: 'twitter:card',
+      content: image ? 'summary_large_image' : 'summary',
+    });
+    upsertMetaTag('meta[name="twitter:title"]', {
+      name: 'twitter:title',
+      content: title || '',
+    });
+    upsertMetaTag('meta[name="twitter:description"]', {
+      name: 'twitter:description',
+      content: description || '',
+    });
+    upsertMetaTag('meta[name="twitter:image"]', {
+      name: 'twitter:image',
+      content: image || '',
+    });
+
+    const owner = ownerRef.current;
+    const previousScripts = [...document.head.querySelectorAll(`script[data-seo-owner="${owner}"]`)];
+    previousScripts.forEach((node) => node.remove());
+
+    normalizedJsonLd.forEach((item, index) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.id = item.id || `seo-jsonld-${index}`;
+      script.dataset.seoOwner = owner;
+      script.textContent = JSON.stringify(item.data || item);
+      document.head.appendChild(script);
+    });
+
+    return () => {
+      [...document.head.querySelectorAll(`script[data-seo-owner="${owner}"]`)].forEach((node) => node.remove());
+    };
+  }, [canonical, description, image, noindex, normalizedJsonLd, title, type, url]);
+
+  return null;
+}

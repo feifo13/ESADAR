@@ -63,6 +63,25 @@ export async function apiFetch(path, options = {}) {
   return payload;
 }
 
+function getDownloadFileName(disposition = '') {
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^"|"$/g, ''));
+    } catch {
+      return utf8Match[1].trim().replace(/^"|"$/g, '');
+    }
+  }
+
+  const quotedMatch = disposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch?.[1]) return quotedMatch[1].trim();
+
+  const plainMatch = disposition.match(/filename=([^;]+)/i);
+  if (plainMatch?.[1]) return plainMatch[1].trim().replace(/^"|"$/g, '');
+
+  return '';
+}
+
 export async function apiDownload(path, options = {}) {
   const headers = getAuthHeaders(options.headers || {}, options.token);
   const response = await fetch(`${API_URL}${path}`, {
@@ -89,8 +108,9 @@ export async function apiDownload(path, options = {}) {
 
   const blob = await response.blob();
   const disposition = response.headers.get('Content-Disposition') || '';
-  const matchedFileName = disposition.match(/filename="([^"]+)"/i)?.[1];
-  const fileName = options.fileName || matchedFileName || 'export.bin';
+  const headerFileName = getDownloadFileName(disposition);
+  const fallbackExtension = options.extension ? String(options.extension).replace(/^./, '') : 'bin';
+  const fileName = headerFileName || options.fileName || `export.${fallbackExtension}`;
   const objectUrl = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;

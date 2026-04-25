@@ -3,6 +3,7 @@ import { withTransaction } from '../../db/transaction.js';
 import { notFound } from '../../utils/app-error.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
+import { findPotentialCustomerByContact, upsertPotentialCustomerByContact } from '../customers/customer-helpers.js';
 
 const CONTACT_MESSAGE_SORTS = {
   createdAt: (direction) => `cm.created_at ${direction}, cm.id ${direction}`,
@@ -13,6 +14,18 @@ const CONTACT_MESSAGE_SORTS = {
 
 export async function createContactMessage(input, auditContext) {
   return withTransaction(async (connection) => {
+    const existingLead = await findPotentialCustomerByContact(input, connection);
+    const lead = (input.email || input.phone || input.instagram)
+      ? await upsertPotentialCustomerByContact(
+        input,
+        {
+          source: 'CONTACT_FORM',
+          leadStatus: existingLead?.leadStatus || 'NEW',
+        },
+        connection,
+      )
+      : null;
+
     const [insertResult] = await connection.execute(
       `
         INSERT INTO contact_messages (
@@ -46,6 +59,9 @@ export async function createContactMessage(input, auditContext) {
         entityType: 'contact_messages',
         entityId: message.id,
         afterJson: message,
+        metadataJson: {
+          potentialCustomerId: lead?.id || null,
+        },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,

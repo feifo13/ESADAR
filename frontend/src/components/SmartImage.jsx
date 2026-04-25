@@ -33,15 +33,43 @@ function buildPlaceholderDataUrl(label) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+function resolveSrcSet(value) {
+  if (!value) return '';
+  return String(value)
+    .split(',')
+    .map((entry) => {
+      const [path, descriptor] = entry.trim().split(/\s+/, 2);
+      return `${resolveAssetUrl(path)}${descriptor ? ` ${descriptor}` : ''}`;
+    })
+    .join(', ');
+}
+
 export default function SmartImage({
   src,
+  sources,
+  srcSet,
+  sizes,
   alt,
   fallbackLabel,
   className,
   onError,
+  loading = 'lazy',
+  fetchPriority,
   ...props
 }) {
   const resolvedSrc = resolveAssetUrl(src);
+  const resolvedSources = useMemo(
+    () => (Array.isArray(sources)
+      ? sources
+        .map((source) => ({
+          ...source,
+          srcSet: resolveSrcSet(source?.srcSet),
+        }))
+        .filter((source) => source.srcSet)
+      : []),
+    [sources],
+  );
+  const resolvedSrcSet = useMemo(() => resolveSrcSet(srcSet), [srcSet]);
   const placeholderSrc = useMemo(
     () => buildPlaceholderDataUrl(fallbackLabel || alt || 'ESADAR'),
     [alt, fallbackLabel],
@@ -54,13 +82,17 @@ export default function SmartImage({
     setIsFallback(!resolvedSrc);
   }, [placeholderSrc, resolvedSrc]);
 
-  return (
+  const imageNode = (
     <img
       {...props}
       alt={alt}
       className={className}
       data-fallback={isFallback ? 'true' : 'false'}
       src={currentSrc}
+      srcSet={currentSrc === placeholderSrc ? undefined : resolvedSrcSet || undefined}
+      sizes={currentSrc === placeholderSrc ? undefined : sizes}
+      loading={loading}
+      fetchPriority={fetchPriority}
       onError={(event) => {
         onError?.(event);
 
@@ -72,5 +104,24 @@ export default function SmartImage({
         setIsFallback(true);
       }}
     />
+  );
+
+  if (!resolvedSources.length || currentSrc === placeholderSrc) {
+    return imageNode;
+  }
+
+  return (
+    <picture>
+      {resolvedSources.map((source) => (
+        <source
+          key={`${source.srcSet}-${source.media || ''}`}
+          media={source.media}
+          type={source.type}
+          srcSet={source.srcSet}
+          sizes={source.sizes || sizes}
+        />
+      ))}
+      {imageNode}
+    </picture>
   );
 }

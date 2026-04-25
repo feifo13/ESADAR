@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import SeoHead from '../components/SeoHead.jsx';
+import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { apiFetch } from '../lib/api.js';
+import { toAbsoluteUrl } from '../lib/seo.js';
 
 const initialState = {
   firstName: '',
@@ -12,6 +15,8 @@ const initialState = {
 };
 
 export default function ContactPage() {
+  const { site, pagesByRoute } = useSiteSeo();
+  const contactSeo = pagesByRoute['/contact'] || null;
   const [form, setForm] = useState(initialState);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -52,14 +57,24 @@ export default function ContactPage() {
 
   return (
     <div className="container auth-shell">
+      <SeoHead
+        title={contactSeo?.title || `Contacto | ${site.name}`}
+        description={contactSeo?.description || 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.'}
+        canonical={contactSeo?.canonicalUrl || toAbsoluteUrl('/contact', site)}
+        url={toAbsoluteUrl('/contact', site)}
+      />
+
       <form className="section-card auth-card" onSubmit={handleSubmit}>
         <p className="section-kicker">Contacto</p>
-        <h1>Escríbenos</h1>
+        <h1>Escribenos</h1>
+        <p className="muted-copy">
+          Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.
+        </p>
         <div className="form-grid-two">
           <label className="field-group"><span>Nombre</span><input className="input" value={form.firstName} onChange={(event) => update('firstName', event.target.value)} required /></label>
           <label className="field-group"><span>Apellido</span><input className="input" value={form.lastName} onChange={(event) => update('lastName', event.target.value)} required /></label>
           <label className="field-group"><span>Fecha de nacimiento</span><input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} /></label>
-          <label className="field-group"><span>Teléfono</span><input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} /></label>
+          <label className="field-group"><span>Telefono</span><input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} /></label>
           <label className="field-group"><span>Instagram</span><input className="input" value={form.instagram} onChange={(event) => update('instagram', event.target.value)} /></label>
           <label className="field-group"><span>Email</span><input className="input" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></label>
           <label className="field-group form-grid-span-two"><span>Consulta</span><textarea className="input textarea" value={form.message} onChange={(event) => update('message', event.target.value)} required /></label>
@@ -74,7 +89,7 @@ export default function ContactPage() {
         <div className="modal-backdrop" onClick={() => setSent(false)}>
           <div className="modal-card" onClick={(event) => event.stopPropagation()}>
             <h2>Consulta enviada</h2>
-            <p>Gracias por escribir. Te responderemos desde administración.</p>
+            <p>Gracias por escribir. Te responderemos desde administracion.</p>
             <button type="button" className="button button-primary" onClick={() => setSent(false)}>Cerrar</button>
           </div>
         </div>

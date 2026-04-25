@@ -4,13 +4,49 @@ import { pool } from '../../db/pool.js';
 import { badRequest } from '../../utils/app-error.js';
 import { normalizePublicAssetPath } from '../../utils/assets.js';
 import { logAudit } from '../audit/audit.service.js';
-import { createArticle, listAdminArticlesForExport, updateArticle } from './articles.service.js';
+import {
+  createArticle,
+  findOrCreateBrandByName,
+  findOrCreateCategoryByName,
+  findOrCreateSizeByCode,
+  listAdminArticlesForExport,
+  syncArticleImageSources,
+  updateArticle,
+} from './articles.service.js';
 import { articleCreateSchema } from './articles.schemas.js';
 
-const EXPORT_COLUMNS = [
+const SIMPLE_TEMPLATE_COLUMNS = [
+  'title',
+  'salePrice',
+  'categoryName',
+  'brandName',
+  'sizeText',
+  'measurementsText',
+  'description',
+  'conditionLabel',
+  'color',
+  'material',
+  'quantityTotal',
+  'allowOffers',
+  'isFeatured',
+  'primaryImage',
+  'additionalImages',
+];
+
+const FULL_EXPORT_COLUMNS = [
   'internalCode',
   'slug',
   'title',
+  'seoTitle',
+  'seoDescription',
+  'canonicalUrl',
+  'googleProductCategory',
+  'conditionLabel',
+  'color',
+  'material',
+  'gender',
+  'ageGroup',
+  'imageAltOverride',
   'categoryId',
   'categoryName',
   'brandId',
@@ -38,6 +74,7 @@ const EXPORT_COLUMNS = [
   'status',
   'originNotes',
   'primaryImage',
+  'additionalImages',
 ];
 
 const HEADER_ALIASES = new Map([
@@ -58,8 +95,8 @@ const HEADER_ALIASES = new Map([
   ['sizeid', 'sizeId'],
   ['size', 'sizeCode'],
   ['sizecode', 'sizeCode'],
-  ['talle', 'sizeCode'],
   ['sizetext', 'sizeText'],
+  ['talle', 'sizeText'],
   ['measurements', 'measurementsText'],
   ['measurementstext', 'measurementsText'],
   ['medidas', 'measurementsText'],
@@ -69,7 +106,10 @@ const HEADER_ALIASES = new Map([
   ['purchasepriceshipping', 'purchasePriceShipping'],
   ['purchasepricecourier', 'purchasePriceCourier'],
   ['saleprice', 'salePrice'],
+  ['price', 'salePrice'],
+  ['precio', 'salePrice'],
   ['precioventa', 'salePrice'],
+  ['precioventafinal', 'salePrice'],
   ['discounttype', 'discountType'],
   ['discountvalue', 'discountValue'],
   ['allowoffers', 'allowOffers'],
@@ -82,11 +122,32 @@ const HEADER_ALIASES = new Map([
   ['quantitysold', 'quantitySold'],
   ['status', 'status'],
   ['estado', 'status'],
+  ['estadoprenda', 'conditionLabel'],
+  ['condicion', 'conditionLabel'],
+  ['conditionlabel', 'conditionLabel'],
   ['originnotes', 'originNotes'],
   ['notes', 'originNotes'],
+  ['color', 'color'],
+  ['material', 'material'],
+  ['genero', 'gender'],
+  ['gender', 'gender'],
+  ['edad', 'ageGroup'],
+  ['grupoedad', 'ageGroup'],
+  ['agegroup', 'ageGroup'],
+  ['seotitle', 'seoTitle'],
+  ['seotitulo', 'seoTitle'],
+  ['seodescription', 'seoDescription'],
+  ['seodescripcion', 'seoDescription'],
+  ['googleproductcategory', 'googleProductCategory'],
+  ['imagealtoverride', 'imageAltOverride'],
+  ['canonicalurl', 'canonicalUrl'],
   ['primaryimage', 'primaryImage'],
+  ['imagenprincipal', 'primaryImage'],
   ['image', 'primaryImage'],
   ['imageurl', 'primaryImage'],
+  ['additionalimages', 'additionalImages'],
+  ['imagenes', 'additionalImages'],
+  ['imagenesadicionales', 'additionalImages'],
 ]);
 
 function normalizeHeaderKey(value) {
@@ -170,6 +231,31 @@ function normalizeImportedDate(value) {
   return normalized;
 }
 
+function normalizeDelimitedImages(value) {
+  if (value == null || value === '') return [];
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  return String(value)
+    .split(/[,;\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function isStoredPublicImagePath(value) {
+  const normalized = String(value || '').trim();
+  return /^\/?uploads\//i.test(normalized);
+}
+
+function isAbsoluteImageUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+function isRawLocalFileName(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return false;
+  if (isAbsoluteImageUrl(normalized) || isStoredPublicImagePath(normalized)) return false;
+  return !normalized.includes('/');
+}
+
 async function loadImportReferenceData() {
   const [categories] = await pool.query('SELECT id, name FROM categories');
   const [brands] = await pool.query('SELECT id, name FROM brands');
@@ -203,114 +289,88 @@ async function loadExistingArticlesByCode(internalCodes) {
   return new Map(rows.map((row) => [row.internalCode, { id: Number(row.id), internalCode: row.internalCode }]));
 }
 
-function resolveRequiredLookup({ valueId, valueName, byId, byName, label }) {
-  if (valueId != null && valueId !== '') {
-    const resolved = byId.get(String(valueId));
-    if (!resolved) {
-      throw new Error(`${label} inexistente: ${valueId}`);
-    }
-    return resolved;
+function validateReferenceId(byId, valueId, label) {
+  if (valueId == null || valueId === '') return null;
+  const resolved = byId.get(String(valueId));
+  if (!resolved) {
+    throw new Error(`${label} inexistente: ${valueId}`);
   }
-
-  if (valueName != null && valueName !== '') {
-    const resolved = byName.get(normalizeLookupKey(valueName));
-    if (!resolved) {
-      throw new Error(`${label} inexistente: ${valueName}`);
-    }
-    return resolved;
-  }
-
-  throw new Error(`${label} es obligatorio`);
+  return resolved;
 }
 
-function resolveOptionalLookup({ valueId, valueName, byId, byName, label }) {
-  if (valueId == null && valueName == null) {
-    return null;
-  }
+function buildRowWarnings(row, referenceData, options) {
+  const warnings = [];
 
-  if (valueId != null && valueId !== '') {
-    const resolved = byId.get(String(valueId));
-    if (!resolved) {
-      throw new Error(`${label} inexistente: ${valueId}`);
-    }
-    return resolved;
-  }
-
-  if (valueName != null && valueName !== '') {
-    const resolved = byName.get(normalizeLookupKey(valueName));
-    if (!resolved) {
-      throw new Error(`${label} inexistente: ${valueName}`);
-    }
-    return resolved;
-  }
-
-  return null;
-}
-
-function buildImportPayload(row, referenceData) {
   if (!row.internalCode) {
-    throw new Error('internalCode / code / sku es obligatorio para importar');
+    warnings.push('Se generará un código automático.');
   }
 
-  const payload = {
-    internalCode: String(row.internalCode).trim(),
-    slug: row.slug || undefined,
-    title: row.title,
-    categoryId: resolveRequiredLookup({
-      valueId: row.categoryId,
-      valueName: row.categoryName,
-      byId: referenceData.categoriesById,
-      byName: referenceData.categoriesByName,
-      label: 'Categoria',
-    }),
-    brandId: resolveOptionalLookup({
-      valueId: row.brandId,
-      valueName: row.brandName,
-      byId: referenceData.brandsById,
-      byName: referenceData.brandsByName,
-      label: 'Marca',
-    }),
-    sizeId: resolveOptionalLookup({
-      valueId: row.sizeId,
-      valueName: row.sizeCode,
-      byId: referenceData.sizesById,
-      byName: referenceData.sizesByCode,
-      label: 'Talle',
-    }),
-    sizeText: row.sizeText || null,
-    measurementsText: row.measurementsText || null,
-    description: row.description || null,
-    purchasePriceItem: row.purchasePriceItem ?? 0,
-    purchasePriceShipping: row.purchasePriceShipping ?? 0,
-    purchasePriceCourier: row.purchasePriceCourier ?? 0,
-    salePrice: row.salePrice,
-    discountType: row.discountType ? String(row.discountType).trim().toUpperCase() : 'NONE',
-    discountValue: row.discountValue ?? 0,
-    allowOffers: parseBooleanCell(row.allowOffers, false),
-    isFeatured: parseBooleanCell(row.isFeatured, false),
-    intakeDate: normalizeImportedDate(row.intakeDate),
-    quantityTotal: row.quantityTotal ?? 1,
-    quantityAvailable: row.quantityAvailable ?? undefined,
-    quantityReserved: row.quantityReserved ?? 0,
-    quantitySold: row.quantitySold ?? 0,
-    status: row.status ? String(row.status).trim().toUpperCase() : 'ACTIVE',
-    originNotes: row.originNotes || null,
-  };
-
-  const validation = articleCreateSchema.safeParse(payload);
-  if (!validation.success) {
-    throw new Error(validation.error.issues.map((issue) => issue.message).join('; '));
+  if (!normalizeImportedDate(row.intakeDate)) {
+    warnings.push('Se usará la fecha actual como fecha de ingreso.');
   }
 
-  return {
-    payload: validation.data,
-    primaryImage: row.primaryImage ? normalizePublicAssetPath(row.primaryImage) : '',
-  };
+  if (!row.categoryId && !row.categoryName) {
+    warnings.push('Se usará la categoría Sin categoría.');
+  }
+
+  if (row.categoryName && !referenceData.categoriesByName.get(normalizeLookupKey(row.categoryName))) {
+    if (options.createMissingLookups) {
+      warnings.push(`Se creará la categoría "${row.categoryName}".`);
+    } else {
+      warnings.push(`La categoría "${row.categoryName}" no existe. Se usará Sin categoría.`);
+    }
+  }
+
+  if (row.brandName && !referenceData.brandsByName.get(normalizeLookupKey(row.brandName))) {
+    if (options.createMissingLookups) {
+      warnings.push(`Se creará la marca "${row.brandName}".`);
+    } else {
+      warnings.push(`La marca "${row.brandName}" no existe. Se importará sin marca normalizada.`);
+    }
+  }
+
+  if (row.sizeCode && !referenceData.sizesByCode.get(normalizeLookupKey(row.sizeCode))) {
+    if (options.createMissingLookups) {
+      warnings.push(`Se creará el talle "${row.sizeCode}".`);
+    } else {
+      warnings.push(`El talle "${row.sizeCode}" no existe. Se conservará como texto libre.`);
+    }
+  }
+
+  for (const imageValue of [row.primaryImage, ...normalizeDelimitedImages(row.additionalImages)]) {
+    if (isRawLocalFileName(imageValue)) {
+      warnings.push(`La imagen "${imageValue}" debe subirse o vincularse manualmente luego.`);
+    }
+  }
+
+  return warnings;
+}
+
+function validateImportRow(row, referenceData) {
+  const errors = [];
+
+  if (!row.title || String(row.title).trim().length < 2) {
+    errors.push('title / titulo es obligatorio');
+  }
+
+  if (row.salePrice == null || row.salePrice === '' || Number(row.salePrice) <= 0) {
+    errors.push('salePrice / precio es obligatorio y debe ser mayor a 0');
+  }
+
+  try {
+    validateReferenceId(referenceData.categoriesById, row.categoryId, 'Categoría');
+    validateReferenceId(referenceData.brandsById, row.brandId, 'Marca');
+    validateReferenceId(referenceData.sizesById, row.sizeId, 'Talle');
+  } catch (error) {
+    errors.push(error.message || 'Referencia inválida');
+  }
+
+  return errors;
 }
 
 function parseImportFile(file) {
   if (!file?.buffer?.length) {
-    throw badRequest('El archivo de importacion esta vacio o es invalido');
+    throw badRequest('El archivo de importación está vacío o es inválido');
   }
 
   const workbook = XLSX.read(file.buffer, {
@@ -322,7 +382,7 @@ function parseImportFile(file) {
 
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) {
-    throw badRequest('No se encontro ninguna hoja para importar');
+    throw badRequest('No se encontró ninguna hoja para importar');
   }
 
   const sheet = workbook.Sheets[firstSheetName];
@@ -343,7 +403,7 @@ function parseImportFile(file) {
   }));
 }
 
-async function prepareImportRows(file, { updateExisting = false } = {}) {
+async function prepareImportRows(file, { updateExisting = false, createMissingLookups = false } = {}) {
   const parsedRows = parseImportFile(file);
   const referenceData = await loadImportReferenceData();
   const codes = parsedRows
@@ -361,52 +421,39 @@ async function prepareImportRows(file, { updateExisting = false } = {}) {
   }
 
   return parsedRows.map((entry) => {
-    const internalCode = entry.normalizedRow.internalCode ? String(entry.normalizedRow.internalCode).trim() : '';
+    const row = entry.normalizedRow;
+    const internalCode = row.internalCode ? String(row.internalCode).trim() : '';
+    const warnings = buildRowWarnings(row, referenceData, { createMissingLookups });
+    const errors = validateImportRow(row, referenceData);
 
     if (internalCode && duplicateCodes.has(internalCode)) {
-      return {
-        ...entry,
-        action: 'FAILED',
-        errors: [`El codigo ${internalCode} esta repetido dentro del archivo`],
-      };
+      errors.push(`El código ${internalCode} está repetido dentro del archivo`);
     }
 
-    try {
-      const { payload, primaryImage } = buildImportPayload(entry.normalizedRow, referenceData);
-      const existingArticle = existingByCode.get(payload.internalCode) || null;
+    const existingArticle = internalCode ? (existingByCode.get(internalCode) || null) : null;
+    let action = existingArticle ? 'UPDATED' : 'CREATED';
 
-      if (existingArticle && !updateExisting) {
-        return {
-          ...entry,
-          internalCode: payload.internalCode,
-          title: payload.title,
-          action: 'SKIPPED',
-          errors: [],
-          payload,
-          existingArticle,
-          primaryImage,
-        };
-      }
-
-      return {
-        ...entry,
-        internalCode: payload.internalCode,
-        title: payload.title,
-        action: existingArticle ? 'UPDATED' : 'CREATED',
-        errors: [],
-        payload,
-        existingArticle,
-        primaryImage,
-      };
-    } catch (error) {
-      return {
-        ...entry,
-        internalCode,
-        title: entry.normalizedRow.title || '',
-        action: 'FAILED',
-        errors: [error.message || 'Fila invalida'],
-      };
+    if (existingArticle && !updateExisting) {
+      action = 'SKIPPED';
     }
+
+    if (errors.length) {
+      action = 'FAILED';
+    }
+
+    return {
+      ...entry,
+      internalCode,
+      title: row.title || '',
+      action,
+      errors,
+      warnings,
+      existingArticle,
+      normalizedImages: {
+        primaryImage: row.primaryImage ? String(row.primaryImage).trim() : '',
+        additionalImages: normalizeDelimitedImages(row.additionalImages),
+      },
+    };
   });
 }
 
@@ -418,6 +465,10 @@ function buildImportSummary(preparedRows) {
       if (row.action === 'UPDATED') summary.rowsUpdated += 1;
       if (row.action === 'SKIPPED') summary.rowsSkipped += 1;
       if (row.action === 'FAILED') summary.rowsFailed += 1;
+      if (row.warnings?.length) {
+        summary.rowsWithWarnings += 1;
+        summary.warningsCount += row.warnings.length;
+      }
       return summary;
     },
     {
@@ -426,6 +477,8 @@ function buildImportSummary(preparedRows) {
       rowsUpdated: 0,
       rowsSkipped: 0,
       rowsFailed: 0,
+      rowsWithWarnings: 0,
+      warningsCount: 0,
     },
   );
 }
@@ -464,7 +517,10 @@ async function appendImportBatchItem(batchId, row) {
       row.rowNumber,
       row.articleId || row.existingArticle?.id || null,
       row.action,
-      JSON.stringify(row.normalizedRow || {}),
+      JSON.stringify({
+        ...(row.normalizedRow || {}),
+        _warnings: row.warnings || [],
+      }),
       row.errors?.length ? row.errors.join('; ') : null,
     ],
   );
@@ -475,9 +531,14 @@ async function finalizeImportBatch(batchId, summary) {
     ? (summary.rowsCreated || summary.rowsUpdated ? 'DONE_WITH_ERRORS' : 'FAILED')
     : 'DONE';
 
-  const notes = summary.rowsSkipped
-    ? `Rows skipped because the code already exists and updateExisting=false: ${summary.rowsSkipped}`
-    : null;
+  const notes = [
+    summary.rowsSkipped
+      ? `Rows skipped because the code already exists and updateExisting=false: ${summary.rowsSkipped}`
+      : null,
+    summary.rowsWithWarnings
+      ? `Rows with warnings: ${summary.rowsWithWarnings}`
+      : null,
+  ].filter(Boolean).join(' | ') || null;
 
   await pool.execute(
     `
@@ -504,68 +565,168 @@ async function finalizeImportBatch(batchId, summary) {
   return status;
 }
 
-async function syncImportedPrimaryImage(articleId, imagePath, articleTitle, actorUserId) {
-  if (!imagePath) return;
-
-  const [existingRows] = await pool.execute(
-    `
-      SELECT id
-      FROM article_images
-      WHERE article_id = ? AND is_primary = 1
-      ORDER BY id ASC
-      LIMIT 1
-    `,
-    [articleId],
-  );
-
-  if (existingRows.length) {
-    await pool.execute(
-      `
-        UPDATE article_images
-        SET
-          file_path = ?,
-          alt_text = ?
-        WHERE id = ?
-      `,
-      [imagePath, articleTitle || null, existingRows[0].id],
-    );
-    return;
-  }
-
-  const [countRows] = await pool.execute(
-    'SELECT COUNT(*) AS total FROM article_images WHERE article_id = ?',
-    [articleId],
-  );
-
-  await pool.execute(
-    `
-      INSERT INTO article_images (
-        article_id,
-        file_path,
-        alt_text,
-        sort_order,
-        is_primary,
-        created_by
-      ) VALUES (?, ?, ?, ?, 1, ?)
-    `,
-    [
-      articleId,
-      imagePath,
-      articleTitle || null,
-      Number(countRows[0]?.total || 0),
-      actorUserId || null,
-    ],
-  );
-}
-
 function buildPreviewRows(preparedRows) {
-  return preparedRows.slice(0, 50).map((row) => ({
+  return preparedRows.slice(0, 100).map((row) => ({
     rowNumber: row.rowNumber,
     action: row.action,
-    internalCode: row.internalCode || row.normalizedRow.internalCode || '',
+    internalCode: row.internalCode || '',
     title: row.title || row.normalizedRow.title || '',
     errors: row.errors || [],
+    warnings: row.warnings || [],
   }));
+}
+
+async function resolveCategoryId(row, options, referenceData, auditContext) {
+  if (row.categoryId != null && row.categoryId !== '') {
+    const resolved = referenceData.categoriesById.get(String(row.categoryId));
+    if (!resolved) {
+      throw new Error(`Categoría inexistente: ${row.categoryId}`);
+    }
+    return resolved;
+  }
+
+  if (row.categoryName) {
+    const key = normalizeLookupKey(row.categoryName);
+    const existing = referenceData.categoriesByName.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    if (options.createMissingLookups) {
+      const createdId = await findOrCreateCategoryByName(row.categoryName, auditContext);
+      referenceData.categoriesByName.set(key, createdId);
+      referenceData.categoriesById.set(String(createdId), createdId);
+      return createdId;
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
+async function resolveBrandId(row, options, referenceData, auditContext) {
+  if (row.brandId != null && row.brandId !== '') {
+    const resolved = referenceData.brandsById.get(String(row.brandId));
+    if (!resolved) {
+      throw new Error(`Marca inexistente: ${row.brandId}`);
+    }
+    return resolved;
+  }
+
+  if (row.brandName) {
+    const key = normalizeLookupKey(row.brandName);
+    const existing = referenceData.brandsByName.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    if (options.createMissingLookups) {
+      const createdId = await findOrCreateBrandByName(row.brandName, auditContext);
+      referenceData.brandsByName.set(key, createdId);
+      referenceData.brandsById.set(String(createdId), createdId);
+      return createdId;
+    }
+  }
+
+  return null;
+}
+
+async function resolveSizeData(row, options, referenceData, auditContext) {
+  if (row.sizeId != null && row.sizeId !== '') {
+    const resolved = referenceData.sizesById.get(String(row.sizeId));
+    if (!resolved) {
+      throw new Error(`Talle inexistente: ${row.sizeId}`);
+    }
+
+    return {
+      sizeId: resolved,
+      sizeText: row.sizeText || null,
+    };
+  }
+
+  const sizeCode = row.sizeCode || null;
+  if (sizeCode) {
+    const key = normalizeLookupKey(sizeCode);
+    const existing = referenceData.sizesByCode.get(key);
+    if (existing) {
+      return {
+        sizeId: existing,
+        sizeText: row.sizeText || null,
+      };
+    }
+
+    if (options.createMissingLookups) {
+      const createdId = await findOrCreateSizeByCode(sizeCode, auditContext);
+      referenceData.sizesByCode.set(key, createdId);
+      referenceData.sizesById.set(String(createdId), createdId);
+      return {
+        sizeId: createdId,
+        sizeText: row.sizeText || null,
+      };
+    }
+
+    return {
+      sizeId: null,
+      sizeText: row.sizeText || sizeCode,
+    };
+  }
+
+  return {
+    sizeId: null,
+    sizeText: row.sizeText || null,
+  };
+}
+
+async function materializeImportPayload(preparedRow, referenceData, options, auditContext) {
+  const row = preparedRow.normalizedRow;
+  const categoryId = await resolveCategoryId(row, options, referenceData, auditContext);
+  const brandId = await resolveBrandId(row, options, referenceData, auditContext);
+  const sizeData = await resolveSizeData(row, options, referenceData, auditContext);
+
+  const payload = {
+    internalCode: preparedRow.internalCode || undefined,
+    slug: row.slug || undefined,
+    title: row.title,
+    seoTitle: row.seoTitle || null,
+    seoDescription: row.seoDescription || null,
+    canonicalUrl: row.canonicalUrl || null,
+    googleProductCategory: row.googleProductCategory || null,
+    conditionLabel: row.conditionLabel || null,
+    color: row.color || null,
+    material: row.material || null,
+    gender: row.gender ? String(row.gender).trim().toUpperCase() : null,
+    ageGroup: row.ageGroup ? String(row.ageGroup).trim().toUpperCase() : null,
+    imageAltOverride: row.imageAltOverride || null,
+    categoryId,
+    brandId,
+    sizeId: sizeData.sizeId,
+    sizeText: sizeData.sizeText,
+    measurementsText: row.measurementsText || null,
+    description: row.description || null,
+    purchasePriceItem: row.purchasePriceItem ?? 0,
+    purchasePriceShipping: row.purchasePriceShipping ?? 0,
+    purchasePriceCourier: row.purchasePriceCourier ?? 0,
+    salePrice: row.salePrice,
+    discountType: row.discountType ? String(row.discountType).trim().toUpperCase() : 'NONE',
+    discountValue: row.discountValue ?? 0,
+    allowOffers: parseBooleanCell(row.allowOffers, false),
+    isFeatured: parseBooleanCell(row.isFeatured, false),
+    intakeDate: normalizeImportedDate(row.intakeDate) || new Date().toISOString().slice(0, 10),
+    quantityTotal: row.quantityTotal ?? 1,
+    quantityAvailable: row.quantityAvailable ?? (row.quantityTotal ?? 1),
+    quantityReserved: row.quantityReserved ?? 0,
+    quantitySold: row.quantitySold ?? 0,
+    status: row.status ? String(row.status).trim().toUpperCase() : 'ACTIVE',
+    originNotes: row.originNotes || null,
+  };
+
+  const validation = articleCreateSchema.safeParse(payload);
+  if (!validation.success) {
+    throw new Error(validation.error.issues.map((issue) => issue.message).join('; '));
+  }
+
+  return validation.data;
 }
 
 export async function previewArticleImport({ file, options = {} }) {
@@ -574,7 +735,7 @@ export async function previewArticleImport({ file, options = {} }) {
 
   return {
     batchType,
-    columns: EXPORT_COLUMNS,
+    columns: FULL_EXPORT_COLUMNS,
     summary: buildImportSummary(preparedRows),
     rows: buildPreviewRows(preparedRows),
   };
@@ -583,6 +744,7 @@ export async function previewArticleImport({ file, options = {} }) {
 export async function runArticleImport({ file, options = {}, auditContext }) {
   const batchType = detectBatchType(file?.originalname);
   const preparedRows = await prepareImportRows(file, options);
+  const referenceData = await loadImportReferenceData();
   const initialSummary = buildImportSummary(preparedRows);
   const batchId = await createImportBatch({
     fileName: file?.originalname || null,
@@ -598,6 +760,8 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
     rowsUpdated: 0,
     rowsSkipped: 0,
     rowsFailed: 0,
+    rowsWithWarnings: initialSummary.rowsWithWarnings,
+    warningsCount: initialSummary.warningsCount,
   };
 
   for (const row of preparedRows) {
@@ -608,7 +772,8 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
         rowNumber: row.rowNumber,
         action: row.action,
         internalCode: row.internalCode || '',
-        error: row.errors?.join('; ') || 'Fila invalida',
+        error: row.errors?.join('; ') || 'Fila inválida',
+        warnings: row.warnings || [],
       });
       continue;
     }
@@ -621,22 +786,35 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
         action: row.action,
         internalCode: row.internalCode || '',
         articleId: row.existingArticle?.id || null,
-        message: 'El codigo ya existe y updateExisting esta desactivado',
+        message: 'El código ya existe y updateExisting está desactivado',
+        warnings: row.warnings || [],
       });
       continue;
     }
 
     try {
+      const payload = await materializeImportPayload(row, referenceData, options, auditContext);
       const article = row.existingArticle
-        ? await updateArticle(row.existingArticle.id, row.payload, auditContext)
-        : await createArticle(row.payload, auditContext);
+        ? await updateArticle(row.existingArticle.id, payload, auditContext)
+        : await createArticle(payload, auditContext);
 
-      await syncImportedPrimaryImage(
-        article.id,
-        row.primaryImage,
-        article.title,
-        auditContext.actorUserId,
-      );
+      const validPrimaryImage = isRawLocalFileName(row.normalizedImages.primaryImage)
+        ? ''
+        : (row.normalizedImages.primaryImage ? normalizePublicAssetPath(row.normalizedImages.primaryImage) : '');
+      const validAdditionalImages = row.normalizedImages.additionalImages
+        .filter((image) => !isRawLocalFileName(image))
+        .map((image) => normalizePublicAssetPath(image));
+
+      if (validPrimaryImage || validAdditionalImages.length) {
+        await syncArticleImageSources(
+          article.id,
+          {
+            primaryImage: validPrimaryImage,
+            additionalImages: validAdditionalImages,
+          },
+          auditContext,
+        );
+      }
 
       if (row.existingArticle) {
         summary.rowsUpdated += 1;
@@ -652,8 +830,9 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
       results.push({
         rowNumber: row.rowNumber,
         action: row.action,
-        internalCode: row.internalCode,
+        internalCode: article.internalCode,
         articleId: article.id,
+        warnings: row.warnings || [],
       });
     } catch (error) {
       summary.rowsFailed += 1;
@@ -670,6 +849,7 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
         action: 'FAILED',
         internalCode: row.internalCode || '',
         error: failedRow.errors[0],
+        warnings: row.warnings || [],
       });
     }
   }
@@ -688,6 +868,7 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
       batchStatus,
       ...summary,
       updateExisting: Boolean(options.updateExisting),
+      createMissingLookups: Boolean(options.createMissingLookups),
     },
     source: auditContext.source,
     ipAddress: auditContext.ipAddress,
@@ -703,14 +884,115 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
   };
 }
 
+function buildTemplateRows(type) {
+  if (type === 'full') {
+    return [{
+      internalCode: '',
+      slug: '',
+      title: 'Buzo vintage seleccionado',
+      seoTitle: '',
+      seoDescription: '',
+      canonicalUrl: '',
+      googleProductCategory: 'Apparel & Accessories > Clothing',
+      conditionLabel: 'Muy buen estado',
+      color: 'Gris',
+      material: 'Algodón',
+      gender: 'UNISEX',
+      ageGroup: 'ADULT',
+      imageAltOverride: '',
+      categoryId: '',
+      categoryName: 'Buzos',
+      brandId: '',
+      brandName: 'Champion',
+      sizeId: '',
+      sizeCode: 'M',
+      sizeText: '',
+      measurementsText: 'Pecho 58 cm / Largo 68 cm',
+      description: 'Prenda seleccionada una por una.',
+      purchasePriceItem: 0,
+      purchasePriceShipping: 0,
+      purchasePriceCourier: 0,
+      purchasePriceTotal: '',
+      salePrice: 1490,
+      discountType: 'NONE',
+      discountValue: 0,
+      discountedPrice: '',
+      allowOffers: false,
+      isFeatured: false,
+      intakeDate: '',
+      quantityTotal: 1,
+      quantityAvailable: '',
+      quantityReserved: 0,
+      quantitySold: 0,
+      status: 'ACTIVE',
+      originNotes: '',
+      primaryImage: '/uploads/articles/ejemplo-principal.jpg',
+      additionalImages: 'https://ejemplo.com/foto-espalda.jpg,/uploads/articles/ejemplo-detalle.jpg',
+    }];
+  }
+
+  return [{
+    title: 'Campera seleccionada',
+    salePrice: 1890,
+    categoryName: 'Camperas',
+    brandName: 'Nike',
+    sizeText: 'L',
+    measurementsText: 'Pecho 63 cm / Largo 72 cm',
+    description: 'Prenda única en muy buen estado.',
+    conditionLabel: 'Muy buen estado',
+    color: 'Azul marino',
+    material: 'Nylon',
+    quantityTotal: 1,
+    allowOffers: true,
+    isFeatured: false,
+    primaryImage: '/uploads/articles/ejemplo-principal.jpg',
+    additionalImages: 'https://ejemplo.com/espalda.jpg,/uploads/articles/ejemplo-detalle.jpg',
+  }];
+}
+
+export async function buildArticleImportTemplate({ format, type }) {
+  const safeFormat = format === 'csv' ? 'csv' : 'xlsx';
+  const rows = buildTemplateRows(type);
+  const columns = type === 'full' ? FULL_EXPORT_COLUMNS : SIMPLE_TEMPLATE_COLUMNS;
+  const worksheet = XLSX.utils.json_to_sheet(rows, { header: columns });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, type === 'full' ? 'template_full' : 'template_simple');
+  const fileName = `esadar-plantilla-${type}.${safeFormat}`;
+
+  if (safeFormat === 'csv') {
+    const csv = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
+    return {
+      contentType: 'text/csv; charset=utf-8',
+      fileName,
+      payload: Buffer.from(`\uFEFF${csv}`, 'utf8'),
+    };
+  }
+
+  return {
+    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    fileName,
+    payload: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }),
+  };
+}
+
 export async function buildArticleExport({ filters, format, auditContext }) {
   const rows = await listAdminArticlesForExport({ filters });
   const exportRows = rows.map((row) => ({
     internalCode: row.internalCode,
     slug: row.slug,
     title: row.title,
-    categoryId: row.categoryId,
-    categoryName: row.categoryName,
+    seoTitle: row.seoTitle || '',
+    seoDescription: row.seoDescription || '',
+    canonicalUrl: row.canonicalUrl || '',
+    googleProductCategory: row.googleProductCategory || '',
+    conditionLabel: row.conditionLabel || '',
+    color: row.color || '',
+    material: row.material || '',
+    gender: row.gender || '',
+    ageGroup: row.ageGroup || '',
+    imageAltOverride: row.imageAltOverride || '',
+    categoryId: row.categoryId || '',
+    categoryName: row.categoryName || '',
     brandId: row.brandId || '',
     brandName: row.brandName || '',
     sizeId: row.sizeId || '',
@@ -736,10 +1018,11 @@ export async function buildArticleExport({ filters, format, auditContext }) {
     status: row.status,
     originNotes: row.originNotes || '',
     primaryImage: row.primaryImage || '',
+    additionalImages: row.additionalImages || '',
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(exportRows, {
-    header: EXPORT_COLUMNS,
+    header: FULL_EXPORT_COLUMNS,
   });
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'articles');

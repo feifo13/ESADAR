@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import {
-  optionalDateString,
+  emptyToUndefined,
   optionalBooleanish,
+  optionalDateString,
   optionalEnum,
   optionalPositiveInt,
   optionalTrimmedString,
@@ -11,15 +12,31 @@ import {
 } from '../../utils/listing.js';
 
 const numericMoney = z.coerce.number().min(0);
-const optionalId = z.union([z.coerce.number().int().positive(), z.null()]).optional();
+const optionalNullableId = z.preprocess(
+  emptyToUndefined,
+  z.union([z.coerce.number().int().positive(), z.null()]).optional(),
+);
+
+const articleGenderSchema = z.enum(['UNISEX', 'HOMBRE', 'MUJER', 'NIÑO', 'NIÑA', 'OTRO']);
+const articleAgeGroupSchema = z.enum(['ADULT', 'KIDS', 'TODDLER', 'INFANT', 'NEWBORN']);
 
 const articleBaseShape = {
   internalCode: z.string().trim().min(2).max(80).optional(),
   slug: z.string().trim().min(2).max(180).optional(),
   title: z.string().trim().min(2).max(255),
-  categoryId: z.coerce.number().int().positive(),
-  brandId: optionalId,
-  sizeId: optionalId,
+  seoTitle: z.string().trim().max(255).optional().nullable(),
+  seoDescription: z.string().trim().max(500).optional().nullable(),
+  googleProductCategory: z.string().trim().max(255).optional().nullable(),
+  conditionLabel: z.string().trim().max(120).optional().nullable(),
+  color: z.string().trim().max(120).optional().nullable(),
+  material: z.string().trim().max(120).optional().nullable(),
+  gender: articleGenderSchema.optional().nullable(),
+  ageGroup: articleAgeGroupSchema.optional().nullable(),
+  imageAltOverride: z.string().trim().max(255).optional().nullable(),
+  canonicalUrl: z.string().trim().url().max(500).optional().nullable(),
+  categoryId: optionalNullableId,
+  brandId: optionalNullableId,
+  sizeId: optionalNullableId,
   sizeText: z.string().trim().max(80).optional().nullable(),
   measurementsText: z.string().trim().optional().nullable(),
   description: z.string().trim().optional().nullable(),
@@ -31,7 +48,7 @@ const articleBaseShape = {
   discountValue: numericMoney.default(0),
   allowOffers: z.coerce.boolean().default(false),
   isFeatured: z.coerce.boolean().default(false),
-  intakeDate: z.string().date(),
+  intakeDate: optionalDateString,
   quantityTotal: z.coerce.number().int().min(0).default(1),
   quantityAvailable: z.coerce.number().int().min(0).optional(),
   quantityReserved: z.coerce.number().int().min(0).default(0),
@@ -45,7 +62,17 @@ const articleUpdateBaseSchema = z.object({
   internalCode: articleBaseShape.internalCode,
   slug: articleBaseShape.slug,
   title: articleBaseShape.title.optional(),
-  categoryId: articleBaseShape.categoryId.optional(),
+  seoTitle: articleBaseShape.seoTitle,
+  seoDescription: articleBaseShape.seoDescription,
+  googleProductCategory: articleBaseShape.googleProductCategory,
+  conditionLabel: articleBaseShape.conditionLabel,
+  color: articleBaseShape.color,
+  material: articleBaseShape.material,
+  gender: articleBaseShape.gender,
+  ageGroup: articleBaseShape.ageGroup,
+  imageAltOverride: articleBaseShape.imageAltOverride,
+  canonicalUrl: articleBaseShape.canonicalUrl,
+  categoryId: articleBaseShape.categoryId,
   brandId: articleBaseShape.brandId,
   sizeId: articleBaseShape.sizeId,
   sizeText: articleBaseShape.sizeText,
@@ -59,7 +86,7 @@ const articleUpdateBaseSchema = z.object({
   discountValue: articleBaseShape.discountValue.optional(),
   allowOffers: articleBaseShape.allowOffers.optional(),
   isFeatured: articleBaseShape.isFeatured.optional(),
-  intakeDate: articleBaseShape.intakeDate.optional(),
+  intakeDate: articleBaseShape.intakeDate,
   quantityTotal: articleBaseShape.quantityTotal.optional(),
   quantityAvailable: articleBaseShape.quantityAvailable,
   quantityReserved: articleBaseShape.quantityReserved.optional(),
@@ -151,6 +178,7 @@ export const adminArticleListQuerySchema = z.object({
     'categoryName',
     'brandName',
     'internalCode',
+    'updatedAt',
   ]),
   sortDir: sortDirSchema,
   page: pageSchema,
@@ -159,10 +187,26 @@ export const adminArticleListQuerySchema = z.object({
 
 export const articleImportOptionsSchema = z.object({
   updateExisting: optionalBooleanish,
+  createMissingLookups: optionalBooleanish,
+});
+
+export const articleImportTemplateQuerySchema = z.object({
+  format: z.enum(['csv', 'xlsx']).default('xlsx'),
+  type: z.enum(['simple', 'full']).default('simple'),
 });
 
 export const articleExportQuerySchema = adminArticleListQuerySchema.extend({
   format: z.enum(['csv', 'xlsx']).default('xlsx'),
+});
+
+export const articleImageUpdateSchema = z.object({
+  altText: z.string().trim().max(255).optional().nullable(),
+  sortOrder: z.coerce.number().int().min(0).optional(),
+  isPrimary: z.coerce.boolean().optional(),
+});
+
+export const articleImageReorderSchema = z.object({
+  imageIds: z.array(z.coerce.number().int().positive()).min(1),
 });
 
 function quantityTotalIsInvalid(total, available, reserved, sold) {

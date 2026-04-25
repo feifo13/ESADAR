@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool.js';
-import { notFound } from '../../utils/app-error.js';
+import { badRequest, notFound } from '../../utils/app-error.js';
 
 export async function findCustomerByUserId(userId, connection = pool) {
   if (!userId) return null;
@@ -129,5 +129,116 @@ export async function createPotentialCustomerFromInput(input, options = {}, conn
   return {
     id: insertResult.insertId,
     ...input,
+  };
+}
+
+export async function findPotentialCustomerByContact(input, connection = pool) {
+  const clauses = [];
+  const params = [];
+
+  if (input?.email) {
+    clauses.push('email = ?');
+    params.push(input.email);
+  }
+
+  if (input?.phone) {
+    clauses.push('phone = ?');
+    params.push(input.phone);
+  }
+
+  if (input?.instagram) {
+    clauses.push('instagram = ?');
+    params.push(input.instagram);
+  }
+
+  if (!clauses.length) {
+    return null;
+  }
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        first_name AS firstName,
+        last_name AS lastName,
+        birth_date AS birthDate,
+        email,
+        address,
+        phone,
+        instagram,
+        source,
+        lead_status AS leadStatus,
+        admin_notes AS adminNotes,
+        linked_customer_id AS linkedCustomerId
+      FROM potential_customers
+      WHERE ${clauses.map((clause) => `(${clause})`).join(' OR ')}
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    params,
+  );
+
+  return rows[0] || null;
+}
+
+export async function upsertPotentialCustomerByContact(input, options = {}, connection = pool) {
+  if (!input?.email && !input?.phone && !input?.instagram) {
+    throw badRequest('At least one contact field is required');
+  }
+
+  const existing = await findPotentialCustomerByContact(input, connection);
+  if (!existing) {
+    const created = await createPotentialCustomerFromInput(input, options, connection);
+    return {
+      ...created,
+      source: options.source || 'MANUAL',
+      leadStatus: options.leadStatus || 'NEW',
+      adminNotes: options.adminNotes || null,
+    };
+  }
+
+  await connection.execute(
+    `
+      UPDATE potential_customers
+      SET
+        first_name = ?,
+        last_name = ?,
+        birth_date = ?,
+        email = ?,
+        address = ?,
+        phone = ?,
+        instagram = ?,
+        source = ?,
+        lead_status = ?,
+        admin_notes = ?
+      WHERE id = ?
+    `,
+    [
+      input.firstName || existing.firstName,
+      input.lastName || existing.lastName,
+      input.birthDate || existing.birthDate || null,
+      input.email || existing.email || null,
+      input.address || existing.address || null,
+      input.phone || existing.phone || null,
+      input.instagram || existing.instagram || null,
+      options.source || existing.source || 'MANUAL',
+      options.leadStatus || existing.leadStatus || 'NEW',
+      options.adminNotes ?? existing.adminNotes ?? null,
+      existing.id,
+    ],
+  );
+
+  return {
+    ...existing,
+    firstName: input.firstName || existing.firstName,
+    lastName: input.lastName || existing.lastName,
+    birthDate: input.birthDate || existing.birthDate || null,
+    email: input.email || existing.email || null,
+    address: input.address || existing.address || null,
+    phone: input.phone || existing.phone || null,
+    instagram: input.instagram || existing.instagram || null,
+    source: options.source || existing.source || 'MANUAL',
+    leadStatus: options.leadStatus || existing.leadStatus || 'NEW',
+    adminNotes: options.adminNotes ?? existing.adminNotes ?? null,
   };
 }

@@ -654,7 +654,44 @@ WHERE NOT EXISTS (
 );
 
 -- =========================================================
--- 11) Audit log demo
+-- 11) SEO pages
+-- =========================================================
+
+INSERT INTO site_pages_seo (
+  route, title, description, canonical_url, og_image, is_indexable
+)
+SELECT
+  '/', 'ESADAR | Ropa second hand seleccionada',
+  'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado. Cada pieza es unica.',
+  NULL, NULL, 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM site_pages_seo WHERE route = '/'
+);
+
+INSERT INTO site_pages_seo (
+  route, title, description, canonical_url, og_image, is_indexable
+)
+SELECT
+  '/about', 'Sobre ESADAR | Curaduria second hand',
+  'Conoce la seleccion second hand de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.',
+  NULL, NULL, 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM site_pages_seo WHERE route = '/about'
+);
+
+INSERT INTO site_pages_seo (
+  route, title, description, canonical_url, og_image, is_indexable
+)
+SELECT
+  '/contact', 'Contacto | ESADAR',
+  'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.',
+  NULL, NULL, 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM site_pages_seo WHERE route = '/contact'
+);
+
+-- =========================================================
+-- 12) Audit log demo
 -- =========================================================
 
 INSERT INTO audit_log (

@@ -203,13 +203,18 @@ CREATE TABLE potential_customers (
   address VARCHAR(255) NULL,
   phone VARCHAR(50) NULL,
   instagram VARCHAR(100) NULL,
-  source ENUM('CHECKOUT','CONTACT_FORM','MANUAL') NOT NULL DEFAULT 'CHECKOUT',
+  source ENUM('CHECKOUT','CONTACT_FORM','MANUAL','OFFER','NEWSLETTER','STOCK_ALERT','WISHLIST','ABANDONED_CART','PRODUCT_INTEREST') NOT NULL DEFAULT 'CHECKOUT',
+  lead_status ENUM('NEW','CONTACTED','QUALIFIED','ARCHIVED') NOT NULL DEFAULT 'NEW',
+  admin_notes TEXT NULL,
   linked_customer_id BIGINT UNSIGNED NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_potential_customers_linked_customer_id (linked_customer_id),
   KEY idx_potential_customers_email (email),
+  KEY idx_potential_customers_phone (phone),
+  KEY idx_potential_customers_instagram (instagram),
+  KEY idx_potential_customers_lead_status (lead_status),
   CONSTRAINT fk_potential_customers_linked_customer FOREIGN KEY (linked_customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -222,6 +227,16 @@ CREATE TABLE articles (
   internal_code VARCHAR(80) NOT NULL,
   slug VARCHAR(180) NOT NULL,
   title VARCHAR(255) NOT NULL,
+  seo_title VARCHAR(255) NULL,
+  seo_description VARCHAR(500) NULL,
+  google_product_category VARCHAR(255) NULL,
+  condition_label VARCHAR(120) NULL,
+  color VARCHAR(120) NULL,
+  material VARCHAR(120) NULL,
+  gender ENUM('UNISEX','HOMBRE','MUJER','NIÑO','NIÑA','OTRO') NULL,
+  age_group ENUM('ADULT','KIDS','TODDLER','INFANT','NEWBORN') NULL,
+  image_alt_override VARCHAR(255) NULL,
+  canonical_url VARCHAR(500) NULL,
   category_id BIGINT UNSIGNED NOT NULL,
   brand_id BIGINT UNSIGNED NULL,
   size_id BIGINT UNSIGNED NULL,
@@ -265,6 +280,9 @@ CREATE TABLE articles (
   KEY idx_articles_brand_id (brand_id),
   KEY idx_articles_size_id (size_id),
   KEY idx_articles_status (status),
+  KEY idx_articles_status_intake_date (status, intake_date),
+  KEY idx_articles_category_status (category_id, status),
+  KEY idx_articles_brand_status (brand_id, status),
   KEY idx_articles_featured (is_featured),
   KEY idx_articles_allow_offers (allow_offers),
   KEY idx_articles_intake_date (intake_date),
@@ -288,6 +306,18 @@ CREATE TABLE article_images (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   article_id BIGINT UNSIGNED NOT NULL,
   file_path VARCHAR(500) NOT NULL,
+  original_file_path VARCHAR(500) NULL,
+  thumb_file_path VARCHAR(500) NULL,
+  card_file_path VARCHAR(500) NULL,
+  detail_file_path VARCHAR(500) NULL,
+  zoom_file_path VARCHAR(500) NULL,
+  width INT NULL,
+  height INT NULL,
+  mime_type VARCHAR(100) NULL,
+  file_size_bytes BIGINT UNSIGNED NULL,
+  dominant_color VARCHAR(20) NULL,
+  processed_status ENUM('PENDING','DONE','FAILED') NOT NULL DEFAULT 'DONE',
+  processing_error TEXT NULL,
   alt_text VARCHAR(255) NULL,
   sort_order INT NOT NULL DEFAULT 0,
   is_primary TINYINT(1) NOT NULL DEFAULT 0,
@@ -296,6 +326,7 @@ CREATE TABLE article_images (
   PRIMARY KEY (id),
   KEY idx_article_images_article_id (article_id),
   KEY idx_article_images_primary (article_id, is_primary),
+  KEY idx_article_images_article_primary_sort (article_id, is_primary, sort_order),
   KEY idx_article_images_created_by (created_by),
   CONSTRAINT fk_article_images_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_article_images_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
@@ -586,7 +617,108 @@ CREATE TABLE contact_messages (
 ) ENGINE=InnoDB;
 
 -- =========================================================
--- 10) Central audit log
+-- 10) Leads / wishlist / article events
+-- =========================================================
+
+CREATE TABLE lead_preferences (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  potential_customer_id BIGINT UNSIGNED NOT NULL,
+  preferred_categories_json JSON NULL,
+  preferred_brands_json JSON NULL,
+  preferred_sizes_json JSON NULL,
+  preferred_colors_json JSON NULL,
+  notes TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_lead_preferences_potential_customer_id (potential_customer_id),
+  CONSTRAINT fk_lead_preferences_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE article_interest_alerts (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  article_id BIGINT UNSIGNED NULL,
+  potential_customer_id BIGINT UNSIGNED NOT NULL,
+  alert_type ENUM('BACK_IN_STOCK','SIMILAR_ITEMS','PRICE_OR_OFFER','NEW_ARRIVALS') NOT NULL,
+  status ENUM('ACTIVE','PAUSED','CONVERTED','CANCELLED') NOT NULL DEFAULT 'ACTIVE',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_article_interest_alerts_article_id (article_id),
+  KEY idx_article_interest_alerts_potential_customer_id (potential_customer_id),
+  KEY idx_article_interest_alerts_status (status),
+  CONSTRAINT fk_article_interest_alerts_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_article_interest_alerts_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE wishlists (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id BIGINT UNSIGNED NULL,
+  potential_customer_id BIGINT UNSIGNED NULL,
+  session_token VARCHAR(120) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_wishlists_customer_id (customer_id),
+  KEY idx_wishlists_potential_customer_id (potential_customer_id),
+  KEY idx_wishlists_session_token (session_token),
+  CONSTRAINT fk_wishlists_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_wishlists_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE wishlist_items (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  wishlist_id BIGINT UNSIGNED NOT NULL,
+  article_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_wishlist_items_wishlist_article (wishlist_id, article_id),
+  KEY idx_wishlist_items_article_id (article_id),
+  CONSTRAINT fk_wishlist_items_wishlist FOREIGN KEY (wishlist_id) REFERENCES wishlists(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_wishlist_items_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE article_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  article_id BIGINT UNSIGNED NULL,
+  event_type ENUM('VIEW','SHARE','ADD_TO_CART','OFFER_CLICK','CHECKOUT_START','WISHLIST_ADD','STOCK_ALERT') NOT NULL,
+  session_token VARCHAR(120) NULL,
+  customer_id BIGINT UNSIGNED NULL,
+  potential_customer_id BIGINT UNSIGNED NULL,
+  metadata_json JSON NULL,
+  ip_address VARCHAR(64) NULL,
+  user_agent VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_article_events_customer_id (customer_id),
+  KEY idx_article_events_potential_customer_id (potential_customer_id),
+  KEY idx_article_events_session_token (session_token),
+  KEY idx_article_events_article_event_created (article_id, event_type, created_at),
+  CONSTRAINT fk_article_events_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_article_events_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_article_events_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================================================
+-- 11) SEO / site pages
+-- =========================================================
+
+CREATE TABLE site_pages_seo (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  route VARCHAR(255) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  canonical_url VARCHAR(500) NULL,
+  og_image VARCHAR(500) NULL,
+  is_indexable TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_site_pages_seo_route (route)
+) ENGINE=InnoDB;
+
+-- =========================================================
+-- 12) Central audit log
 -- =========================================================
 
 CREATE TABLE audit_log (
@@ -613,7 +745,7 @@ CREATE TABLE audit_log (
 ) ENGINE=InnoDB;
 
 -- =========================================================
--- 11) Helpful seeds
+-- 13) Helpful seeds
 -- =========================================================
 
 INSERT INTO roles (code, name) VALUES
@@ -637,6 +769,17 @@ INSERT INTO sizes (code, description, sort_order) VALUES
   ('42', '42', 110)
 ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(sort_order);
 
+INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
+  ('/', 'ESADAR | Ropa second hand seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Curaduria second hand', 'Conoce la seleccion second hand de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1)
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  description = VALUES(description),
+  canonical_url = VALUES(canonical_url),
+  og_image = VALUES(og_image),
+  is_indexable = VALUES(is_indexable);
+
 -- =========================================================
 -- Notes
 -- =========================================================
@@ -647,7 +790,7 @@ ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(s
 
 
 -- =========================================================
--- 11) Triggers for invariants that MySQL CHECK cannot enforce
+-- 14) Triggers for invariants that MySQL CHECK cannot enforce
 -- =========================================================
 
 DELIMITER $$

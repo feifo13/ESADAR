@@ -1,28 +1,76 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import SmartImage from './SmartImage.jsx';
 
 export default function ImageGallery({ images = [], title }) {
   const normalized = useMemo(() => {
-    if (!images.length) return [{ id: 'fallback', src: '' }];
+    if (!images.length) {
+      return [{ id: 'fallback', src: '', zoomSrc: '', thumbSrc: '', altText: title, sources: [] }];
+    }
 
     return images.map((image, index) => ({
       id: image.id || index,
-      src: image.filePath || image.file_path || image.src || '',
+      src: image.detailFilePath || image.detail_file_path || image.filePath || image.file_path || image.src || '',
+      zoomSrc: image.zoomFilePath || image.zoom_file_path || image.detailFilePath || image.filePath || image.src || '',
+      thumbSrc: image.thumbFilePath || image.thumb_file_path || image.cardFilePath || image.filePath || image.src || '',
+      altText: image.altText || title,
+      sources: [
+        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
+        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
+        image.cardFilePath ? { srcSet: `${image.cardFilePath} 700w`, type: 'image/webp' } : null,
+      ].filter(Boolean),
     }));
-  }, [images]);
+  }, [images, title]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const active = normalized[activeIndex] || normalized[0];
 
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [normalized.length]);
+
   function move(delta) {
     setActiveIndex((current) => (current + delta + normalized.length) % normalized.length);
   }
 
+  useEffect(() => {
+    if (!zoomOpen) return undefined;
+
+    function handleKeydown(event) {
+      if (event.key === 'Escape') {
+        setZoomOpen(false);
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        move(-1);
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        move(1);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [zoomOpen, normalized.length]);
+
   return (
     <div className="gallery-shell">
       <div className="gallery-main">
-        <SmartImage src={active.src} alt={title} fallbackLabel={title} />
+        <div className="gallery-count" aria-live="polite">
+          {activeIndex + 1} / {normalized.length}
+        </div>
+        <SmartImage
+          src={active.src}
+          alt={active.altText || title}
+          fallbackLabel={title}
+          className="gallery-main-image"
+          sources={active.sources}
+          loading="eager"
+          fetchPriority="high"
+        />
         <button
           type="button"
           className="gallery-zoom-button"
@@ -33,8 +81,8 @@ export default function ImageGallery({ images = [], title }) {
         </button>
         {normalized.length > 1 ? (
           <div className="gallery-arrows">
-            <button type="button" onClick={() => move(-1)}>Prev</button>
-            <button type="button" onClick={() => move(1)}>Next</button>
+            <button type="button" onClick={() => move(-1)}>Anterior</button>
+            <button type="button" onClick={() => move(1)}>Siguiente</button>
           </div>
         ) : null}
       </div>
@@ -48,7 +96,12 @@ export default function ImageGallery({ images = [], title }) {
               className={index === activeIndex ? 'gallery-thumb active' : 'gallery-thumb'}
               onClick={() => setActiveIndex(index)}
             >
-              <SmartImage src={image.src} alt={`${title} ${index + 1}`} fallbackLabel={title} />
+              <SmartImage
+                src={image.thumbSrc || image.src}
+                alt={`${title} ${index + 1}`}
+                fallbackLabel={title}
+                className="gallery-thumb-image"
+              />
             </button>
           ))}
         </div>
@@ -65,7 +118,14 @@ export default function ImageGallery({ images = [], title }) {
             >
               X
             </button>
-            <SmartImage src={active.src} alt={title} fallbackLabel={title} className="gallery-zoom-image" />
+            <SmartImage
+              src={active.zoomSrc || active.src}
+              alt={active.altText || title}
+              fallbackLabel={title}
+              className="gallery-zoom-image"
+              loading="eager"
+              fetchPriority="high"
+            />
             {normalized.length > 1 ? (
               <div className="gallery-zoom-nav">
                 <button type="button" onClick={() => move(-1)}>Anterior</button>

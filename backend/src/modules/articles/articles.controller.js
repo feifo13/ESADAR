@@ -4,22 +4,29 @@ import {
   addArticleImages,
   changeArticleStatus,
   createArticle,
+  deleteArticleImage,
   getAdminArticleById,
   getPublicArticleBySlugOrId,
   listAdminArticles,
   listPublicArticles,
+  reorderArticleImages,
+  updateArticleImage,
   updateArticle,
 } from "./articles.service.js";
 import {
   adminArticleListQuerySchema,
   articleCreateSchema,
   articleExportQuerySchema,
+  articleImageReorderSchema,
+  articleImageUpdateSchema,
   articleImportOptionsSchema,
+  articleImportTemplateQuerySchema,
   articleStatusSchema,
   articleUpdateSchema,
 } from "./articles.schemas.js";
 import {
   buildArticleExport,
+  buildArticleImportTemplate,
   previewArticleImport,
   runArticleImport,
 } from './articles.batch.service.js';
@@ -67,6 +74,7 @@ export async function previewAdminArticleImport(req, res) {
     file: req.file,
     options: {
       updateExisting: Boolean(options.updateExisting),
+      createMissingLookups: Boolean(options.createMissingLookups),
     },
   });
 
@@ -83,11 +91,24 @@ export async function importAdminArticles(req, res) {
     file: req.file,
     options: {
       updateExisting: Boolean(options.updateExisting),
+      createMissingLookups: Boolean(options.createMissingLookups),
     },
     auditContext: getAuditContext(req),
   });
 
   return res.status(201).json({ ok: true, ...result });
+}
+
+export async function downloadAdminArticleImportTemplate(req, res) {
+  const query = articleImportTemplateQuerySchema.parse(req.query);
+  const result = await buildArticleImportTemplate(query);
+
+  res.setHeader('Content-Type', result.contentType);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
+  );
+  return res.send(result.payload);
 }
 
 export async function exportAdminArticles(req, res) {
@@ -100,7 +121,10 @@ export async function exportAdminArticles(req, res) {
   });
 
   res.setHeader('Content-Type', result.contentType);
-  res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
+  );
   res.setHeader('X-Export-Count', String(result.itemCount));
   return res.send(result.payload);
 }
@@ -138,4 +162,37 @@ export async function uploadAdminArticleImages(req, res) {
     getAuditContext(req),
   );
   return res.status(201).json({ ok: true, images });
+}
+
+export async function updateAdminArticleImage(req, res) {
+  const input = articleImageUpdateSchema.parse(req.body);
+  const images = await updateArticleImage(
+    Number(req.params.articleId),
+    Number(req.params.imageId),
+    input,
+    getAuditContext(req),
+  );
+
+  return res.json({ ok: true, images });
+}
+
+export async function deleteAdminArticleImage(req, res) {
+  const images = await deleteArticleImage(
+    Number(req.params.articleId),
+    Number(req.params.imageId),
+    getAuditContext(req),
+  );
+
+  return res.json({ ok: true, images });
+}
+
+export async function reorderAdminArticleImages(req, res) {
+  const input = articleImageReorderSchema.parse(req.body);
+  const images = await reorderArticleImages(
+    Number(req.params.articleId),
+    input.imageIds,
+    getAuditContext(req),
+  );
+
+  return res.json({ ok: true, images });
 }

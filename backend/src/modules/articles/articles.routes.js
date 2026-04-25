@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createAdminArticle,
+  deleteAdminArticleImage,
+  downloadAdminArticleImportTemplate,
   exportAdminArticles,
   getAdminArticle,
   getAdminArticles,
@@ -9,6 +11,8 @@ import {
   getPublicArticles,
   importAdminArticles,
   previewAdminArticleImport,
+  reorderAdminArticleImages,
+  updateAdminArticleImage,
   updateAdminArticle,
   updateAdminArticleStatus,
   uploadAdminArticleImages,
@@ -26,6 +30,7 @@ publicRouter.get('/:slugOrId', asyncHandler(getPublicArticle));
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminArticles));
 adminRouter.get('/export', asyncHandler(exportAdminArticles));
+adminRouter.get('/import/template', asyncHandler(downloadAdminArticleImportTemplate));
 adminRouter.post(
   '/import/preview',
   uploadArticleImportFile.single('file'),
@@ -45,5 +50,8 @@ adminRouter.post(
   uploadArticleImages.array('images', 10),
   asyncHandler(uploadAdminArticleImages),
 );
+adminRouter.patch('/:articleId/images/:imageId', asyncHandler(updateAdminArticleImage));
+adminRouter.delete('/:articleId/images/:imageId', asyncHandler(deleteAdminArticleImage));
+adminRouter.post('/:articleId/images/reorder', asyncHandler(reorderAdminArticleImages));
 
 export { adminRouter, publicRouter };

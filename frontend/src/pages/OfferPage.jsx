@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import SeoHead from '../components/SeoHead.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { apiFetch } from '../lib/api.js';
 import { formatCurrency } from '../lib/format.js';
+import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
+import { toAbsoluteUrl } from '../lib/seo.js';
 import ImageGallery from '../components/ImageGallery.jsx';
 import ArticleCard from '../components/ArticleCard.jsx';
 
@@ -18,6 +21,7 @@ const initialGuest = {
 export default function OfferPage() {
   const { slugOrId } = useParams();
   const { user, isAuthenticated } = useAuth();
+  const { site } = useSiteSeo();
   const [article, setArticle] = useState(null);
   const [related, setRelated] = useState([]);
   const [offer, setOffer] = useState('');
@@ -46,7 +50,7 @@ export default function OfferPage() {
       } catch (err) {
         if (!ignore) {
           setArticle(null);
-          setError(err.message || 'No se pudo cargar este artículo para ofertar.');
+          setError(err.message || 'No se pudo cargar este articulo para ofertar.');
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -92,7 +96,7 @@ export default function OfferPage() {
         body: payload,
       });
 
-      setSuccess(`Tu oferta quedó registrada con estado ${response.offer.status}.`);
+      setSuccess(`Tu oferta quedo registrada con estado ${response.offer.status}.`);
       setOffer('');
       setMessage('');
       if (!isAuthenticated) setGuest(initialGuest);
@@ -104,19 +108,27 @@ export default function OfferPage() {
   }
 
   if (loading) {
-    return <div className="container section-card centered-card">Cargando artículo…</div>;
+    return <div className="container section-card centered-card">Cargando articulo…</div>;
   }
 
   if (!article) {
-    return <div className="container section-card error-card">{error || 'No se pudo cargar este artículo para ofertar.'}</div>;
+    return <div className="container section-card error-card">{error || 'No se pudo cargar este articulo para ofertar.'}</div>;
   }
 
   return (
     <div className="container article-page-shell page-stack offer-page">
+      <SeoHead
+        title={article?.title ? `Ofertar | ${article.title}` : 'Ofertar | ESADAR'}
+        description="Vista de oferta para una prenda de ESADAR."
+        canonical={toAbsoluteUrl(`/articles/${article?.slug || slugOrId}/offer`, site)}
+        url={toAbsoluteUrl(`/articles/${article?.slug || slugOrId}/offer`, site)}
+        noindex
+      />
+
       <section className="detail-shell detail-shell-article">
         <div className="detail-titlebar detail-titlebar-offer">
-          <p className="section-kicker">Ofertar artículo</p>
-          <h1>Estás ofertando por: {article.title}</h1>
+          <p className="section-kicker">Ofertar articulo</p>
+          <h1>Estas ofertando por: {article.title}</h1>
         </div>
 
         <div className="detail-grid detail-grid-article">
@@ -126,7 +138,7 @@ export default function OfferPage() {
 
           <aside className="detail-sidebar detail-sidebar-article section-card offer-sidebar-flat">
             <div className="detail-meta-list">
-              <div><span>Categoría</span><strong>{article.categoryName}</strong></div>
+              <div><span>Categoria</span><strong>{article.categoryName}</strong></div>
               <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
               <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
               <div><span>Medidas</span><strong>{article.measurementsText || 'A confirmar'}</strong></div>
@@ -149,7 +161,7 @@ export default function OfferPage() {
                 <label className="field-group"><span>Nombre</span><input className="input" value={guest.firstName} onChange={(event) => updateGuest('firstName', event.target.value)} required /></label>
                 <label className="field-group"><span>Apellido</span><input className="input" value={guest.lastName} onChange={(event) => updateGuest('lastName', event.target.value)} required /></label>
                 <label className="field-group"><span>Email</span><input className="input" type="email" value={guest.email} onChange={(event) => updateGuest('email', event.target.value)} /></label>
-                <label className="field-group"><span>Teléfono</span><input className="input" value={guest.phone} onChange={(event) => updateGuest('phone', event.target.value)} /></label>
+                <label className="field-group"><span>Telefono</span><input className="input" value={guest.phone} onChange={(event) => updateGuest('phone', event.target.value)} /></label>
                 <label className="field-group form-grid-span-two"><span>Instagram</span><input className="input" value={guest.instagram} onChange={(event) => updateGuest('instagram', event.target.value)} /></label>
               </div>
             )}
@@ -173,7 +185,7 @@ export default function OfferPage() {
                 className="input textarea"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                placeholder="Cuéntanos si quieres coordinar por algún canal o dejar un comentario."
+                placeholder="Cuentanos si quieres coordinar por algun canal o dejar un comentario."
                 required
               />
             </label>
@@ -189,13 +201,13 @@ export default function OfferPage() {
               </button>
 
               <Link to={`/articles/${article.slug || article.id}`} className="button button-secondary button-compact">
-                Volver al artículo
+                Volver al articulo
               </Link>
             </div>
 
             {error ? <p className="error-copy">{error}</p> : null}
             {success ? <p className="success-copy">{success}</p> : null}
-            {!isAuthenticated ? <p className="muted-copy">Si prefieres, también puedes <Link to="/login">ingresar</Link> antes de ofertar.</p> : null}
+            {!isAuthenticated ? <p className="muted-copy">Si prefieres, tambien puedes <Link to="/login">ingresar</Link> antes de ofertar.</p> : null}
           </aside>
         </div>
       </section>
@@ -203,8 +215,8 @@ export default function OfferPage() {
       <section className="page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">También permiten oferta</p>
-            <h2>Más prendas abiertas a negociación</h2>
+            <p className="section-kicker">Tambien permiten oferta</p>
+            <h2>Mas prendas abiertas a negociacion</h2>
           </div>
         </div>
 
