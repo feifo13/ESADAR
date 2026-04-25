@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
+  createAdminBulkArticles,
   createAdminArticle,
   deleteAdminArticleImage,
   downloadAdminArticleImportTemplate,
@@ -9,6 +10,7 @@ import {
   getAdminArticles,
   getPublicArticle,
   getPublicArticles,
+  getPublicRelatedArticles,
   importAdminArticles,
   previewAdminArticleImport,
   reorderAdminArticleImages,
@@ -25,11 +27,13 @@ const publicRouter = Router();
 const adminRouter = Router();
 
 publicRouter.get('/', asyncHandler(getPublicArticles));
+publicRouter.get('/:slugOrId/related', asyncHandler(getPublicRelatedArticles));
 publicRouter.get('/:slugOrId', asyncHandler(getPublicArticle));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminArticles));
 adminRouter.get('/export', asyncHandler(exportAdminArticles));
+adminRouter.post('/bulk', asyncHandler(createAdminBulkArticles));
 adminRouter.get('/import/template', asyncHandler(downloadAdminArticleImportTemplate));
 adminRouter.post(
   '/import/preview',

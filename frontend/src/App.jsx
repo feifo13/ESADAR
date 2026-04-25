@@ -10,14 +10,18 @@ import CheckoutPage from './pages/CheckoutPage.jsx';
 import CheckoutCompletePage from './pages/CheckoutCompletePage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
+import AccountPage from './pages/AccountPage.jsx';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
 import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
+import BulkArticleCreatePage from './pages/admin/BulkArticleCreatePage.jsx';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage.jsx';
 import AdminOffersPage from './pages/admin/AdminOffersPage.jsx';
 import AdminContactMessagesPage from './pages/admin/AdminContactMessagesPage.jsx';
 import AdminAuditPage from './pages/admin/AdminAuditPage.jsx';
 import AdminLeadsPage from './pages/admin/AdminLeadsPage.jsx';
+import AdminWishlistsPage from './pages/admin/AdminWishlistsPage.jsx';
+import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
 
 export default function App() {
   return (
@@ -37,11 +41,24 @@ export default function App() {
         <Route path="checkout/completa" element={<CheckoutCompletePage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="cuenta" element={<AccountPage />} />
+        <Route path="cuenta/perfil" element={<AccountPage />} />
+        <Route path="cuenta/guardados" element={<AccountPage />} />
+        <Route path="cuenta/alertas" element={<AccountPage />} />
+        <Route path="cuenta/ordenes" element={<AccountPage />} />
         <Route
           path="admin/articles"
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminArticlesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/articles/bulk-create"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <BulkArticleCreatePage />
             </ProtectedRoute>
           }
         />
@@ -94,6 +111,14 @@ export default function App() {
           }
         />
         <Route
+          path="admin/wishlists"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminWishlistsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admin/audit"
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
@@ -106,6 +131,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminLeadsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/statistics"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminStatisticsPage />
             </ProtectedRoute>
           }
         />

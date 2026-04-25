@@ -15,7 +15,9 @@ export async function findCustomerByUserId(userId, connection = pool) {
         email,
         address,
         phone,
-        instagram
+        instagram,
+        preferred_payment_method AS preferredPaymentMethod,
+        preferred_shipping_method_id AS preferredShippingMethodId
       FROM customers
       WHERE user_id = ?
       ORDER BY id DESC
@@ -90,12 +92,14 @@ export async function ensureCustomerForUser(userId, connection = pool) {
     userId: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
-    birthDate: user.birthDate,
-    email: user.email,
-    address: user.address,
-    phone: user.phone,
-    instagram: user.instagram,
-  };
+        birthDate: user.birthDate,
+        email: user.email,
+        address: user.address,
+        phone: user.phone,
+        instagram: user.instagram,
+        preferredPaymentMethod: null,
+        preferredShippingMethodId: null,
+      };
 }
 
 export async function createPotentialCustomerFromInput(input, options = {}, connection = pool) {
@@ -240,5 +244,131 @@ export async function upsertPotentialCustomerByContact(input, options = {}, conn
     source: options.source || existing.source || 'MANUAL',
     leadStatus: options.leadStatus || existing.leadStatus || 'NEW',
     adminNotes: options.adminNotes ?? existing.adminNotes ?? null,
+  };
+}
+
+export async function findPotentialCustomerByLinkedCustomerId(customerId, connection = pool) {
+  if (!customerId) return null;
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        first_name AS firstName,
+        last_name AS lastName,
+        birth_date AS birthDate,
+        email,
+        address,
+        phone,
+        instagram,
+        source,
+        lead_status AS leadStatus,
+        admin_notes AS adminNotes,
+        linked_customer_id AS linkedCustomerId
+      FROM potential_customers
+      WHERE linked_customer_id = ?
+      ORDER BY id DESC
+      LIMIT 1
+    `,
+    [customerId],
+  );
+
+  return rows[0] || null;
+}
+
+export async function ensurePotentialCustomerForCustomer(customer, options = {}, connection = pool) {
+  if (!customer?.id) {
+    throw badRequest('Customer id is required');
+  }
+
+  const existing = await findPotentialCustomerByLinkedCustomerId(customer.id, connection);
+  const payload = {
+    firstName: customer.firstName || 'Cliente',
+    lastName: customer.lastName || 'ESADAR',
+    birthDate: customer.birthDate || null,
+    email: customer.email || null,
+    address: customer.address || null,
+    phone: customer.phone || null,
+    instagram: customer.instagram || null,
+  };
+
+  if (existing) {
+    await connection.execute(
+      `
+        UPDATE potential_customers
+        SET
+          first_name = ?,
+          last_name = ?,
+          birth_date = ?,
+          email = ?,
+          address = ?,
+          phone = ?,
+          instagram = ?,
+          source = ?,
+          lead_status = COALESCE(lead_status, 'NEW'),
+          admin_notes = COALESCE(admin_notes, ?)
+        WHERE id = ?
+      `,
+      [
+        payload.firstName,
+        payload.lastName,
+        payload.birthDate,
+        payload.email,
+        payload.address,
+        payload.phone,
+        payload.instagram,
+        options.source || existing.source || 'MANUAL',
+        options.adminNotes || null,
+        existing.id,
+      ],
+    );
+
+    return {
+      ...existing,
+      ...payload,
+      source: options.source || existing.source || 'MANUAL',
+      adminNotes: existing.adminNotes || options.adminNotes || null,
+      linkedCustomerId: customer.id,
+    };
+  }
+
+  const [insertResult] = await connection.execute(
+    `
+      INSERT INTO potential_customers (
+        first_name,
+        last_name,
+        birth_date,
+        email,
+        address,
+        phone,
+        instagram,
+        source,
+        lead_status,
+        admin_notes,
+        linked_customer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      payload.firstName,
+      payload.lastName,
+      payload.birthDate,
+      payload.email,
+      payload.address,
+      payload.phone,
+      payload.instagram,
+      options.source || 'MANUAL',
+      options.leadStatus || 'NEW',
+      options.adminNotes || null,
+      customer.id,
+    ],
+  );
+
+  return {
+    id: Number(insertResult.insertId),
+    ...payload,
+    source: options.source || 'MANUAL',
+    leadStatus: options.leadStatus || 'NEW',
+    adminNotes: options.adminNotes || null,
+    linkedCustomerId: customer.id,
   };
 }

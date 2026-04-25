@@ -157,6 +157,8 @@ CREATE TABLE customers (
   address VARCHAR(255) NULL,
   phone VARCHAR(50) NULL,
   instagram VARCHAR(100) NULL,
+  preferred_payment_method VARCHAR(80) NULL,
+  preferred_shipping_method_id BIGINT UNSIGNED NULL,
   source ENUM('REGISTERED','GUEST_CHECKOUT','MANUAL_BACKOFFICE','CONTACT') NOT NULL DEFAULT 'GUEST_CHECKOUT',
   notes_internal TEXT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -169,9 +171,11 @@ CREATE TABLE customers (
   KEY idx_customers_email (email),
   KEY idx_customers_phone (phone),
   KEY idx_customers_active (is_active),
+  KEY idx_customers_preferred_shipping_method_id (preferred_shipping_method_id),
   KEY idx_customers_created_by (created_by),
   KEY idx_customers_updated_by (updated_by),
   CONSTRAINT fk_customers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_customers_preferred_shipping_method FOREIGN KEY (preferred_shipping_method_id) REFERENCES shipping_methods(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_customers_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_customers_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -185,6 +189,7 @@ CREATE TABLE customer_addresses (
   state VARCHAR(120) NULL,
   country VARCHAR(120) NULL,
   postal_code VARCHAR(30) NULL,
+  delivery_notes TEXT NULL,
   is_default TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

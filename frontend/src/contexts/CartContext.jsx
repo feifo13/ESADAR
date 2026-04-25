@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { getDiscountedPrice } from '../lib/format.js';
 import { storage } from '../lib/storage.js';
 import { apiFetch } from '../lib/api.js';
+import { getPublicSessionToken } from '../lib/publicSession.js';
 import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext(null);
@@ -161,6 +162,15 @@ export function CartProvider({ children }) {
             persist(normalizeRemoteItems(response.cart?.items || []), user.id);
           });
         }
+
+        void apiFetch('/api/public/article-events', {
+          method: 'POST',
+          body: {
+            articleId: article.id,
+            eventType: 'ADD_TO_CART',
+            sessionToken: getPublicSessionToken(),
+          },
+        }).catch(() => undefined);
 
         return {
           ok: !reachedLimit,

@@ -884,6 +884,148 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
   };
 }
 
+function buildManualBulkWarnings(row, referenceData, options) {
+  const warnings = buildRowWarnings(row, referenceData, options);
+  const additionalImages = normalizeDelimitedImages(row.additionalImages);
+
+  if (!String(row.primaryImage || '').trim() && !additionalImages.length) {
+    warnings.push('Este articulo se creara sin imagenes.');
+  }
+
+  return warnings;
+}
+
+export async function runManualBulkArticleCreate({ articles = [], options = {}, auditContext }) {
+  const referenceData = await loadImportReferenceData();
+  const codes = articles
+    .map((row) => (row?.internalCode ? String(row.internalCode).trim() : ''))
+    .filter(Boolean);
+  const existingByCode = await loadExistingArticlesByCode([...new Set(codes)]);
+  const duplicateCodes = new Set();
+  const seenCodes = new Set();
+
+  for (const code of codes) {
+    if (seenCodes.has(code)) duplicateCodes.add(code);
+    seenCodes.add(code);
+  }
+
+  const created = [];
+  const failed = [];
+  let warningsCount = 0;
+
+  for (const [index, row] of articles.entries()) {
+    const rowNumber = index + 1;
+    const internalCode = row?.internalCode ? String(row.internalCode).trim() : '';
+    const warnings = buildManualBulkWarnings(row, referenceData, options);
+    const errors = validateImportRow(row, referenceData);
+
+    if (internalCode && duplicateCodes.has(internalCode)) {
+      errors.push(`El codigo ${internalCode} esta repetido dentro del lote.`);
+    }
+
+    if (internalCode && existingByCode.has(internalCode)) {
+      errors.push(`El codigo ${internalCode} ya existe. Usa importacion con actualizacion si quieres reemplazarlo.`);
+    }
+
+    warningsCount += warnings.length;
+
+    if (errors.length) {
+      failed.push({
+        rowNumber,
+        title: row?.title || '',
+        internalCode,
+        errors,
+        warnings,
+      });
+      continue;
+    }
+
+    try {
+      const payload = await materializeImportPayload(
+        {
+          rowNumber,
+          internalCode,
+          normalizedRow: row,
+        },
+        referenceData,
+        options,
+        auditContext,
+      );
+
+      const article = await createArticle(payload, auditContext);
+      const normalizedImages = {
+        primaryImage: String(row?.primaryImage || '').trim(),
+        additionalImages: normalizeDelimitedImages(row?.additionalImages),
+      };
+
+      const validPrimaryImage = normalizedImages.primaryImage
+        && (isStoredPublicImagePath(normalizedImages.primaryImage) || isAbsoluteImageUrl(normalizedImages.primaryImage))
+        ? normalizePublicAssetPath(normalizedImages.primaryImage)
+        : '';
+      const validAdditionalImages = normalizedImages.additionalImages
+        .filter((image) => isStoredPublicImagePath(image) || isAbsoluteImageUrl(image))
+        .map((image) => normalizePublicAssetPath(image));
+
+      if (validPrimaryImage || validAdditionalImages.length) {
+        await syncArticleImageSources(
+          article.id,
+          {
+            primaryImage: validPrimaryImage,
+            additionalImages: validAdditionalImages,
+          },
+          auditContext,
+        );
+      }
+
+      created.push({
+        rowNumber,
+        title: article.title,
+        articleId: article.id,
+        slug: article.slug,
+        internalCode: article.internalCode,
+        warnings,
+      });
+    } catch (error) {
+      failed.push({
+        rowNumber,
+        title: row?.title || '',
+        internalCode,
+        errors: [error.message || 'No se pudo crear el articulo'],
+        warnings,
+      });
+    }
+  }
+
+  const summary = {
+    total: articles.length,
+    created: created.length,
+    failed: failed.length,
+    warnings: warningsCount,
+  };
+
+  await logAudit({
+    actorUserId: auditContext.actorUserId,
+    actorLabel: auditContext.actorLabel,
+    actionCode: 'ARTICLE_BULK_CREATED',
+    entityType: 'articles',
+    entityId: null,
+    metadataJson: {
+      summary,
+      createMissingLookups: Boolean(options.createMissingLookups),
+    },
+    source: auditContext.source,
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
+  });
+
+  return {
+    created,
+    failed,
+    warnings: [...created, ...failed].flatMap((item) => item.warnings || []),
+    summary,
+  };
+}
+
 function buildTemplateRows(type) {
   if (type === 'full') {
     return [{

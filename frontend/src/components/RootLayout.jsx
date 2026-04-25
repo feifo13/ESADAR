@@ -26,7 +26,8 @@ export default function RootLayout() {
   const isCheckoutView = location.pathname.startsWith('/checkout');
   const isAdminView = location.pathname.startsWith('/admin');
   const isAuthView = ['/login', '/register'].includes(location.pathname);
-  const shouldNoIndex = isCheckoutView || isAdminView || isAuthView;
+  const isAccountView = location.pathname.startsWith('/cuenta');
+  const shouldNoIndex = isCheckoutView || isAdminView || isAuthView || isAccountView;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

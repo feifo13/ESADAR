@@ -16,6 +16,9 @@ import { adminRouter as adminContactRoutes, publicRouter as publicContactRoutes 
 import cartRoutes from './modules/cart/cart.routes.js';
 import { adminRouter as adminSeoRoutes, publicRouter as publicSeoRoutes, seoSpecialRouter } from './modules/seo/seo.routes.js';
 import { adminRouter as adminLeadsRoutes, publicInteractionRouter, publicLeadRouter } from './modules/leads/leads.routes.js';
+import accountRoutes from './modules/account/account.routes.js';
+import wishlistsRoutes from './modules/wishlists/wishlists.routes.js';
+import statisticsRoutes from './modules/statistics/statistics.routes.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 fs.mkdirSync(env.articleUploadDir, { recursive: true });
@@ -49,6 +52,7 @@ export function createApp() {
   app.use('/api/public/lookups', lookupsRoutes);
   app.use('/api/public/seo', publicSeoRoutes);
   app.use('/api/public/articles', publicArticleRoutes);
+  app.use('/api/public/account', accountRoutes);
   app.use('/api/public/offers', publicOfferRoutes);
   app.use('/api/public/contact-messages', publicContactRoutes);
   app.use('/api/public/leads', publicLeadRouter);
@@ -61,6 +65,8 @@ export function createApp() {
   app.use('/api/admin/audit', auditRoutes);
   app.use('/api/admin', adminSeoRoutes);
   app.use('/api/admin', adminLeadsRoutes);
+  app.use('/api/admin', wishlistsRoutes);
+  app.use('/api/admin', statisticsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

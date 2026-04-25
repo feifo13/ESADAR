@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import SeoHead from '../components/SeoHead.jsx';
+import ArticleCard from '../components/ArticleCard.jsx';
+import ArticleImageGallery from '../components/ArticleImageGallery.jsx';
 import { apiFetch } from '../lib/api.js';
 import { formatCurrency, getDiscountedPrice, hasDiscount } from '../lib/format.js';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
+import { useWishlist } from '../contexts/WishlistContext.jsx';
 import { buildBreadcrumbJsonLd, buildProductJsonLd, toAbsoluteUrl } from '../lib/seo.js';
 import { getPublicSessionToken } from '../lib/publicSession.js';
-import ImageGallery from '../components/ImageGallery.jsx';
-import ArticleCard from '../components/ArticleCard.jsx';
 
 const initialAlertForm = {
   firstName: '',
@@ -19,17 +20,15 @@ const initialAlertForm = {
 
 export default function ArticlePage() {
   const { slugOrId } = useParams();
-  const { addItem, getItem, isInCart } = useCart();
+  const { addItem, getItem } = useCart();
   const { site } = useSiteSeo();
+  const { isSaved, toggleItem, pendingIds } = useWishlist();
   const [article, setArticle] = useState(null);
-  const [related, setRelated] = useState([]);
+  const [relatedState, setRelatedState] = useState({ mode: 'empty', categoryName: '', items: [] });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState('');
-  const [justAdded, setJustAdded] = useState(false);
   const [stockDialog, setStockDialog] = useState(null);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [savedInWishlist, setSavedInWishlist] = useState(false);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [alertForm, setAlertForm] = useState(initialAlertForm);
   const [alertSubmitting, setAlertSubmitting] = useState(false);
@@ -51,13 +50,13 @@ export default function ArticlePage() {
         if (ignore) return;
         setArticle(response.article);
 
-        if (response.article?.categoryId) {
-          const relatedResponse = await apiFetch(
-            `/api/public/articles?categoryId=${response.article.categoryId}&sort=intake_desc&page=1`,
-          );
-          if (!ignore) {
-            setRelated((relatedResponse.items || []).filter((item) => item.id !== response.article.id).slice(0, 8));
-          }
+        const relatedResponse = await apiFetch(`/api/public/articles/${slugOrId}/related?limit=4`);
+        if (!ignore) {
+          setRelatedState({
+            mode: relatedResponse.mode || 'empty',
+            categoryName: relatedResponse.categoryName || response.article.categoryName || '',
+            items: relatedResponse.items || [],
+          });
         }
 
         await apiFetch('/api/public/article-events', {
@@ -69,39 +68,20 @@ export default function ArticlePage() {
           },
         }).catch(() => undefined);
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudo cargar el articulo');
+        if (!ignore) setError(err.message || 'No se pudo cargar la prenda.');
       } finally {
         if (!ignore) setLoading(false);
       }
     }
 
-    async function loadWishlistState() {
-      try {
-        const response = await apiFetch(`/api/public/wishlist?sessionToken=${encodeURIComponent(getPublicSessionToken())}`);
-        if (ignore) return;
-        const items = response.wishlist?.items || [];
-        setSavedInWishlist(items.some((item) => Number(item.articleId) === Number(slugOrId) || item.slug === slugOrId));
-      } catch {
-        if (!ignore) setSavedInWishlist(false);
-      }
-    }
-
     loadArticle();
-    loadWishlistState();
-
     return () => {
       ignore = true;
     };
   }, [slugOrId]);
 
-  useEffect(() => {
-    if (!justAdded) return undefined;
-    const timeoutId = window.setTimeout(() => setJustAdded(false), 820);
-    return () => window.clearTimeout(timeoutId);
-  }, [justAdded]);
-
   if (loading) {
-    return <div className="container section-card centered-card">Cargando articulo…</div>;
+    return <div className="container section-card centered-card">Cargando prenda...</div>;
   }
 
   if (error || !article) {
@@ -112,6 +92,8 @@ export default function ArticlePage() {
   const finalPrice = getDiscountedPrice(article);
   const isSoldOut = Number(article.quantityAvailable || 0) <= 0 || article.status === 'SOLD_OUT';
   const currentCartItem = getItem(article.id);
+  const savedInWishlist = isSaved(article.id);
+  const wishlistPending = pendingIds.includes(Number(article.id));
   const canonicalUrl = article.canonicalUrl || toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
   const breadcrumbItems = [
     { name: 'Inicio', url: toAbsoluteUrl('/', site) },
@@ -124,44 +106,42 @@ export default function ArticlePage() {
     if (result.code === 'OUT_OF_STOCK') {
       setStockDialog({
         title: 'Articulo agotado',
-        message: 'Este articulo no tiene stock disponible en este momento.',
+        message: 'Esta prenda no tiene stock disponible en este momento.',
       });
       return;
     }
 
     setStockDialog({
       title: 'Stock maximo alcanzado',
-      message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} disponible${result.maxQuantity === 1 ? '' : 's'} para este articulo.`,
+      message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} disponible${result.maxQuantity === 1 ? '' : 's'} para esta prenda.`,
     });
   }
 
   async function handleWishlistToggle() {
-    if (!article) return;
+    const result = await toggleItem(article, {
+      articleId: article.id,
+      slug: article.slug,
+      title: article.title,
+      salePrice: article.salePrice,
+      discountType: article.discountType,
+      discountValue: article.discountValue,
+      discountedPrice: article.discountedPrice,
+      status: article.status,
+      conditionLabel: article.conditionLabel,
+      color: article.color,
+      material: article.material,
+      quantityAvailable: article.quantityAvailable,
+      brandName: article.brandName,
+      sizeLabel: article.sizeText || article.sizeCode || '',
+      image: article.primaryImage || '',
+    });
 
-    try {
-      setWishlistLoading(true);
-
-      if (savedInWishlist) {
-        await apiFetch(`/api/public/wishlist/items/${article.id}?sessionToken=${encodeURIComponent(getPublicSessionToken())}`, {
-          method: 'DELETE',
-        });
-        setSavedInWishlist(false);
-        return;
-      }
-
-      await apiFetch('/api/public/wishlist/items', {
-        method: 'POST',
-        body: {
-          articleId: article.id,
-          sessionToken: getPublicSessionToken(),
-        },
-      });
-      setSavedInWishlist(true);
-    } catch (err) {
-      setFeedback(err.message || 'No pudimos actualizar tu lista guardada.');
-    } finally {
-      setWishlistLoading(false);
+    if (!result.ok) {
+      setFeedback('No pudimos actualizar tus guardados.');
+      return;
     }
+
+    setFeedback(savedInWishlist ? 'Quitamos la prenda de tus guardados.' : 'La prenda quedo guardada.');
   }
 
   async function handleShare() {
@@ -251,140 +231,124 @@ export default function ArticlePage() {
           <strong>{article.title}</strong>
         </nav>
 
-        <section className="detail-shell detail-shell-article">
-          <div className="detail-titlebar">
-            <p className="section-kicker">Articulo</p>
-            <h1>{article.title}</h1>
+        <section className="ebay-article-layout">
+          <div className="ebay-article-layout__gallery">
+            <ArticleImageGallery images={article.images} title={article.title} />
           </div>
 
-          <div className="detail-grid detail-grid-article">
-            <div className="detail-gallery-column">
-              <ImageGallery images={article.images} title={article.title} />
-            </div>
-
-            <aside className="detail-sidebar detail-sidebar-article section-card">
+          <aside className="ebay-article-layout__sidebar section-card">
+            <div className="page-stack-sm">
+              <p className="section-kicker">Prenda</p>
+              <h1>{article.title}</h1>
               <div className="detail-meta-list">
-                <div><span>Categoria</span><strong>{article.categoryName}</strong></div>
+                <div><span>Estado</span><strong>{article.conditionLabel || 'Second hand seleccionada'}</strong></div>
                 <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
-                <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
                 <div><span>Color</span><strong>{article.color || 'No especificado'}</strong></div>
                 <div><span>Material</span><strong>{article.material || 'No especificado'}</strong></div>
-                <div><span>Stock disponible</span><strong>{article.quantityAvailable}</strong></div>
+                <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
+                <div><span>Disponibilidad</span><strong>{isSoldOut ? 'Agotado' : `${article.quantityAvailable} disponibles`}</strong></div>
               </div>
+            </div>
 
-              <div className="detail-pricing">
-                {discounted ? <span className="price-old">{formatCurrency(article.salePrice)}</span> : null}
-                <strong className="price-current price-current-large">{formatCurrency(finalPrice)}</strong>
-              </div>
+            <div className="detail-pricing detail-pricing--hero">
+              {discounted ? <span className="price-old">{formatCurrency(article.salePrice)}</span> : null}
+              <strong className="price-current price-current-large">{formatCurrency(finalPrice)}</strong>
+            </div>
 
-              {isSoldOut ? <p className="sold-out-banner">Agotado por el momento.</p> : null}
-              {article.description ? <p className="muted-copy">{article.description}</p> : null}
-              {feedback ? <p className="success-copy">{feedback}</p> : null}
+            {feedback ? <p className="success-copy">{feedback}</p> : null}
+            {currentCartItem ? <p className="muted-copy">Ya tienes {currentCartItem.quantity} unidad{currentCartItem.quantity === 1 ? '' : 'es'} de esta prenda en el carrito.</p> : null}
 
-              <div className="detail-actions detail-actions-article">
-                <button
-                  type="button"
-                  className={`button button-primary button-compact${justAdded ? ' button-cart-added' : ''}`}
-                  disabled={isSoldOut}
-                  onClick={(event) => {
-                    const result = addItem(article, 1, { sourceRect: event.currentTarget.getBoundingClientRect() });
-                    showStockNotice(result);
-                    if (!result?.ok) return;
-                    setFeedback(isInCart(article.id) ? 'Se actualizo la cantidad en el carrito.' : 'Articulo agregado al carrito.');
-                    setJustAdded(true);
+            <div className="detail-actions detail-actions--stacked">
+              <button
+                type="button"
+                className="button button-primary"
+                disabled={isSoldOut}
+                onClick={(event) => {
+                  const result = addItem(article, 1, { sourceRect: event.currentTarget.getBoundingClientRect() });
+                  showStockNotice(result);
+                  if (result?.ok) {
+                    setFeedback('Articulo agregado al carrito.');
+                  }
+                }}
+              >
+                {isSoldOut ? 'Agotado' : 'Lo quiero'}
+              </button>
+
+              {article.allowOffers && !isSoldOut ? (
+                <Link
+                  to={`/articles/${article.slug || article.id}/offer`}
+                  className="button button-secondary"
+                  onClick={() => {
                     void apiFetch('/api/public/article-events', {
                       method: 'POST',
                       body: {
                         articleId: article.id,
-                        eventType: 'ADD_TO_CART',
+                        eventType: 'OFFER_CLICK',
                         sessionToken: getPublicSessionToken(),
                       },
                     }).catch(() => undefined);
                   }}
                 >
-                  {isSoldOut ? 'Agotado' : 'Lo quiero'}
-                </button>
-
-                {article.allowOffers && !isSoldOut ? (
-                  <Link
-                    to={`/articles/${article.slug || article.id}/offer`}
-                    className="button button-secondary button-compact"
-                    onClick={() => {
-                      void apiFetch('/api/public/article-events', {
-                        method: 'POST',
-                        body: {
-                          articleId: article.id,
-                          eventType: 'OFFER_CLICK',
-                          sessionToken: getPublicSessionToken(),
-                        },
-                      }).catch(() => undefined);
-                    }}
-                  >
-                    Ofertar
-                  </Link>
-                ) : null}
-              </div>
-
-              <div className="detail-secondary-actions">
-                <button type="button" className="ghost-button" onClick={handleWishlistToggle} disabled={wishlistLoading}>
-                  {savedInWishlist ? 'Guardado' : 'Guardar'}
-                </button>
-                <button type="button" className="ghost-button" onClick={handleShare}>
-                  Compartir
-                </button>
-                <button type="button" className="ghost-button" onClick={() => setAlertModalOpen(true)}>
-                  {isSoldOut ? 'Avisame si vuelve o entra algo similar' : 'Avisame si entra algo similar'}
-                </button>
-              </div>
-
-              {currentCartItem ? (
-                <p className="muted-copy">Ya tienes {currentCartItem.quantity} unidad{currentCartItem.quantity === 1 ? '' : 'es'} de esta prenda en el carrito.</p>
+                  Ofertar
+                </Link>
               ) : null}
-            </aside>
-          </div>
-        </section>
 
-        <section className="article-info-grid">
-          <article className="section-card">
-            <p className="section-kicker">Estado de la prenda</p>
-            <h2>{article.conditionLabel || 'Segunda mano seleccionada'}</h2>
-            <p className="muted-copy">{article.originNotes || 'La pieza fue revisada y curada para el catalogo de ESADAR.'}</p>
-          </article>
-
-          <article className="section-card">
-            <p className="section-kicker">Medidas reales</p>
-            <h2>Tomadas sobre la prenda</h2>
-            <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>
-          </article>
-
-          <article className="section-card">
-            <p className="section-kicker">Como comprar</p>
-            <ol className="article-steps-list">
-              <li>Agregas la prenda al carrito.</li>
-              <li>Completas tus datos.</li>
-              <li>Elegis pago y envio.</li>
-              <li>Confirmamos tu orden.</li>
-            </ol>
-          </article>
-        </section>
-
-        <section className="page-stack">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">Relacionados</p>
-              <h2>Mas prendas con el mismo pulso</h2>
+              <button type="button" className="button button-secondary" onClick={() => void handleWishlistToggle()} disabled={wishlistPending}>
+                {savedInWishlist ? 'Guardado' : 'Guardar'}
+              </button>
+              <button type="button" className="button button-secondary" onClick={handleShare}>
+                Compartir
+              </button>
             </div>
-          </div>
 
-          <div className="article-grid">
-            {related.map((item) => (
-              <ArticleCard key={item.id} article={item} />
-            ))}
-          </div>
+            <div className="section-card page-stack-sm article-side-note">
+              <div>
+                <p className="section-kicker">Como comprar</p>
+                <ol className="article-steps-list">
+                  <li>Agregas la prenda al carrito.</li>
+                  <li>Completas tus datos.</li>
+                  <li>Elegis pago y envio.</li>
+                  <li>Confirmamos tu orden.</li>
+                </ol>
+              </div>
+              <div>
+                <p className="section-kicker">Medidas reales</p>
+                <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>
+              </div>
+              <div>
+                <p className="section-kicker">Estado de la prenda</p>
+                <p className="muted-copy">{article.originNotes || 'La pieza fue revisada y curada para el catalogo de ESADAR.'}</p>
+              </div>
+            </div>
+
+            <div className="section-card page-stack-sm article-side-note">
+              <button type="button" className="ghost-button" onClick={() => setAlertModalOpen(true)}>
+                {isSoldOut ? 'Avisame si vuelve o entra algo similar' : 'Avisame si entra algo similar'}
+              </button>
+            </div>
+          </aside>
         </section>
+
+        {relatedState.items.length ? (
+          <section className="page-stack">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">Relacionados</p>
+                <h2>Otras prendas con el mismo pulso</h2>
+                {relatedState.categoryName ? <p className="muted-copy">Mas de {relatedState.categoryName}</p> : null}
+              </div>
+            </div>
+
+            <div className="article-grid">
+              {relatedState.items.map((item) => (
+                <ArticleCard key={item.id} article={item} />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
 
-      <div className="article-mobile-cta">
+      <div className="article-mobile-cta article-mobile-cta--wide">
         <div>
           <span className="article-mobile-cta__label">Precio</span>
           <strong>{formatCurrency(finalPrice)}</strong>
@@ -396,8 +360,7 @@ export default function ArticlePage() {
           onClick={(event) => {
             const result = addItem(article, 1, { sourceRect: event.currentTarget.getBoundingClientRect() });
             showStockNotice(result);
-            if (!result?.ok) return;
-            setFeedback('Articulo agregado al carrito.');
+            if (result?.ok) setFeedback('Articulo agregado al carrito.');
           }}
         >
           {isSoldOut ? 'Agotado' : 'Lo quiero'}
@@ -426,15 +389,11 @@ export default function ArticlePage() {
 
       {alertModalOpen ? (
         <div className="dialog-backdrop" onClick={() => setAlertModalOpen(false)}>
-          <div className="dialog-card dialog-card--success" onClick={(event) => event.stopPropagation()}>
-            <p className="section-kicker">Alertas</p>
+          <div className="dialog-card dialog-card--wide" onClick={(event) => event.stopPropagation()}>
+            <p className="section-kicker">Seguimiento</p>
             <h3>{isSoldOut ? 'Avisame si vuelve o entra algo similar' : 'Avisame si entra algo similar'}</h3>
-            <p className="muted-copy dialog-copy">
-              Dejanos al menos un contacto y te avisamos si aparece una prenda que encaje con esta busqueda.
-            </p>
-
             <form className="page-stack" onSubmit={handleStockAlertSubmit}>
-              <div className="form-grid-two">
+              <div className="admin-filter-grid">
                 <label className="field-group">
                   <span>Nombre</span>
                   <input className="input" value={alertForm.firstName} onChange={(event) => setAlertForm((current) => ({ ...current, firstName: event.target.value }))} />
@@ -456,12 +415,12 @@ export default function ArticlePage() {
               {alertError ? <p className="error-copy">{alertError}</p> : null}
               {alertSuccess ? <p className="success-copy">{alertSuccess}</p> : null}
 
-              <div className="dialog-actions dialog-actions-start">
+              <div className="dialog-actions">
                 <button type="button" className="button button-secondary" onClick={() => setAlertModalOpen(false)}>
                   Cerrar
                 </button>
                 <button type="submit" className="button button-primary" disabled={alertSubmitting}>
-                  {alertSubmitting ? 'Guardando…' : 'Avisarme'}
+                  {alertSubmitting ? 'Guardando...' : 'Guardar alerta'}
                 </button>
               </div>
             </form>

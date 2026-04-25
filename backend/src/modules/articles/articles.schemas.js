@@ -209,6 +209,42 @@ export const articleImageReorderSchema = z.object({
   imageIds: z.array(z.coerce.number().int().positive()).min(1),
 });
 
+export const bulkArticleRowSchema = z.object({
+  internalCode: articleBaseShape.internalCode,
+  title: articleBaseShape.title,
+  salePrice: articleBaseShape.salePrice,
+  categoryId: articleBaseShape.categoryId,
+  categoryName: z.string().trim().max(120).optional().nullable(),
+  brandId: articleBaseShape.brandId,
+  brandName: z.string().trim().max(120).optional().nullable(),
+  sizeId: articleBaseShape.sizeId,
+  sizeCode: z.string().trim().max(80).optional().nullable(),
+  sizeText: articleBaseShape.sizeText,
+  conditionLabel: articleBaseShape.conditionLabel,
+  color: articleBaseShape.color,
+  material: articleBaseShape.material,
+  quantityTotal: articleBaseShape.quantityTotal.optional(),
+  allowOffers: articleBaseShape.allowOffers.optional(),
+  isFeatured: articleBaseShape.isFeatured.optional(),
+  description: articleBaseShape.description,
+  measurementsText: articleBaseShape.measurementsText,
+  purchasePriceItem: articleBaseShape.purchasePriceItem.optional(),
+  purchasePriceShipping: articleBaseShape.purchasePriceShipping.optional(),
+  purchasePriceCourier: articleBaseShape.purchasePriceCourier.optional(),
+  seoTitle: articleBaseShape.seoTitle,
+  seoDescription: articleBaseShape.seoDescription,
+  primaryImage: z.string().trim().max(500).optional().nullable(),
+  additionalImages: z.union([
+    z.string().trim().max(4000),
+    z.array(z.string().trim().max(500)),
+  ]).optional().nullable(),
+});
+
+export const adminBulkArticleCreateSchema = z.object({
+  createMissingLookups: z.coerce.boolean().default(false),
+  articles: z.array(bulkArticleRowSchema).min(1).max(100),
+});
+
 function quantityTotalIsInvalid(total, available, reserved, sold) {
   return total < available + reserved + sold;
 }

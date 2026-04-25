@@ -671,6 +671,76 @@ export async function getPublicArticleBySlugOrId(slugOrId) {
   return article;
 }
 
+export async function getRelatedPublicArticles(slugOrId, limit = 8) {
+  const article = await getPublicArticleBySlugOrId(slugOrId);
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 8, 12));
+
+  const [sameCategoryRows] = await pool.query(
+    `
+      ${publicBaseSelect}
+      WHERE
+        a.id <> ?
+        AND a.status = 'ACTIVE'
+        AND COALESCE(a.quantity_available, 0) > 0
+        AND a.category_id = ?
+      ORDER BY
+        a.is_featured DESC,
+        CASE WHEN a.brand_id <=> ? THEN 0 ELSE 1 END ASC,
+        CASE WHEN COALESCE(a.color, '') = COALESCE(?, '') THEN 0 ELSE 1 END ASC,
+        CASE WHEN COALESCE(a.size_text, s.code, '') = COALESCE(?, '') THEN 0 ELSE 1 END ASC,
+        a.intake_date DESC,
+        a.id DESC
+      LIMIT ?
+    `,
+    [
+      article.id,
+      article.categoryId,
+      article.brandId,
+      article.color || null,
+      article.sizeText || article.sizeCode || null,
+      safeLimit,
+    ],
+  );
+
+  if (sameCategoryRows.length) {
+    return {
+      mode: 'same_category',
+      categoryName: article.categoryName || null,
+      items: sameCategoryRows.map(normalizeArticleRow),
+    };
+  }
+
+  const [fallbackRows] = await pool.query(
+    `
+      ${publicBaseSelect}
+      WHERE
+        a.id <> ?
+        AND a.status = 'ACTIVE'
+        AND COALESCE(a.quantity_available, 0) > 0
+      ORDER BY
+        a.is_featured DESC,
+        a.intake_date DESC,
+        a.id DESC
+      LIMIT ?
+    `,
+    [article.id, safeLimit],
+  );
+
+  if (!fallbackRows.length) {
+    return {
+      mode: 'empty',
+      categoryName: article.categoryName || null,
+      items: [],
+    };
+  }
+
+  return {
+    mode: 'fallback',
+    categoryName: article.categoryName || null,
+    items: fallbackRows.map(normalizeArticleRow),
+  };
+}
+
 export async function listAdminArticles({ filters, pagination }) {
   const { where, params } = buildAdminArticleFilters(filters);
   const orderBy = resolveAdminArticleSort(filters);

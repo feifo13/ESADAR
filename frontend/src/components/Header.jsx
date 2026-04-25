@@ -76,6 +76,12 @@ export default function Header({ hideBrand = false }) {
                 <span className="user-greeting">
                   Hola, {user?.firstName || ""}
                 </span>
+                <NavLink to="/cuenta/perfil" className="ghost-button linklike">
+                  MI CUENTA
+                </NavLink>
+                <NavLink to="/cuenta/guardados" className="ghost-button linklike">
+                  GUARDADOS
+                </NavLink>
                 {isAdmin ? (
                   <NavLink to="/admin/articles" className="ghost-button linklike">
                     ADMIN
@@ -100,6 +106,9 @@ export default function Header({ hideBrand = false }) {
               </>
             ) : (
               <>
+                <NavLink to="/cuenta/guardados" className="ghost-button linklike">
+                  GUARDADOS
+                </NavLink>
                 <button
                   ref={cartButtonRef}
                   type="button"

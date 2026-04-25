@@ -239,6 +239,7 @@ export default function AdminArticlesPage() {
             >
               {exportingFormat === 'xlsx' ? 'Exportando XLSX...' : 'Exportar XLSX'}
             </button>
+            <Link to="/admin/articles/bulk-create" className="button button-secondary">Crear multiples articulos</Link>
             <Link to="/admin/articles/new" className="button button-primary">Nuevo articulo</Link>
           </div>
         </div>

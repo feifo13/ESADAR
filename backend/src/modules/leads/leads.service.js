@@ -209,6 +209,23 @@ async function findWishlist(owner, connection) {
 async function getOrCreateWishlist(owner, connection) {
   const existing = await findWishlist(owner, connection);
   if (existing) {
+    await connection.execute(
+      `
+        UPDATE wishlists
+        SET
+          customer_id = COALESCE(?, customer_id),
+          potential_customer_id = COALESCE(?, potential_customer_id),
+          session_token = COALESCE(session_token, ?)
+        WHERE id = ?
+      `,
+      [
+        owner.customerId || null,
+        owner.potentialCustomerId || null,
+        owner.sessionToken || null,
+        existing.id,
+      ],
+    );
+
     return existing;
   }
 
@@ -241,6 +258,9 @@ async function listWishlistItemsByWishlistId(wishlistId, connection) {
         a.discount_value AS discountValue,
         a.discounted_price AS discountedPrice,
         a.status,
+        a.condition_label AS conditionLabel,
+        a.color,
+        a.material,
         a.quantity_available AS quantityAvailable,
         b.name AS brandName,
         COALESCE(a.size_text, s.code) AS sizeLabel,
@@ -270,6 +290,9 @@ async function listWishlistItemsByWishlistId(wishlistId, connection) {
     discountValue: Number(row.discountValue || 0),
     discountedPrice: Number(row.discountedPrice || 0),
     status: row.status,
+    conditionLabel: row.conditionLabel || null,
+    color: row.color || null,
+    material: row.material || null,
     quantityAvailable: Number(row.quantityAvailable || 0),
     brandName: row.brandName || null,
     sizeLabel: row.sizeLabel || null,

@@ -6,6 +6,7 @@ import {
   createArticle,
   deleteArticleImage,
   getAdminArticleById,
+  getRelatedPublicArticles,
   getPublicArticleBySlugOrId,
   listAdminArticles,
   listPublicArticles,
@@ -23,11 +24,13 @@ import {
   articleImportTemplateQuerySchema,
   articleStatusSchema,
   articleUpdateSchema,
+  adminBulkArticleCreateSchema,
 } from "./articles.schemas.js";
 import {
   buildArticleExport,
   buildArticleImportTemplate,
   previewArticleImport,
+  runManualBulkArticleCreate,
   runArticleImport,
 } from './articles.batch.service.js';
 
@@ -50,6 +53,11 @@ export async function getPublicArticles(req, res) {
 export async function getPublicArticle(req, res) {
   const article = await getPublicArticleBySlugOrId(req.params.slugOrId);
   return res.json({ ok: true, article });
+}
+
+export async function getPublicRelatedArticles(req, res) {
+  const related = await getRelatedPublicArticles(req.params.slugOrId, Number(req.query.limit || 8));
+  return res.json({ ok: true, ...related });
 }
 
 export async function getAdminArticles(req, res) {
@@ -133,6 +141,19 @@ export async function createAdminArticle(req, res) {
   const input = articleCreateSchema.parse(req.body);
   const article = await createArticle(input, getAuditContext(req));
   return res.status(201).json({ ok: true, article });
+}
+
+export async function createAdminBulkArticles(req, res) {
+  const input = adminBulkArticleCreateSchema.parse(req.body);
+  const result = await runManualBulkArticleCreate({
+    articles: input.articles,
+    options: {
+      createMissingLookups: Boolean(input.createMissingLookups),
+    },
+    auditContext: getAuditContext(req),
+  });
+
+  return res.status(201).json({ ok: true, ...result });
 }
 
 export async function updateAdminArticle(req, res) {

@@ -1,0 +1,38 @@
+import { accountProfileUpdateSchema } from './account.schemas.js';
+import {
+  getAccountProfile,
+  listAccountAlerts,
+  listAccountOrders,
+  saveAccountProfile,
+} from './account.service.js';
+
+function getAuditContext(req) {
+  return {
+    actorUserId: req.auth?.userId || null,
+    actorLabel: req.auth?.email || null,
+    source: req.auditSource,
+    ipAddress: req.ip,
+    userAgent: req.headers['user-agent'] || null,
+  };
+}
+
+export async function getPublicAccountProfile(req, res) {
+  const profile = await getAccountProfile(req.auth.userId);
+  return res.json({ ok: true, profile });
+}
+
+export async function putPublicAccountProfile(req, res) {
+  const input = accountProfileUpdateSchema.parse(req.body);
+  const profile = await saveAccountProfile(req.auth.userId, input, getAuditContext(req));
+  return res.json({ ok: true, profile });
+}
+
+export async function getPublicAccountOrders(req, res) {
+  const items = await listAccountOrders(req.auth.userId);
+  return res.json({ ok: true, items });
+}
+
+export async function getPublicAccountAlerts(req, res) {
+  const items = await listAccountAlerts(req.auth.userId);
+  return res.json({ ok: true, items });
+}
