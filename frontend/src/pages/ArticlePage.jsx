@@ -171,16 +171,16 @@ export default function ArticlePage() {
       allowOffers: article.allowOffers,
     });
 
-    if (!result.ok) {
-      setFeedback("No pudimos actualizar tus guardados.");
-      return;
-    }
+    // if (!result.ok) {
+    //   setFeedback("No pudimos actualizar tus guardados.");
+    //   return;
+    // }
 
-    setFeedback(
-      savedInWishlist
-        ? "Quitamos la prenda de tus guardados."
-        : "La prenda quedo guardada.",
-    );
+    // setFeedback(
+    //   savedInWishlist
+    //     ? "Quitamos la prenda de tus guardados."
+    //     : "La prenda quedo guardada.",
+    // );
   }
 
   async function handleShare() {
@@ -362,7 +362,7 @@ export default function ArticlePage() {
 
             {feedback ? <p className="success-copy">{feedback}</p> : null}
             {currentCartItem ? (
-              <p className="muted-copy">
+              <p className="checkbox-row-accent">
                 Ya tienes {currentCartItem.quantity} unidad
                 {currentCartItem.quantity === 1 ? "" : "es"} de esta prenda en
                 el carrito.

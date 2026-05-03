@@ -7210,9 +7210,9 @@ html {
 }
 
 .responsive-filter-panel {
-  padding: 16px 18px;
+  /* padding: 16px 18px;
   border-radius: 24px;
-  border: 1px solid rgba(6, 19, 29, 0.08);
+  border: 1px solid rgba(6, 19, 29, 0.08); */
   background: rgba(255, 255, 255, 0.82);
 }
 
@@ -10315,19 +10315,37 @@ textarea,
 
 /* === ESADAR pass 8: detalle de articulo, wishlist y carriles laterales === */
 .wishlist-heart-button:not(.is-active) .wishlist-heart-icon path,
-.article-card--catalog .article-card-heart.wishlist-heart-button:not(.is-active) .wishlist-heart-icon path,
-.article-gallery-favorite.wishlist-heart-button:not(.is-active) .wishlist-heart-icon path,
-.featured-motion-card__favorite.wishlist-heart-button:not(.is-active) .wishlist-heart-icon path,
-.article-card-heart--editorial.wishlist-heart-button:not(.is-active) .wishlist-heart-icon path {
+.article-card--catalog
+  .article-card-heart.wishlist-heart-button:not(.is-active)
+  .wishlist-heart-icon
+  path,
+.article-gallery-favorite.wishlist-heart-button:not(.is-active)
+  .wishlist-heart-icon
+  path,
+.featured-motion-card__favorite.wishlist-heart-button:not(.is-active)
+  .wishlist-heart-icon
+  path,
+.article-card-heart--editorial.wishlist-heart-button:not(.is-active)
+  .wishlist-heart-icon
+  path {
   fill: none !important;
   stroke: currentColor !important;
 }
 
 .wishlist-heart-button.is-active .wishlist-heart-icon path,
-.article-card--catalog .article-card-heart.wishlist-heart-button.is-active .wishlist-heart-icon path,
-.article-gallery-favorite.wishlist-heart-button.is-active .wishlist-heart-icon path,
-.featured-motion-card__favorite.wishlist-heart-button.is-active .wishlist-heart-icon path,
-.article-card-heart--editorial.wishlist-heart-button.is-active .wishlist-heart-icon path {
+.article-card--catalog
+  .article-card-heart.wishlist-heart-button.is-active
+  .wishlist-heart-icon
+  path,
+.article-gallery-favorite.wishlist-heart-button.is-active
+  .wishlist-heart-icon
+  path,
+.featured-motion-card__favorite.wishlist-heart-button.is-active
+  .wishlist-heart-icon
+  path,
+.article-card-heart--editorial.wishlist-heart-button.is-active
+  .wishlist-heart-icon
+  path {
   fill: currentColor !important;
   stroke: currentColor !important;
 }
