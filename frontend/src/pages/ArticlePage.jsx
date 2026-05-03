@@ -1,23 +1,31 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import SeoHead from '../components/SeoHead.jsx';
-import ArticleCard from '../components/ArticleCard.jsx';
-import ArticleImageGallery from '../components/ArticleImageGallery.jsx';
-import { apiFetch } from '../lib/api.js';
-import { formatCurrency, getDiscountedPrice, hasDiscount } from '../lib/format.js';
-import { articleOfferPath } from '../lib/routes.js';
-import { useCart } from '../contexts/CartContext.jsx';
-import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
-import { useWishlist } from '../contexts/WishlistContext.jsx';
-import { buildBreadcrumbJsonLd, buildProductJsonLd, toAbsoluteUrl } from '../lib/seo.js';
-import { getPublicSessionToken } from '../lib/publicSession.js';
-import WishlistHeartButton from '../components/WishlistHeartButton.jsx';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import SeoHead from "../components/SeoHead.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
+import { apiFetch } from "../lib/api.js";
+import {
+  formatCurrency,
+  getDiscountedPrice,
+  hasDiscount,
+} from "../lib/format.js";
+import { articleOfferPath } from "../lib/routes.js";
+import { useCart } from "../contexts/CartContext.jsx";
+import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
+import { useWishlist } from "../contexts/WishlistContext.jsx";
+import {
+  buildBreadcrumbJsonLd,
+  buildProductJsonLd,
+  toAbsoluteUrl,
+} from "../lib/seo.js";
+import { getPublicSessionToken } from "../lib/publicSession.js";
+import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 
 const initialAlertForm = {
-  firstName: '',
-  email: '',
-  phone: '',
-  instagram: '',
+  firstName: "",
+  email: "",
+  phone: "",
+  instagram: "",
 };
 
 export default function ArticlePage() {
@@ -26,19 +34,23 @@ export default function ArticlePage() {
   const { site } = useSiteSeo();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   const [article, setArticle] = useState(null);
-  const [relatedState, setRelatedState] = useState({ mode: 'empty', categoryName: '', items: [] });
-  const [error, setError] = useState('');
+  const [relatedState, setRelatedState] = useState({
+    mode: "empty",
+    categoryName: "",
+    items: [],
+  });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState("");
   const [stockDialog, setStockDialog] = useState(null);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [alertForm, setAlertForm] = useState(initialAlertForm);
   const [alertSubmitting, setAlertSubmitting] = useState(false);
-  const [alertError, setAlertError] = useState('');
-  const [alertSuccess, setAlertSuccess] = useState('');
+  const [alertError, setAlertError] = useState("");
+  const [alertSuccess, setAlertSuccess] = useState("");
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }, [slugOrId]);
 
   useEffect(() => {
@@ -47,30 +59,35 @@ export default function ArticlePage() {
     async function loadArticle() {
       try {
         setLoading(true);
-        setError('');
+        setError("");
         const response = await apiFetch(`/api/public/articles/${slugOrId}`);
         if (ignore) return;
         setArticle(response.article);
 
-        const relatedResponse = await apiFetch(`/api/public/articles/${slugOrId}/related?limit=4`);
+        const relatedResponse = await apiFetch(
+          `/api/public/articles/${slugOrId}/related?limit=4`,
+        );
         if (!ignore) {
           setRelatedState({
-            mode: relatedResponse.mode || 'empty',
-            categoryName: relatedResponse.categoryName || response.article.categoryName || '',
+            mode: relatedResponse.mode || "empty",
+            categoryName:
+              relatedResponse.categoryName ||
+              response.article.categoryName ||
+              "",
             items: relatedResponse.items || [],
           });
         }
 
-        await apiFetch('/api/public/article-events', {
-          method: 'POST',
+        await apiFetch("/api/public/article-events", {
+          method: "POST",
           body: {
             articleId: response.article.id,
-            eventType: 'VIEW',
+            eventType: "VIEW",
             sessionToken: getPublicSessionToken(),
           },
         }).catch(() => undefined);
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudo cargar la prenda.');
+        if (!ignore) setError(err.message || "No se pudo cargar la prenda.");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -83,39 +100,54 @@ export default function ArticlePage() {
   }, [slugOrId]);
 
   if (loading) {
-    return <div className="container section-card centered-card">Cargando prenda...</div>;
+    return (
+      <div className="container section-card centered-card">
+        Cargando prenda...
+      </div>
+    );
   }
 
   if (error || !article) {
-    return <div className="container section-card error-card">{error || 'Articulo no encontrado'}</div>;
+    return (
+      <div className="container section-card error-card">
+        {error || "Articulo no encontrado"}
+      </div>
+    );
   }
 
   const discounted = hasDiscount(article);
   const finalPrice = getDiscountedPrice(article);
-  const isSoldOut = Number(article.quantityAvailable || 0) <= 0 || article.status === 'SOLD_OUT';
+  const isSoldOut =
+    Number(article.quantityAvailable || 0) <= 0 ||
+    article.status === "SOLD_OUT";
   const currentCartItem = getItem(article.id);
   const savedInWishlist = isSaved(article.id);
   const wishlistPending = pendingIds.includes(Number(article.id));
-  const canonicalUrl = article.canonicalUrl || toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
+  const canonicalUrl =
+    article.canonicalUrl ||
+    toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
   const breadcrumbItems = [
-    { name: 'Inicio', url: toAbsoluteUrl('/', site) },
-    { name: article.categoryName || article.category?.name || 'Categoria', url: toAbsoluteUrl('/', site) },
+    { name: "Inicio", url: toAbsoluteUrl("/", site) },
+    {
+      name: article.categoryName || article.category?.name || "Categoria",
+      url: toAbsoluteUrl("/", site),
+    },
     { name: article.title, url: canonicalUrl },
   ];
 
   function showStockNotice(result) {
     if (!result || result.ok) return;
-    if (result.code === 'OUT_OF_STOCK') {
+    if (result.code === "OUT_OF_STOCK") {
       setStockDialog({
-        title: 'Articulo agotado',
-        message: 'Esta prenda no tiene stock disponible en este momento.',
+        title: "Articulo agotado",
+        message: "Esta prenda no tiene stock disponible en este momento.",
       });
       return;
     }
 
     setStockDialog({
-      title: 'Stock maximo alcanzado',
-      message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} disponible${result.maxQuantity === 1 ? '' : 's'} para esta prenda.`,
+      title: "Stock maximo alcanzado",
+      message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
     });
   }
 
@@ -134,17 +166,21 @@ export default function ArticlePage() {
       material: article.material,
       quantityAvailable: article.quantityAvailable,
       brandName: article.brandName,
-      sizeLabel: article.sizeText || article.sizeCode || '',
-      image: article.primaryImage || '',
+      sizeLabel: article.sizeText || article.sizeCode || "",
+      image: article.primaryImage || "",
       allowOffers: article.allowOffers,
     });
 
     if (!result.ok) {
-      setFeedback('No pudimos actualizar tus guardados.');
+      setFeedback("No pudimos actualizar tus guardados.");
       return;
     }
 
-    setFeedback(savedInWishlist ? 'Quitamos la prenda de tus guardados.' : 'La prenda quedo guardada.');
+    setFeedback(
+      savedInWishlist
+        ? "Quitamos la prenda de tus guardados."
+        : "La prenda quedo guardada.",
+    );
   }
 
   async function handleShare() {
@@ -159,19 +195,19 @@ export default function ArticlePage() {
         await navigator.share(shareData);
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(canonicalUrl);
-        setFeedback('Copiamos el enlace para compartir.');
+        setFeedback("Copiamos el enlace para compartir.");
       }
 
-      await apiFetch('/api/public/article-events', {
-        method: 'POST',
+      await apiFetch("/api/public/article-events", {
+        method: "POST",
         body: {
           articleId: article.id,
-          eventType: 'SHARE',
+          eventType: "SHARE",
           sessionToken: getPublicSessionToken(),
         },
       }).catch(() => undefined);
     } catch {
-      setFeedback('No pudimos compartir el enlace ahora.');
+      setFeedback("No pudimos compartir el enlace ahora.");
     }
   }
 
@@ -180,31 +216,38 @@ export default function ArticlePage() {
 
     try {
       setAlertSubmitting(true);
-      setAlertError('');
-      setAlertSuccess('');
+      setAlertError("");
+      setAlertSuccess("");
 
-      await apiFetch('/api/public/leads/stock-alert', {
-        method: 'POST',
+      await apiFetch("/api/public/leads/stock-alert", {
+        method: "POST",
         body: {
           articleId: article.id,
-          alertType: isSoldOut ? 'BACK_IN_STOCK' : 'SIMILAR_ITEMS',
+          alertType: isSoldOut ? "BACK_IN_STOCK" : "SIMILAR_ITEMS",
           firstName: alertForm.firstName || null,
           email: alertForm.email || null,
           phone: alertForm.phone || null,
           instagram: alertForm.instagram || null,
-          preferredCategories: article.categoryName ? [article.categoryName] : [],
+          preferredCategories: article.categoryName
+            ? [article.categoryName]
+            : [],
           preferredBrands: article.brandName ? [article.brandName] : [],
-          preferredSizes: article.sizeText || article.sizeCode ? [article.sizeText || article.sizeCode] : [],
+          preferredSizes:
+            article.sizeText || article.sizeCode
+              ? [article.sizeText || article.sizeCode]
+              : [],
           preferredColors: article.color ? [article.color] : [],
         },
       });
 
-      setAlertSuccess(isSoldOut
-        ? 'Te vamos a avisar si esta prenda vuelve o aparece algo muy parecido.'
-        : 'Te vamos a avisar si entra algo similar a esta prenda.');
+      setAlertSuccess(
+        isSoldOut
+          ? "Te vamos a avisar si esta prenda vuelve o aparece algo muy parecido."
+          : "Te vamos a avisar si entra algo similar a esta prenda.",
+      );
       setAlertForm(initialAlertForm);
     } catch (err) {
-      setAlertError(err.message || 'No pudimos guardar tu alerta.');
+      setAlertError(err.message || "No pudimos guardar tu alerta.");
     } finally {
       setAlertSubmitting(false);
     }
@@ -217,11 +260,14 @@ export default function ArticlePage() {
         description={article.seoDescription}
         canonical={canonicalUrl}
         url={canonicalUrl}
-        image={toAbsoluteUrl(article.primaryImageDetail || article.primaryImage, site)}
+        image={toAbsoluteUrl(
+          article.primaryImageDetail || article.primaryImage,
+          site,
+        )}
         type="product"
         jsonLd={[
-          { id: 'product', data: buildProductJsonLd(article, site) },
-          { id: 'breadcrumb', data: buildBreadcrumbJsonLd(breadcrumbItems) },
+          { id: "product", data: buildProductJsonLd(article, site) },
+          { id: "breadcrumb", data: buildBreadcrumbJsonLd(breadcrumbItems) },
         ]}
       />
 
@@ -229,14 +275,20 @@ export default function ArticlePage() {
         <nav className="breadcrumb-row" aria-label="Breadcrumb">
           <Link to="/">Inicio</Link>
           <span>/</span>
-          <span>{article.categoryName || article.category?.name || 'Categoria'}</span>
+          <span>
+            {article.categoryName || article.category?.name || "Categoria"}
+          </span>
           <span>/</span>
           <strong>{article.title}</strong>
         </nav>
 
         <section className="ebay-article-layout">
           <div className="ebay-article-layout__gallery">
-            <ArticleImageGallery images={article.images} title={article.title} fallbackImage={article} />
+            <ArticleImageGallery
+              images={article.images}
+              title={article.title}
+              fallbackImage={article}
+            />
 
             <WishlistHeartButton
               active={savedInWishlist}
@@ -257,22 +309,65 @@ export default function ArticlePage() {
               </div>
 
               <div className="detail-meta-list">
-                <div><span>Estado</span><strong>{article.conditionLabel || 'Second hand seleccionada'}</strong></div>
-                <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
-                <div><span>Color</span><strong>{article.color || 'No especificado'}</strong></div>
-                <div><span>Material</span><strong>{article.material || 'No especificado'}</strong></div>
-                <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
-                <div><span>Disponibilidad</span><strong>{isSoldOut ? 'Agotado' : `${article.quantityAvailable} disponibles`}</strong></div>
+                <div>
+                  <span>Estado</span>
+                  <strong>
+                    {article.conditionLabel || "Second hand seleccionada"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Talle</span>
+                  <strong>
+                    {article.sizeText || article.sizeCode || "No especificado"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Color</span>
+                  <strong>{article.color || "No especificado"}</strong>
+                </div>
+                {/* <div>
+                  <span>Material</span>
+                  <strong>{article.material || "No especificado"}</strong>
+                </div> */}
+                <div>
+                  <span>Marca</span>
+                  <strong>{article.brandName || "Sin marca"}</strong>
+                </div>
+                <div>
+                  <span>Stock</span>
+                  <strong>
+                    {isSoldOut
+                      ? "Agotado"
+                      : `${article.quantityAvailable} disponibles`}
+                  </strong>
+                </div>
+                <div>
+                  <span>Precio</span>
+                  <div className="detail-pricing">
+                    {discounted ? (
+                      <span className="price-old">
+                        {formatCurrency(article.salePrice)}
+                      </span>
+                    ) : null}
+                    <strong>{formatCurrency(finalPrice)}</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="detail-pricing detail-pricing--hero">
+            {/* <div className="detail-pricing detail-pricing--hero">
               {discounted ? <span className="price-old">{formatCurrency(article.salePrice)}</span> : null}
               <strong className="price-current price-current-large">{formatCurrency(finalPrice)}</strong>
-            </div>
+            </div> */}
 
             {feedback ? <p className="success-copy">{feedback}</p> : null}
-            {currentCartItem ? <p className="muted-copy">Ya tienes {currentCartItem.quantity} unidad{currentCartItem.quantity === 1 ? '' : 'es'} de esta prenda en el carrito.</p> : null}
+            {currentCartItem ? (
+              <p className="muted-copy">
+                Ya tienes {currentCartItem.quantity} unidad
+                {currentCartItem.quantity === 1 ? "" : "es"} de esta prenda en
+                el carrito.
+              </p>
+            ) : null}
 
             <div className="detail-actions detail-actions--stacked">
               <button
@@ -280,14 +375,16 @@ export default function ArticlePage() {
                 className="button button-primary"
                 disabled={isSoldOut}
                 onClick={(event) => {
-                  const result = addItem(article, 1, { sourceRect: event.currentTarget.getBoundingClientRect() });
+                  const result = addItem(article, 1, {
+                    sourceRect: event.currentTarget.getBoundingClientRect(),
+                  });
                   showStockNotice(result);
                   if (result?.ok) {
-                    setFeedback('Articulo agregado al carrito.');
+                    setFeedback("Articulo agregado al carrito.");
                   }
                 }}
               >
-                {isSoldOut ? 'Agotado' : 'Lo quiero'}
+                {isSoldOut ? "Agotado" : "Agregar al carrito"}
               </button>
 
               {article.allowOffers && !isSoldOut ? (
@@ -295,11 +392,11 @@ export default function ArticlePage() {
                   to={articleOfferPath(article)}
                   className="button button-secondary"
                   onClick={() => {
-                    void apiFetch('/api/public/article-events', {
-                      method: 'POST',
+                    void apiFetch("/api/public/article-events", {
+                      method: "POST",
                       body: {
                         articleId: article.id,
-                        eventType: 'OFFER_CLICK',
+                        eventType: "OFFER_CLICK",
                         sessionToken: getPublicSessionToken(),
                       },
                     }).catch(() => undefined);
@@ -309,17 +406,27 @@ export default function ArticlePage() {
                 </Link>
               ) : null}
 
-              <button type="button" className="button button-secondary" onClick={handleShare}>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={handleShare}
+              >
                 Compartir
               </button>
 
-              <button type="button" className="button button-secondary article-stock-alert-button" onClick={() => setAlertModalOpen(true)}>
-                {isSoldOut ? 'Avisame si vuelve o entra algo similar' : 'Avisame si entra algo similar'}
+              <button
+                type="button"
+                className="button button-secondary article-stock-alert-button"
+                onClick={() => setAlertModalOpen(true)}
+              >
+                {isSoldOut
+                  ? "Avisame si vuelve o entra algo similar"
+                  : "Avisame si entra algo similar"}
               </button>
             </div>
 
-            <div className="section-card page-stack-sm article-side-note">
-              <details className="article-info-accordion">
+            {/* <div className="section-card page-stack-sm article-side-note article-info-accordion">
+              <details>
                 <summary>
                   <span className="section-kicker">Como comprar</span>
                   <span aria-hidden="true">+</span>
@@ -333,14 +440,19 @@ export default function ArticlePage() {
               </details>
               <div>
                 <p className="section-kicker">Medidas reales</p>
-                <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>
+                <p className="muted-copy">
+                  {article.measurementsText ||
+                    "Si quieres una medida adicional, escribenos por contacto o Instagram."}
+                </p>
               </div>
               <div>
                 <p className="section-kicker">Estado de la prenda</p>
-                <p className="muted-copy">{article.originNotes || 'La pieza fue revisada y curada para el catalogo de ESADAR.'}</p>
+                <p className="muted-copy">
+                  {article.originNotes ||
+                    "La pieza fue revisada y curada para el catalogo de ESADAR."}
+                </p>
               </div>
-            </div>
-
+            </div> */}
           </aside>
         </section>
 
@@ -349,8 +461,12 @@ export default function ArticlePage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Relacionados</p>
-                <h2>Otras prendas con el mismo pulso</h2>
-                {relatedState.categoryName ? <p className="muted-copy">Mas de {relatedState.categoryName}</p> : null}
+                <h2>Artículos relacionados</h2>
+                {/* {relatedState.categoryName ? (
+                  <p className="muted-copy">
+                    Mas de {relatedState.categoryName}
+                  </p>
+                ) : null} */}
               </div>
             </div>
 
@@ -367,12 +483,19 @@ export default function ArticlePage() {
 
       {stockDialog ? (
         <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
-          <div className="dialog-card" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="dialog-card"
+            onClick={(event) => event.stopPropagation()}
+          >
             <p className="section-kicker">Stock</p>
             <h3>{stockDialog.title}</h3>
             <p className="muted-copy dialog-copy">{stockDialog.message}</p>
             <div className="dialog-actions">
-              <button type="button" className="button button-primary" onClick={() => setStockDialog(null)}>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => setStockDialog(null)}
+              >
                 Entendido
               </button>
             </div>
@@ -381,39 +504,96 @@ export default function ArticlePage() {
       ) : null}
 
       {alertModalOpen ? (
-        <div className="dialog-backdrop dialog-backdrop--stock-alert" onClick={() => setAlertModalOpen(false)}>
-          <div className="dialog-card dialog-card--wide stock-alert-dialog" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="dialog-backdrop dialog-backdrop--stock-alert"
+          onClick={() => setAlertModalOpen(false)}
+        >
+          <div
+            className="dialog-card dialog-card--wide stock-alert-dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
             <p className="section-kicker">Seguimiento</p>
-            <h3>{isSoldOut ? 'Avisame si vuelve o entra algo similar' : 'Avisame si entra algo similar'}</h3>
+            <h3>
+              {isSoldOut
+                ? "Avisame si vuelve o entra algo similar"
+                : "Avisame si entra algo similar"}
+            </h3>
             <form className="page-stack" onSubmit={handleStockAlertSubmit}>
               <div className="admin-filter-grid">
                 <label className="field-group">
                   <span>Nombre</span>
-                  <input className="input" value={alertForm.firstName} onChange={(event) => setAlertForm((current) => ({ ...current, firstName: event.target.value }))} />
+                  <input
+                    className="input"
+                    value={alertForm.firstName}
+                    onChange={(event) =>
+                      setAlertForm((current) => ({
+                        ...current,
+                        firstName: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
                 <label className="field-group">
                   <span>Email</span>
-                  <input className="input" type="email" value={alertForm.email} onChange={(event) => setAlertForm((current) => ({ ...current, email: event.target.value }))} />
+                  <input
+                    className="input"
+                    type="email"
+                    value={alertForm.email}
+                    onChange={(event) =>
+                      setAlertForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
                 <label className="field-group">
                   <span>WhatsApp</span>
-                  <input className="input" value={alertForm.phone} onChange={(event) => setAlertForm((current) => ({ ...current, phone: event.target.value }))} />
+                  <input
+                    className="input"
+                    value={alertForm.phone}
+                    onChange={(event) =>
+                      setAlertForm((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
                 <label className="field-group">
                   <span>Instagram</span>
-                  <input className="input" value={alertForm.instagram} onChange={(event) => setAlertForm((current) => ({ ...current, instagram: event.target.value }))} />
+                  <input
+                    className="input"
+                    value={alertForm.instagram}
+                    onChange={(event) =>
+                      setAlertForm((current) => ({
+                        ...current,
+                        instagram: event.target.value,
+                      }))
+                    }
+                  />
                 </label>
               </div>
 
               {alertError ? <p className="error-copy">{alertError}</p> : null}
-              {alertSuccess ? <p className="success-copy">{alertSuccess}</p> : null}
+              {alertSuccess ? (
+                <p className="success-copy">{alertSuccess}</p>
+              ) : null}
 
               <div className="dialog-actions">
-                <button type="button" className="button button-secondary" onClick={() => setAlertModalOpen(false)}>
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setAlertModalOpen(false)}
+                >
                   Cerrar
                 </button>
-                <button type="submit" className="button button-primary" disabled={alertSubmitting}>
-                  {alertSubmitting ? 'Guardando...' : 'Guardar alerta'}
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  disabled={alertSubmitting}
+                >
+                  {alertSubmitting ? "Guardando..." : "Guardar alerta"}
                 </button>
               </div>
             </form>

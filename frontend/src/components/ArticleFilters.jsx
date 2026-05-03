@@ -28,7 +28,12 @@ function areFiltersEqual(left, right) {
   return FILTER_KEYS.every((key) => left?.[key] === right?.[key]);
 }
 
-export default function ArticleFilters({ value, onChange, onApplied, idPrefix = "filter" }) {
+export default function ArticleFilters({
+  value,
+  onChange,
+  onApplied,
+  idPrefix = "filter",
+}) {
   const filters = useMemo(
     () => normalizeFilters(value),
     [
@@ -73,9 +78,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor={`${idPrefix}-search`}>
+        {/* <label className="field-label" htmlFor={`${idPrefix}-search`}>
           Busqueda
-        </label>
+        </label> */}
         <input
           id={`${idPrefix}-search`}
           className="input"
@@ -87,9 +92,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor={`${idPrefix}-sort`}>
+        {/* <label className="field-label" htmlFor={`${idPrefix}-sort`}>
           Orden
-        </label>
+        </label> */}
         <select
           id={`${idPrefix}-sort`}
           className="input"
@@ -104,9 +109,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor={`${idPrefix}-category`}>
+        {/* <label className="field-label" htmlFor={`${idPrefix}-category`}>
           Categoria
-        </label>
+        </label> */}
         <select
           id={`${idPrefix}-category`}
           className="input"
@@ -123,9 +128,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor={`${idPrefix}-brand`}>
+        {/* <label className="field-label" htmlFor={`${idPrefix}-brand`}>
           Marca
-        </label>
+        </label> */}
         <select
           id={`${idPrefix}-brand`}
           className="input"
@@ -142,9 +147,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor={`${idPrefix}-size`}>
+        {/* <label className="field-label" htmlFor={`${idPrefix}-size`}>
           Talle
-        </label>
+        </label> */}
         <select
           id={`${idPrefix}-size`}
           className="input"
@@ -164,6 +169,7 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
         <span className="field-label">Estados</span>
         <div className="filters-sidebar-checks">
           <label className="checkbox-row">
+            <span>Promociones / descuentos</span>
             <input
               type="checkbox"
               checked={draftFilters.discounted}
@@ -171,9 +177,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
                 updateField("discounted", event.target.checked)
               }
             />
-            <span>Promociones / descuentos</span>
           </label>
           <label className="checkbox-row checkbox-row-accent">
+            <span>¡Ofertá!</span>
             <input
               type="checkbox"
               checked={draftFilters.offerable}
@@ -181,9 +187,9 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
                 updateField("offerable", event.target.checked)
               }
             />
-            <span>Acepta ofertas</span>
           </label>
           <label className="checkbox-row">
+            <span>Destacados</span>
             <input
               type="checkbox"
               checked={draftFilters.featured}
@@ -191,7 +197,6 @@ export default function ArticleFilters({ value, onChange, onApplied, idPrefix = 
                 updateField("featured", event.target.checked)
               }
             />
-            <span>Destacados</span>
           </label>
         </div>
       </div>

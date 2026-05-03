@@ -1390,10 +1390,11 @@ button,
 .checkbox-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* gap: 10px; */
   min-height: 40px;
   border-bottom: 1px solid var(--border);
   padding: 0 0 8px;
+  justify-content: space-between;
 }
 
 .checkbox-row-accent {
@@ -1974,7 +1975,7 @@ body {
   max-width: 100%;
   max-height: 100%;
   width: auto;
-  height: 42px;
+  height: 86px;
   object-fit: contain;
 }
 
@@ -5407,7 +5408,6 @@ a.button.button-primary {
   opacity: 0.9;
 }
 
-.site-header::after,
 .site-footer::after {
   inset: 1px;
   border-top: 1px solid rgba(255, 255, 255, 0.22);
@@ -6145,7 +6145,7 @@ a.button.button-primary {
 .value-hero-card,
 .lead-capture-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) auto;
+  /* grid-template-columns: minmax(0, 1.1fr) auto; */
   gap: 24px;
   align-items: center;
 }
@@ -6902,18 +6902,20 @@ a.button.button-primary {
 }
 
 .detail-pricing--hero {
-  padding: 18px;
-  border-radius: 24px;
-  background: linear-gradient(
+  /* padding: 18px; */
+  padding: 10px 10px;
+  justify-content: flex-end;
+  /* background: linear-gradient(
     135deg,
     rgba(0, 142, 151, 0.08),
     rgba(252, 76, 2, 0.08)
-  );
+  ); */
 }
 
 .detail-actions--stacked {
   display: grid;
   gap: 12px;
+  margin-top: 10px;
 }
 
 .detail-actions--stacked > * {
@@ -7726,7 +7728,6 @@ html {
     min-width: min(72vw, 260px);
     scroll-snap-align: start;
   }
-
 }
 
 .mobile-motion-menu {
@@ -9238,7 +9239,9 @@ textarea,
   max-height: 78vh !important;
   object-fit: contain !important;
   background: #f7f4ee;
-  transition: transform 180ms ease, transform-origin 80ms linear;
+  transition:
+    transform 180ms ease,
+    transform-origin 80ms linear;
   will-change: transform;
 }
 
@@ -9597,7 +9600,10 @@ textarea,
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: transform var(--motion-fast) var(--ease-smooth), border-color var(--motion-fast) var(--ease-smooth), background-color var(--motion-fast) var(--ease-smooth);
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    border-color var(--motion-fast) var(--ease-smooth),
+    background-color var(--motion-fast) var(--ease-smooth);
 }
 
 .checkout-step-pill:hover:not(:disabled),

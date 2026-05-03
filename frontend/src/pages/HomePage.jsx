@@ -42,7 +42,6 @@ const initialLeadForm = {
   preferredColor: "",
 };
 
-
 const SORT_LABELS = {
   intake_desc: "Mas reciente",
   intake_asc: "Mas antiguo",
@@ -134,8 +133,7 @@ export default function HomePage() {
     }
     if (filters.discounted)
       chips.push({ key: "discounted", label: "Con descuento" });
-    if (filters.offerable)
-      chips.push({ key: "offerable", label: "Acepta ofertas" });
+    if (filters.offerable) chips.push({ key: "offerable", label: "¡Ofertá!" });
     if (filters.featured) chips.push({ key: "featured", label: "Destacados" });
 
     return chips;
@@ -154,10 +152,17 @@ export default function HomePage() {
   );
 
   useEffect(() => {
-    const isCatalogView = location.pathname === "/" || location.pathname === "/articles";
-    setCatalogFiltersContent(isCatalogView ? mobileCatalogFiltersContent : null);
+    const isCatalogView =
+      location.pathname === "/" || location.pathname === "/articles";
+    setCatalogFiltersContent(
+      isCatalogView ? mobileCatalogFiltersContent : null,
+    );
     return () => setCatalogFiltersContent(null);
-  }, [location.pathname, mobileCatalogFiltersContent, setCatalogFiltersContent]);
+  }, [
+    location.pathname,
+    mobileCatalogFiltersContent,
+    setCatalogFiltersContent,
+  ]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
 
@@ -184,7 +189,9 @@ export default function HomePage() {
 
     const nextSearch = new URLSearchParams(location.search).get("search") || "";
     setFilters((current) =>
-      current.search === nextSearch ? current : { ...current, search: nextSearch },
+      current.search === nextSearch
+        ? current
+        : { ...current, search: nextSearch },
     );
     setPage(1);
   }, [location.pathname, location.search]);
@@ -393,7 +400,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container value-hero-card section-card">
+      {/* <section className="container value-hero-card section-card">
         <div className="value-hero-copy">
           <p className="section-kicker">ESADAR</p>
           <h1>Ropa second hand seleccionada</h1>
@@ -428,7 +435,7 @@ export default function HomePage() {
             Ver ofertas
           </button>
         </div>
-      </section>
+      </section> */}
 
       <section ref={featuredSectionRef}>
         <FeaturedMotionCards
@@ -437,7 +444,7 @@ export default function HomePage() {
         />
       </section>
 
-      <section className="catalog-topbar-shell">
+      {/* <section className="catalog-topbar-shell">
         <div className="container catalog-topbar-row catalog-topbar-row--fancy">
           <input
             ref={searchInputRef}
@@ -460,11 +467,13 @@ export default function HomePage() {
             <option value="price_asc">Precio menor a mayor</option>
             <option value="price_desc">Precio mayor a menor</option>
           </select>
-
         </div>
-      </section>
+      </section> */}
 
-      <section className="mobile-catalog-filter-shell container" aria-label="Filtros del catalogo">
+      <section
+        className="mobile-catalog-filter-shell container"
+        aria-label="Filtros del catalogo"
+      >
         <button
           type="button"
           className="mobile-catalog-filter-trigger"
@@ -472,7 +481,11 @@ export default function HomePage() {
           onClick={() => setMobileFiltersOpen((current) => !current)}
         >
           <span>Filtros</span>
-          <strong>{activeFilterChips.length ? `${activeFilterChips.length} activos` : "Buscar y filtrar"}</strong>
+          <strong>
+            {activeFilterChips.length
+              ? `${activeFilterChips.length} activos`
+              : "Buscar y filtrar"}
+          </strong>
           <span aria-hidden="true">{mobileFiltersOpen ? "−" : "+"}</span>
         </button>
 
@@ -488,7 +501,10 @@ export default function HomePage() {
         ) : null}
 
         {activeFilterChips.length ? (
-          <div className="active-filters-row active-filters-row--mobile-sticky" aria-label="Filtros activos">
+          <div
+            className="active-filters-row active-filters-row--mobile-sticky"
+            aria-label="Filtros activos"
+          >
             {activeFilterChips.map((chip) => (
               <button
                 key={chip.key}
@@ -509,7 +525,11 @@ export default function HomePage() {
         className="catalog-wide container"
         tabIndex={-1}
       >
-        <ArticleFilters value={filters} onChange={applyFilters} idPrefix="desktop-filter" />
+        <ArticleFilters
+          value={filters}
+          onChange={applyFilters}
+          idPrefix="desktop-filter"
+        />
 
         <div className="catalog-content">
           <div className="catalog-summary-row">
@@ -620,14 +640,17 @@ export default function HomePage() {
 
       <section className="container section-card lead-capture-card lead-capture-card--cta">
         <div className="lead-capture-copy">
-          <p className="section-kicker">Captacion</p>
+          <p className="section-kicker">¡Ey!</p>
           <h2>¿Queres enterarte cuando entra ropa nueva?</h2>
           <p className="muted-copy">
             Dejanos tus preferencias en una vista dedicada y te avisamos cuando
             aparezcan prendas que encajen con tu estilo.
           </p>
         </div>
-        <Link className="button button-primary lead-capture-cta-button" to="/avisos">
+        <Link
+          className="button button-primary lead-capture-cta-button"
+          to="/avisos"
+        >
           Quiero enterarme
         </Link>
       </section>

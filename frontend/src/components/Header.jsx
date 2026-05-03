@@ -27,7 +27,14 @@ function HeaderIcon({ children }) {
 
 function AccountIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20 21a8 8 0 0 0-16 0" />
       <circle cx="12" cy="8" r="4" />
     </svg>
@@ -36,7 +43,14 @@ function AccountIcon() {
 
 function HeartIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
     </svg>
   );
@@ -44,7 +58,14 @@ function HeartIcon() {
 
 function AdminIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 3l7 4v5c0 5-3.4 7.7-7 9-3.6-1.3-7-4-7-9V7l7-4z" />
       <path d="M9.5 12.5l1.6 1.6 3.4-3.7" />
     </svg>
@@ -53,7 +74,14 @@ function AdminIcon() {
 
 function LoginIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
       <path d="M10 17l5-5-5-5" />
       <path d="M15 12H3" />
@@ -63,7 +91,14 @@ function LoginIcon() {
 
 function LogoutIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
       <path d="M16 17l5-5-5-5" />
       <path d="M21 12H9" />
@@ -73,7 +108,14 @@ function LogoutIcon() {
 
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="11" cy="11" r="7" />
       <path d="M20 20l-3.5-3.5" />
     </svg>
@@ -83,8 +125,22 @@ function SearchIcon() {
 function MenuGlyph() {
   return (
     <svg viewBox="0 0 44 44" aria-hidden="true" className="menu-glyph">
-      <rect x="5" y="5" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="2.6" />
-      <path d="M13 16h18M13 22h18M13 28h18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="square" />
+      <rect
+        x="5"
+        y="5"
+        width="34"
+        height="34"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+      />
+      <path
+        d="M13 16h18M13 22h18M13 28h18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="square"
+      />
     </svg>
   );
 }
@@ -267,11 +323,23 @@ export default function Header({ hideBrand = false }) {
 
   const adminMenuChildren = [
     { key: "admin-articles", label: "Articulos", to: "/admin/articles" },
-    { key: "admin-article-new", label: "Nuevo articulo", to: "/admin/articles/new" },
-    { key: "admin-article-bulk", label: "Crear multiples", to: "/admin/articles/bulk-create" },
+    {
+      key: "admin-article-new",
+      label: "Nuevo articulo",
+      to: "/admin/articles/new",
+    },
+    {
+      key: "admin-article-bulk",
+      label: "Crear multiples",
+      to: "/admin/articles/bulk-create",
+    },
     { key: "admin-orders", label: "Ordenes", to: "/admin/orders" },
     { key: "admin-offers", label: "Ofertas", to: "/admin/offers" },
-    { key: "admin-contacts", label: "Contactos", to: "/admin/contact-messages" },
+    {
+      key: "admin-contacts",
+      label: "Contactos",
+      to: "/admin/contact-messages",
+    },
     { key: "admin-leads", label: "Leads", to: "/admin/leads" },
     { key: "admin-wishlists", label: "Wishlists", to: "/admin/wishlists" },
     { key: "admin-statistics", label: "Estadisticas", to: "/admin/statistics" },
@@ -279,10 +347,33 @@ export default function Header({ hideBrand = false }) {
   ];
 
   const mobileMenuItems = [
-    { key: "home", label: "Inicio", to: "/" },
-    { key: "account", label: "Mi cuenta", kind: "group", children: accountMenuChildren },
-    ...(isAdmin ? [{ key: "admin", label: "Admin", kind: "group", children: adminMenuChildren }] : []),
-    ...(isAuthenticated ? [{ key: "logout", label: "Salir", kind: "button", onClick: logout }] : []),
+    // { key: "home", label: "Inicio", to: "/" },
+    {
+      key: "account",
+      label: "Mi cuenta",
+      kind: "group",
+      children: accountMenuChildren,
+    },
+    ...(isAdmin
+      ? [
+          {
+            key: "admin",
+            label: "Admin",
+            kind: "group",
+            children: adminMenuChildren,
+          },
+        ]
+      : []),
+    ...(isAuthenticated
+      ? [
+          {
+            key: "logout",
+            label: "Salir",
+            kind: "button",
+            onClick: logout,
+          },
+        ]
+      : []),
   ];
 
   function renderMenuButton() {
@@ -298,7 +389,11 @@ export default function Header({ hideBrand = false }) {
         whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
       >
         <motion.span
-          animate={mobileMenuOpen ? { rotate: -3, scale: 0.95 } : { rotate: 0, scale: 1 }}
+          animate={
+            mobileMenuOpen
+              ? { rotate: -3, scale: 0.95 }
+              : { rotate: 0, scale: 1 }
+          }
           transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }}
         >
           <MenuGlyph />
@@ -323,7 +418,10 @@ export default function Header({ hideBrand = false }) {
           placeholder="Buscar por titulo, marca o categoria"
         />
       </div>
-      <button type="submit" className="button button-secondary mobile-menu-search__submit">
+      <button
+        type="submit"
+        className="button button-secondary mobile-menu-search__submit"
+      >
         Buscar
       </button>
     </form>
@@ -348,17 +446,33 @@ export default function Header({ hideBrand = false }) {
           <div className="header-actions header-actions--ordered header-actions--desktop">
             {isAuthenticated ? (
               <>
-                <span className="user-greeting">Hola, {user?.firstName || ""}</span>
-                {renderIconNavLink("/cuenta/perfil", "Mi cuenta", <AccountIcon />)}
-                {isAdmin ? renderIconNavLink("/admin/articles", "Admin", <AdminIcon />) : null}
-                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
+                <span className="user-greeting">
+                  Hola, {user?.firstName || ""}
+                </span>
+                {renderIconNavLink(
+                  "/cuenta/perfil",
+                  "Mi cuenta",
+                  <AccountIcon />,
+                )}
+                {isAdmin
+                  ? renderIconNavLink("/admin/articles", "Admin", <AdminIcon />)
+                  : null}
+                {renderIconNavLink(
+                  "/cuenta/guardados",
+                  "Guardados",
+                  <HeartIcon />,
+                )}
                 {renderCartButton(desktopCartButtonRef)}
                 {renderIconButton(logout, "Salir", <LogoutIcon />)}
               </>
             ) : (
               <>
                 {renderIconNavLink("/login", "Ingresar", <LoginIcon />)}
-                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
+                {renderIconNavLink(
+                  "/cuenta/guardados",
+                  "Guardados",
+                  <HeartIcon />,
+                )}
                 {renderCartButton(desktopCartButtonRef)}
               </>
             )}
@@ -387,13 +501,13 @@ export default function Header({ hideBrand = false }) {
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         title="Menu"
-        headerContent={(
+        headerContent={
           <img
             src={esadarWordmark}
             alt="ESADAR"
             className="mobile-motion-menu__brand"
           />
-        )}
+        }
         searchContent={mobileSearchContent}
         filtersContent={catalogFiltersContent}
         items={mobileMenuItems}

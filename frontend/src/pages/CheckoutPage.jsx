@@ -1,40 +1,44 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import { useLookups } from '../contexts/LookupsContext.jsx';
-import SmartImage from '../components/SmartImage.jsx';
-import { formatCurrency } from '../lib/format.js';
-import { apiFetch } from '../lib/api.js';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useCart } from "../contexts/CartContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useLookups } from "../contexts/LookupsContext.jsx";
+import SmartImage from "../components/SmartImage.jsx";
+import { formatCurrency } from "../lib/format.js";
+import { apiFetch } from "../lib/api.js";
 
-const STORAGE_KEY = 'esadar-checkout-draft';
-const COMPLETE_STORAGE_KEY = 'esadar-checkout-complete';
+const STORAGE_KEY = "esadar-checkout-draft";
+const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
 
 const initialGuest = {
-  firstName: '',
-  lastName: '',
-  birthDate: '',
-  email: '',
-  address: '',
-  phone: '',
-  instagram: '',
+  firstName: "",
+  lastName: "",
+  birthDate: "",
+  email: "",
+  address: "",
+  phone: "",
+  instagram: "",
 };
 
 const steps = [
-  { key: 'resumen', label: 'Resumen de compra', kicker: 'Paso 1' },
-  { key: 'comprador', label: 'Datos de comprador', kicker: 'Paso 2' },
-  { key: 'pago', label: 'Método de pago', kicker: 'Paso 3' },
-  { key: 'envio', label: 'Método de envío', kicker: 'Paso 4' },
-  { key: 'confirmacion', label: 'Orden pendiente de aprobación', kicker: 'Paso 5' },
+  { key: "resumen", label: "Resumen de compra", kicker: "Paso 1" },
+  { key: "comprador", label: "Datos de comprador", kicker: "Paso 2" },
+  { key: "pago", label: "Método de pago", kicker: "Paso 3" },
+  { key: "envio", label: "Método de envío", kicker: "Paso 4" },
+  {
+    key: "confirmacion",
+    label: "Orden pendiente de aprobación",
+    kicker: "Paso 5",
+  },
 ];
 
 function readDraft() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
   try {
-    return JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || 'null');
+    return JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || "null");
   } catch {
     return null;
   }
@@ -42,7 +46,15 @@ function readDraft() {
 
 function TrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 6h18" />
       <path d="M8 6V4h8v2" />
       <path d="M19 6l-1 15H6L5 6" />
@@ -57,26 +69,39 @@ export default function CheckoutPage() {
   const location = useLocation();
   const { items, subtotal, removeItem, updateQuantity } = useCart();
   const { user, isAuthenticated } = useAuth();
-  const { shippingMethodOptions, paymentMethodOptions, lookupError } = useLookups();
+  const { shippingMethodOptions, paymentMethodOptions, lookupError } =
+    useLookups();
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
-  const [shippingMethodId, setShippingMethodId] = useState(savedDraft?.shippingMethodId || '');
-  const [paymentMethod, setPaymentMethod] = useState(savedDraft?.paymentMethod || '');
-  const [notes, setNotes] = useState(savedDraft?.notes || '');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [shippingMethodId, setShippingMethodId] = useState(
+    savedDraft?.shippingMethodId || "",
+  );
+  const [paymentMethod, setPaymentMethod] = useState(
+    savedDraft?.paymentMethod || "",
+  );
+  const [notes, setNotes] = useState(savedDraft?.notes || "");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [stockDialog, setStockDialog] = useState(null);
 
-  const currentStepKey = location.pathname.split('/')[2] || 'resumen';
-  const currentStepIndex = Math.max(0, steps.findIndex((step) => step.key === currentStepKey));
+  const currentStepKey = location.pathname.split("/")[2] || "resumen";
+  const currentStepIndex = Math.max(
+    0,
+    steps.findIndex((step) => step.key === currentStepKey),
+  );
   const currentStep = steps[currentStepIndex] || steps[0];
 
   useEffect(() => {
     if (!shippingMethodOptions.length) return;
 
-    if (!shippingMethodId || !shippingMethodOptions.some((item) => Number(item.id) === Number(shippingMethodId))) {
+    if (
+      !shippingMethodId ||
+      !shippingMethodOptions.some(
+        (item) => Number(item.id) === Number(shippingMethodId),
+      )
+    ) {
       setShippingMethodId(shippingMethodOptions[0].id);
     }
   }, [shippingMethodId, shippingMethodOptions]);
@@ -84,21 +109,33 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!paymentMethodOptions.length) return;
 
-    if (!paymentMethod || !paymentMethodOptions.some((item) => item.id === paymentMethod)) {
+    if (
+      !paymentMethod ||
+      !paymentMethodOptions.some((item) => item.id === paymentMethod)
+    ) {
       setPaymentMethod(paymentMethodOptions[0].id);
     }
   }, [paymentMethod, paymentMethodOptions]);
 
   const shipping = useMemo(
-    () => shippingMethodOptions.find((item) => Number(item.id) === Number(shippingMethodId)) || shippingMethodOptions[0] || null,
+    () =>
+      shippingMethodOptions.find(
+        (item) => Number(item.id) === Number(shippingMethodId),
+      ) ||
+      shippingMethodOptions[0] ||
+      null,
     [shippingMethodId, shippingMethodOptions],
   );
 
-  const payment = paymentMethodOptions.find((item) => item.id === paymentMethod) || paymentMethodOptions[0] || null;
+  const payment =
+    paymentMethodOptions.find((item) => item.id === paymentMethod) ||
+    paymentMethodOptions[0] ||
+    null;
   const total = subtotal + Number(shipping?.cost || 0);
 
-  const buyerComplete = isAuthenticated
-    || (guest.firstName.trim().length >= 2 && guest.lastName.trim().length >= 2);
+  const buyerComplete =
+    isAuthenticated ||
+    (guest.firstName.trim().length >= 2 && guest.lastName.trim().length >= 2);
   const paymentComplete = Boolean(paymentMethod);
   const shippingComplete = Boolean(shippingMethodId);
 
@@ -107,7 +144,8 @@ export default function CheckoutPage() {
     comprador: buyerComplete,
     pago: paymentComplete,
     envio: shippingComplete,
-    confirmacion: items.length > 0 && buyerComplete && paymentComplete && shippingComplete,
+    confirmacion:
+      items.length > 0 && buyerComplete && paymentComplete && shippingComplete,
   };
 
   const maxAllowedStepIndex = useMemo(() => {
@@ -123,7 +161,7 @@ export default function CheckoutPage() {
   }, [completion]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     window.sessionStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({ guest, shippingMethodId, paymentMethod, notes }),
@@ -131,15 +169,23 @@ export default function CheckoutPage() {
   }, [guest, shippingMethodId, paymentMethod, notes]);
 
   useEffect(() => {
-    if (!items.length && currentStepKey !== 'resumen') {
-      navigate('/checkout/resumen', { replace: true });
+    if (!items.length && currentStepKey !== "resumen") {
+      navigate("/checkout/resumen", { replace: true });
       return;
     }
 
     if (currentStepIndex > maxAllowedStepIndex) {
-      navigate(`/checkout/${steps[maxAllowedStepIndex].key}`, { replace: true });
+      navigate(`/checkout/${steps[maxAllowedStepIndex].key}`, {
+        replace: true,
+      });
     }
-  }, [items.length, currentStepIndex, currentStepKey, maxAllowedStepIndex, navigate]);
+  }, [
+    items.length,
+    currentStepIndex,
+    currentStepKey,
+    maxAllowedStepIndex,
+    navigate,
+  ]);
 
   function goToStep(index) {
     if (index > maxAllowedStepIndex) return;
@@ -147,25 +193,27 @@ export default function CheckoutPage() {
   }
 
   function validateCurrentStep() {
-    setError('');
+    setError("");
 
-    if (currentStepKey === 'resumen' && !items.length) {
-      setError('Tu carrito está vacío.');
+    if (currentStepKey === "resumen" && !items.length) {
+      setError("Tu carrito está vacío.");
       return false;
     }
 
-    if (currentStepKey === 'comprador' && !buyerComplete) {
-      setError('Completa al menos nombre y apellido del comprador para continuar.');
+    if (currentStepKey === "comprador" && !buyerComplete) {
+      setError(
+        "Completa al menos nombre y apellido del comprador para continuar.",
+      );
       return false;
     }
 
-    if (currentStepKey === 'pago' && !paymentComplete) {
-      setError('Selecciona un medio de pago para continuar.');
+    if (currentStepKey === "pago" && !paymentComplete) {
+      setError("Selecciona un medio de pago para continuar.");
       return false;
     }
 
-    if (currentStepKey === 'envio' && !shippingComplete) {
-      setError('Selecciona un método de envío para continuar.');
+    if (currentStepKey === "envio" && !shippingComplete) {
+      setError("Selecciona un método de envío para continuar.");
       return false;
     }
 
@@ -185,20 +233,23 @@ export default function CheckoutPage() {
 
   async function handleConfirmOrder() {
     if (!completion.confirmacion || !items.length) {
-      setError('Completa los pasos previos antes de confirmar la orden.');
+      setError("Completa los pasos previos antes de confirmar la orden.");
       return;
     }
 
     try {
       setSubmitting(true);
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
 
       const payload = {
         shippingMethodId: Number(shippingMethodId),
         paymentMethod,
         notes: notes || null,
-        items: items.map((item) => ({ articleId: item.articleId, quantity: item.quantity })),
+        items: items.map((item) => ({
+          articleId: item.articleId,
+          quantity: item.quantity,
+        })),
       };
 
       if (!isAuthenticated) {
@@ -212,29 +263,31 @@ export default function CheckoutPage() {
         };
       }
 
-      const response = await apiFetch('/api/public/orders', {
-        method: 'POST',
+      const response = await apiFetch("/api/public/orders", {
+        method: "POST",
         body: payload,
       });
 
       const orderNumber = response?.order?.orderNumber;
       if (!orderNumber) {
-        throw new Error('La orden fue creada, pero no se pudo obtener el número de confirmación.');
+        throw new Error(
+          "La orden fue creada, pero no se pudo obtener el número de confirmación.",
+        );
       }
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.sessionStorage.setItem(
           COMPLETE_STORAGE_KEY,
           JSON.stringify({ orderNumber }),
         );
       }
 
-      navigate('/checkout/completa', {
+      navigate("/checkout/completa", {
         replace: true,
         state: { orderNumber },
       });
     } catch (err) {
-      setError(err.message || 'No se pudo crear la orden');
+      setError(err.message || "No se pudo crear la orden");
     } finally {
       setSubmitting(false);
     }
@@ -242,17 +295,18 @@ export default function CheckoutPage() {
 
   function showStockDialog(result) {
     if (!result || result.ok) return;
-    if (result.code === 'OUT_OF_STOCK') {
+    if (result.code === "OUT_OF_STOCK") {
       setStockDialog({
-        title: 'Sin stock disponible',
-        message: 'Este artículo ya no tiene unidades disponibles para la compra.',
+        title: "Sin stock disponible",
+        message:
+          "Este artículo ya no tiene unidades disponibles para la compra.",
       });
       return;
     }
 
     setStockDialog({
-      title: 'Cantidad máxima disponible',
-      message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? '' : 'es'} de este artículo con el stock actual.`,
+      title: "Cantidad máxima disponible",
+      message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de este artículo con el stock actual.`,
     });
   }
 
@@ -285,11 +339,22 @@ export default function CheckoutPage() {
                 {items.map((item) => (
                   <tr key={item.articleId}>
                     <td>
-                      <SmartImage src={item.image} alt={item.title} fallbackLabel={item.title} className="table-thumb-image" />
+                      <SmartImage
+                        src={item.image}
+                        alt={item.title}
+                        fallbackLabel={item.title}
+                        className="table-thumb-image"
+                      />
                     </td>
-                    <td className="cell-truncate"><strong title={item.title}>{item.title}</strong></td>
-                    <td className="cell-truncate">{item.brandName || 'Sin marca'}</td>
-                    <td className="cell-truncate">{item.sizeLabel || 'Sin talle'}</td>
+                    <td className="cell-truncate">
+                      <strong title={item.title}>{item.title}</strong>
+                    </td>
+                    <td className="cell-truncate">
+                      {item.brandName || "Sin marca"}
+                    </td>
+                    <td className="cell-truncate">
+                      {item.sizeLabel || "Sin talle"}
+                    </td>
                     <td>
                       <input
                         className="input input-small checkout-qty-input"
@@ -299,15 +364,28 @@ export default function CheckoutPage() {
                         value={item.quantity}
                         aria-label={`Cantidad de ${item.title}`}
                         onChange={(event) => {
-                          const result = updateQuantity(item.articleId, Number(event.target.value || 1));
+                          const result = updateQuantity(
+                            item.articleId,
+                            Number(event.target.value || 1),
+                          );
                           showStockDialog(result);
                         }}
                       />
                     </td>
                     <td>{formatCurrency(item.discountedPrice)}</td>
-                    <td><strong>{formatCurrency(item.discountedPrice * item.quantity)}</strong></td>
                     <td>
-                      <button type="button" className="icon-action-button" onClick={() => removeItem(item.articleId)} aria-label={`Quitar ${item.title}`} title="Quitar">
+                      <strong>
+                        {formatCurrency(item.discountedPrice * item.quantity)}
+                      </strong>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="icon-action-button"
+                        onClick={() => removeItem(item.articleId)}
+                        aria-label={`Quitar ${item.title}`}
+                        title="Quitar"
+                      >
                         <TrashIcon />
                       </button>
                     </td>
@@ -321,9 +399,18 @@ export default function CheckoutPage() {
         <aside className="checkout-side-summary section-card nested-card">
           <p className="section-kicker">Totales</p>
           <div className="order-summary-card checkout-summary-plain">
-            <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p>
-            <p className="summary-line"><span>Envío estimado</span><strong>{formatCurrency(shipping?.cost || 0)}</strong></p>
-            <p className="summary-line total"><span>Total estimado</span><strong>{formatCurrency(total)}</strong></p>
+            <p className="summary-line">
+              <span>Subtotal</span>
+              <strong>{formatCurrency(subtotal)}</strong>
+            </p>
+            <p className="summary-line">
+              <span>Envío estimado</span>
+              <strong>{formatCurrency(shipping?.cost || 0)}</strong>
+            </p>
+            <p className="summary-line total">
+              <span>Total estimado</span>
+              <strong>{formatCurrency(total)}</strong>
+            </p>
           </div>
         </aside>
       </div>
@@ -335,11 +422,22 @@ export default function CheckoutPage() {
       return (
         <div className="section-card nested-card">
           <p className="section-kicker">Comprador autenticado</p>
-          <h2>{user.firstName} {user.lastName}</h2>
+          <h2>
+            {user.firstName} {user.lastName}
+          </h2>
           <div className="detail-meta-list checkout-meta-list">
-            <div><span>Email</span><strong>{user.email || 'Sin email'}</strong></div>
-            <div><span>Teléfono</span><strong>{user.phone || 'Sin teléfono'}</strong></div>
-            <div><span>Instagram</span><strong>{user.instagram || 'Sin Instagram'}</strong></div>
+            <div>
+              <span>Email</span>
+              <strong>{user.email || "Sin email"}</strong>
+            </div>
+            <div>
+              <span>Teléfono</span>
+              <strong>{user.phone || "Sin teléfono"}</strong>
+            </div>
+            <div>
+              <span>Instagram</span>
+              <strong>{user.instagram || "Sin Instagram"}</strong>
+            </div>
           </div>
           <p className="muted-copy">La orden se generará con esta cuenta.</p>
         </div>
@@ -350,15 +448,106 @@ export default function CheckoutPage() {
       <div className="section-card nested-card">
         <p className="section-kicker">Datos del comprador</p>
         <div className="form-grid-two">
-          <label className="field-group"><span>Nombre</span><input className="input" value={guest.firstName} onChange={(event) => setGuest((current) => ({ ...current, firstName: event.target.value }))} required /></label>
-          <label className="field-group"><span>Apellido</span><input className="input" value={guest.lastName} onChange={(event) => setGuest((current) => ({ ...current, lastName: event.target.value }))} required /></label>
-          <label className="field-group"><span>Fecha de nacimiento</span><input className="input" type="date" value={guest.birthDate} onChange={(event) => setGuest((current) => ({ ...current, birthDate: event.target.value }))} /></label>
-          <label className="field-group"><span>Teléfono</span><input className="input" value={guest.phone} onChange={(event) => setGuest((current) => ({ ...current, phone: event.target.value }))} /></label>
-          <label className="field-group form-grid-span-two"><span>Dirección</span><input className="input" value={guest.address} onChange={(event) => setGuest((current) => ({ ...current, address: event.target.value }))} /></label>
-          <label className="field-group"><span>Instagram</span><input className="input" value={guest.instagram} onChange={(event) => setGuest((current) => ({ ...current, instagram: event.target.value }))} /></label>
-          <label className="field-group"><span>Email</span><input className="input" type="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value }))} /></label>
+          <label className="field-group">
+            <span>Nombre</span>
+            <input
+              className="input"
+              value={guest.firstName}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  firstName: event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <label className="field-group">
+            <span>Apellido</span>
+            <input
+              className="input"
+              value={guest.lastName}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  lastName: event.target.value,
+                }))
+              }
+              required
+            />
+          </label>
+          <label className="field-group">
+            <span>Fecha de nacimiento</span>
+            <input
+              className="input"
+              type="date"
+              value={guest.birthDate}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  birthDate: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>Teléfono</span>
+            <input
+              className="input"
+              value={guest.phone}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  phone: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group form-grid-span-two">
+            <span>Dirección</span>
+            <input
+              className="input"
+              value={guest.address}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  address: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>Instagram</span>
+            <input
+              className="input"
+              value={guest.instagram}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  instagram: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>Email</span>
+            <input
+              className="input"
+              type="email"
+              value={guest.email}
+              onChange={(event) =>
+                setGuest((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
+              }
+            />
+          </label>
         </div>
-        <p className="muted-copy">Puedes comprar sin usuario o <Link to="/login">ingresar</Link> para usar tu cuenta.</p>
+        <p className="muted-copy">
+          Puedes comprar sin usuario o <Link to="/login">ingresar</Link> para
+          usar tu cuenta.
+        </p>
       </div>
     );
   }
@@ -371,7 +560,12 @@ export default function CheckoutPage() {
         <div className="stack-gap-sm">
           {paymentMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">
-              <input type="radio" name="paymentMethod" checked={paymentMethod === option.id} onChange={() => setPaymentMethod(option.id)} />
+              <input
+                type="radio"
+                name="paymentMethod"
+                checked={paymentMethod === option.id}
+                onChange={() => setPaymentMethod(option.id)}
+              />
               <div>
                 <strong>{option.label}</strong>
                 <p>{option.instructions}</p>
@@ -381,7 +575,11 @@ export default function CheckoutPage() {
         </div>
         <label className="field-group checkout-notes">
           <span>Notas</span>
-          <textarea className="input textarea" value={notes} onChange={(event) => setNotes(event.target.value)} />
+          <textarea
+            className="input textarea"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
         </label>
       </div>
     );
@@ -395,7 +593,12 @@ export default function CheckoutPage() {
         <div className="stack-gap-sm">
           {shippingMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">
-              <input type="radio" name="shippingMethodId" checked={Number(shippingMethodId) === Number(option.id)} onChange={() => setShippingMethodId(option.id)} />
+              <input
+                type="radio"
+                name="shippingMethodId"
+                checked={Number(shippingMethodId) === Number(option.id)}
+                onChange={() => setShippingMethodId(option.id)}
+              />
               <div>
                 <strong>{option.label}</strong>
                 <p>{formatCurrency(option.cost)}</p>
@@ -414,20 +617,54 @@ export default function CheckoutPage() {
         <div className="section-card nested-card checkout-confirm-panel">
           <p className="section-kicker">Orden pendiente de aprobación</p>
           <div className="detail-meta-list checkout-meta-list">
-            <div><span>Artículos</span><strong>{items.length}</strong></div>
-            <div><span>Comprador</span><strong>{isAuthenticated ? `${user.firstName} ${user.lastName}` : `${guest.firstName} ${guest.lastName}`}</strong></div>
-            <div><span>Medio de pago</span><strong>{payment?.label}</strong></div>
-            <div><span>Método de envío</span><strong>{shipping?.label}</strong></div>
-            <div><span>Instrucciones de pago</span><strong>{payment?.instructions}</strong></div>
-            <div><span>Entrega</span><strong>{shipping?.instructions}</strong></div>
+            <div>
+              <span>Artículos</span>
+              <strong>{items.length}</strong>
+            </div>
+            <div>
+              <span>Comprador</span>
+              <strong>
+                {isAuthenticated
+                  ? `${user.firstName} ${user.lastName}`
+                  : `${guest.firstName} ${guest.lastName}`}
+              </strong>
+            </div>
+            <div>
+              <span>Medio de pago</span>
+              <strong>{payment?.label}</strong>
+            </div>
+            <div>
+              <span>Método de envío</span>
+              <strong>{shipping?.label}</strong>
+            </div>
+            <div>
+              <span>Instrucciones de pago</span>
+              <strong>{payment?.instructions}</strong>
+            </div>
+            <div>
+              <span>Entrega</span>
+              <strong>{shipping?.instructions}</strong>
+            </div>
           </div>
-          <p className="muted-copy">La reserva dura 24 horas y la orden será validada manualmente desde administración.</p>
+          <p className="muted-copy">
+            La reserva dura 24 horas y la orden será validada manualmente desde
+            administración.
+          </p>
         </div>
 
         <aside className="section-card nested-card checkout-confirm-summary">
-          <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p>
-          <p className="summary-line"><span>Envío</span><strong>{formatCurrency(shipping?.cost || 0)}</strong></p>
-          <p className="summary-line total"><span>Total</span><strong>{formatCurrency(total)}</strong></p>
+          <p className="summary-line">
+            <span>Subtotal</span>
+            <strong>{formatCurrency(subtotal)}</strong>
+          </p>
+          <p className="summary-line">
+            <span>Envío</span>
+            <strong>{formatCurrency(shipping?.cost || 0)}</strong>
+          </p>
+          <p className="summary-line total">
+            <span>Total</span>
+            <strong>{formatCurrency(total)}</strong>
+          </p>
           {notes ? <p className="muted-copy">Notas: {notes}</p> : null}
         </aside>
       </div>
@@ -435,10 +672,10 @@ export default function CheckoutPage() {
   }
 
   function renderCurrentStep() {
-    if (currentStepKey === 'comprador') return renderBuyerStep();
-    if (currentStepKey === 'pago') return renderPaymentStep();
-    if (currentStepKey === 'envio') return renderShippingStep();
-    if (currentStepKey === 'confirmacion') return renderConfirmationStep();
+    if (currentStepKey === "comprador") return renderBuyerStep();
+    if (currentStepKey === "pago") return renderPaymentStep();
+    if (currentStepKey === "envio") return renderShippingStep();
+    if (currentStepKey === "confirmacion") return renderConfirmationStep();
     return renderSummaryStep();
   }
 
@@ -448,7 +685,9 @@ export default function CheckoutPage() {
         <div className="section-card centered-card checkout-empty-card">
           <h1>Tu carrito está vacío</h1>
           <p>Cuando agregues prendas aparecerán aquí con resumen de orden.</p>
-          <Link className="button button-primary" to="/">Volver al catálogo</Link>
+          <Link className="button button-primary" to="/">
+            Volver al catálogo
+          </Link>
         </div>
       </div>
     );
@@ -463,14 +702,17 @@ export default function CheckoutPage() {
               <p className="section-kicker">Proceso de compra</p>
               <h1>{currentStep.label}</h1>
             </div>
-            <p className="muted-copy checkout-shell-copy">Paso {currentStepIndex + 1} de {steps.length}</p>
+            <p className="muted-copy checkout-shell-copy">
+              Paso {currentStepIndex + 1} de {steps.length}
+            </p>
           </div>
 
           <div className="checkout-steps-row" aria-label="Pasos de compra">
             {steps.map((step, index) => {
               const isCurrent = index === currentStepIndex;
               const isAllowed = index <= maxAllowedStepIndex;
-              const isComplete = completion[step.key] && index < currentStepIndex;
+              const isComplete =
+                completion[step.key] && index < currentStepIndex;
 
               return (
                 <button
@@ -480,7 +722,9 @@ export default function CheckoutPage() {
                     "checkout-step-pill",
                     isCurrent ? "is-current" : "",
                     isComplete ? "is-complete" : "",
-                  ].filter(Boolean).join(" ")}
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   disabled={!isAllowed || submitting}
                   onClick={() => goToStep(index)}
                   aria-current={isCurrent ? "step" : undefined}
@@ -492,12 +736,12 @@ export default function CheckoutPage() {
             })}
           </div>
 
-          <div className="checkout-steps-row checkout-steps-row--single">
+          {/* <div className="checkout-steps-row checkout-steps-row--single">
             <div className="checkout-step-current-card" aria-live="polite">
               <span>{currentStep.kicker} · {currentStepIndex + 1} de {steps.length}</span>
               <strong>{currentStep.label}</strong>
             </div>
-          </div>
+          </div> */}
 
           {renderCurrentStep()}
 
@@ -516,17 +760,21 @@ export default function CheckoutPage() {
               {success ? <p className="success-copy">{success}</p> : null}
             </div>
 
-            {currentStepKey === 'confirmacion' ? (
+            {currentStepKey === "confirmacion" ? (
               <button
                 type="button"
                 className="button button-primary"
                 onClick={handleConfirmOrder}
                 disabled={submitting}
               >
-                {submitting ? 'Creando orden…' : 'Confirmar orden'}
+                {submitting ? "Creando orden…" : "Confirmar orden"}
               </button>
             ) : (
-              <button type="button" className="button button-primary" onClick={handleNext}>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={handleNext}
+              >
                 Siguiente
               </button>
             )}
@@ -536,12 +784,19 @@ export default function CheckoutPage() {
 
       {stockDialog ? (
         <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
-          <div className="dialog-card" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="dialog-card"
+            onClick={(event) => event.stopPropagation()}
+          >
             <p className="section-kicker">Carrito</p>
             <h3>{stockDialog.title}</h3>
             <p className="muted-copy dialog-copy">{stockDialog.message}</p>
             <div className="dialog-actions">
-              <button type="button" className="button button-primary" onClick={() => setStockDialog(null)}>
+              <button
+                type="button"
+                className="button button-primary"
+                onClick={() => setStockDialog(null)}
+              >
                 Entendido
               </button>
             </div>
