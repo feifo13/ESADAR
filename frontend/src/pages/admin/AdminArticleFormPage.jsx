@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import SmartImage from '../../components/SmartImage.jsx';
+import BulkArticleImageChecklist, { createEmptyImageState, IMAGE_ROLE_DEFINITIONS } from '../../components/admin/BulkArticleImageChecklist.jsx';
 import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 
@@ -161,9 +162,8 @@ export default function AdminArticleFormPage() {
   const isEdit = Boolean(id);
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const [form, setForm] = useState(toFormState(null));
-  const [images, setImages] = useState([]);
+  const [imageChecklist, setImageChecklist] = useState(() => createEmptyImageState());
   const [existingImages, setExistingImages] = useState([]);
-  const [selectedPreviews, setSelectedPreviews] = useState([]);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [imageActionId, setImageActionId] = useState('');
@@ -198,19 +198,15 @@ export default function AdminArticleFormPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    const nextPreviews = Array.from(images || []).map((file) => ({
-      id: `${file.name}-${file.size}-${file.lastModified}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
-    }));
+  const selectedImageUploads = useMemo(() => (
+    IMAGE_ROLE_DEFINITIONS
+      .map((role) => ({ role, value: imageChecklist[role.key] }))
+      .filter((item) => Boolean(item.value?.file))
+  ), [imageChecklist]);
 
-    setSelectedPreviews(nextPreviews);
-
-    return () => {
-      nextPreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
-    };
-  }, [images]);
+  const hasConditionWarning = useMemo(() => (
+    /detalle|mancha|marca|fall|rot|desgast|condicion|estado/i.test(`${form.conditionLabel || ''} ${form.originNotes || ''}`)
+  ), [form.conditionLabel, form.originNotes]);
 
   const labels = useMemo(() => {
     const categoryName = categoryOptions.find((option) => Number(option.id) === Number(form.categoryId))?.label || '';
@@ -255,6 +251,18 @@ export default function AdminArticleFormPage() {
         ? { ...image, [name]: value }
         : image
     )));
+  }
+
+  function handleImageChecklistChange(roleKey, value, replaceAll = false) {
+    if (replaceAll) {
+      setImageChecklist(value);
+      return;
+    }
+
+    setImageChecklist((current) => ({
+      ...current,
+      [roleKey]: value,
+    }));
   }
 
   async function refreshArticle(articleId) {
@@ -346,11 +354,41 @@ export default function AdminArticleFormPage() {
 
       const articleId = response.article.id;
 
-      if (images.length) {
+      if (selectedImageUploads.length) {
+        const previousImagesCount = existingImages.length;
         const formData = new FormData();
-        Array.from(images).forEach((file) => formData.append('images', file));
-        await apiFetch(`/api/admin/articles/${articleId}/images`, { method: 'POST', body: formData });
-        setImages([]);
+        selectedImageUploads.forEach(({ value }) => formData.append('images', value.file));
+        const imageResponse = await apiFetch(`/api/admin/articles/${articleId}/images`, { method: 'POST', body: formData });
+        const uploadedImages = sortImages(imageResponse.images || []).slice(previousImagesCount);
+
+        const pendingPrimaryPatch = [];
+        for (const [index, uploadedImage] of uploadedImages.entries()) {
+          const upload = selectedImageUploads[index];
+          if (!upload) continue;
+
+          const patchPayload = {
+            altText: normalizeLabel(upload.value.altText) || `${payload.title} - ${upload.role.label.toLowerCase()}`,
+            sortOrder: previousImagesCount + index,
+          };
+
+          if (upload.value.isPrimary) {
+            pendingPrimaryPatch.push({ uploadedImage, patchPayload });
+          } else {
+            await apiFetch(`/api/admin/articles/${articleId}/images/${uploadedImage.id}`, {
+              method: 'PATCH',
+              body: patchPayload,
+            });
+          }
+        }
+
+        for (const { uploadedImage, patchPayload } of pendingPrimaryPatch) {
+          await apiFetch(`/api/admin/articles/${articleId}/images/${uploadedImage.id}`, {
+            method: 'PATCH',
+            body: { ...patchPayload, isPrimary: true },
+          });
+        }
+
+        setImageChecklist(createEmptyImageState());
       }
 
       await refreshArticle(articleId);
@@ -461,7 +499,7 @@ export default function AdminArticleFormPage() {
   }
 
   const currentStepStatus = FORM_STEPS.map((_, index) => (
-    getStepStatus(index, form, existingImages.length, selectedPreviews.length)
+    getStepStatus(index, form, existingImages.length, selectedImageUploads.length)
   ));
 
   return (
@@ -704,7 +742,7 @@ export default function AdminArticleFormPage() {
               </p>
             </div>
 
-            {(existingImages.length || selectedPreviews.length) ? (
+            {existingImages.length ? (
               <div className="image-manager-grid">
                 {existingImages.map((image, index) => (
                   <article key={`existing-${image.id}`} className="image-manager-card">
@@ -787,18 +825,6 @@ export default function AdminArticleFormPage() {
                     </div>
                   </article>
                 ))}
-
-                {selectedPreviews.map((preview) => (
-                  <figure key={preview.id} className="image-manager-card image-manager-card--pending">
-                    <SmartImage
-                      src={preview.url}
-                      alt={preview.name}
-                      fallbackLabel={form.title || preview.name}
-                      className="image-manager-card__media"
-                    />
-                    <figcaption>Lista para subir</figcaption>
-                  </figure>
-                ))}
               </div>
             ) : (
               <div className="centered-card nested-card image-manager-empty">
@@ -806,13 +832,18 @@ export default function AdminArticleFormPage() {
               </div>
             )}
 
-            <label className="field-group">
-              <span>Agregar imagenes</span>
-              <input className="input" type="file" multiple accept="image/*" onChange={(event) => setImages(event.target.files || [])} />
-              <span className="field-helper">
-                Si no subes imagenes ahora, el articulo igual puede crearse y luego completarse desde la edicion.
-              </span>
-            </label>
+            <div className="page-stack-sm">
+              <h3>Imagenes nuevas</h3>
+              <p className="field-helper">
+                Carga las mismas tarjetas guiadas que en crear multiples articulos: frente, espalda, etiqueta, textura y detalles. Las imagenes se suben al guardar el articulo.
+              </p>
+              <BulkArticleImageChecklist
+                value={imageChecklist}
+                title={form.title}
+                onChange={handleImageChecklistChange}
+                hasConditionWarning={hasConditionWarning}
+              />
+            </div>
           </section>
         ) : null}
 

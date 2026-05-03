@@ -314,28 +314,34 @@ export default function ArticlePage() {
               </button>
             </div>
 
-            <div className="section-card page-stack-sm article-side-note">
-              <details className="article-info-accordion">
-                <summary>
-                  <span className="section-kicker">Como comprar</span>
-                  <span aria-hidden="true">+</span>
-                </summary>
-                <ol className="article-steps-list">
-                  <li>Agregas la prenda al carrito.</li>
-                  <li>Completas tus datos.</li>
-                  <li>Elegis pago y envio.</li>
-                  <li>Confirmamos tu orden.</li>
-                </ol>
-              </details>
-              <div>
-                <p className="section-kicker">Medidas reales</p>
-                <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>
+            <details className="section-card page-stack-sm article-side-note article-info-accordion">
+              <summary>
+                <span>
+                  <span className="section-kicker">Informacion</span>
+                  <strong>Como comprar y detalles</strong>
+                </span>
+                <span aria-hidden="true">+</span>
+              </summary>
+              <div className="article-info-accordion__body page-stack-sm">
+                <div>
+                  <p className="section-kicker">Como comprar</p>
+                  <ol className="article-steps-list">
+                    <li>Agregas la prenda al carrito.</li>
+                    <li>Completas tus datos.</li>
+                    <li>Elegis pago y envio.</li>
+                    <li>Confirmamos tu orden.</li>
+                  </ol>
+                </div>
+                <div>
+                  <p className="section-kicker">Medidas reales</p>
+                  <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>
+                </div>
+                <div>
+                  <p className="section-kicker">Estado de la prenda</p>
+                  <p className="muted-copy">{article.originNotes || 'La pieza fue revisada y curada para el catalogo de ESADAR.'}</p>
+                </div>
               </div>
-              <div>
-                <p className="section-kicker">Estado de la prenda</p>
-                <p className="muted-copy">{article.originNotes || 'La pieza fue revisada y curada para el catalogo de ESADAR.'}</p>
-              </div>
-            </div>
+            </details>
 
             <div className="section-card page-stack-sm article-side-note">
               <button type="button" className="ghost-button" onClick={() => setAlertModalOpen(true)}>

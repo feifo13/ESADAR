@@ -5,6 +5,7 @@ import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
 import ScrollChrome from './ScrollChrome.jsx';
 import SeoHead from './SeoHead.jsx';
+import ResponsiveTableLabels from './ResponsiveTableLabels.jsx';
 import { MobileMenuProvider } from '../contexts/MobileMenuContext.jsx';
 import esadarWordmark from '../assets/esadar-wordmark.png';
 
@@ -86,6 +87,7 @@ export default function RootLayout() {
     <div
       className={`app-shell${showIntro ? ' app-shell--intro-active' : ''}${isCheckoutView ? ' app-shell--checkout-view' : ''}${isAdminView ? ' app-shell--admin-view' : ''}`}
     >
+      <ResponsiveTableLabels />
       {shouldNoIndex ? (
         <SeoHead
           title={`ESADAR | ${isAdminView ? 'Backoffice' : isCheckoutView ? 'Checkout' : 'Acceso'}`}

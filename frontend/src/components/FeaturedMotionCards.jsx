@@ -28,7 +28,7 @@ export default function FeaturedMotionCards({ title, items = [] }) {
   const shouldReduceMotion = useReducedMotion();
   const isDesktop = useMediaQuery("(min-width: 961px)");
   const { isSaved, toggleItem, pendingIds } = useWishlist();
-  const featuredItems = items.slice(0, 4);
+  const featuredItems = isDesktop ? items.slice(0, 3) : items.slice(0, 4);
 
   if (!featuredItems.length) return null;
 
