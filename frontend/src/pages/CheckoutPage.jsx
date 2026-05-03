@@ -40,6 +40,18 @@ function readDraft() {
   }
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 15H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,36 +267,54 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className="checkout-items">
-            {items.map((item) => (
-              <div key={item.articleId} className="checkout-item">
-                <SmartImage src={item.image} alt={item.title} fallbackLabel={item.title} />
-                <div>
-                  <p className="checkout-item-title">{item.title}</p>
-                  <p className="muted-copy">{item.brandName || 'Sin marca'} {item.sizeLabel ? ` - ${item.sizeLabel}` : ''}</p>
-                  <div className="quantity-row">
-                    <label>
-                      Cantidad
+          <div className="table-shell checkout-items-table-shell">
+            <table className="data-table checkout-items-table">
+              <thead>
+                <tr>
+                  <th>Img</th>
+                  <th>Prenda</th>
+                  <th>Marca</th>
+                  <th>Talle</th>
+                  <th>Cant.</th>
+                  <th>Unitario</th>
+                  <th>Total</th>
+                  <th>Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.articleId}>
+                    <td>
+                      <SmartImage src={item.image} alt={item.title} fallbackLabel={item.title} className="table-thumb-image" />
+                    </td>
+                    <td className="cell-truncate"><strong title={item.title}>{item.title}</strong></td>
+                    <td className="cell-truncate">{item.brandName || 'Sin marca'}</td>
+                    <td className="cell-truncate">{item.sizeLabel || 'Sin talle'}</td>
+                    <td>
                       <input
-                        className="input input-small"
+                        className="input input-small checkout-qty-input"
                         type="number"
                         min="1"
                         max={item.maxQuantity || item.quantity}
                         value={item.quantity}
+                        aria-label={`Cantidad de ${item.title}`}
                         onChange={(event) => {
                           const result = updateQuantity(item.articleId, Number(event.target.value || 1));
                           showStockDialog(result);
                         }}
                       />
-                    </label>
-                    <button type="button" className="ghost-button" onClick={() => removeItem(item.articleId)}>
-                      Quitar
-                    </button>
-                  </div>
-                </div>
-                <strong>{formatCurrency(item.discountedPrice * item.quantity)}</strong>
-              </div>
-            ))}
+                    </td>
+                    <td>{formatCurrency(item.discountedPrice)}</td>
+                    <td><strong>{formatCurrency(item.discountedPrice * item.quantity)}</strong></td>
+                    <td>
+                      <button type="button" className="icon-action-button" onClick={() => removeItem(item.articleId)} aria-label={`Quitar ${item.title}`} title="Quitar">
+                        <TrashIcon />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -436,25 +466,11 @@ export default function CheckoutPage() {
             <p className="muted-copy checkout-shell-copy">Paso {currentStepIndex + 1} de {steps.length}</p>
           </div>
 
-          <div className="checkout-steps-row">
-            {steps.map((step, index) => {
-              const isActive = index === currentStepIndex;
-              const isEnabled = index <= maxAllowedStepIndex;
-              const isDone = index < currentStepIndex && index <= maxAllowedStepIndex;
-
-              return (
-                <button
-                  key={step.key}
-                  type="button"
-                  className={`checkout-step-chip${isActive ? ' active' : ''}${isDone ? ' done' : ''}`}
-                  disabled={!isEnabled}
-                  onClick={() => goToStep(index)}
-                >
-                  <span>{step.kicker}</span>
-                  <strong>{step.label}</strong>
-                </button>
-              );
-            })}
+          <div className="checkout-steps-row checkout-steps-row--single">
+            <div className="checkout-step-current-card" aria-live="polite">
+              <span>{currentStep.kicker} · {currentStepIndex + 1} de {steps.length}</span>
+              <strong>{currentStep.label}</strong>
+            </div>
           </div>
 
           {renderCurrentStep()}

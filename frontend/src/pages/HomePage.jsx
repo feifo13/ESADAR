@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useOutletContext } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
@@ -11,8 +11,8 @@ import {
 } from "../lib/seo.js";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleFilters from "../components/ArticleFilters.jsx";
-import ExperimentalVisualPanel from "../components/ExperimentalVisualPanel.jsx";
 import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";
@@ -63,6 +63,7 @@ export default function HomePage() {
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
+  const { setCatalogFiltersContent } = useMobileMenu();
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
@@ -138,6 +139,23 @@ export default function HomePage() {
 
     return chips;
   }, [brandOptions, categoryOptions, filters, sizeOptions]);
+
+  const mobileCatalogFiltersContent = useMemo(
+    () => (
+      <ArticleFilters
+        value={filters}
+        onChange={applyFilters}
+        idPrefix="mobile-filter"
+      />
+    ),
+    [filters],
+  );
+
+  useEffect(() => {
+    const isCatalogView = location.pathname === "/" || location.pathname === "/articles";
+    setCatalogFiltersContent(isCatalogView ? mobileCatalogFiltersContent : null);
+    return () => setCatalogFiltersContent(null);
+  }, [location.pathname, mobileCatalogFiltersContent, setCatalogFiltersContent]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
 
@@ -444,7 +462,7 @@ export default function HomePage() {
         className="catalog-wide container"
         tabIndex={-1}
       >
-        <ArticleFilters value={filters} onChange={applyFilters} />
+        <ArticleFilters value={filters} onChange={applyFilters} idPrefix="desktop-filter" />
 
         <div className="catalog-content">
           <div className="catalog-summary-row">
@@ -553,138 +571,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container section-card lead-capture-card">
+      <section className="container section-card lead-capture-card lead-capture-card--cta">
         <div className="lead-capture-copy">
           <p className="section-kicker">Captacion</p>
-          <h2>¿Queres enterarte cuando entra nueva ropa?</h2>
+          <h2>¿Queres enterarte cuando entra ropa nueva?</h2>
           <p className="muted-copy">
-            Dejanos un contacto y tus preferencias. Te avisamos cuando aparezcan
-            prendas que encajen con tu estilo.
+            Dejanos tus preferencias en una vista dedicada y te avisamos cuando
+            aparezcan prendas que encajen con tu estilo.
           </p>
         </div>
-
-        <form className="lead-capture-form" onSubmit={handleLeadSubmit}>
-          <div className="form-grid-two">
-            <label className="field-group">
-              <span>Nombre</span>
-              <input
-                className="input"
-                value={leadForm.firstName}
-                onChange={(event) =>
-                  updateLeadField("firstName", event.target.value)
-                }
-              />
-            </label>
-            <label className="field-group">
-              <span>Email</span>
-              <input
-                className="input"
-                type="email"
-                value={leadForm.email}
-                onChange={(event) =>
-                  updateLeadField("email", event.target.value)
-                }
-              />
-            </label>
-            <label className="field-group">
-              <span>WhatsApp</span>
-              <input
-                className="input"
-                value={leadForm.phone}
-                onChange={(event) =>
-                  updateLeadField("phone", event.target.value)
-                }
-              />
-            </label>
-            <label className="field-group">
-              <span>Instagram</span>
-              <input
-                className="input"
-                value={leadForm.instagram}
-                onChange={(event) =>
-                  updateLeadField("instagram", event.target.value)
-                }
-              />
-            </label>
-            <label className="field-group">
-              <span>Categoria</span>
-              <select
-                className="input"
-                value={leadForm.preferredCategory}
-                onChange={(event) =>
-                  updateLeadField("preferredCategory", event.target.value)
-                }
-              >
-                <option value="">Sin preferencia</option>
-                {categoryOptions.map((option) => (
-                  <option key={option.id} value={option.label}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field-group">
-              <span>Marca</span>
-              <select
-                className="input"
-                value={leadForm.preferredBrand}
-                onChange={(event) =>
-                  updateLeadField("preferredBrand", event.target.value)
-                }
-              >
-                <option value="">Sin preferencia</option>
-                {brandOptions.map((option) => (
-                  <option key={option.id} value={option.label}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field-group">
-              <span>Talle</span>
-              <select
-                className="input"
-                value={leadForm.preferredSize}
-                onChange={(event) =>
-                  updateLeadField("preferredSize", event.target.value)
-                }
-              >
-                <option value="">Sin preferencia</option>
-                {sizeOptions.map((option) => (
-                  <option key={option.id} value={option.label}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field-group">
-              <span>Color</span>
-              <input
-                className="input"
-                value={leadForm.preferredColor}
-                onChange={(event) =>
-                  updateLeadField("preferredColor", event.target.value)
-                }
-                placeholder="Ej: negro, azul, neutros"
-              />
-            </label>
-          </div>
-
-          {leadError ? <p className="error-copy">{leadError}</p> : null}
-          {leadSuccess ? <p className="success-copy">{leadSuccess}</p> : null}
-
-          <button
-            className="button button-primary"
-            type="submit"
-            disabled={leadSubmitting}
-          >
-            {leadSubmitting ? "Guardando…" : "Avisarme"}
-          </button>
-        </form>
-      </section>
-
-      <section className="container">
-        <ExperimentalVisualPanel images={HERO_IMAGES} />
+        <Link className="button button-primary lead-capture-cta-button" to="/avisos">
+          Quiero enterarme
+        </Link>
       </section>
     </div>
   );

@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import MobileMotionMenu from "./MobileMotionMenu.jsx";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.png";
 
 function findVisibleTargetRect(...refs) {
@@ -33,10 +34,10 @@ function AccountIcon() {
   );
 }
 
-function BookmarkIcon() {
+function HeartIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 3h12v18l-6-4-6 4V3z" />
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
     </svg>
   );
 }
@@ -81,8 +82,9 @@ function SearchIcon() {
 
 function MenuGlyph() {
   return (
-    <svg viewBox="0 0 512 512" aria-hidden="true">
-      <path fill="currentColor" d="M32 96v64h448V96H32zm0 128v64h448v-64H32zm0 128v64h448v-64H32z" />
+    <svg viewBox="0 0 44 44" aria-hidden="true" className="menu-glyph">
+      <rect x="5" y="5" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="2.6" />
+      <path d="M13 16h18M13 22h18M13 28h18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="square" />
     </svg>
   );
 }
@@ -92,6 +94,7 @@ export default function Header({ hideBrand = false }) {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount, cartFx } = useCart();
+  const { catalogFiltersContent } = useMobileMenu();
   const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
@@ -252,33 +255,16 @@ export default function Header({ hideBrand = false }) {
   const mobileMenuItems = isAuthenticated
     ? [
         { key: "home", label: "Inicio", to: "/" },
-        { key: "catalog", label: "Catalogo", to: "/articles" },
-        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
         { key: "account", label: "Mi cuenta", to: "/cuenta/perfil" },
-        { key: "alerts", label: "Mis alertas", to: "/cuenta/alertas" },
+        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
         { key: "orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
         ...(isAdmin ? [{ key: "admin", label: "Admin", to: "/admin/articles" }] : []),
-        { key: "cart", label: `Carrito (${cartCount})`, kind: "button", onClick: openCart },
-        {
-          key: "logout",
-          label: "Salir",
-          kind: "button",
-          onClick: logout,
-          className: "button button-primary mobile-nav-sheet__link",
-        },
+        { key: "logout", label: "Salir", kind: "button", onClick: logout },
       ]
     : [
         { key: "home", label: "Inicio", to: "/" },
-        { key: "catalog", label: "Catalogo", to: "/articles" },
+        { key: "account", label: "Mi cuenta", to: "/login" },
         { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
-        { key: "cart", label: `Carrito (${cartCount})`, kind: "button", onClick: openCart },
-        {
-          key: "login",
-          label: "Ingresar",
-          to: "/login",
-          className: "button button-primary mobile-nav-sheet__link",
-        },
-        { key: "register", label: "Crear cuenta", to: "/register" },
       ];
 
   function renderMenuButton() {
@@ -348,7 +334,7 @@ export default function Header({ hideBrand = false }) {
             {isAuthenticated ? (
               <>
                 <span className="user-greeting">Hola, {user?.firstName || ""}</span>
-                {renderIconNavLink("/cuenta/guardados", "Guardados", <BookmarkIcon />)}
+                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
                 {renderIconNavLink("/cuenta/perfil", "Mi cuenta", <AccountIcon />)}
                 {isAdmin ? renderIconNavLink("/admin/articles", "Admin", <AdminIcon />) : null}
                 {renderCartButton(desktopCartButtonRef)}
@@ -356,7 +342,7 @@ export default function Header({ hideBrand = false }) {
               </>
             ) : (
               <>
-                {renderIconNavLink("/cuenta/guardados", "Guardados", <BookmarkIcon />)}
+                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
                 {renderCartButton(desktopCartButtonRef)}
                 {renderIconNavLink("/login", "Ingresar", <LoginIcon />)}
               </>
@@ -394,6 +380,7 @@ export default function Header({ hideBrand = false }) {
           />
         )}
         searchContent={mobileSearchContent}
+        filtersContent={catalogFiltersContent}
         items={mobileMenuItems}
       />
 

@@ -10,6 +10,7 @@ import CheckoutPage from './pages/CheckoutPage.jsx';
 import CheckoutCompletePage from './pages/CheckoutCompletePage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
+import NewsletterPage from './pages/NewsletterPage.jsx';
 import AccountPage from './pages/AccountPage.jsx';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
 import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="checkout/completa" element={<CheckoutCompletePage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="avisos" element={<NewsletterPage />} />
         <Route path="cuenta" element={<AccountPage />} />
         <Route path="cuenta/perfil" element={<AccountPage />} />
         <Route path="cuenta/guardados" element={<AccountPage />} />

@@ -5,6 +5,7 @@ import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
 import ScrollChrome from './ScrollChrome.jsx';
 import SeoHead from './SeoHead.jsx';
+import { MobileMenuProvider } from '../contexts/MobileMenuContext.jsx';
 import esadarWordmark from '../assets/esadar-wordmark.png';
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
@@ -92,12 +93,14 @@ export default function RootLayout() {
           noindex
         />
       ) : null}
-      <Header hideBrand={isHome && heroLogoVisible} />
-      <main className="page-shell">
-        <div className="page-transition-shell">
-          <Outlet context={{ setHeroLogoVisible }} />
-        </div>
-      </main>
+      <MobileMenuProvider>
+        <Header hideBrand={isHome && heroLogoVisible} />
+        <main className="page-shell">
+          <div className="page-transition-shell">
+            <Outlet context={{ setHeroLogoVisible }} />
+          </div>
+        </main>
+      </MobileMenuProvider>
       <Footer />
       <ThemeDock />
       <ScrollChrome />

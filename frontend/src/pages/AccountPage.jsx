@@ -34,6 +34,29 @@ const TAB_ITEMS = [
   { key: 'ordenes', label: 'Mis ordenes', path: '/cuenta/ordenes' },
 ];
 
+const ACCOUNT_TABLE_PAGE_SIZE = 8;
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function LocalTablePagination({ page, totalPages, totalItems, onPrevious, onNext }) {
+  return (
+    <div className="pagination-row pagination-row--top">
+      <span className="muted-copy">Pagina {page} de {totalPages} - {totalItems} registros</span>
+      <div className="table-actions">
+        <button type="button" className="button button-secondary" onClick={onPrevious} disabled={page <= 1}>Anterior</button>
+        <button type="button" className="button button-secondary" onClick={onNext} disabled={page >= totalPages}>Siguiente</button>
+      </div>
+    </div>
+  );
+}
+
 function getActiveTab(pathname) {
   if (pathname.includes('/guardados')) return 'guardados';
   if (pathname.includes('/alertas')) return 'alertas';
@@ -96,6 +119,8 @@ export default function AccountPage() {
   const [form, setForm] = useState(initialForm);
   const [wishlistSort, setWishlistSort] = useState({ key: 'title', direction: 'asc' });
   const [ordersSort, setOrdersSort] = useState({ key: 'createdAt', direction: 'desc' });
+  const [wishlistPage, setWishlistPage] = useState(1);
+  const [ordersPage, setOrdersPage] = useState(1);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -193,7 +218,21 @@ export default function AccountPage() {
     [orders, ordersSort],
   );
 
+  const wishlistTotalPages = Math.max(1, Math.ceil(sortedWishlistItems.length / ACCOUNT_TABLE_PAGE_SIZE));
+  const ordersTotalPages = Math.max(1, Math.ceil(sortedOrders.length / ACCOUNT_TABLE_PAGE_SIZE));
+  const pagedWishlistItems = sortedWishlistItems.slice((wishlistPage - 1) * ACCOUNT_TABLE_PAGE_SIZE, wishlistPage * ACCOUNT_TABLE_PAGE_SIZE);
+  const pagedOrders = sortedOrders.slice((ordersPage - 1) * ACCOUNT_TABLE_PAGE_SIZE, ordersPage * ACCOUNT_TABLE_PAGE_SIZE);
+
+  useEffect(() => {
+    setWishlistPage((current) => Math.min(current, wishlistTotalPages));
+  }, [wishlistTotalPages]);
+
+  useEffect(() => {
+    setOrdersPage((current) => Math.min(current, ordersTotalPages));
+  }, [ordersTotalPages]);
+
   function toggleWishlistSort(key) {
+    setWishlistPage(1);
     setWishlistSort((current) => ({
       key,
       direction: getNextSortDirection(current, key),
@@ -201,6 +240,7 @@ export default function AccountPage() {
   }
 
   function toggleOrdersSort(key) {
+    setOrdersPage(1);
     setOrdersSort((current) => ({
       key,
       direction: getNextSortDirection(current, key, key === 'createdAt' || key === 'updatedAt' ? 'desc' : 'asc'),
@@ -618,7 +658,15 @@ export default function AccountPage() {
           ) : null}
 
           {wishlistItems.length ? (
-            <div className="table-shell">
+            <>
+              <LocalTablePagination
+                page={wishlistPage}
+                totalPages={wishlistTotalPages}
+                totalItems={sortedWishlistItems.length}
+                onPrevious={() => setWishlistPage((current) => Math.max(1, current - 1))}
+                onNext={() => setWishlistPage((current) => Math.min(wishlistTotalPages, current + 1))}
+              />
+              <div className="table-shell">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -630,7 +678,7 @@ export default function AccountPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedWishlistItems.map((item) => {
+                  {pagedWishlistItems.map((item) => {
                     const isAvailable =
                       Number(item.quantityAvailable || 0) > 0 &&
                       item.status !== 'SOLD_OUT';
@@ -753,6 +801,7 @@ export default function AccountPage() {
                 </tbody>
               </table>
             </div>
+            </>
           ) : null}
         </section>
       ) : null}
@@ -809,7 +858,15 @@ export default function AccountPage() {
           ) : null}
 
           {isAuthenticated && orders.length ? (
-            <div className="table-shell">
+            <>
+              <LocalTablePagination
+                page={ordersPage}
+                totalPages={ordersTotalPages}
+                totalItems={sortedOrders.length}
+                onPrevious={() => setOrdersPage((current) => Math.max(1, current - 1))}
+                onNext={() => setOrdersPage((current) => Math.min(ordersTotalPages, current + 1))}
+              />
+              <div className="table-shell">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -822,7 +879,7 @@ export default function AccountPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedOrders.map((order) => {
+                  {pagedOrders.map((order) => {
                     const latestStatusDate =
                       order.shippedAt ||
                       order.cancelledAt ||
@@ -871,6 +928,7 @@ export default function AccountPage() {
                 </tbody>
               </table>
             </div>
+            </>
           ) : null}
         </section>
       ) : null}
@@ -918,19 +976,52 @@ export default function AccountPage() {
             <div className="page-stack-sm">
               <div>
                 <p className="section-kicker">Prendas</p>
-                <div className="history-list">
-                  {selectedOrderDetail.items.map((item) => (
-                    <article key={item.id} className="history-row">
-                      <div>
-                        <strong>{item.articleTitle}</strong>
-                        <p className="muted-copy">
-                          {item.brandName || 'Sin marca'} ·{' '}
-                          {item.size || 'Sin talle'} · Cantidad: {item.quantity}
-                        </p>
-                      </div>
-                      <strong>{formatCurrency(item.lineTotal)}</strong>
-                    </article>
-                  ))}
+                <div className="table-shell order-items-table-shell">
+                  <table className="data-table order-items-table">
+                    <thead>
+                      <tr>
+                        <th>Prenda</th>
+                        <th>Marca</th>
+                        <th>Talle</th>
+                        <th>Cant.</th>
+                        <th>Unitario</th>
+                        <th>Total</th>
+                        <th>Accion</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrderDetail.items.map((item) => {
+                        const itemPath = item.articleSlug || item.articleId
+                          ? articlePath({ slug: item.articleSlug, id: item.articleId, articleId: item.articleId })
+                          : null;
+
+                        return (
+                          <tr key={item.id}>
+                            <td className="cell-truncate">
+                              <div className="cell-stack cell-stack--compact">
+                                <strong title={item.articleTitle}>{item.articleTitle}</strong>
+                                <span className="muted-copy">#{item.articleId || 's/d'}</span>
+                              </div>
+                            </td>
+                            <td className="cell-truncate">{item.brandName || 'Sin marca'}</td>
+                            <td className="cell-truncate">{item.size || 'Sin talle'}</td>
+                            <td>{item.quantity}</td>
+                            <td>{formatCurrency(item.finalUnitPrice)}</td>
+                            <td><strong>{formatCurrency(item.lineTotal)}</strong></td>
+                            <td>
+                              {itemPath ? (
+                                <Link className="icon-action-button" to={itemPath} aria-label={`Ver ${item.articleTitle}`} title="Ver prenda">
+                                  <EyeIcon />
+                                </Link>
+                              ) : (
+                                <span className="muted-copy">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 

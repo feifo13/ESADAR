@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
@@ -62,12 +62,18 @@ const listVariants = {
 };
 
 function renderItem(item, onClose) {
+  const itemClassName = [
+    "mobile-nav-sheet__link",
+    "mobile-motion-menu__item",
+    item.className || "",
+  ].filter(Boolean).join(" ");
+
   if (item.kind === "button") {
     return (
       <button
         key={item.key}
         type="button"
-        className={item.className || "button button-secondary mobile-nav-sheet__link"}
+        className={itemClassName}
         onClick={() => {
           item.onClick?.();
           onClose?.();
@@ -82,7 +88,7 @@ function renderItem(item, onClose) {
     <NavLink
       key={item.key}
       to={item.to}
-      className={item.className || "button button-secondary mobile-nav-sheet__link"}
+      className={({ isActive }) => [itemClassName, isActive ? "is-active" : ""].filter(Boolean).join(" ")}
       onClick={() => onClose?.()}
     >
       {item.label}
@@ -98,10 +104,12 @@ export default function MobileMotionMenu({
   description = "",
   headerContent = null,
   searchContent = null,
+  filtersContent = null,
   items = [],
 }) {
   const shouldReduceMotion = useReducedMotion();
   const panelRef = useRef(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -203,6 +211,24 @@ export default function MobileMotionMenu({
               {searchContent ? (
                 <motion.div variants={activeItemVariants} className="mobile-nav-sheet__search">
                   {searchContent}
+                </motion.div>
+              ) : null}
+              {filtersContent ? (
+                <motion.div variants={activeItemVariants} className="mobile-nav-sheet__filters">
+                  <button
+                    type="button"
+                    className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
+                    aria-expanded={filtersOpen}
+                    onClick={() => setFiltersOpen((current) => !current)}
+                  >
+                    <span>Filtros</span>
+                    <span aria-hidden="true">{filtersOpen ? "−" : "+"}</span>
+                  </button>
+                  {filtersOpen ? (
+                    <div className="mobile-motion-menu__accordion-body">
+                      {filtersContent}
+                    </div>
+                  ) : null}
                 </motion.div>
               ) : null}
               {items.map((item) => (

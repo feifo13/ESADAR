@@ -2,27 +2,20 @@ import { useMemo, useState } from 'react';
 import SmartImage from './SmartImage.jsx';
 import { resolveAssetUrl } from '../lib/api.js';
 
-const LENS_SIZE = 138;
-const ZOOM_SCALE = 2.7;
+const ZOOM_SCALE = 1.9;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
 export default function ProductImageZoom({ image, title, onOpen }) {
-  const [hoverState, setHoverState] = useState({
-    active: false,
-    xPercent: 50,
-    yPercent: 50,
-    lensLeft: 0,
-    lensTop: 0,
-  });
+  const [zoomState, setZoomState] = useState({ active: false, xPercent: 50, yPercent: 50 });
   const mainImage = image?.src || image?.zoomSrc || image?.thumbSrc || '';
   const zoomImage = image?.zoomSrc || image?.src || image?.thumbSrc || '';
-  const backgroundImage = useMemo(() => resolveAssetUrl(zoomImage), [zoomImage]);
+  const resolvedZoomImage = useMemo(() => resolveAssetUrl(zoomImage), [zoomImage]);
 
   function handlePointerMove(event) {
-    if (window.innerWidth < 960 || !backgroundImage) return;
+    if (window.innerWidth < 960 || !resolvedZoomImage) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const localX = clamp(event.clientX - rect.left, 0, rect.width);
@@ -30,25 +23,19 @@ export default function ProductImageZoom({ image, title, onOpen }) {
     const xPercent = rect.width ? (localX / rect.width) * 100 : 50;
     const yPercent = rect.height ? (localY / rect.height) * 100 : 50;
 
-    setHoverState({
-      active: true,
-      xPercent,
-      yPercent,
-      lensLeft: clamp(localX - LENS_SIZE / 2, 0, Math.max(0, rect.width - LENS_SIZE)),
-      lensTop: clamp(localY - LENS_SIZE / 2, 0, Math.max(0, rect.height - LENS_SIZE)),
-    });
+    setZoomState({ active: true, xPercent, yPercent });
   }
 
   return (
     <div
-      className="product-zoom-shell"
+      className={zoomState.active ? 'product-zoom-shell is-zooming' : 'product-zoom-shell'}
       onMouseMove={handlePointerMove}
       onMouseEnter={() => {
-        if (window.innerWidth >= 960 && backgroundImage) {
-          setHoverState((current) => ({ ...current, active: true }));
+        if (window.innerWidth >= 960 && resolvedZoomImage) {
+          setZoomState((current) => ({ ...current, active: true }));
         }
       }}
-      onMouseLeave={() => setHoverState((current) => ({ ...current, active: false }))}
+      onMouseLeave={() => setZoomState((current) => ({ ...current, active: false }))}
     >
       <button
         type="button"
@@ -64,36 +51,11 @@ export default function ProductImageZoom({ image, title, onOpen }) {
           sources={image?.sources || []}
           loading="eager"
           fetchPriority="high"
+          style={zoomState.active ? {
+            transform: `scale(${ZOOM_SCALE})`,
+            transformOrigin: `${zoomState.xPercent}% ${zoomState.yPercent}%`,
+          } : undefined}
         />
-
-        {hoverState.active && backgroundImage ? (
-          <>
-            <span
-              className="product-zoom-main__lens"
-              style={{
-                width: `${LENS_SIZE}px`,
-                height: `${LENS_SIZE}px`,
-                left: `${hoverState.lensLeft}px`,
-                top: `${hoverState.lensTop}px`,
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundPosition: `${hoverState.xPercent}% ${hoverState.yPercent}%`,
-                backgroundSize: `${ZOOM_SCALE * 100}%`,
-              }}
-            >
-              <span className="product-zoom-main__lens-core" />
-            </span>
-
-            <span
-              className="product-zoom-pane"
-              aria-hidden="true"
-              style={{
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundPosition: `${hoverState.xPercent}% ${hoverState.yPercent}%`,
-                backgroundSize: `${ZOOM_SCALE * 100}%`,
-              }}
-            />
-          </>
-        ) : null}
       </button>
     </div>
   );

@@ -28,7 +28,7 @@ function areFiltersEqual(left, right) {
   return FILTER_KEYS.every((key) => left?.[key] === right?.[key]);
 }
 
-export default function ArticleFilters({ value, onChange }) {
+export default function ArticleFilters({ value, onChange, idPrefix = "filter" }) {
   const filters = useMemo(
     () => normalizeFilters(value),
     [
@@ -72,11 +72,11 @@ export default function ArticleFilters({ value, onChange }) {
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor="filter-category">
+        <label className="field-label" htmlFor={`${idPrefix}-category`}>
           Categoria
         </label>
         <select
-          id="filter-category"
+          id={`${idPrefix}-category`}
           className="input"
           value={draftFilters.categoryId}
           onChange={(event) => updateField("categoryId", event.target.value)}
@@ -91,11 +91,11 @@ export default function ArticleFilters({ value, onChange }) {
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor="filter-brand">
+        <label className="field-label" htmlFor={`${idPrefix}-brand`}>
           Marca
         </label>
         <select
-          id="filter-brand"
+          id={`${idPrefix}-brand`}
           className="input"
           value={draftFilters.brandId}
           onChange={(event) => updateField("brandId", event.target.value)}
@@ -110,11 +110,11 @@ export default function ArticleFilters({ value, onChange }) {
       </div>
 
       <div className="filters-sidebar-group">
-        <label className="field-label" htmlFor="filter-size">
+        <label className="field-label" htmlFor={`${idPrefix}-size`}>
           Talle
         </label>
         <select
-          id="filter-size"
+          id={`${idPrefix}-size`}
           className="input"
           value={draftFilters.sizeId}
           onChange={(event) => updateField("sizeId", event.target.value)}

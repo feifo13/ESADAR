@@ -5,9 +5,10 @@ export default function AdminPagination({
   loading,
   onPrevious,
   onNext,
+  className = "",
 }) {
   return (
-    <div className="pagination-row">
+    <div className={["pagination-row", className].filter(Boolean).join(" ")}>
       <span className="muted-copy">
         Pagina {page} de {totalPages} - {totalItems} registros
       </span>

@@ -283,6 +283,20 @@ export default function AdminOrdersPage() {
         {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
+        <AdminPagination
+          className="pagination-row--top"
+          page={Number(filters.page || 1)}
+          totalPages={totalPages}
+          totalItems={Number(pagination.total || 0)}
+          loading={loading}
+          onPrevious={() =>
+            changePage(Math.max(1, Number(filters.page || 1) - 1))
+          }
+          onNext={() =>
+            changePage(Math.min(totalPages, Number(filters.page || 1) + 1))
+          }
+        />
+
         {!loading ? (
           <div className="table-shell">
             <table className="data-table">
