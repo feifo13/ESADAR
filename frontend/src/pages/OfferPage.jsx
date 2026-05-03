@@ -304,7 +304,7 @@ export default function OfferPage() {
               />
             </label>
 
-            <label className="field-group">
+            {/* <label className="field-group">
               <span>Mensaje</span>
               <textarea
                 className="input textarea"
@@ -313,7 +313,7 @@ export default function OfferPage() {
                 placeholder="Cuentanos si quieres coordinar por algun canal o dejar un comentario."
                 required
               />
-            </label>
+            </label> */}
 
             <div className="detail-actions detail-actions--stacked">
               <button
