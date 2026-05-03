@@ -3,8 +3,61 @@ import { useLocation } from 'react-router-dom';
 
 function normalizeHeaderLabel(label) {
   return String(label || '')
+    .replace(/[↑↓↕⌃⌄]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+const ACTION_ICON_MAP = [
+  [/^(ver|abrir|detalle|detalles|ver detalle|ver orden|ver prenda|ver compra)$/i, '👁'],
+  [/(editar|modificar)/i, '✎'],
+  [/(eliminar|borrar|quitar|remover|sacar)/i, '×'],
+  [/(cancelar|rechazar|anular)/i, '⊘'],
+  [/(aprobar|confirmar|activar|marcar|guardar|aplicar)/i, '✓'],
+  [/(pagar|pago|cobrar)/i, '$'],
+  [/(reenviar|enviar|responder)/i, '➜'],
+  [/(duplicar|copiar)/i, '⧉'],
+  [/(descargar|exportar)/i, '↓'],
+  [/(subir|importar)/i, '↑'],
+  [/(historial|auditoria|logs?)/i, '◷'],
+  [/(stock|inventario)/i, '#'],
+];
+
+function getActionIcon(label) {
+  const normalized = String(label || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized) return '';
+  const match = ACTION_ICON_MAP.find(([pattern]) => pattern.test(normalized));
+  return match?.[1] || '•';
+}
+
+function iconizeTableActions(row) {
+  Array.from(row.querySelectorAll('td button, td a')).forEach((control) => {
+    const label = (
+      control.getAttribute('aria-label') ||
+      control.getAttribute('title') ||
+      control.textContent ||
+      ''
+    ).replace(/\s+/g, ' ').trim();
+
+    if (!label) return;
+
+    const icon = getActionIcon(label);
+    if (!icon) return;
+
+    control.classList.add('table-action-iconized');
+    control.setAttribute('data-mobile-icon', icon);
+    control.setAttribute('data-mobile-label', label);
+
+    if (!control.getAttribute('aria-label')) {
+      control.setAttribute('aria-label', label);
+    }
+    if (!control.getAttribute('title')) {
+      control.setAttribute('title', label);
+    }
+  });
 }
 
 function applyLabelsToTable(table) {
@@ -22,6 +75,8 @@ function applyLabelsToTable(table) {
       const label = headers[index];
       if (label) cell.setAttribute('data-label', label);
     });
+
+    iconizeTableActions(row);
   });
 
   table.dataset.responsiveLabelsApplied = 'true';

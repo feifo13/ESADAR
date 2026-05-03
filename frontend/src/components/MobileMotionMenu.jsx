@@ -222,10 +222,22 @@ export default function MobileMotionMenu({
                     onClick={() => setFiltersOpen((current) => !current)}
                   >
                     <span>Filtros</span>
-                    <span aria-hidden="true">{filtersOpen ? "−" : "+"}</span>
+                    <span className="mobile-motion-menu__accordion-indicator" aria-hidden="true">
+                      {filtersOpen ? "⌃" : "⌄"}
+                    </span>
                   </button>
                   {filtersOpen ? (
-                    <div className="mobile-motion-menu__accordion-body">
+                    <div
+                      className="mobile-motion-menu__accordion-body"
+                      onClickCapture={(event) => {
+                        const actionButton = event.target.closest?.('button');
+                        if (!actionButton) return;
+                        const actionLabel = actionButton.textContent?.trim().toLowerCase() || '';
+                        if (actionLabel.includes('aplicar filtros') || actionLabel.includes('limpiar')) {
+                          window.setTimeout(() => setFiltersOpen(false), 0);
+                        }
+                      }}
+                    >
                       {filtersContent}
                     </div>
                   ) : null}

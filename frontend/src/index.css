@@ -10232,3 +10232,139 @@ textarea,
 .article-info-accordion > summary {
   border-radius: 0 !important;
 }
+
+/* ESADAR pass 5: mobile menu, pricing, tables and alignment refinements */
+.detail-pricing--hero {
+  border-radius: 0 !important;
+  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left !important;
+}
+
+.detail-pricing--hero .price-current-large {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 0 !important;
+  text-align: left !important;
+}
+
+.mobile-motion-menu__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.mobile-nav-sheet__links {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.mobile-motion-menu__accordion-trigger {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between !important;
+  gap: 14px;
+  padding-right: 14px !important;
+}
+
+.mobile-motion-menu__accordion-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  margin-left: auto;
+  border-left: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.mobile-motion-menu__accordion-body .filters-sidebar-head,
+.mobile-motion-menu__accordion-body .field-label {
+  display: none !important;
+}
+
+.mobile-motion-menu__accordion-body .filters-sidebar {
+  gap: 10px;
+}
+
+.mobile-motion-menu__accordion-body .filters-sidebar-group {
+  margin: 0;
+}
+
+.mobile-motion-menu__accordion-body .filters-sidebar-checks {
+  margin-top: 2px;
+}
+
+@media (max-width: 780px) {
+  .article-page-shell .detail-meta-list div,
+  .offer-page .detail-meta-list div,
+  .detail-meta-list div {
+    align-items: flex-start !important;
+  }
+
+  .catalog-summary-row {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+  }
+
+  .sortable-th-button__indicator {
+    display: none !important;
+  }
+
+  .data-table .table-actions,
+  .data-table .inline-action-group,
+  .data-table td:has(.table-action-iconized) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .data-table td:has(.table-action-iconized)::before {
+    flex: 0 0 min(92px, 34%);
+  }
+
+  .data-table .table-action-iconized {
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .data-table .table-action-iconized::before {
+    content: attr(data-mobile-icon);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .data-table .table-action-iconized svg {
+    width: 18px;
+    height: 18px;
+  }
+}
