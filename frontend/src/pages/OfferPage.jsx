@@ -345,7 +345,7 @@ export default function OfferPage() {
         </div>
       </section>
 
-      <section className="page-stack">
+      <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
         <div className="section-heading">
           <div>
             <p className="section-kicker">Tambien permiten oferta</p>
@@ -353,7 +353,7 @@ export default function OfferPage() {
           </div>
         </div>
 
-        <div className="article-grid">
+        <div className="article-grid article-horizontal-card-track">
           {related.map((item) => (
             <ArticleCard
               key={item.id}

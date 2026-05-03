@@ -457,7 +457,7 @@ export default function ArticlePage() {
         </section>
 
         {relatedState.items.length ? (
-          <section className="page-stack">
+          <section className="page-stack article-related-scroll-section">
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Relacionados</p>
@@ -470,7 +470,7 @@ export default function ArticlePage() {
               </div>
             </div>
 
-            <div className="related-articles-track">
+            <div className="related-articles-track article-horizontal-card-track">
               {relatedState.items.map((item) => (
                 <div key={item.id} className="related-articles-track__item">
                   <ArticleCard article={item} view="grid" variant="default" />
