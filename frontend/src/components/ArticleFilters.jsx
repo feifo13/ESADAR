@@ -28,7 +28,7 @@ function areFiltersEqual(left, right) {
   return FILTER_KEYS.every((key) => left?.[key] === right?.[key]);
 }
 
-export default function ArticleFilters({ value, onChange, idPrefix = "filter" }) {
+export default function ArticleFilters({ value, onChange, onApplied, idPrefix = "filter" }) {
   const filters = useMemo(
     () => normalizeFilters(value),
     [
@@ -61,6 +61,7 @@ export default function ArticleFilters({ value, onChange, idPrefix = "filter" })
     const nextFilters = { ...defaultFilters };
     setDraftFilters(nextFilters);
     onChange(nextFilters);
+    onApplied?.(nextFilters);
   }
 
   return (
@@ -69,6 +70,37 @@ export default function ArticleFilters({ value, onChange, idPrefix = "filter" })
         <div className="page-stack-sm">
           <p className="section-kicker">Filtros</p>
         </div>
+      </div>
+
+      <div className="filters-sidebar-group">
+        <label className="field-label" htmlFor={`${idPrefix}-search`}>
+          Busqueda
+        </label>
+        <input
+          id={`${idPrefix}-search`}
+          className="input"
+          type="search"
+          value={draftFilters.search}
+          onChange={(event) => updateField("search", event.target.value)}
+          placeholder="Titulo, marca o categoria"
+        />
+      </div>
+
+      <div className="filters-sidebar-group">
+        <label className="field-label" htmlFor={`${idPrefix}-sort`}>
+          Orden
+        </label>
+        <select
+          id={`${idPrefix}-sort`}
+          className="input"
+          value={draftFilters.sort}
+          onChange={(event) => updateField("sort", event.target.value)}
+        >
+          <option value="intake_desc">Ingreso mas reciente</option>
+          <option value="intake_asc">Ingreso mas antiguo</option>
+          <option value="price_asc">Precio menor a mayor</option>
+          <option value="price_desc">Precio mayor a menor</option>
+        </select>
       </div>
 
       <div className="filters-sidebar-group">
@@ -168,9 +200,12 @@ export default function ArticleFilters({ value, onChange, idPrefix = "filter" })
         <button
           type="button"
           className="button button-primary"
-          onClick={() => onChange(draftFilters)}
+          onClick={() => {
+            onChange(draftFilters);
+            onApplied?.(draftFilters);
+          }}
         >
-          Aplicar
+          Aplicar filtros
         </button>
         <button
           type="button"

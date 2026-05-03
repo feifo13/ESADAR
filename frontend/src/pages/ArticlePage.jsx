@@ -315,15 +315,18 @@ export default function ArticlePage() {
             </div>
 
             <div className="section-card page-stack-sm article-side-note">
-              <div>
-                <p className="section-kicker">Como comprar</p>
+              <details className="article-info-accordion">
+                <summary>
+                  <span className="section-kicker">Como comprar</span>
+                  <span aria-hidden="true">+</span>
+                </summary>
                 <ol className="article-steps-list">
                   <li>Agregas la prenda al carrito.</li>
                   <li>Completas tus datos.</li>
                   <li>Elegis pago y envio.</li>
                   <li>Confirmamos tu orden.</li>
                 </ol>
-              </div>
+              </details>
               <div>
                 <p className="section-kicker">Medidas reales</p>
                 <p className="muted-copy">{article.measurementsText || 'Si quieres una medida adicional, escribenos por contacto o Instagram.'}</p>

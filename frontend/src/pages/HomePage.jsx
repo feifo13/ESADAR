@@ -69,6 +69,7 @@ export default function HomePage() {
     useLookups();
   const { site, pagesByRoute } = useSiteSeo();
   const [filters, setFilters] = useState(initialFilters);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [featuredItems, setFeaturedItems] = useState([]);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({
@@ -144,7 +145,8 @@ export default function HomePage() {
     () => (
       <ArticleFilters
         value={filters}
-        onChange={applyFilters}
+        onChange={applyMobileFilters}
+        onApplied={() => setMobileFiltersOpen(false)}
         idPrefix="mobile-filter"
       />
     ),
@@ -268,6 +270,11 @@ export default function HomePage() {
     setItems([]);
     setPage(1);
     setFilters(nextFilters);
+  }
+
+  function applyMobileFilters(nextFilters) {
+    applyFilters(nextFilters);
+    setMobileFiltersOpen(false);
   }
 
   function updateFilterField(name, nextValue) {
@@ -455,6 +462,46 @@ export default function HomePage() {
           </select>
 
         </div>
+      </section>
+
+      <section className="mobile-catalog-filter-shell container" aria-label="Filtros del catalogo">
+        <button
+          type="button"
+          className="mobile-catalog-filter-trigger"
+          aria-expanded={mobileFiltersOpen}
+          onClick={() => setMobileFiltersOpen((current) => !current)}
+        >
+          <span>Filtros</span>
+          <strong>{activeFilterChips.length ? `${activeFilterChips.length} activos` : "Buscar y filtrar"}</strong>
+          <span aria-hidden="true">{mobileFiltersOpen ? "−" : "+"}</span>
+        </button>
+
+        {mobileFiltersOpen ? (
+          <div className="mobile-catalog-filter-body">
+            <ArticleFilters
+              value={filters}
+              onChange={applyMobileFilters}
+              onApplied={() => setMobileFiltersOpen(false)}
+              idPrefix="mobile-inline-filter"
+            />
+          </div>
+        ) : null}
+
+        {activeFilterChips.length ? (
+          <div className="active-filters-row active-filters-row--mobile-sticky" aria-label="Filtros activos">
+            {activeFilterChips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                className="active-filter-chip"
+                onClick={() => removeFilterChip(chip.key)}
+              >
+                {chip.label}
+                <span aria-hidden="true">×</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section

@@ -328,23 +328,20 @@ export default function Header({ hideBrand = false }) {
           </Link>
 
           <div className="header-actions header-actions--ordered header-actions--desktop">
-            <NavLink to="/articles" className="ghost-button linklike header-link-button">
-              Catalogo
-            </NavLink>
             {isAuthenticated ? (
               <>
                 <span className="user-greeting">Hola, {user?.firstName || ""}</span>
-                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
                 {renderIconNavLink("/cuenta/perfil", "Mi cuenta", <AccountIcon />)}
                 {isAdmin ? renderIconNavLink("/admin/articles", "Admin", <AdminIcon />) : null}
+                {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
                 {renderCartButton(desktopCartButtonRef)}
                 {renderIconButton(logout, "Salir", <LogoutIcon />)}
               </>
             ) : (
               <>
+                {renderIconNavLink("/login", "Ingresar", <LoginIcon />)}
                 {renderIconNavLink("/cuenta/guardados", "Guardados", <HeartIcon />)}
                 {renderCartButton(desktopCartButtonRef)}
-                {renderIconNavLink("/login", "Ingresar", <LoginIcon />)}
               </>
             )}
           </div>

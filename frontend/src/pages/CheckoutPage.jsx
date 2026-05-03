@@ -466,6 +466,32 @@ export default function CheckoutPage() {
             <p className="muted-copy checkout-shell-copy">Paso {currentStepIndex + 1} de {steps.length}</p>
           </div>
 
+          <div className="checkout-steps-row" aria-label="Pasos de compra">
+            {steps.map((step, index) => {
+              const isCurrent = index === currentStepIndex;
+              const isAllowed = index <= maxAllowedStepIndex;
+              const isComplete = completion[step.key] && index < currentStepIndex;
+
+              return (
+                <button
+                  key={step.key}
+                  type="button"
+                  className={[
+                    "checkout-step-pill",
+                    isCurrent ? "is-current" : "",
+                    isComplete ? "is-complete" : "",
+                  ].filter(Boolean).join(" ")}
+                  disabled={!isAllowed || submitting}
+                  onClick={() => goToStep(index)}
+                  aria-current={isCurrent ? "step" : undefined}
+                >
+                  <span>{step.kicker}</span>
+                  <strong>{step.label}</strong>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="checkout-steps-row checkout-steps-row--single">
             <div className="checkout-step-current-card" aria-live="polite">
               <span>{currentStep.kicker} · {currentStepIndex + 1} de {steps.length}</span>
