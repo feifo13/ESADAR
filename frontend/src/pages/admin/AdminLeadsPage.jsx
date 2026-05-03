@@ -4,6 +4,7 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import SurfaceModal from "../../components/SurfaceModal.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
@@ -87,6 +88,7 @@ export default function AdminLeadsPage() {
     adminNotes: "",
   });
   const [savingStatus, setSavingStatus] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
@@ -121,17 +123,6 @@ export default function AdminLeadsPage() {
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
 
-        if (!nextItems.length) {
-          setSelectedLeadId(null);
-          return;
-        }
-
-        if (
-          !selectedLeadId ||
-          !nextItems.some((item) => Number(item.id) === Number(selectedLeadId))
-        ) {
-          setSelectedLeadId(nextItems[0].id);
-        }
       } catch (err) {
         if (!ignore) setError(err.message || "No se pudieron cargar los leads");
       } finally {
@@ -384,277 +375,210 @@ export default function AdminLeadsPage() {
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         {!loading ? (
-          <div className="admin-detail-grid">
-            <div className="admin-list">
-              {items.map((lead) => {
-                const preferenceTags = formatPreferences(lead.preferences);
-                const isSelected = Number(lead.id) === Number(selectedLeadId);
-
-                return (
-                  <article
-                    key={lead.id}
-                    className={`admin-row-card admin-row-card-wide admin-row-card-selectable${isSelected ? " admin-row-card-selected" : ""}`}
-                    onClick={() => setSelectedLeadId(lead.id)}
-                  >
-                    <div className="admin-avatar-badge">
-                      <strong>
-                        {String(lead.firstName || "L")
-                          .slice(0, 1)
-                          .toUpperCase()}
-                      </strong>
-                    </div>
-
-                    <div className="page-stack stack-gap-xs">
-                      <div>
-                        <p className="eyebrow">{formatSource(lead.source)}</p>
-                        <h3>
-                          {lead.firstName} {lead.lastName}
-                        </h3>
-                      </div>
-                      <p className="muted-copy">{renderContact(lead)}</p>
-                      <p className="muted-copy">
-                        Alta: {formatDate(lead.createdAt)} · Alertas activas:{" "}
-                        {lead.activeAlertsCount} · Guardados:{" "}
-                        {lead.wishlistItemsCount}
-                      </p>
-                      {preferenceTags.length ? (
-                        <div className="preference-chip-list">
-                          {preferenceTags.slice(0, 4).map((item) => (
-                            <span
-                              key={`${lead.id}-${item}`}
-                              className="preference-chip"
-                            >
-                              {item}
-                            </span>
-                          ))}
+          items.length ? (
+            <div className="table-shell admin-table-shell">
+              <table className="data-table admin-leads-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Contacto</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Alta</th>
+                    <th>Alertas</th>
+                    <th>Guardados</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((lead) => (
+                    <tr key={lead.id}>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{lead.firstName} {lead.lastName}</strong>
+                          <span className="muted-copy">#{lead.id}</span>
                         </div>
-                      ) : null}
-                    </div>
-
-                    <div className="admin-row-actions">
-                      <StatusBadge
-                        status={lead.leadStatus}
-                        labels={LEAD_STATUS_LABELS}
-                      />
-                      <button
-                        type="button"
-                        className="button button-secondary"
-                        onClick={() => setSelectedLeadId(lead.id)}
-                      >
-                        Ver detalle
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-
-              {!items.length ? (
-                <div className="centered-card nested-card">
-                  <p className="muted-copy">
-                    No hay leads para los filtros seleccionados.
-                  </p>
-                </div>
-              ) : null}
+                      </td>
+                      <td>{renderContact(lead)}</td>
+                      <td>{formatSource(lead.source)}</td>
+                      <td>
+                        <StatusBadge
+                          status={lead.leadStatus}
+                          labels={LEAD_STATUS_LABELS}
+                        />
+                      </td>
+                      <td>{formatDate(lead.createdAt)}</td>
+                      <td>{lead.activeAlertsCount || 0}</td>
+                      <td>{lead.wishlistItemsCount || 0}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            className="button button-secondary button-compact"
+                            onClick={() => {
+                              setSelectedLeadId(lead.id);
+                              setDetailModalOpen(true);
+                            }}
+                          >
+                            Detalles
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            <aside className="section-card nested-card admin-detail-panel">
-              {!selectedLeadId ? (
-                <div className="centered-card">
-                  <p className="muted-copy">
-                    Selecciona un lead para ver preferencias, alertas y notas.
-                  </p>
-                </div>
-              ) : detailLoading ? (
-                <div className="centered-card">
-                  <p className="muted-copy">Cargando detalle...</p>
-                </div>
-              ) : detailError ? (
-                <div className="centered-card">
-                  <p className="error-copy">{detailError}</p>
-                </div>
-              ) : selectedLead ? (
-                <div className="page-stack">
-                  <div className="section-heading section-heading-wrap">
-                    <div>
-                      <p className="section-kicker">Detalle</p>
-                      <h2>
-                        {selectedLead.firstName} {selectedLead.lastName}
-                      </h2>
-                    </div>
-                    <StatusBadge
-                      status={selectedLead.leadStatus}
-                      labels={LEAD_STATUS_LABELS}
-                    />
-                  </div>
-
-                  <div className="admin-detail-meta">
-                    <p className="summary-line">
-                      <span>Origen</span>
-                      <strong>{formatSource(selectedLead.source)}</strong>
-                    </p>
-                    <p className="summary-line">
-                      <span>Email</span>
-                      <strong>{selectedLead.email || "Sin email"}</strong>
-                    </p>
-                    <p className="summary-line">
-                      <span>WhatsApp</span>
-                      <strong>{selectedLead.phone || "Sin telefono"}</strong>
-                    </p>
-                    <p className="summary-line">
-                      <span>Instagram</span>
-                      <strong>
-                        {selectedLead.instagram || "Sin Instagram"}
-                      </strong>
-                    </p>
-                    <p className="summary-line">
-                      <span>Alta</span>
-                      <strong>{formatDate(selectedLead.createdAt)}</strong>
-                    </p>
-                    <p className="summary-line">
-                      <span>Actualizacion</span>
-                      <strong>{formatDate(selectedLead.updatedAt)}</strong>
-                    </p>
-                  </div>
-
-                  <div className="page-stack stack-gap-sm">
-                    <div>
-                      <p className="section-kicker">Preferencias</p>
-                      <div className="preference-chip-list">
-                        {formatPreferences(selectedLead.preferences).length ? (
-                          formatPreferences(selectedLead.preferences).map(
-                            (item) => (
-                              <span
-                                key={`${selectedLead.id}-${item}`}
-                                className="preference-chip"
-                              >
-                                {item}
-                              </span>
-                            ),
-                          )
-                        ) : (
-                          <span className="muted-copy">
-                            Sin preferencias guardadas.
-                          </span>
-                        )}
-                      </div>
-                      {selectedLead.preferences?.notes ? (
-                        <p className="muted-copy admin-detail-note">
-                          {selectedLead.preferences.notes}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <p className="section-kicker">Alertas</p>
-                      <div className="alert-list">
-                        {(selectedLead.alerts || []).length ? (
-                          selectedLead.alerts.map((alert) => (
-                            <div key={alert.id} className="history-row">
-                              <div className="table-actions table-actions-spread">
-                                <strong>{alert.alertType}</strong>
-                                <StatusBadge
-                                  status={alert.status}
-                                  labels={ALERT_STATUS_LABELS}
-                                />
-                              </div>
-                              <span>
-                                {alert.articleTitle || "Sin articulo asociado"}
-                              </span>
-                              {alert.articleSlug ? (
-                                <Link
-                                  to={articlePath({
-                                    slug: alert.articleSlug,
-                                    articleId: alert.articleId,
-                                  })}
-                                  className="muted-copy"
-                                >
-                                  Ver articulo publico
-                                </Link>
-                              ) : null}
-                              <span>{formatDate(alert.createdAt)}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="muted-copy">Sin alertas asociadas.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="section-kicker">Wishlists</p>
-                      <div className="wishlist-summary">
-                        {(selectedLead.wishlists || []).length ? (
-                          selectedLead.wishlists.map((wishlist) => (
-                            <div key={wishlist.id} className="history-row">
-                              <strong>Wishlist #{wishlist.id}</strong>
-                              <span>
-                                {wishlist.itemCount} prendas guardadas
-                              </span>
-                              <span>
-                                {wishlist.sessionToken || "Sin session token"}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="muted-copy">Sin listas guardadas.</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <form className="page-stack" onSubmit={handleStatusSubmit}>
-                    <p className="section-kicker">Seguimiento interno</p>
-
-                    <label className="field-group">
-                      <span>Estado</span>
-                      <select
-                        className="input"
-                        value={statusForm.leadStatus}
-                        onChange={(event) =>
-                          setStatusForm((current) => ({
-                            ...current,
-                            leadStatus: event.target.value,
-                          }))
-                        }
-                      >
-                        {Object.entries(LEAD_STATUS_LABELS).map(
-                          ([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </label>
-
-                    <label className="field-group">
-                      <span>Notas administrativas</span>
-                      <textarea
-                        className="input textarea"
-                        value={statusForm.adminNotes}
-                        onChange={(event) =>
-                          setStatusForm((current) => ({
-                            ...current,
-                            adminNotes: event.target.value,
-                          }))
-                        }
-                        placeholder="Observaciones, proximo paso o contexto comercial."
-                      />
-                    </label>
-
-                    <button
-                      type="submit"
-                      className="button button-primary"
-                      disabled={savingStatus}
-                    >
-                      {savingStatus ? "Guardando..." : "Guardar seguimiento"}
-                    </button>
-                  </form>
-                </div>
-              ) : null}
-            </aside>
-          </div>
+          ) : (
+            <div className="centered-card nested-card">
+              <p className="muted-copy">
+                No hay leads para los filtros seleccionados.
+              </p>
+            </div>
+          )
         ) : null}
+
+        <SurfaceModal
+          open={detailModalOpen}
+          onClose={() => setDetailModalOpen(false)}
+          title="Detalle del lead"
+          description="Datos de contacto, preferencias, alertas y seguimiento interno."
+          wide
+        >
+          {!selectedLeadId ? (
+            <p className="muted-copy">Selecciona un lead para ver detalles.</p>
+          ) : detailLoading ? (
+            <div className="centered-card">
+              <p className="muted-copy">Cargando detalle...</p>
+            </div>
+          ) : detailError ? (
+            <div className="centered-card">
+              <p className="error-copy">{detailError}</p>
+            </div>
+          ) : selectedLead ? (
+            <div className="page-stack">
+              <div className="section-heading section-heading-wrap">
+                <div>
+                  <p className="section-kicker">Lead</p>
+                  <h2>{selectedLead.firstName} {selectedLead.lastName}</h2>
+                </div>
+                <StatusBadge
+                  status={selectedLead.leadStatus}
+                  labels={LEAD_STATUS_LABELS}
+                />
+              </div>
+
+              <div className="admin-detail-meta admin-detail-meta--grid">
+                <p className="summary-line"><span>Origen</span><strong>{formatSource(selectedLead.source)}</strong></p>
+                <p className="summary-line"><span>Email</span><strong>{selectedLead.email || "Sin email"}</strong></p>
+                <p className="summary-line"><span>WhatsApp</span><strong>{selectedLead.phone || "Sin telefono"}</strong></p>
+                <p className="summary-line"><span>Instagram</span><strong>{selectedLead.instagram || "Sin Instagram"}</strong></p>
+                <p className="summary-line"><span>Alta</span><strong>{formatDate(selectedLead.createdAt)}</strong></p>
+                <p className="summary-line"><span>Actualizacion</span><strong>{formatDate(selectedLead.updatedAt)}</strong></p>
+              </div>
+
+              <div className="page-stack stack-gap-sm">
+                <div>
+                  <p className="section-kicker">Preferencias</p>
+                  <div className="preference-chip-list">
+                    {formatPreferences(selectedLead.preferences).length ? (
+                      formatPreferences(selectedLead.preferences).map((item) => (
+                        <span key={`${selectedLead.id}-${item}`} className="preference-chip">
+                          {item}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="muted-copy">Sin preferencias guardadas.</span>
+                    )}
+                  </div>
+                  {selectedLead.preferences?.notes ? (
+                    <p className="muted-copy admin-detail-note">{selectedLead.preferences.notes}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <p className="section-kicker">Alertas</p>
+                  <div className="alert-list">
+                    {(selectedLead.alerts || []).length ? (
+                      selectedLead.alerts.map((alert) => (
+                        <div key={alert.id} className="history-row">
+                          <div className="table-actions table-actions-spread">
+                            <strong>{alert.alertType}</strong>
+                            <StatusBadge status={alert.status} labels={ALERT_STATUS_LABELS} />
+                          </div>
+                          <span>{alert.articleTitle || "Sin articulo asociado"}</span>
+                          {alert.articleSlug ? (
+                            <Link
+                              to={articlePath({ slug: alert.articleSlug, articleId: alert.articleId })}
+                              className="muted-copy"
+                            >
+                              Ver articulo publico
+                            </Link>
+                          ) : null}
+                          <span>{formatDate(alert.createdAt)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="muted-copy">Sin alertas asociadas.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="section-kicker">Wishlists</p>
+                  <div className="wishlist-summary">
+                    {(selectedLead.wishlists || []).length ? (
+                      selectedLead.wishlists.map((wishlist) => (
+                        <div key={wishlist.id} className="history-row">
+                          <strong>Wishlist #{wishlist.id}</strong>
+                          <span>{wishlist.itemCount} prendas guardadas</span>
+                          <span>{wishlist.sessionToken || "Sin session token"}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="muted-copy">Sin listas guardadas.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <form className="page-stack" onSubmit={handleStatusSubmit}>
+                <p className="section-kicker">Seguimiento interno</p>
+
+                <label className="field-group">
+                  <span>Estado</span>
+                  <select
+                    className="input"
+                    value={statusForm.leadStatus}
+                    onChange={(event) =>
+                      setStatusForm((current) => ({ ...current, leadStatus: event.target.value }))
+                    }
+                  >
+                    {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="field-group">
+                  <span>Notas administrativas</span>
+                  <textarea
+                    className="input textarea"
+                    value={statusForm.adminNotes}
+                    onChange={(event) =>
+                      setStatusForm((current) => ({ ...current, adminNotes: event.target.value }))
+                    }
+                    placeholder="Observaciones, proximo paso o contexto comercial."
+                  />
+                </label>
+
+                <button type="submit" className="button button-primary" disabled={savingStatus}>
+                  {savingStatus ? "Guardando..." : "Guardar seguimiento"}
+                </button>
+              </form>
+            </div>
+          ) : null}
+        </SurfaceModal>
 
         <AdminPagination
           page={Number(filters.page || 1)}

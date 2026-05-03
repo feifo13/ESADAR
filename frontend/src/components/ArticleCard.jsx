@@ -107,7 +107,7 @@ export default function ArticleCard({ article, view = 'grid', variant = 'default
   return (
     <article className={cn('article-card', 'article-card--catalog', view === 'list' && 'article-card-list', isSoldOut && 'article-card--sold-out')}>
       <div className="article-card-media-wrap">
-        <Link className="article-card-media article-card-media--catalog" to={detailPath}>
+        <Link className="article-card-media article-card-media--catalog" to={detailPath} aria-label={`Ver ${article.title}`}>
           {isSoldOut ? <span className="article-card-ribbon">Agotado</span> : null}
           {!isSoldOut && showOfferRibbon ? <span className="article-card-ribbon article-card-ribbon--offerable">Acepta ofertas</span> : null}
           <SmartImage
@@ -122,7 +122,7 @@ export default function ArticleCard({ article, view = 'grid', variant = 'default
         <WishlistHeartButton
           active={saved}
           pending={pending}
-          className="article-card-heart article-card-heart--bare"
+          className="article-card-heart"
           labelActive="Quitar de guardados"
           labelInactive="Guardar articulo"
           onToggle={() => void toggleItem(article, optimisticWishlistItem)}
@@ -138,17 +138,8 @@ export default function ArticleCard({ article, view = 'grid', variant = 'default
           {isSoldOut ? <span className="pill pill-soldout">Agotado</span> : null}
         </div>
 
-        <div className="article-card-copy">
-          <p className="eyebrow">{categoryName}{brandName ? ` · ${brandName}` : ''}</p>
-          <Link to={detailPath} className="article-card-title">
-            {article.title}
-          </Link>
-          <p className="article-card-meta">{sizeLabel}</p>
-          {conditionLabel || colorLabel || materialLabel ? (
-            <p className="article-card-detail-line">
-              {[conditionLabel, colorLabel, materialLabel].filter(Boolean).join(' · ')}
-            </p>
-          ) : null}
+        <div className="article-card-copy article-card-copy--minimal">
+          <h3 className="article-card-title article-card-title--plain">{article.title}</h3>
         </div>
 
         <div className="article-card-pricebox">

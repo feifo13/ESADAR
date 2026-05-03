@@ -7,7 +7,7 @@ import SmartImage from "../../components/SmartImage.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
-import { formatCurrency } from "../../lib/format.js";
+import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
 
 const ARTICLE_STATUS_LABELS = {
@@ -650,93 +650,91 @@ export default function AdminArticlesPage() {
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         {!loading ? (
-          <div className="admin-list">
-            {items.map((article) => {
-              const categoryName =
-                article.category?.name ||
-                article.categoryName ||
-                "Sin categoria";
-              const brandName =
-                article.brand?.name || article.brandName || "Sin marca";
-              const sizeName =
-                article.size?.code ||
-                article.sizeText ||
-                article.sizeCode ||
-                "Sin talle";
+          items.length ? (
+            <div className="table-shell admin-table-shell">
+              <table className="data-table admin-articles-table">
+                <thead>
+                  <tr>
+                    <th>Imagen</th>
+                    <th>Articulo</th>
+                    <th>Categoria</th>
+                    <th>Marca</th>
+                    <th>Talle</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Actualizado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((article) => {
+                    const categoryName =
+                      article.category?.name || article.categoryName || "Sin categoria";
+                    const brandName =
+                      article.brand?.name || article.brandName || "Sin marca";
+                    const sizeName =
+                      article.size?.code ||
+                      article.sizeText ||
+                      article.sizeCode ||
+                      "Sin talle";
 
-              return (
-                <article
-                  key={article.id}
-                  className="admin-row-card admin-row-card-wide"
-                >
-                  <SmartImage
-                    src={
-                      article.primaryImageDetail ||
-                      article.primaryImageThumb ||
-                      article.primaryImage
-                    }
-                    alt={article.primaryImageAlt || article.title}
-                    fallbackLabel={article.title}
-                  />
-
-                  <div className="page-stack stack-gap-xs">
-                    <div>
-                      <p className="eyebrow">
-                        {categoryName} - {brandName}
-                      </p>
-                      <h3>{article.title}</h3>
-                    </div>
-                    <p className="muted-copy">
-                      Codigo: <strong>{article.internalCode}</strong> · Talle:{" "}
-                      {sizeName}
-                    </p>
-                    <p className="muted-copy">
-                      Estado:{" "}
-                      {ARTICLE_STATUS_LABELS[article.status] || article.status}{" "}
-                      · Stock disponible: {article.quantityAvailable}
-                    </p>
-                    {article.conditionLabel ||
-                    article.color ||
-                    article.material ? (
-                      <p className="muted-copy">
-                        {article.conditionLabel
-                          ? `Estado de prenda: ${article.conditionLabel}`
-                          : ""}
-                        {article.color
-                          ? `${article.conditionLabel ? " · " : ""}Color: ${article.color}`
-                          : ""}
-                        {article.material
-                          ? `${article.conditionLabel || article.color ? " · " : ""}Material: ${article.material}`
-                          : ""}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="admin-row-actions">
-                    <strong>
-                      {formatCurrency(
-                        article.discountedPrice || article.salePrice,
-                      )}
-                    </strong>
-                    <Link
-                      to={`/admin/articles/${article.id}/edit`}
-                      className="button button-secondary"
-                    >
-                      Editar
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-
-            {!items.length ? (
-              <div className="centered-card nested-card">
-                <p className="muted-copy">
-                  No hay articulos para los filtros seleccionados.
-                </p>
-              </div>
-            ) : null}
-          </div>
+                    return (
+                      <tr key={article.id}>
+                        <td>
+                          <Link to={`/admin/articles/${article.id}/edit`} className="table-thumb-link" aria-label={`Editar ${article.title}`}>
+                            <SmartImage
+                              src={
+                                article.primaryImageDetail ||
+                                article.primaryImageThumb ||
+                                article.primaryImage
+                              }
+                              alt={article.primaryImageAlt || article.title}
+                              fallbackLabel={article.title}
+                              className="table-thumb-image"
+                            />
+                          </Link>
+                        </td>
+                        <td>
+                          <div className="cell-stack">
+                            <Link to={`/admin/articles/${article.id}/edit`} className="table-strong-link">
+                              {article.title}
+                            </Link>
+                            <span className="muted-copy">Codigo: {article.internalCode || "Sin codigo"}</span>
+                          </div>
+                        </td>
+                        <td>{categoryName}</td>
+                        <td>{brandName}</td>
+                        <td>{sizeName}</td>
+                        <td>
+                          <strong>{formatCurrency(article.discountedPrice || article.salePrice)}</strong>
+                        </td>
+                        <td>{article.quantityAvailable}</td>
+                        <td>{ARTICLE_STATUS_LABELS[article.status] || article.status}</td>
+                        <td>{formatDate(article.updatedAt || article.intakeDate)}</td>
+                        <td>
+                          <div className="table-actions">
+                            <Link
+                              to={`/admin/articles/${article.id}/edit`}
+                              className="button button-secondary button-compact"
+                            >
+                              Editar
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="centered-card nested-card">
+              <p className="muted-copy">
+                No hay articulos para los filtros seleccionados.
+              </p>
+            </div>
+          )
         ) : null}
 
         <AdminPagination

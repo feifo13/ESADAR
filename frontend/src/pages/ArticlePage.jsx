@@ -363,30 +363,6 @@ export default function ArticlePage() {
         ) : null}
       </div>
 
-      <div className="article-mobile-cta article-mobile-cta--wide">
-        <div>
-          <span className="article-mobile-cta__label">Precio</span>
-          <strong>{formatCurrency(finalPrice)}</strong>
-        </div>
-        <button
-          type="button"
-          className="button button-primary"
-          disabled={isSoldOut}
-          onClick={(event) => {
-            const result = addItem(article, 1, { sourceRect: event.currentTarget.getBoundingClientRect() });
-            showStockNotice(result);
-            if (result?.ok) setFeedback('Articulo agregado al carrito.');
-          }}
-        >
-          {isSoldOut ? 'Agotado' : 'Lo quiero'}
-        </button>
-        {article.allowOffers && !isSoldOut ? (
-          <Link to={articleOfferPath(article)} className="button button-secondary">
-            Ofertar
-          </Link>
-        ) : null}
-      </div>
-
       {stockDialog ? (
         <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
           <div className="dialog-card" onClick={(event) => event.stopPropagation()}>
