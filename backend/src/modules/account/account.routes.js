@@ -3,6 +3,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { requireAuth } from '../../middlewares/auth.js';
 import {
   getPublicAccountAlerts,
+  getPublicAccountOrder,
   getPublicAccountOrders,
   getPublicAccountProfile,
   putPublicAccountProfile,
@@ -15,6 +16,7 @@ router.get('/profile', asyncHandler(getPublicAccountProfile));
 router.put('/profile', asyncHandler(putPublicAccountProfile));
 router.patch('/profile', asyncHandler(putPublicAccountProfile));
 router.get('/orders', asyncHandler(getPublicAccountOrders));
+router.get('/orders/:id', asyncHandler(getPublicAccountOrder));
 router.get('/alerts', asyncHandler(getPublicAccountAlerts));
 
 export default router;

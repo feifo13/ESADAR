@@ -2,11 +2,13 @@ import { getPagination } from '../../utils/pagination.js';
 import {
   adminContactMessageListQuerySchema,
   createContactMessageSchema,
+  replyContactMessageSchema,
   updateContactMessageStatusSchema,
 } from './contact.schemas.js';
 import {
   createContactMessage,
   listContactMessages,
+  replyContactMessage,
   updateContactMessageStatus,
 } from './contact.service.js';
 
@@ -41,6 +43,17 @@ export async function updateAdminContactMessageStatus(req, res) {
   const message = await updateContactMessageStatus(
     Number(req.params.id),
     input.status,
+    getAuditContext(req),
+  );
+
+  return res.json({ ok: true, message });
+}
+
+export async function replyAdminContactMessage(req, res) {
+  const input = replyContactMessageSchema.parse(req.body);
+  const message = await replyContactMessage(
+    Number(req.params.id),
+    input.replyMessage,
     getAuditContext(req),
   );
 

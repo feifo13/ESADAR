@@ -5,6 +5,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createPublicContactMessage,
   getAdminContactMessages,
+  replyAdminContactMessage,
   updateAdminContactMessageStatus,
 } from './contact.controller.js';
 
@@ -16,5 +17,6 @@ publicRouter.post('/', asyncHandler(createPublicContactMessage));
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminContactMessages));
 adminRouter.patch('/:id/status', asyncHandler(updateAdminContactMessageStatus));
+adminRouter.post('/:id/reply', asyncHandler(replyAdminContactMessage));
 
 export { adminRouter, publicRouter };

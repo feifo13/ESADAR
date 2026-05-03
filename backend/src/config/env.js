@@ -39,4 +39,14 @@ export const env = {
   articleUploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || 'uploads', 'articles'),
   bundledUploadDir: path.resolve(process.cwd(), 'public', 'uploads'),
   maxUploadBytes: toNumber(process.env.MAX_UPLOAD_MB, 10) * 1024 * 1024,
+  mail: {
+    host: process.env.SMTP_HOST || '',
+    port: toNumber(process.env.SMTP_PORT, 587),
+    secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+    fromEmail: process.env.SMTP_FROM_EMAIL || '',
+    fromName: process.env.SMTP_FROM_NAME || process.env.STORE_NAME || 'ESADAR',
+    replyTo: process.env.SMTP_REPLY_TO || '',
+  },
 };

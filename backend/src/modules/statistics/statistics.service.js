@@ -320,11 +320,13 @@ export async function getStatisticsSalesOverTime(filters = {}) {
   const groupBy = filters.groupBy || 'month';
   const { where, params } = buildSalesItemFilters(filters);
 
-  const groupExpr = groupBy === 'week'
-    ? `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%x-W%v')`
-    : groupBy === 'year'
-      ? `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%Y')`
-      : `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%Y-%m')`;
+  const groupExpr = groupBy === 'day'
+    ? `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%Y-%m-%d')`
+    : groupBy === 'week'
+      ? `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%x-W%v')`
+      : groupBy === 'year'
+        ? `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%Y')`
+        : `DATE_FORMAT(COALESCE(o.approved_at, o.shipped_at, o.created_at), '%Y-%m')`;
 
   const [rows] = await pool.execute(
     `
@@ -516,6 +518,8 @@ async function getDemandByDimension(filters, { labelExpr, joinSql, extraWhere = 
         FROM orders o
         INNER JOIN order_items oi ON oi.order_id = o.id
         INNER JOIN articles a ON a.id = oi.article_id
+        LEFT JOIN customers c ON c.id = o.customer_id
+        LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
         ${joinSql}
         ${salesFilters.where}
         GROUP BY label
@@ -720,28 +724,32 @@ export async function getStatisticsMarketStudy(filters = {}) {
     `
       SELECT
         COUNT(*) AS totalOffers,
-        SUM(CASE WHEN status = 'ACCEPTED' THEN 1 ELSE 0 END) AS acceptedOffers,
-        SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) AS rejectedOffers,
+        SUM(CASE WHEN off.status = 'ACCEPTED' THEN 1 ELSE 0 END) AS acceptedOffers,
+        SUM(CASE WHEN off.status = 'REJECTED' THEN 1 ELSE 0 END) AS rejectedOffers,
         AVG(CASE WHEN a.sale_price > 0 THEN ((a.sale_price - off.offered_price) / a.sale_price) * 100 ELSE NULL END) AS averageRequestedDiscount
       FROM offers off
       LEFT JOIN articles a ON a.id = off.article_id
     `,
   );
 
+  const completedFilters = buildCompletedOrderFilters(filters);
   const [paymentRows] = await pool.execute(
     `
       SELECT
         o.payment_method AS paymentMethod,
-        sm.name AS shippingMethodName,
+        COALESCE(sm.description, o.shipping_method_description_snapshot) AS shippingMethodName,
         COUNT(*) AS ordersCount,
         SUM(o.total_snapshot) AS revenue
       FROM orders o
       LEFT JOIN shipping_methods sm ON sm.id = o.shipping_method_id
-      WHERE o.order_status IN ('APPROVED', 'SHIPPED')
-      GROUP BY o.payment_method, sm.name
+      LEFT JOIN customers c ON c.id = o.customer_id
+      LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
+      ${completedFilters.where}
+      GROUP BY o.payment_method, shippingMethodName
       ORDER BY ordersCount DESC, revenue DESC
       LIMIT 12
     `,
+    completedFilters.params,
   );
 
   return {

@@ -22,6 +22,10 @@ export const updateContactMessageStatusSchema = z.object({
   status: z.enum(['NEW', 'READ', 'REPLIED', 'ARCHIVED']),
 });
 
+export const replyContactMessageSchema = z.object({
+  replyMessage: z.string().trim().min(2).max(4000),
+});
+
 export const adminContactMessageListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   search: optionalTrimmedString(150),

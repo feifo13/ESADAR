@@ -17,7 +17,7 @@ export const statisticsFiltersSchema = z.object({
     (value) => (value == null || value === '' ? undefined : Number(value)),
     z.number().int().positive().optional(),
   ),
-  groupBy: optionalEnum(['week', 'month', 'year']),
+  groupBy: optionalEnum(['day', 'week', 'month', 'year']),
   q: optionalTrimmedString(150),
 });
 

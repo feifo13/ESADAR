@@ -8,6 +8,7 @@ import {
   findCustomerByUserId,
   findPotentialCustomerByLinkedCustomerId,
 } from '../customers/customer-helpers.js';
+import { getOrderDetail } from '../orders/orders.service.js';
 
 function parseJsonField(value, fallback = []) {
   if (value == null || value === '') return fallback;
@@ -491,6 +492,67 @@ export async function listAccountOrders(userId) {
     shippingMethodName: row.shippingMethodName || null,
     itemsCount: Number(row.itemsCount || 0),
   }));
+}
+
+export async function getAccountOrderDetail(userId, orderId) {
+  const customer = await findCustomerByUserId(userId);
+
+  const [ownershipRows] = await pool.execute(
+    `
+      SELECT id
+      FROM orders
+      WHERE id = ?
+        AND (user_id = ? OR customer_id <=> ?)
+      LIMIT 1
+    `,
+    [orderId, userId, customer?.id || null],
+  );
+
+  if (!ownershipRows.length) {
+    throw notFound('Order not found');
+  }
+
+  const order = await getOrderDetail(orderId);
+
+  return {
+    id: Number(order.id),
+    orderNumber: order.orderNumber,
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    shippingMethodDescription: order.shippingMethodDescription || null,
+    shippingCost: Number(order.shippingCost || 0),
+    subtotal: Number(order.subtotal || 0),
+    discountTotal: Number(order.discountTotal || 0),
+    total: Number(order.total || 0),
+    reservedUntil: order.reservedUntil,
+    approvedAt: order.approvedAt,
+    cancelledAt: order.cancelledAt,
+    shippedAt: order.shippedAt,
+    cancellationReason: order.cancellationReason || null,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+    items: (order.items || []).map((item) => ({
+      id: Number(item.id),
+      articleId: item.articleId != null ? Number(item.articleId) : null,
+      quantity: Number(item.quantity || 0),
+      articleTitle: item.articleTitle,
+      articleSlug: item.articleSlug,
+      brandName: item.brandName || null,
+      size: item.size || null,
+      image: item.image || null,
+      finalUnitPrice: Number(item.finalUnitPrice || 0),
+      lineTotal: Number(item.lineTotal || 0),
+    })),
+    history: (order.history || []).map((entry) => ({
+      id: Number(entry.id),
+      fromStatus: entry.fromStatus,
+      toStatus: entry.toStatus,
+      reason: entry.reason || null,
+      changedAt: entry.changedAt,
+      source: entry.source || null,
+    })),
+  };
 }
 
 export async function listAccountAlerts(userId) {

@@ -4,6 +4,7 @@ import { notFound } from '../../utils/app-error.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
 import { findPotentialCustomerByContact, upsertPotentialCustomerByContact } from '../customers/customer-helpers.js';
+import { sendContactReplyEmail } from './contact.mailer.js';
 
 const CONTACT_MESSAGE_SORTS = {
   createdAt: (direction) => `cm.created_at ${direction}, cm.id ${direction}`,
@@ -185,6 +186,56 @@ export async function updateContactMessageStatus(id, status, auditContext) {
         beforeJson: before,
         afterJson: after,
         metadataJson: { status },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
+}
+
+export async function replyContactMessage(id, replyMessage, auditContext) {
+  const before = await getContactMessageById(id, pool);
+
+  await sendContactReplyEmail({
+    toEmail: before.email,
+    toName: `${before.firstName || ''} ${before.lastName || ''}`.trim(),
+    message: before.message,
+    replyMessage,
+  });
+
+  return withTransaction(async (connection) => {
+    const original = await getContactMessageById(id, connection);
+
+    await connection.execute(
+      `
+        UPDATE contact_messages
+        SET
+          status = 'REPLIED',
+          handled_by = ?,
+          updated_at = NOW()
+        WHERE id = ?
+      `,
+      [auditContext.actorUserId || null, id],
+    );
+
+    const after = await getContactMessageById(id, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'CONTACT_MESSAGE_REPLIED',
+        entityType: 'contact_messages',
+        entityId: id,
+        beforeJson: original,
+        afterJson: after,
+        metadataJson: {
+          replyPreview: replyMessage.slice(0, 280),
+        },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,

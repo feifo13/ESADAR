@@ -2,6 +2,7 @@ import { accountProfileUpdateSchema } from './account.schemas.js';
 import {
   getAccountProfile,
   listAccountAlerts,
+  getAccountOrderDetail,
   listAccountOrders,
   saveAccountProfile,
 } from './account.service.js';
@@ -30,6 +31,11 @@ export async function putPublicAccountProfile(req, res) {
 export async function getPublicAccountOrders(req, res) {
   const items = await listAccountOrders(req.auth.userId);
   return res.json({ ok: true, items });
+}
+
+export async function getPublicAccountOrder(req, res) {
+  const order = await getAccountOrderDetail(req.auth.userId, Number(req.params.id));
+  return res.json({ ok: true, order });
 }
 
 export async function getPublicAccountAlerts(req, res) {
