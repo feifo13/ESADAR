@@ -9,9 +9,10 @@ function normalizeHeaderLabel(label) {
 }
 
 const ACTION_ICON_MAP = [
-  [/^(ver|abrir|detalle|detalles|ver detalle|ver orden|ver prenda|ver compra)$/i, '👁'],
+  [/(agregar\s+al\s+carrito|carrito)/i, 'cart-plus'],
+  [/^(ver|abrir|detalle|detalles|ver detalle|ver orden|ver prenda|ver compra|leer)$/i, '👁'],
   [/(editar|modificar)/i, '✎'],
-  [/(eliminar|borrar|quitar|remover|sacar)/i, '×'],
+  [/(eliminar|borrar|quitar|remover|sacar)/i, '🗑'],
   [/(cancelar|rechazar|anular)/i, '⊘'],
   [/(aprobar|confirmar|activar|marcar|guardar|aplicar)/i, '✓'],
   [/(pagar|pago|cobrar)/i, '$'],
@@ -33,8 +34,30 @@ function getActionIcon(label) {
   return match?.[1] || '•';
 }
 
+function shouldIconizeControl(control) {
+  if (!control) return false;
+
+  if (
+    control.classList.contains('table-strong-link') ||
+    control.classList.contains('table-thumb-link') ||
+    control.classList.contains('icon-action-button') ||
+    control.closest('.table-thumb-link') ||
+    control.querySelector('img, picture, svg')
+  ) {
+    return false;
+  }
+
+  return Boolean(
+    control.closest('.table-actions') ||
+    control.closest('.inline-action-group') ||
+    control.tagName === 'BUTTON',
+  );
+}
+
 function iconizeTableActions(row) {
   Array.from(row.querySelectorAll('td button, td a')).forEach((control) => {
+    if (!shouldIconizeControl(control)) return;
+
     const label = (
       control.getAttribute('aria-label') ||
       control.getAttribute('title') ||

@@ -61,38 +61,14 @@ const listVariants = {
   },
 };
 
-function renderItem(item, onClose) {
-  const itemClassName = [
-    "mobile-nav-sheet__link",
-    "mobile-motion-menu__item",
-    item.className || "",
-  ].filter(Boolean).join(" ");
-
-  if (item.kind === "button") {
-    return (
-      <button
-        key={item.key}
-        type="button"
-        className={itemClassName}
-        onClick={() => {
-          item.onClick?.();
-          onClose?.();
-        }}
-      >
-        {item.label}
-      </button>
-    );
-  }
-
+function AccordionIndicator({ open }) {
   return (
-    <NavLink
-      key={item.key}
-      to={item.to}
-      className={({ isActive }) => [itemClassName, isActive ? "is-active" : ""].filter(Boolean).join(" ")}
-      onClick={() => onClose?.()}
+    <span
+      className={`mobile-motion-menu__accordion-indicator${open ? ' is-open' : ''}`}
+      aria-hidden="true"
     >
-      {item.label}
-    </NavLink>
+      +
+    </span>
   );
 }
 
@@ -110,6 +86,7 @@ export default function MobileMotionMenu({
   const shouldReduceMotion = useReducedMotion();
   const panelRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState({});
 
   useEffect(() => {
     if (!open) return undefined;
@@ -153,6 +130,67 @@ export default function MobileMotionMenu({
   const activeListVariants = shouldReduceMotion
     ? { closed: {}, open: {} }
     : listVariants;
+
+  function renderItem(item, { nested = false } = {}) {
+    const itemClassName = [
+      "mobile-nav-sheet__link",
+      "mobile-motion-menu__item",
+      nested ? "mobile-motion-menu__item--nested" : "",
+      item.className || "",
+    ].filter(Boolean).join(" ");
+
+    if (item.kind === "group") {
+      const groupOpen = Boolean(openGroups[item.key]);
+      return (
+        <div key={item.key} className="mobile-motion-menu__group">
+          <button
+            type="button"
+            className={`${itemClassName} mobile-motion-menu__accordion-trigger`}
+            aria-expanded={groupOpen}
+            onClick={() => setOpenGroups((current) => ({
+              ...current,
+              [item.key]: !current[item.key],
+            }))}
+          >
+            <span>{item.label}</span>
+            <AccordionIndicator open={groupOpen} />
+          </button>
+          {groupOpen ? (
+            <div className="mobile-motion-menu__group-body">
+              {(item.children || []).map((child) => renderItem(child, { nested: true }))}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (item.kind === "button") {
+      return (
+        <button
+          key={item.key}
+          type="button"
+          className={itemClassName}
+          onClick={() => {
+            item.onClick?.();
+            onClose?.();
+          }}
+        >
+          {item.label}
+        </button>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.key}
+        to={item.to}
+        className={({ isActive }) => [itemClassName, isActive ? "is-active" : ""].filter(Boolean).join(" ")}
+        onClick={() => onClose?.()}
+      >
+        {item.label}
+      </NavLink>
+    );
+  }
 
   return (
     <AnimatePresence>
@@ -222,9 +260,7 @@ export default function MobileMotionMenu({
                     onClick={() => setFiltersOpen((current) => !current)}
                   >
                     <span>Filtros</span>
-                    <span className="mobile-motion-menu__accordion-indicator" aria-hidden="true">
-                      {filtersOpen ? "⌃" : "⌄"}
-                    </span>
+                    <AccordionIndicator open={filtersOpen} />
                   </button>
                   {filtersOpen ? (
                     <div
@@ -245,7 +281,7 @@ export default function MobileMotionMenu({
               ) : null}
               {items.map((item) => (
                 <motion.div key={item.key} variants={activeItemVariants}>
-                  {renderItem(item, onClose)}
+                  {renderItem(item)}
                 </motion.div>
               ))}
             </motion.nav>

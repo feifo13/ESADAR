@@ -252,20 +252,38 @@ export default function Header({ hideBrand = false }) {
     );
   }
 
-  const mobileMenuItems = isAuthenticated
+  const accountMenuChildren = isAuthenticated
     ? [
-        { key: "home", label: "Inicio", to: "/" },
-        { key: "account", label: "Mi cuenta", to: "/cuenta/perfil" },
-        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
-        { key: "orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
-        ...(isAdmin ? [{ key: "admin", label: "Admin", to: "/admin/articles" }] : []),
-        { key: "logout", label: "Salir", kind: "button", onClick: logout },
+        { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
+        { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
+        { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
       ]
     : [
-        { key: "home", label: "Inicio", to: "/" },
-        { key: "account", label: "Mi cuenta", to: "/login" },
-        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "account-login", label: "Ingresar", to: "/login" },
+        { key: "account-register", label: "Crear cuenta", to: "/register" },
+        { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
       ];
+
+  const adminMenuChildren = [
+    { key: "admin-articles", label: "Articulos", to: "/admin/articles" },
+    { key: "admin-article-new", label: "Nuevo articulo", to: "/admin/articles/new" },
+    { key: "admin-article-bulk", label: "Crear multiples", to: "/admin/articles/bulk-create" },
+    { key: "admin-orders", label: "Ordenes", to: "/admin/orders" },
+    { key: "admin-offers", label: "Ofertas", to: "/admin/offers" },
+    { key: "admin-contacts", label: "Contactos", to: "/admin/contact-messages" },
+    { key: "admin-leads", label: "Leads", to: "/admin/leads" },
+    { key: "admin-wishlists", label: "Wishlists", to: "/admin/wishlists" },
+    { key: "admin-statistics", label: "Estadisticas", to: "/admin/statistics" },
+    { key: "admin-audit", label: "Auditoria", to: "/admin/audit" },
+  ];
+
+  const mobileMenuItems = [
+    { key: "home", label: "Inicio", to: "/" },
+    { key: "account", label: "Mi cuenta", kind: "group", children: accountMenuChildren },
+    ...(isAdmin ? [{ key: "admin", label: "Admin", kind: "group", children: adminMenuChildren }] : []),
+    ...(isAuthenticated ? [{ key: "logout", label: "Salir", kind: "button", onClick: logout }] : []),
+  ];
 
   function renderMenuButton() {
     return (
