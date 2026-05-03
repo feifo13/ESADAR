@@ -470,7 +470,7 @@ export default function HomePage() {
         </div>
       </section> */}
 
-      <section
+      {/* <section
         className="mobile-catalog-filter-shell container"
         aria-label="Filtros del catalogo"
       >
@@ -518,7 +518,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : null}
-      </section>
+      </section> */}
 
       <section
         ref={catalogSectionRef}
