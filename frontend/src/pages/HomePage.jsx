@@ -1,50 +1,55 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import SeoHead from '../components/SeoHead.jsx';
-import { apiFetch } from '../lib/api.js';
-import { storage } from '../lib/storage.js';
-import { useLookups } from '../contexts/LookupsContext.jsx';
-import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
-import { buildOrganizationJsonLd, buildWebsiteJsonLd, toAbsoluteUrl } from '../lib/seo.js';
-import ArticleCard from '../components/ArticleCard.jsx';
-import ArticleFilters from '../components/ArticleFilters.jsx';
-import FeaturedRail from '../components/FeaturedRail.jsx';
-import baller1 from '../assets/baller-1.jpg';
-import baller2 from '../assets/baller-2.jpg';
-import baller3 from '../assets/baller-3.jpg';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useOutletContext } from "react-router-dom";
+import SeoHead from "../components/SeoHead.jsx";
+import { apiFetch } from "../lib/api.js";
+import { storage } from "../lib/storage.js";
+import { useLookups } from "../contexts/LookupsContext.jsx";
+import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
+import {
+  buildOrganizationJsonLd,
+  buildWebsiteJsonLd,
+  toAbsoluteUrl,
+} from "../lib/seo.js";
+import ArticleCard from "../components/ArticleCard.jsx";
+import ArticleFilters from "../components/ArticleFilters.jsx";
+import ExperimentalVisualPanel from "../components/ExperimentalVisualPanel.jsx";
+import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
+import baller1 from "../assets/baller-1.jpg";
+import baller2 from "../assets/baller-2.jpg";
+import baller3 from "../assets/baller-3.jpg";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const HERO_SEQUENCE = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
 
 const initialFilters = {
-  search: '',
-  sort: 'intake_desc',
-  categoryId: '',
-  brandId: '',
-  sizeId: '',
+  search: "",
+  sort: "intake_desc",
+  categoryId: "",
+  brandId: "",
+  sizeId: "",
   discounted: false,
   offerable: false,
   featured: false,
 };
 
 const initialLeadForm = {
-  firstName: '',
-  email: '',
-  phone: '',
-  instagram: '',
-  preferredCategory: '',
-  preferredBrand: '',
-  preferredSize: '',
-  preferredColor: '',
+  firstName: "",
+  email: "",
+  phone: "",
+  instagram: "",
+  preferredCategory: "",
+  preferredBrand: "",
+  preferredSize: "",
+  preferredColor: "",
 };
 
-const VIEW_STORAGE_KEY = 'esadar-catalog-view';
+const VIEW_STORAGE_KEY = "esadar-catalog-view";
 
 const SORT_LABELS = {
-  intake_desc: 'Mas reciente',
-  intake_asc: 'Mas antiguo',
-  price_asc: 'Precio ↑',
-  price_desc: 'Precio ↓',
+  intake_desc: "Mas reciente",
+  intake_asc: "Mas antiguo",
+  price_asc: "Precio ↑",
+  price_desc: "Precio ↓",
 };
 
 function getLabel(options, id, fallback) {
@@ -60,10 +65,12 @@ export default function HomePage() {
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
-  const { categoryOptions, brandOptions, sizeOptions, lookupError } = useLookups();
+  const location = useLocation();
+  const { categoryOptions, brandOptions, sizeOptions, lookupError } =
+    useLookups();
   const { site, pagesByRoute } = useSiteSeo();
   const [filters, setFilters] = useState(initialFilters);
-  const [view, setView] = useState(() => storage.get(VIEW_STORAGE_KEY, 'grid'));
+  const [view, setView] = useState(() => storage.get(VIEW_STORAGE_KEY, "grid"));
   const [featuredItems, setFeaturedItems] = useState([]);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({
@@ -74,25 +81,25 @@ export default function HomePage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [leadForm, setLeadForm] = useState(initialLeadForm);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
-  const [leadError, setLeadError] = useState('');
-  const [leadSuccess, setLeadSuccess] = useState('');
+  const [leadError, setLeadError] = useState("");
+  const [leadSuccess, setLeadSuccess] = useState("");
 
-  const homeSeo = pagesByRoute['/'] || null;
+  const homeSeo = pagesByRoute["/"] || null;
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
-    if (filters.search) params.set('search', filters.search);
-    if (filters.sort) params.set('sort', filters.sort);
-    if (filters.categoryId) params.set('categoryId', filters.categoryId);
-    if (filters.brandId) params.set('brandId', filters.brandId);
-    if (filters.sizeId) params.set('sizeId', filters.sizeId);
-    if (filters.discounted) params.set('discounted', 'true');
-    if (filters.offerable) params.set('offerable', 'true');
-    if (filters.featured) params.set('featured', 'true');
-    params.set('page', String(page));
+    if (filters.search) params.set("search", filters.search);
+    if (filters.sort) params.set("sort", filters.sort);
+    if (filters.categoryId) params.set("categoryId", filters.categoryId);
+    if (filters.brandId) params.set("brandId", filters.brandId);
+    if (filters.sizeId) params.set("sizeId", filters.sizeId);
+    if (filters.discounted) params.set("discounted", "true");
+    if (filters.offerable) params.set("offerable", "true");
+    if (filters.featured) params.set("featured", "true");
+    params.set("page", String(page));
     return params.toString();
   }, [filters, page]);
 
@@ -100,35 +107,37 @@ export default function HomePage() {
     const chips = [];
 
     if (filters.search) {
-      chips.push({ key: 'search', label: `Busqueda: ${filters.search}` });
+      chips.push({ key: "search", label: `Busqueda: ${filters.search}` });
     }
     if (filters.sort && filters.sort !== initialFilters.sort) {
       chips.push({
-        key: 'sort',
+        key: "sort",
         label: `Orden: ${SORT_LABELS[filters.sort] || filters.sort}`,
       });
     }
     if (filters.categoryId) {
       chips.push({
-        key: 'categoryId',
-        label: `Categoria: ${getLabel(categoryOptions, filters.categoryId, 'Seleccionada')}`,
+        key: "categoryId",
+        label: `Categoria: ${getLabel(categoryOptions, filters.categoryId, "Seleccionada")}`,
       });
     }
     if (filters.brandId) {
       chips.push({
-        key: 'brandId',
-        label: `Marca: ${getLabel(brandOptions, filters.brandId, 'Seleccionada')}`,
+        key: "brandId",
+        label: `Marca: ${getLabel(brandOptions, filters.brandId, "Seleccionada")}`,
       });
     }
     if (filters.sizeId) {
       chips.push({
-        key: 'sizeId',
-        label: `Talle: ${getLabel(sizeOptions, filters.sizeId, 'Seleccionado')}`,
+        key: "sizeId",
+        label: `Talle: ${getLabel(sizeOptions, filters.sizeId, "Seleccionado")}`,
       });
     }
-    if (filters.discounted) chips.push({ key: 'discounted', label: 'Con descuento' });
-    if (filters.offerable) chips.push({ key: 'offerable', label: 'Acepta ofertas' });
-    if (filters.featured) chips.push({ key: 'featured', label: 'Destacados' });
+    if (filters.discounted)
+      chips.push({ key: "discounted", label: "Con descuento" });
+    if (filters.offerable)
+      chips.push({ key: "offerable", label: "Acepta ofertas" });
+    if (filters.featured) chips.push({ key: "featured", label: "Destacados" });
 
     return chips;
   }, [brandOptions, categoryOptions, filters, sizeOptions]);
@@ -145,11 +154,36 @@ export default function HomePage() {
   }, [setHeroLogoVisible]);
 
   useEffect(() => {
+    if (location.pathname !== "/articles") return;
+
+    const scrollFrame = window.requestAnimationFrame(() => {
+      catalogSectionRef.current?.scrollIntoView({
+        behavior: "auto",
+        block: "start",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(scrollFrame);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname !== "/articles") return;
+
+    const nextSearch = new URLSearchParams(location.search).get("search") || "";
+    setFilters((current) =>
+      current.search === nextSearch ? current : { ...current, search: nextSearch },
+    );
+    setPage(1);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadFeatured() {
       try {
-        const response = await apiFetch('/api/public/articles?featured=true&sort=intake_desc&page=1');
+        const response = await apiFetch(
+          "/api/public/articles?featured=true&sort=intake_desc&page=1",
+        );
         if (!ignore) setFeaturedItems(response.items || []);
       } catch {
         if (!ignore) setFeaturedItems([]);
@@ -167,19 +201,21 @@ export default function HomePage() {
 
     async function loadArticles() {
       try {
-        setError('');
+        setError("");
         if (page === 1) setLoading(true);
         if (page > 1) setLoadingMore(true);
         const response = await apiFetch(`/api/public/articles?${queryString}`);
         if (ignore) return;
-        setPagination(response.pagination || { page: 1, pageSize: 20, total: 0 });
-        setItems((current) => (
+        setPagination(
+          response.pagination || { page: 1, pageSize: 20, total: 0 },
+        );
+        setItems((current) =>
           page === 1
             ? response.items || []
-            : [...current, ...(response.items || [])]
-        ));
+            : [...current, ...(response.items || [])],
+        );
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudo cargar el catalogo');
+        if (!ignore) setError(err.message || "No se pudo cargar el catalogo");
       } finally {
         if (!ignore) {
           setLoading(false);
@@ -199,10 +235,10 @@ export default function HomePage() {
       const target = event.target;
       const isTypingElement =
         target instanceof HTMLElement &&
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 
       if (
-        event.key === '/' &&
+        event.key === "/" &&
         !event.metaKey &&
         !event.ctrlKey &&
         !event.altKey &&
@@ -213,8 +249,8 @@ export default function HomePage() {
       }
     }
 
-    window.addEventListener('keydown', handleShortcut);
-    return () => window.removeEventListener('keydown', handleShortcut);
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
   function applyFilters(nextFilters) {
@@ -232,8 +268,8 @@ export default function HomePage() {
 
     window.requestAnimationFrame(() => {
       catalogSectionRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
+        behavior: "smooth",
+        block: "start",
       });
       catalogSectionRef.current?.focus({ preventScroll: true });
     });
@@ -241,9 +277,9 @@ export default function HomePage() {
 
   function removeFilterChip(key) {
     const resetValue =
-      typeof initialFilters[key] === 'boolean'
+      typeof initialFilters[key] === "boolean"
         ? false
-        : initialFilters[key] || '';
+        : initialFilters[key] || "";
     applyFilters({ ...filters, [key]: resetValue });
   }
 
@@ -256,34 +292,44 @@ export default function HomePage() {
 
     try {
       setLeadSubmitting(true);
-      setLeadError('');
-      setLeadSuccess('');
+      setLeadError("");
+      setLeadSuccess("");
 
-      await apiFetch('/api/public/leads/newsletter', {
-        method: 'POST',
+      await apiFetch("/api/public/leads/newsletter", {
+        method: "POST",
         body: {
           firstName: leadForm.firstName || null,
           email: leadForm.email || null,
           phone: leadForm.phone || null,
           instagram: leadForm.instagram || null,
-          preferredCategories: leadForm.preferredCategory ? [leadForm.preferredCategory] : [],
-          preferredBrands: leadForm.preferredBrand ? [leadForm.preferredBrand] : [],
-          preferredSizes: leadForm.preferredSize ? [leadForm.preferredSize] : [],
-          preferredColors: leadForm.preferredColor ? [leadForm.preferredColor] : [],
+          preferredCategories: leadForm.preferredCategory
+            ? [leadForm.preferredCategory]
+            : [],
+          preferredBrands: leadForm.preferredBrand
+            ? [leadForm.preferredBrand]
+            : [],
+          preferredSizes: leadForm.preferredSize
+            ? [leadForm.preferredSize]
+            : [],
+          preferredColors: leadForm.preferredColor
+            ? [leadForm.preferredColor]
+            : [],
         },
       });
 
-      setLeadSuccess('Te vamos a avisar cuando entren prendas que encajen con tu estilo.');
+      setLeadSuccess(
+        "Te vamos a avisar cuando entren prendas que encajen con tu estilo.",
+      );
       setLeadForm(initialLeadForm);
     } catch (err) {
-      setLeadError(err.message || 'No pudimos guardar tu preferencia ahora.');
+      setLeadError(err.message || "No pudimos guardar tu preferencia ahora.");
     } finally {
       setLeadSubmitting(false);
     }
   }
 
   function scrollToSection(ref) {
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function showOfferableCatalog() {
@@ -296,25 +342,32 @@ export default function HomePage() {
       <SeoHead
         title={homeSeo?.title || `${site.name} | Ropa second hand seleccionada`}
         description={homeSeo?.description || site.description}
-        canonical={homeSeo?.canonicalUrl || toAbsoluteUrl('/', site)}
-        url={toAbsoluteUrl('/', site)}
+        canonical={homeSeo?.canonicalUrl || toAbsoluteUrl("/", site)}
+        url={toAbsoluteUrl("/", site)}
         image={toAbsoluteUrl(HERO_IMAGES[0], site)}
         jsonLd={[
-          { id: 'organization', data: buildOrganizationJsonLd(site) },
-          { id: 'website', data: buildWebsiteJsonLd(site) },
+          { id: "organization", data: buildOrganizationJsonLd(site) },
+          { id: "website", data: buildWebsiteJsonLd(site) },
         ]}
       />
 
-      <section ref={heroRef} className="hero-strip hero-strip--carousel" aria-label="Galeria destacada">
+      <section
+        ref={heroRef}
+        className="hero-strip hero-strip--carousel"
+        aria-label="Galeria destacada"
+      >
         <div className="hero-carousel" aria-hidden="true">
           <div className="hero-carousel__track">
             {HERO_SEQUENCE.map((image, index) => (
-              <figure key={`${image}-${index}`} className="hero-carousel__slide">
+              <figure
+                key={`${image}-${index}`}
+                className="hero-carousel__slide"
+              >
                 <img
                   src={image}
                   alt=""
                   className="hero-carousel__image"
-                  loading={index < 3 ? 'eager' : 'lazy'}
+                  loading={index < 3 ? "eager" : "lazy"}
                 />
               </figure>
             ))}
@@ -335,20 +388,32 @@ export default function HomePage() {
         </div>
 
         <div className="value-hero-actions">
-          <button type="button" className="button button-primary" onClick={() => scrollToSection(catalogSectionRef)}>
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => scrollToSection(catalogSectionRef)}
+          >
             Ver catalogo
           </button>
-          <button type="button" className="button button-secondary" onClick={() => scrollToSection(featuredSectionRef)}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => scrollToSection(featuredSectionRef)}
+          >
             Prendas destacadas
           </button>
-          <button type="button" className="button button-secondary" onClick={showOfferableCatalog}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={showOfferableCatalog}
+          >
             Ver ofertas
           </button>
         </div>
       </section>
 
       <section ref={featuredSectionRef}>
-        <FeaturedRail
+        <FeaturedMotionCards
           title="Destacados y descuentos"
           items={featuredItems.slice(0, 8)}
         />
@@ -362,13 +427,15 @@ export default function HomePage() {
             className="input search-input-main"
             placeholder="Buscar por titulo, marca o categoria"
             value={filters.search}
-            onChange={(event) => updateFilterField('search', event.target.value)}
+            onChange={(event) =>
+              updateFilterField("search", event.target.value)
+            }
           />
 
           <select
             className="input sort-select"
             value={filters.sort}
-            onChange={(event) => updateFilterField('sort', event.target.value)}
+            onChange={(event) => updateFilterField("sort", event.target.value)}
           >
             <option value="intake_desc">Ingreso mas reciente</option>
             <option value="intake_asc">Ingreso mas antiguo</option>
@@ -379,15 +446,15 @@ export default function HomePage() {
           <div className="view-toggle">
             <button
               type="button"
-              className={view === 'grid' ? 'active' : ''}
-              onClick={() => setView('grid')}
+              className={view === "grid" ? "active" : ""}
+              onClick={() => setView("grid")}
             >
               Grilla
             </button>
             <button
               type="button"
-              className={view === 'list' ? 'active' : ''}
-              onClick={() => setView('list')}
+              className={view === "list" ? "active" : ""}
+              onClick={() => setView("list")}
             >
               Lista
             </button>
@@ -395,11 +462,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section ref={catalogSectionRef} className="catalog-wide container" tabIndex={-1}>
-        <ArticleFilters
-          value={filters}
-          onChange={applyFilters}
-        />
+      <section
+        ref={catalogSectionRef}
+        className="catalog-wide container"
+        tabIndex={-1}
+      >
+        <ArticleFilters value={filters} onChange={applyFilters} />
 
         <div className="catalog-content">
           <div className="catalog-summary-row">
@@ -411,7 +479,7 @@ export default function HomePage() {
 
           {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
 
-          <div
+          {/* <div
             className="catalog-quick-actions"
             aria-label="Acciones rapidas del catalogo"
           >
@@ -436,7 +504,7 @@ export default function HomePage() {
             >
               Solo destacados
             </button>
-          </div>
+          </div> */}
 
           {activeFilterChips.length ? (
             <div className="active-filters-row" aria-label="Filtros activos">
@@ -461,9 +529,16 @@ export default function HomePage() {
               <p className="muted-copy">Cargando prendas seleccionadas…</p>
             </div>
           ) : items.length ? (
-            <div className={`article-grid ${view === 'list' ? 'article-grid-list' : ''}`}>
+            <div
+              className={`article-grid ${view === "list" ? "article-grid-list" : ""}`}
+            >
               {items.map((article) => (
-                <ArticleCard key={article.id} article={article} view={view} />
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  view={view}
+                  variant="default"
+                />
               ))}
             </div>
           ) : (
@@ -472,10 +547,15 @@ export default function HomePage() {
                 <p className="section-kicker">Sin resultados</p>
                 <h2>No encontramos prendas con esos filtros.</h2>
                 <p className="muted-copy">
-                  Prueba quitar alguna seleccion o volver a mirar lo mas reciente.
+                  Prueba quitar alguna seleccion o volver a mirar lo mas
+                  reciente.
                 </p>
                 <div>
-                  <button type="button" className="button button-secondary" onClick={resetFilters}>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={resetFilters}
+                  >
                     Restablecer filtros
                   </button>
                 </div>
@@ -491,7 +571,7 @@ export default function HomePage() {
                 disabled={loadingMore}
                 onClick={() => setPage((current) => current + 1)}
               >
-                {loadingMore ? 'Cargando mas…' : 'Ver mas'}
+                {loadingMore ? "Cargando mas…" : "Ver mas"}
               </button>
             </div>
           ) : null}
@@ -503,7 +583,8 @@ export default function HomePage() {
           <p className="section-kicker">Captacion</p>
           <h2>¿Queres enterarte cuando entra nueva ropa?</h2>
           <p className="muted-copy">
-            Dejanos un contacto y tus preferencias. Te avisamos cuando aparezcan prendas que encajen con tu estilo.
+            Dejanos un contacto y tus preferencias. Te avisamos cuando aparezcan
+            prendas que encajen con tu estilo.
           </p>
         </div>
 
@@ -511,60 +592,124 @@ export default function HomePage() {
           <div className="form-grid-two">
             <label className="field-group">
               <span>Nombre</span>
-              <input className="input" value={leadForm.firstName} onChange={(event) => updateLeadField('firstName', event.target.value)} />
+              <input
+                className="input"
+                value={leadForm.firstName}
+                onChange={(event) =>
+                  updateLeadField("firstName", event.target.value)
+                }
+              />
             </label>
             <label className="field-group">
               <span>Email</span>
-              <input className="input" type="email" value={leadForm.email} onChange={(event) => updateLeadField('email', event.target.value)} />
+              <input
+                className="input"
+                type="email"
+                value={leadForm.email}
+                onChange={(event) =>
+                  updateLeadField("email", event.target.value)
+                }
+              />
             </label>
             <label className="field-group">
               <span>WhatsApp</span>
-              <input className="input" value={leadForm.phone} onChange={(event) => updateLeadField('phone', event.target.value)} />
+              <input
+                className="input"
+                value={leadForm.phone}
+                onChange={(event) =>
+                  updateLeadField("phone", event.target.value)
+                }
+              />
             </label>
             <label className="field-group">
               <span>Instagram</span>
-              <input className="input" value={leadForm.instagram} onChange={(event) => updateLeadField('instagram', event.target.value)} />
+              <input
+                className="input"
+                value={leadForm.instagram}
+                onChange={(event) =>
+                  updateLeadField("instagram", event.target.value)
+                }
+              />
             </label>
             <label className="field-group">
               <span>Categoria</span>
-              <select className="input" value={leadForm.preferredCategory} onChange={(event) => updateLeadField('preferredCategory', event.target.value)}>
+              <select
+                className="input"
+                value={leadForm.preferredCategory}
+                onChange={(event) =>
+                  updateLeadField("preferredCategory", event.target.value)
+                }
+              >
                 <option value="">Sin preferencia</option>
                 {categoryOptions.map((option) => (
-                  <option key={option.id} value={option.label}>{option.label}</option>
+                  <option key={option.id} value={option.label}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="field-group">
               <span>Marca</span>
-              <select className="input" value={leadForm.preferredBrand} onChange={(event) => updateLeadField('preferredBrand', event.target.value)}>
+              <select
+                className="input"
+                value={leadForm.preferredBrand}
+                onChange={(event) =>
+                  updateLeadField("preferredBrand", event.target.value)
+                }
+              >
                 <option value="">Sin preferencia</option>
                 {brandOptions.map((option) => (
-                  <option key={option.id} value={option.label}>{option.label}</option>
+                  <option key={option.id} value={option.label}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="field-group">
               <span>Talle</span>
-              <select className="input" value={leadForm.preferredSize} onChange={(event) => updateLeadField('preferredSize', event.target.value)}>
+              <select
+                className="input"
+                value={leadForm.preferredSize}
+                onChange={(event) =>
+                  updateLeadField("preferredSize", event.target.value)
+                }
+              >
                 <option value="">Sin preferencia</option>
                 {sizeOptions.map((option) => (
-                  <option key={option.id} value={option.label}>{option.label}</option>
+                  <option key={option.id} value={option.label}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </label>
             <label className="field-group">
               <span>Color</span>
-              <input className="input" value={leadForm.preferredColor} onChange={(event) => updateLeadField('preferredColor', event.target.value)} placeholder="Ej: negro, azul, neutros" />
+              <input
+                className="input"
+                value={leadForm.preferredColor}
+                onChange={(event) =>
+                  updateLeadField("preferredColor", event.target.value)
+                }
+                placeholder="Ej: negro, azul, neutros"
+              />
             </label>
           </div>
 
           {leadError ? <p className="error-copy">{leadError}</p> : null}
           {leadSuccess ? <p className="success-copy">{leadSuccess}</p> : null}
 
-          <button className="button button-primary" type="submit" disabled={leadSubmitting}>
-            {leadSubmitting ? 'Guardando…' : 'Avisarme'}
+          <button
+            className="button button-primary"
+            type="submit"
+            disabled={leadSubmitting}
+          >
+            {leadSubmitting ? "Guardando…" : "Avisarme"}
           </button>
         </form>
+      </section>
+
+      <section className="container">
+        <ExperimentalVisualPanel images={HERO_IMAGES} />
       </section>
     </div>
   );

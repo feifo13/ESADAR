@@ -6,17 +6,35 @@ export function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
-export function formatDate(value) {
-  if (!value) return '—';
+function padDatePart(value) {
+  return String(value).padStart(2, '0');
+}
+
+export function formatDate(value, options = {}) {
+  const { withTime = true } = options;
+  if (!value) return '-';
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('es-UY', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  const day = padDatePart(date.getDate());
+  const month = padDatePart(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const dateLabel = `${day}-${month}-${year}`;
+
+  if (!withTime) return dateLabel;
+
+  const hours = padDatePart(date.getHours());
+  const minutes = padDatePart(date.getMinutes());
+  return `${dateLabel} ${hours}:${minutes}`;
+}
+
+export function formatDateOnly(value) {
+  return formatDate(value, { withTime: false });
+}
+
+export function formatDateTime(value) {
+  return formatDate(value, { withTime: true });
 }
 
 export function getDiscountedPrice(article) {

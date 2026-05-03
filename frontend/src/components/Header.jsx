@@ -1,16 +1,109 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
+import MobileMotionMenu from "./MobileMotionMenu.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.png";
+
+function findVisibleTargetRect(...refs) {
+  for (const ref of refs) {
+    const element = ref.current;
+    if (!element) continue;
+    const rect = element.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return rect;
+  }
+  return null;
+}
+
+function HeaderIcon({ children }) {
+  return (
+    <span className="header-icon-button__icon" aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+function AccountIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="8" r="4" />
+    </svg>
+  );
+}
+
+function BookmarkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3h12v18l-6-4-6 4V3z" />
+    </svg>
+  );
+}
+
+function AdminIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l7 4v5c0 5-3.4 7.7-7 9-3.6-1.3-7-4-7-9V7l7-4z" />
+      <path d="M9.5 12.5l1.6 1.6 3.4-3.7" />
+    </svg>
+  );
+}
+
+function LoginIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <path d="M10 17l5-5-5-5" />
+      <path d="M15 12H3" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="M16 17l5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function MenuGlyph() {
+  return (
+    <svg viewBox="0 0 512 512" aria-hidden="true">
+      <path fill="currentColor" d="M32 96v64h448V96H32zm0 128v64h448v-64H32zm0 128v64h448v-64H32z" />
+    </svg>
+  );
+}
 
 export default function Header({ hideBrand = false }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount, cartFx } = useCart();
+  const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
-  const cartButtonRef = useRef(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearch, setMobileSearch] = useState("");
+  const desktopCartButtonRef = useRef(null);
+  const mobileCartButtonRef = useRef(null);
+  const mobileMenuId = "esadar-mobile-menu";
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!cartFx?.tick) return undefined;
@@ -19,7 +112,11 @@ export default function Header({ hideBrand = false }) {
     const timeoutId = window.setTimeout(() => setCartPulse(false), 900);
 
     const sourceRect = cartFx.sourceRect;
-    const targetRect = cartButtonRef.current?.getBoundingClientRect();
+    const targetRect = findVisibleTargetRect(
+      mobileCartButtonRef,
+      desktopCartButtonRef,
+    );
+
     if (sourceRect && targetRect) {
       const startX = sourceRect.left + sourceRect.width / 2;
       const startY = sourceRect.top + sourceRect.height / 2;
@@ -27,7 +124,10 @@ export default function Header({ hideBrand = false }) {
       const endY = targetRect.top + targetRect.height / 2;
       const deltaX = endX - startX;
       const deltaY = endY - startY;
-      const curveLift = Math.max(48, Math.min(160, Math.abs(deltaY) * 0.55 + 72));
+      const curveLift = Math.max(
+        48,
+        Math.min(160, Math.abs(deltaY) * 0.55 + 72),
+      );
 
       setFlyFx({
         id: cartFx.tick,
@@ -48,19 +148,190 @@ export default function Header({ hideBrand = false }) {
     }
 
     return () => window.clearTimeout(timeoutId);
-  }, [cartFx?.tick, cartFx?.sourceRect]);
+  }, [cartFx?.sourceRect, cartFx?.tick]);
 
   const isAdmin = user?.roles?.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
   );
 
+  function openCart() {
+    navigate("/checkout/resumen", {
+      state: { replayIntro: true, replayIntroReason: "cart" },
+    });
+  }
+
+  function handleMobileSearchSubmit(event) {
+    event.preventDefault();
+    const search = mobileSearch.trim();
+    const path = search
+      ? `/articles?search=${encodeURIComponent(search)}`
+      : "/articles";
+    navigate(path);
+    setMobileMenuOpen(false);
+  }
+
+  function renderCartButton(buttonRef, extraClassName = "") {
+    return (
+      <button
+        ref={buttonRef}
+        type="button"
+        className={[
+          "ghost-button",
+          "cart-button",
+          "cart-button--icon-only",
+          "header-icon-button",
+          cartPulse ? "cart-button--pulse" : "",
+          extraClassName,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={openCart}
+        aria-label="Carrito"
+        title="Carrito"
+      >
+        <HeaderIcon>
+          <svg
+            className="cart-button__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="9" cy="20" r="1.6" />
+            <circle cx="18" cy="20" r="1.6" />
+            <path d="M3 4h2.2l1.9 9.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 7H7.1" />
+          </svg>
+        </HeaderIcon>
+        <span className={`badge${cartPulse ? " badge--pulse" : ""}`}>
+          {cartCount}
+        </span>
+      </button>
+    );
+  }
+
+  function renderIconNavLink(to, label, icon, extraClassName = "") {
+    return (
+      <NavLink
+        to={to}
+        className={({ isActive }) =>
+          [
+            "ghost-button",
+            "header-icon-button",
+            isActive ? "is-active" : "",
+            extraClassName,
+          ]
+            .filter(Boolean)
+            .join(" ")
+        }
+        aria-label={label}
+        title={label}
+      >
+        <HeaderIcon>{icon}</HeaderIcon>
+        <span className="sr-only">{label}</span>
+      </NavLink>
+    );
+  }
+
+  function renderIconButton(onClick, label, icon) {
+    return (
+      <button
+        type="button"
+        className="ghost-button header-icon-button"
+        onClick={onClick}
+        aria-label={label}
+        title={label}
+      >
+        <HeaderIcon>{icon}</HeaderIcon>
+        <span className="sr-only">{label}</span>
+      </button>
+    );
+  }
+
+  const mobileMenuItems = isAuthenticated
+    ? [
+        { key: "home", label: "Inicio", to: "/" },
+        { key: "catalog", label: "Catalogo", to: "/articles" },
+        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "account", label: "Mi cuenta", to: "/cuenta/perfil" },
+        { key: "alerts", label: "Mis alertas", to: "/cuenta/alertas" },
+        { key: "orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
+        ...(isAdmin ? [{ key: "admin", label: "Admin", to: "/admin/articles" }] : []),
+        { key: "cart", label: `Carrito (${cartCount})`, kind: "button", onClick: openCart },
+        {
+          key: "logout",
+          label: "Salir",
+          kind: "button",
+          onClick: logout,
+          className: "button button-primary mobile-nav-sheet__link",
+        },
+      ]
+    : [
+        { key: "home", label: "Inicio", to: "/" },
+        { key: "catalog", label: "Catalogo", to: "/articles" },
+        { key: "saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "cart", label: `Carrito (${cartCount})`, kind: "button", onClick: openCart },
+        {
+          key: "login",
+          label: "Ingresar",
+          to: "/login",
+          className: "button button-primary mobile-nav-sheet__link",
+        },
+        { key: "register", label: "Crear cuenta", to: "/register" },
+      ];
+
+  function renderMenuButton() {
+    return (
+      <motion.button
+        type="button"
+        className="ghost-button header-actions-mobile__menu"
+        aria-controls={mobileMenuId}
+        aria-expanded={mobileMenuOpen}
+        aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
+        onClick={() => setMobileMenuOpen((current) => !current)}
+        initial={false}
+        whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
+      >
+        <motion.span
+          animate={mobileMenuOpen ? { rotate: -3, scale: 0.95 } : { rotate: 0, scale: 1 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }}
+        >
+          <MenuGlyph />
+        </motion.span>
+      </motion.button>
+    );
+  }
+
+  const mobileSearchContent = (
+    <form className="mobile-menu-search" onSubmit={handleMobileSearchSubmit}>
+      <label className="sr-only" htmlFor="mobile-menu-search-input">
+        Buscar prendas
+      </label>
+      <div className="mobile-menu-search__field">
+        <SearchIcon />
+        <input
+          id="mobile-menu-search-input"
+          className="input"
+          type="search"
+          value={mobileSearch}
+          onChange={(event) => setMobileSearch(event.target.value)}
+          placeholder="Buscar por titulo, marca o categoria"
+        />
+      </div>
+      <button type="submit" className="button button-secondary mobile-menu-search__submit">
+        Buscar
+      </button>
+    </form>
+  );
+
   return (
     <>
       <header className="site-header">
-        <div className="container header-inner header-inner--compact">
+        <div className="container header-inner header-inner--compact header-inner--mobile-balanced">
           <Link
             to="/"
-            className={`brand-mark ${hideBrand ? "brand-mark--hidden" : ""}`}
+            className={`brand-mark brand-mark--desktop ${hideBrand ? "brand-mark--hidden" : ""}`}
             aria-label="ESADAR"
           >
             <img
@@ -70,69 +341,69 @@ export default function Header({ hideBrand = false }) {
             />
           </Link>
 
-          <div className="header-actions header-actions--ordered">
+          <div className="header-actions header-actions--ordered header-actions--desktop">
+            <NavLink to="/articles" className="ghost-button linklike header-link-button">
+              Catalogo
+            </NavLink>
             {isAuthenticated ? (
               <>
-                <span className="user-greeting">
-                  Hola, {user?.firstName || ""}
-                </span>
-                <NavLink to="/cuenta/perfil" className="ghost-button linklike">
-                  MI CUENTA
-                </NavLink>
-                <NavLink to="/cuenta/guardados" className="ghost-button linklike">
-                  GUARDADOS
-                </NavLink>
-                {isAdmin ? (
-                  <NavLink to="/admin/articles" className="ghost-button linklike">
-                    ADMIN
-                  </NavLink>
-                ) : null}
-                <button
-                  ref={cartButtonRef}
-                  type="button"
-                  className={`ghost-button cart-button cart-button--icon-only${cartPulse ? " cart-button--pulse" : ""}`}
-                  onClick={() => navigate('/checkout/resumen', { state: { replayIntro: true, replayIntroReason: 'cart' } })}
-                  aria-label="Carrito"
-                  title="Carrito"
-                >
-                  <svg className="cart-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6" /><circle cx="18" cy="20" r="1.6" /><path d="M3 4h2.2l1.9 9.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 7H7.1" /></svg>
-                  <span className={`badge${cartPulse ? " badge--pulse" : ""}`}>
-                    {cartCount}
-                  </span>
-                </button>
-                <button type="button" className="ghost-button" onClick={logout}>
-                  SALIR
-                </button>
+                <span className="user-greeting">Hola, {user?.firstName || ""}</span>
+                {renderIconNavLink("/cuenta/guardados", "Guardados", <BookmarkIcon />)}
+                {renderIconNavLink("/cuenta/perfil", "Mi cuenta", <AccountIcon />)}
+                {isAdmin ? renderIconNavLink("/admin/articles", "Admin", <AdminIcon />) : null}
+                {renderCartButton(desktopCartButtonRef)}
+                {renderIconButton(logout, "Salir", <LogoutIcon />)}
               </>
             ) : (
               <>
-                <NavLink to="/cuenta/guardados" className="ghost-button linklike">
-                  GUARDADOS
-                </NavLink>
-                <button
-                  ref={cartButtonRef}
-                  type="button"
-                  className={`ghost-button cart-button cart-button--icon-only${cartPulse ? " cart-button--pulse" : ""}`}
-                  onClick={() => navigate('/checkout/resumen', { state: { replayIntro: true, replayIntroReason: 'cart' } })}
-                  aria-label="Carrito"
-                  title="Carrito"
-                >
-                  <svg className="cart-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6" /><circle cx="18" cy="20" r="1.6" /><path d="M3 4h2.2l1.9 9.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 7H7.1" /></svg>
-                  <span className={`badge${cartPulse ? " badge--pulse" : ""}`}>
-                    {cartCount}
-                  </span>
-                </button>
-                <NavLink to="/login" className="ghost-button linklike">
-                  INGRESAR
-                </NavLink>
+                {renderIconNavLink("/cuenta/guardados", "Guardados", <BookmarkIcon />)}
+                {renderCartButton(desktopCartButtonRef)}
+                {renderIconNavLink("/login", "Ingresar", <LoginIcon />)}
               </>
             )}
+          </div>
+
+          <div className="header-mobile-shell">
+            {renderMenuButton()}
+            <Link
+              to="/"
+              className={`brand-mark brand-mark--mobile ${hideBrand ? "brand-mark--hidden" : ""}`}
+              aria-label="ESADAR"
+            >
+              <img
+                src={esadarWordmark}
+                alt="ESADAR"
+                className="brand-mark__logo"
+              />
+            </Link>
+            {renderCartButton(mobileCartButtonRef, "header-mobile-shell__cart")}
           </div>
         </div>
       </header>
 
+      <MobileMotionMenu
+        id={mobileMenuId}
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        title="Menu"
+        headerContent={(
+          <img
+            src={esadarWordmark}
+            alt="ESADAR"
+            className="mobile-motion-menu__brand"
+          />
+        )}
+        searchContent={mobileSearchContent}
+        items={mobileMenuItems}
+      />
+
       {flyFx ? (
-        <span key={flyFx.id} className="cart-fly-token" style={flyFx.style} aria-hidden="true">
+        <span
+          key={flyFx.id}
+          className="cart-fly-token"
+          style={flyFx.style}
+          aria-hidden="true"
+        >
           <span className="cart-fly-token__core" />
         </span>
       ) : null}

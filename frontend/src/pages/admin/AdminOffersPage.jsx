@@ -1,29 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
-import AdminPagination from '../../components/admin/AdminPagination.jsx';
-import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
-import StatusBadge from '../../components/StatusBadge.jsx';
-import { useLookups } from '../../contexts/LookupsContext.jsx';
-import { apiFetch } from '../../lib/api.js';
-import { formatCurrency, formatDate } from '../../lib/format.js';
-import { buildQueryString } from '../../lib/query.js';
+import { useEffect, useMemo, useState } from "react";
+import AdminPagination from "../../components/admin/AdminPagination.jsx";
+import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
+import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
+import StatusBadge from "../../components/StatusBadge.jsx";
+import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { apiFetch } from "../../lib/api.js";
+import { formatCurrency, formatDate } from "../../lib/format.js";
+import { buildQueryString } from "../../lib/query.js";
 
 const OFFER_STATUS_LABELS = {
-  PENDING: 'Pendiente',
-  ACCEPTED: 'Aceptada',
-  REJECTED: 'Rechazada',
-  CANCELLED: 'Cancelada',
-  EXPIRED: 'Vencida',
+  PENDING: "Pendiente",
+  ACCEPTED: "Aceptada",
+  REJECTED: "Rechazada",
+  CANCELLED: "Cancelada",
+  EXPIRED: "Vencida",
 };
 
 const initialFilters = {
-  q: '',
-  status: '',
-  categoryId: '',
-  brandId: '',
-  dateFrom: '',
-  dateTo: '',
-  sortBy: 'createdAt',
-  sortDir: 'desc',
+  q: "",
+  status: "",
+  categoryId: "",
+  brandId: "",
+  dateFrom: "",
+  dateTo: "",
+  sortBy: "createdAt",
+  sortDir: "desc",
   page: 1,
   pageSize: 25,
 };
@@ -33,14 +34,33 @@ export default function AdminOffersPage() {
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [offers, setOffers] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 25,
+    total: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
-  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.pageSize || 25)));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      Number(pagination.total || 0) / Number(pagination.pageSize || 25),
+    ),
+  );
+  const activeFiltersCount =
+    [
+      filters.q,
+      filters.status,
+      filters.categoryId,
+      filters.brandId,
+      filters.dateFrom,
+      filters.dateTo,
+    ].filter(Boolean).length +
+    (filters.pageSize !== initialFilters.pageSize ? 1 : 0);
 
   useEffect(() => {
     let ignore = false;
@@ -48,13 +68,16 @@ export default function AdminOffersPage() {
     async function loadOffers() {
       try {
         setLoading(true);
-        setError('');
+        setError("");
         const response = await apiFetch(`/api/admin/offers?${query}`);
         if (ignore) return;
         setOffers(response.items || []);
-        setPagination(response.pagination || { page: 1, pageSize: 25, total: 0 });
+        setPagination(
+          response.pagination || { page: 1, pageSize: 25, total: 0 },
+        );
       } catch (err) {
-        if (!ignore) setError(err.message || 'No se pudieron cargar las ofertas');
+        if (!ignore)
+          setError(err.message || "No se pudieron cargar las ofertas");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -91,16 +114,16 @@ export default function AdminOffersPage() {
 
   async function handleStatusChange(offerId, nextStatus) {
     try {
-      setError('');
-      setMessage('');
+      setError("");
+      setMessage("");
       await apiFetch(`/api/admin/offers/${offerId}/status`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: { status: nextStatus },
       });
-      setMessage('La oferta fue actualizada correctamente.');
+      setMessage("La oferta fue actualizada correctamente.");
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      setError(err.message || 'No se pudo actualizar la oferta');
+      setError(err.message || "No se pudo actualizar la oferta");
     }
   }
 
@@ -112,96 +135,145 @@ export default function AdminOffersPage() {
           <div>
             <p className="section-kicker">Administracion</p>
             <h1>Ofertas</h1>
-            <p className="muted-copy">Listado con filtros por estado, articulo, categoria, marca y fecha.</p>
           </div>
         </div>
 
-        <div className="admin-filter-grid">
-          <label className="field-group">
-            <span>Buscar</span>
-            <input
-              className="input"
-              placeholder="Articulo, codigo, contacto, email"
-              value={draftFilters.q}
-              onChange={(event) => updateDraft('q', event.target.value)}
-            />
-          </label>
+        <ResponsiveFilterPanel
+          title="Filtros de ofertas"
+          description=""
+          buttonLabel="Mostrar filtros"
+          summary={
+            activeFiltersCount
+              ? `${activeFiltersCount} filtro(s) activos`
+              : "Sin filtros adicionales"
+          }
+          onApply={applyFilters}
+          onClear={clearFilters}
+        >
+          <div className="admin-filter-grid">
+            <label className="field-group">
+              <span>Buscar</span>
+              <input
+                className="input"
+                placeholder="Articulo, codigo, contacto, email"
+                value={draftFilters.q}
+                onChange={(event) => updateDraft("q", event.target.value)}
+              />
+            </label>
 
-          <label className="field-group">
-            <span>Estado</span>
-            <select className="input" value={draftFilters.status} onChange={(event) => updateDraft('status', event.target.value)}>
-              <option value="">Todos</option>
-              <option value="PENDING">Pendientes</option>
-              <option value="ACCEPTED">Aceptadas</option>
-              <option value="REJECTED">Rechazadas</option>
-              <option value="CANCELLED">Canceladas</option>
-              <option value="EXPIRED">Vencidas</option>
-            </select>
-          </label>
+            <label className="field-group">
+              <span>Estado</span>
+              <select
+                className="input"
+                value={draftFilters.status}
+                onChange={(event) => updateDraft("status", event.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="PENDING">Pendientes</option>
+                <option value="ACCEPTED">Aceptadas</option>
+                <option value="REJECTED">Rechazadas</option>
+                <option value="CANCELLED">Canceladas</option>
+                <option value="EXPIRED">Vencidas</option>
+              </select>
+            </label>
 
-          <label className="field-group">
-            <span>Categoria</span>
-            <select className="input" value={draftFilters.categoryId} onChange={(event) => updateDraft('categoryId', event.target.value)}>
-              <option value="">Todas</option>
-              {categoryOptions.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </label>
+            <label className="field-group">
+              <span>Categoria</span>
+              <select
+                className="input"
+                value={draftFilters.categoryId}
+                onChange={(event) =>
+                  updateDraft("categoryId", event.target.value)
+                }
+              >
+                <option value="">Todas</option>
+                {categoryOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="field-group">
-            <span>Marca</span>
-            <select className="input" value={draftFilters.brandId} onChange={(event) => updateDraft('brandId', event.target.value)}>
-              <option value="">Todas</option>
-              {brandOptions.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </label>
+            <label className="field-group">
+              <span>Marca</span>
+              <select
+                className="input"
+                value={draftFilters.brandId}
+                onChange={(event) => updateDraft("brandId", event.target.value)}
+              >
+                <option value="">Todas</option>
+                {brandOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="field-group">
-            <span>Desde</span>
-            <input className="input" type="date" value={draftFilters.dateFrom} onChange={(event) => updateDraft('dateFrom', event.target.value)} />
-          </label>
+            <label className="field-group">
+              <span>Desde</span>
+              <input
+                className="input"
+                type="date"
+                value={draftFilters.dateFrom}
+                onChange={(event) =>
+                  updateDraft("dateFrom", event.target.value)
+                }
+              />
+            </label>
 
-          <label className="field-group">
-            <span>Hasta</span>
-            <input className="input" type="date" value={draftFilters.dateTo} onChange={(event) => updateDraft('dateTo', event.target.value)} />
-          </label>
+            <label className="field-group">
+              <span>Hasta</span>
+              <input
+                className="input"
+                type="date"
+                value={draftFilters.dateTo}
+                onChange={(event) => updateDraft("dateTo", event.target.value)}
+              />
+            </label>
 
-          <label className="field-group">
-            <span>Orden</span>
-            <select className="input" value={draftFilters.sortBy} onChange={(event) => updateDraft('sortBy', event.target.value)}>
-              <option value="createdAt">Fecha</option>
-              <option value="offeredAmount">Monto</option>
-              <option value="status">Estado</option>
-              <option value="articleTitle">Articulo</option>
-              <option value="contactName">Contacto</option>
-            </select>
-          </label>
+            <label className="field-group">
+              <span>Orden</span>
+              <select
+                className="input"
+                value={draftFilters.sortBy}
+                onChange={(event) => updateDraft("sortBy", event.target.value)}
+              >
+                <option value="createdAt">Fecha</option>
+                <option value="offeredAmount">Monto</option>
+                <option value="status">Estado</option>
+                <option value="articleTitle">Articulo</option>
+                <option value="contactName">Contacto</option>
+              </select>
+            </label>
 
-          <label className="field-group">
-            <span>Direccion</span>
-            <select className="input" value={draftFilters.sortDir} onChange={(event) => updateDraft('sortDir', event.target.value)}>
-              <option value="desc">Descendente</option>
-              <option value="asc">Ascendente</option>
-            </select>
-          </label>
+            <label className="field-group">
+              <span>Direccion</span>
+              <select
+                className="input"
+                value={draftFilters.sortDir}
+                onChange={(event) => updateDraft("sortDir", event.target.value)}
+              >
+                <option value="desc">Descendente</option>
+                <option value="asc">Ascendente</option>
+              </select>
+            </label>
 
-          <label className="field-group">
-            <span>Page size</span>
-            <select className="input" value={draftFilters.pageSize} onChange={(event) => changePageSize(event.target.value)}>
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="toolbar-inline">
-          <button type="button" className="button button-primary" onClick={applyFilters}>Aplicar filtros</button>
-          <button type="button" className="button button-secondary" onClick={clearFilters}>Limpiar</button>
-        </div>
+            <label className="field-group">
+              <span>Page size</span>
+              <select
+                className="input"
+                value={draftFilters.pageSize}
+                onChange={(event) => changePageSize(event.target.value)}
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+          </div>
+        </ResponsiveFilterPanel>
 
         {message ? <p className="success-copy">{message}</p> : null}
         {error ? <p className="error-copy">{error}</p> : null}
@@ -227,27 +299,65 @@ export default function AdminOffersPage() {
                     <td>
                       <div className="cell-stack">
                         <strong>{offer.article.title}</strong>
-                        <span className="muted-copy">{offer.article.internalCode || `#${offer.article.id}`}</span>
                         <span className="muted-copy">
-                          {offer.article.categoryName || 'Sin categoria'} - {offer.article.brandName || 'Sin marca'}
+                          {offer.article.internalCode || `#${offer.article.id}`}
+                        </span>
+                        <span className="muted-copy">
+                          {offer.article.categoryName || "Sin categoria"} -{" "}
+                          {offer.article.brandName || "Sin marca"}
                         </span>
                       </div>
                     </td>
                     <td>
                       <div className="cell-stack">
-                        <strong>{offer.contact.firstName} {offer.contact.lastName}</strong>
-                        <span className="muted-copy">{offer.contact.email || 'Sin email'}</span>
-                        <span className="muted-copy">{offer.contact.phone || 'Sin telefono'}</span>
+                        <strong>
+                          {offer.contact.firstName} {offer.contact.lastName}
+                        </strong>
+                        <span className="muted-copy">
+                          {offer.contact.email || "Sin email"}
+                        </span>
+                        <span className="muted-copy">
+                          {offer.contact.phone || "Sin telefono"}
+                        </span>
                       </div>
                     </td>
                     <td>{formatCurrency(offer.offeredAmount)}</td>
-                    <td><StatusBadge status={offer.status} labels={OFFER_STATUS_LABELS} /></td>
                     <td>
-                      {offer.status === 'PENDING' ? (
+                      <StatusBadge
+                        status={offer.status}
+                        labels={OFFER_STATUS_LABELS}
+                      />
+                    </td>
+                    <td>
+                      {offer.status === "PENDING" ? (
                         <div className="table-actions">
-                          <button type="button" className="ghost-button" onClick={() => handleStatusChange(offer.id, 'ACCEPTED')}>Aceptar</button>
-                          <button type="button" className="ghost-button" onClick={() => handleStatusChange(offer.id, 'REJECTED')}>Rechazar</button>
-                          <button type="button" className="ghost-button" onClick={() => handleStatusChange(offer.id, 'CANCELLED')}>Cancelar</button>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() =>
+                              handleStatusChange(offer.id, "ACCEPTED")
+                            }
+                          >
+                            Aceptar
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() =>
+                              handleStatusChange(offer.id, "REJECTED")
+                            }
+                          >
+                            Rechazar
+                          </button>
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() =>
+                              handleStatusChange(offer.id, "CANCELLED")
+                            }
+                          >
+                            Cancelar
+                          </button>
                         </div>
                       ) : (
                         <span className="muted-copy">Sin acciones</span>
@@ -273,8 +383,12 @@ export default function AdminOffersPage() {
           totalPages={totalPages}
           totalItems={Number(pagination.total || 0)}
           loading={loading}
-          onPrevious={() => changePage(Math.max(1, Number(filters.page || 1) - 1))}
-          onNext={() => changePage(Math.min(totalPages, Number(filters.page || 1) + 1))}
+          onPrevious={() =>
+            changePage(Math.max(1, Number(filters.page || 1) - 1))
+          }
+          onNext={() =>
+            changePage(Math.min(totalPages, Number(filters.page || 1) + 1))
+          }
         />
       </section>
     </div>

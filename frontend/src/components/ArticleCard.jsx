@@ -1,23 +1,19 @@
 import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { formatCurrency, getDiscountedPrice, hasDiscount, cn } from '../lib/format.js';
+import { articleOfferPath, articlePath } from '../lib/routes.js';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useWishlist } from '../contexts/WishlistContext.jsx';
 import SmartImage from './SmartImage.jsx';
+import WishlistHeartButton from './WishlistHeartButton.jsx';
 
-function HeartIcon({ active }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={active ? 'wishlist-heart-icon is-active' : 'wishlist-heart-icon'}>
-      <path
-        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-        fill={active ? 'currentColor' : 'none'}
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
+const SHOW_CARD_BADGES = false;
+const SHOW_TEXT_WISHLIST_ACTION = false;
+const SHOW_CARD_OFFER_ACTION = false;
+const SHOW_EDITORIAL_STATUS_BADGE = false;
 
-export default function ArticleCard({ article, view = 'grid' }) {
+export default function ArticleCard({ article, view = 'grid', variant = 'default' }) {
+  const shouldReduceMotion = useReducedMotion();
   const { addItem } = useCart();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   const discounted = hasDiscount(article);
@@ -32,6 +28,9 @@ export default function ArticleCard({ article, view = 'grid' }) {
   const isUniquePiece = Number(article.quantityTotal || 0) <= 1;
   const saved = isSaved(article.id);
   const pending = pendingIds.includes(Number(article.id));
+  const showOfferRibbon = article.allowOffers && !isSoldOut;
+  const detailPath = articlePath(article);
+  const offerPath = articleOfferPath(article);
   const imageSources = article.primaryImageDetail || article.primaryImageThumb ? [
     article.primaryImageDetail ? { srcSet: `${article.primaryImageDetail} 900w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
     article.primaryImage ? { srcSet: `${article.primaryImage} 560w`, type: 'image/webp' } : null,
@@ -53,15 +52,66 @@ export default function ArticleCard({ article, view = 'grid' }) {
     brandName: article.brandName,
     sizeLabel,
     image: article.primaryImage || '',
+    allowOffers: article.allowOffers,
   };
 
-  return (
-    <article className={cn('article-card', view === 'list' && 'article-card-list', isSoldOut && 'article-card--sold-out')}>
-      <div className="article-card-media-wrap">
-        <Link className="article-card-media" to={`/articles/${article.slug || article.id}`}>
+  if (variant === 'editorial' && view === 'grid') {
+    return (
+      <motion.article
+        className={cn('article-card', 'article-card--editorial', 'featured-motion-card', isSoldOut && 'article-card--sold-out')}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+        whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ type: 'spring', stiffness: 180, damping: 24 }}
+        whileHover={shouldReduceMotion ? undefined : { y: -8, scale: 1.01 }}
+      >
+        <Link className="article-card-media--editorial featured-motion-card__link" to={detailPath}>
           {isSoldOut ? <span className="article-card-ribbon">Agotado</span> : null}
+          {!isSoldOut && showOfferRibbon ? <span className="article-card-ribbon article-card-ribbon--offerable">Acepta ofertas</span> : null}
+          <div className="featured-motion-card__media">
+            <SmartImage
+              src={article.primaryImage || article.primaryImageThumb || article.primaryImageDetail}
+              alt={article.primaryImageAlt || article.title}
+              fallbackLabel={article.title}
+              loading="lazy"
+              sources={imageSources}
+              className="article-card-editorial-image featured-motion-card__image"
+            />
+          </div>
+          <span className="article-card-editorial-overlay featured-motion-card__overlay" aria-hidden="true" />
+          <div className="article-card-editorial-copy featured-motion-card__copy">
+            <p className="section-kicker">{categoryName}</p>
+            <h3 className="article-card-editorial-title">{article.title}</h3>
+            <div className="article-card-editorial-meta featured-motion-card__meta">
+              <span>{conditionLabel || 'Second hand seleccionada'}</span>
+              <strong>{formatCurrency(price)}</strong>
+            </div>
+            {SHOW_EDITORIAL_STATUS_BADGE && isSoldOut ? (
+              <span className="article-card-editorial-status featured-motion-card__status">Agotado</span>
+            ) : null}
+          </div>
+        </Link>
+
+        <WishlistHeartButton
+          active={saved}
+          pending={pending}
+          className="article-card-heart article-card-heart--editorial article-card-heart--bare"
+          labelActive="Quitar de guardados"
+          labelInactive="Guardar articulo"
+          onToggle={() => void toggleItem(article, optimisticWishlistItem)}
+        />
+      </motion.article>
+    );
+  }
+
+  return (
+    <article className={cn('article-card', 'article-card--catalog', view === 'list' && 'article-card-list', isSoldOut && 'article-card--sold-out')}>
+      <div className="article-card-media-wrap">
+        <Link className="article-card-media article-card-media--catalog" to={detailPath}>
+          {isSoldOut ? <span className="article-card-ribbon">Agotado</span> : null}
+          {!isSoldOut && showOfferRibbon ? <span className="article-card-ribbon article-card-ribbon--offerable">Acepta ofertas</span> : null}
           <SmartImage
-            src={article.primaryImage}
+            src={article.primaryImage || article.primaryImageThumb || article.primaryImageDetail}
             alt={article.primaryImageAlt || article.title}
             fallbackLabel={article.title}
             loading="lazy"
@@ -69,20 +119,18 @@ export default function ArticleCard({ article, view = 'grid' }) {
           />
         </Link>
 
-        <button
-          type="button"
-          className={saved ? 'article-card-heart is-active' : 'article-card-heart'}
-          aria-label={saved ? 'Quitar de guardados' : 'Guardar prenda'}
-          aria-pressed={saved}
-          disabled={pending}
-          onClick={() => void toggleItem(article, optimisticWishlistItem)}
-        >
-          <HeartIcon active={saved} />
-        </button>
+        <WishlistHeartButton
+          active={saved}
+          pending={pending}
+          className="article-card-heart article-card-heart--bare"
+          labelActive="Quitar de guardados"
+          labelInactive="Guardar articulo"
+          onToggle={() => void toggleItem(article, optimisticWishlistItem)}
+        />
       </div>
 
-      <div className="article-card-body">
-        <div className="article-card-tags">
+      <div className="article-card-body article-card-body--catalog">
+        <div className={SHOW_CARD_BADGES ? 'article-card-tags' : 'article-card-tags article-card-tags--hidden'} aria-hidden={!SHOW_CARD_BADGES}>
           {article.isFeatured ? <span className="pill pill-featured">Destacado</span> : null}
           {article.allowOffers ? <span className="pill pill-offer">Acepta ofertas</span> : null}
           {discounted ? <span className="pill pill-discount">Descuento</span> : null}
@@ -92,16 +140,15 @@ export default function ArticleCard({ article, view = 'grid' }) {
 
         <div className="article-card-copy">
           <p className="eyebrow">{categoryName}{brandName ? ` · ${brandName}` : ''}</p>
-          <Link to={`/articles/${article.slug || article.id}`} className="article-card-title">
+          <Link to={detailPath} className="article-card-title">
             {article.title}
           </Link>
-          <div className="article-card-details">
-            <p className="article-card-meta">Talle: {sizeLabel}</p>
-            {conditionLabel ? <p className="article-card-detail-line">Estado: {conditionLabel}</p> : null}
-            {colorLabel ? <p className="article-card-detail-line">Color: {colorLabel}</p> : null}
-            {materialLabel ? <p className="article-card-detail-line">Material: {materialLabel}</p> : null}
-            <p className="article-card-detail-line">{isSoldOut ? 'Sin stock' : `${Number(article.quantityAvailable || 0)} disponibles`}</p>
-          </div>
+          <p className="article-card-meta">{sizeLabel}</p>
+          {conditionLabel || colorLabel || materialLabel ? (
+            <p className="article-card-detail-line">
+              {[conditionLabel, colorLabel, materialLabel].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
         </div>
 
         <div className="article-card-pricebox">
@@ -109,18 +156,7 @@ export default function ArticleCard({ article, view = 'grid' }) {
           <span className="price-current">{formatCurrency(price)}</span>
         </div>
 
-        <div className="article-card-actions">
-          <Link to={`/articles/${article.slug || article.id}`} className="button button-secondary button-compact">
-            Ver prenda
-          </Link>
-          <button
-            type="button"
-            className={saved ? 'button button-secondary button-compact is-active' : 'button button-secondary button-compact'}
-            onClick={() => void toggleItem(article, optimisticWishlistItem)}
-            disabled={pending}
-          >
-            {saved ? 'Guardado' : 'Guardar'}
-          </button>
+        <div className="article-card-actions article-card-actions--catalog">
           {!isSoldOut ? (
             <button
               type="button"
@@ -131,9 +167,23 @@ export default function ArticleCard({ article, view = 'grid' }) {
             >
               Agregar al carrito
             </button>
+          ) : (
+            <button type="button" className="button button-secondary button-compact" disabled>
+              Agotado
+            </button>
+          )}
+          {SHOW_TEXT_WISHLIST_ACTION ? (
+            <button
+              type="button"
+              className={saved ? 'button button-secondary button-compact is-active' : 'button button-secondary button-compact'}
+              onClick={() => void toggleItem(article, optimisticWishlistItem)}
+              disabled={pending}
+            >
+              {saved ? 'Guardado' : 'Guardar'}
+            </button>
           ) : null}
-          {article.allowOffers && !isSoldOut ? (
-            <Link to={`/articles/${article.slug || article.id}/offer`} className="button button-secondary button-compact">
+          {SHOW_CARD_OFFER_ACTION && article.allowOffers && !isSoldOut ? (
+            <Link to={offerPath} className="button button-secondary button-compact">
               Ofertar
             </Link>
           ) : null}

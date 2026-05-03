@@ -6,8 +6,9 @@ import { apiFetch } from '../lib/api.js';
 import { formatCurrency } from '../lib/format.js';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { toAbsoluteUrl } from '../lib/seo.js';
-import ImageGallery from '../components/ImageGallery.jsx';
+import ArticleImageGallery from '../components/ArticleImageGallery.jsx';
 import ArticleCard from '../components/ArticleCard.jsx';
+import { articlePath } from '../lib/routes.js';
 
 const initialGuest = {
   firstName: '',
@@ -125,18 +126,18 @@ export default function OfferPage() {
         noindex
       />
 
-      <section className="detail-shell detail-shell-article">
+      <section className="page-stack">
         <div className="detail-titlebar detail-titlebar-offer">
           <p className="section-kicker">Ofertar articulo</p>
           <h1>Estas ofertando por: {article.title}</h1>
         </div>
 
-        <div className="detail-grid detail-grid-article">
-          <div className="detail-gallery-column">
-            <ImageGallery images={article.images} title={article.title} />
+        <div className="ebay-article-layout ebay-article-layout--offer">
+          <div className="ebay-article-layout__gallery">
+            <ArticleImageGallery images={article.images} title={article.title} />
           </div>
 
-          <aside className="detail-sidebar detail-sidebar-article section-card offer-sidebar-flat">
+          <aside className="ebay-article-layout__sidebar section-card offer-sidebar-flat">
             <div className="detail-meta-list">
               <div><span>Categoria</span><strong>{article.categoryName}</strong></div>
               <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
@@ -190,7 +191,7 @@ export default function OfferPage() {
               />
             </label>
 
-            <div className="detail-actions detail-actions-article">
+            <div className="detail-actions detail-actions--stacked">
               <button
                 type="button"
                 className="button button-primary button-compact"
@@ -200,7 +201,7 @@ export default function OfferPage() {
                 {submitting ? 'Enviando oferta…' : 'Ofertar'}
               </button>
 
-              <Link to={`/articles/${article.slug || article.id}`} className="button button-secondary button-compact">
+              <Link to={articlePath(article)} className="button button-secondary button-compact">
                 Volver al articulo
               </Link>
             </div>
@@ -222,7 +223,7 @@ export default function OfferPage() {
 
         <div className="article-grid">
           {related.map((item) => (
-            <ArticleCard key={item.id} article={item} />
+            <ArticleCard key={item.id} article={item} view="grid" variant="default" />
           ))}
         </div>
       </section>

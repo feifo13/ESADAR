@@ -5,11 +5,13 @@ import ArticleCard from '../components/ArticleCard.jsx';
 import ArticleImageGallery from '../components/ArticleImageGallery.jsx';
 import { apiFetch } from '../lib/api.js';
 import { formatCurrency, getDiscountedPrice, hasDiscount } from '../lib/format.js';
+import { articleOfferPath } from '../lib/routes.js';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { useWishlist } from '../contexts/WishlistContext.jsx';
 import { buildBreadcrumbJsonLd, buildProductJsonLd, toAbsoluteUrl } from '../lib/seo.js';
 import { getPublicSessionToken } from '../lib/publicSession.js';
+import WishlistHeartButton from '../components/WishlistHeartButton.jsx';
 
 const initialAlertForm = {
   firstName: '',
@@ -134,6 +136,7 @@ export default function ArticlePage() {
       brandName: article.brandName,
       sizeLabel: article.sizeText || article.sizeCode || '',
       image: article.primaryImage || '',
+      allowOffers: article.allowOffers,
     });
 
     if (!result.ok) {
@@ -234,12 +237,25 @@ export default function ArticlePage() {
         <section className="ebay-article-layout">
           <div className="ebay-article-layout__gallery">
             <ArticleImageGallery images={article.images} title={article.title} />
+
+            <WishlistHeartButton
+              active={savedInWishlist}
+              pending={wishlistPending}
+              className="article-gallery-favorite wishlist-heart-button--bare"
+              size="lg"
+              labelActive="Quitar de guardados"
+              labelInactive="Guardar articulo"
+              onToggle={() => void handleWishlistToggle()}
+            />
           </div>
 
           <aside className="ebay-article-layout__sidebar section-card">
             <div className="page-stack-sm">
-              <p className="section-kicker">Prenda</p>
-              <h1>{article.title}</h1>
+              <div className="page-stack-sm">
+                <p className="section-kicker">Prenda</p>
+                <h1>{article.title}</h1>
+              </div>
+
               <div className="detail-meta-list">
                 <div><span>Estado</span><strong>{article.conditionLabel || 'Second hand seleccionada'}</strong></div>
                 <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
@@ -276,7 +292,7 @@ export default function ArticlePage() {
 
               {article.allowOffers && !isSoldOut ? (
                 <Link
-                  to={`/articles/${article.slug || article.id}/offer`}
+                  to={articleOfferPath(article)}
                   className="button button-secondary"
                   onClick={() => {
                     void apiFetch('/api/public/article-events', {
@@ -293,9 +309,6 @@ export default function ArticlePage() {
                 </Link>
               ) : null}
 
-              <button type="button" className="button button-secondary" onClick={() => void handleWishlistToggle()} disabled={wishlistPending}>
-                {savedInWishlist ? 'Guardado' : 'Guardar'}
-              </button>
               <button type="button" className="button button-secondary" onClick={handleShare}>
                 Compartir
               </button>
@@ -339,9 +352,11 @@ export default function ArticlePage() {
               </div>
             </div>
 
-            <div className="article-grid">
+            <div className="related-articles-track">
               {relatedState.items.map((item) => (
-                <ArticleCard key={item.id} article={item} />
+                <div key={item.id} className="related-articles-track__item">
+                  <ArticleCard article={item} view="grid" variant="default" />
+                </div>
               ))}
             </div>
           </section>
@@ -366,7 +381,7 @@ export default function ArticlePage() {
           {isSoldOut ? 'Agotado' : 'Lo quiero'}
         </button>
         {article.allowOffers && !isSoldOut ? (
-          <Link to={`/articles/${article.slug || article.id}/offer`} className="button button-secondary">
+          <Link to={articleOfferPath(article)} className="button button-secondary">
             Ofertar
           </Link>
         ) : null}
