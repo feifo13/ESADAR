@@ -236,7 +236,7 @@ export default function ArticlePage() {
 
         <section className="ebay-article-layout">
           <div className="ebay-article-layout__gallery">
-            <ArticleImageGallery images={article.images} title={article.title} />
+            <ArticleImageGallery images={article.images} title={article.title} fallbackImage={article} />
 
             <WishlistHeartButton
               active={savedInWishlist}

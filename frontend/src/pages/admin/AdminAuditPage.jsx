@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
+import SortableTh from "../../components/SortableTh.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -102,6 +103,12 @@ export default function AdminAuditPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+  function changeSort(sortBy) {
+    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
+    setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
   return (
@@ -248,12 +255,12 @@ export default function AdminAuditPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Usuario / actor</th>
-                  <th>Accion</th>
-                  <th>Entidad</th>
+                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
+                  <SortableTh sortKey="actorLabel" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Usuario / actor</SortableTh>
+                  <SortableTh sortKey="actionCode" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Accion</SortableTh>
+                  <SortableTh sortKey="entityType" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Entidad</SortableTh>
                   <th>Entity ID</th>
-                  <th>Source</th>
+                  <SortableTh sortKey="source" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Source</SortableTh>
                 </tr>
               </thead>
               <tbody>

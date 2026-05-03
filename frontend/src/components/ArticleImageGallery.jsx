@@ -2,32 +2,86 @@ import { useEffect, useMemo, useState } from 'react';
 import ProductImageZoom from './ProductImageZoom.jsx';
 import SmartImage from './SmartImage.jsx';
 
-export default function ArticleImageGallery({ images = [], title }) {
+export default function ArticleImageGallery({ images = [], title, fallbackImage = null }) {
   const normalized = useMemo(() => {
+    const fallback = fallbackImage || {};
+    const fallbackSrc =
+      fallback.detailFilePath ||
+      fallback.detail_file_path ||
+      fallback.primaryImageDetail ||
+      fallback.primaryImage ||
+      fallback.filePath ||
+      fallback.file_path ||
+      fallback.src ||
+      '';
+    const fallbackZoomSrc =
+      fallback.zoomFilePath ||
+      fallback.zoom_file_path ||
+      fallbackSrc;
+    const fallbackThumbSrc =
+      fallback.thumbFilePath ||
+      fallback.thumb_file_path ||
+      fallback.primaryImageThumb ||
+      fallback.cardFilePath ||
+      fallback.card_file_path ||
+      fallbackSrc;
+
     if (!images.length) {
       return [{
         id: 'fallback',
-        src: '',
-        zoomSrc: '',
-        thumbSrc: '',
-        altText: title,
-        sources: [],
+        src: fallbackSrc,
+        zoomSrc: fallbackZoomSrc,
+        thumbSrc: fallbackThumbSrc,
+        altText: fallback.altText || fallback.primaryImageAlt || title,
+        sources: [
+          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
+          fallbackSrc ? { srcSet: `${fallbackSrc} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
+          fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 700w`, type: 'image/webp' } : null,
+        ].filter(Boolean),
       }];
     }
 
-    return images.map((image, index) => ({
-      id: image.id || index,
-      src: image.detailFilePath || image.detail_file_path || image.filePath || image.file_path || image.src || '',
-      zoomSrc: image.zoomFilePath || image.zoom_file_path || image.detailFilePath || image.filePath || image.src || '',
-      thumbSrc: image.thumbFilePath || image.thumb_file_path || image.cardFilePath || image.filePath || image.src || '',
-      altText: image.altText || title,
-      sources: [
-        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
-        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
-        image.cardFilePath ? { srcSet: `${image.cardFilePath} 700w`, type: 'image/webp' } : null,
-      ].filter(Boolean),
-    }));
-  }, [images, title]);
+    return images.map((image, index) => {
+      const detailSrc =
+        image.detailFilePath ||
+        image.detail_file_path ||
+        image.filePath ||
+        image.file_path ||
+        image.src ||
+        fallbackSrc;
+      const zoomSrc =
+        image.zoomFilePath ||
+        image.zoom_file_path ||
+        image.detailFilePath ||
+        image.detail_file_path ||
+        image.filePath ||
+        image.file_path ||
+        image.src ||
+        fallbackZoomSrc;
+      const thumbSrc =
+        image.thumbFilePath ||
+        image.thumb_file_path ||
+        image.cardFilePath ||
+        image.card_file_path ||
+        image.filePath ||
+        image.file_path ||
+        image.src ||
+        fallbackThumbSrc;
+
+      return {
+        id: image.id || index,
+        src: detailSrc,
+        zoomSrc,
+        thumbSrc,
+        altText: image.altText || image.alt_text || title,
+        sources: [
+          zoomSrc ? { srcSet: `${zoomSrc} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
+          detailSrc ? { srcSet: `${detailSrc} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
+          thumbSrc ? { srcSet: `${thumbSrc} 700w`, type: 'image/webp' } : null,
+        ].filter(Boolean),
+      };
+    });
+  }, [fallbackImage, images, title]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);

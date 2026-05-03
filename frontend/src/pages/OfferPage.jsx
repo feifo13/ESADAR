@@ -134,18 +134,27 @@ export default function OfferPage() {
 
         <div className="ebay-article-layout ebay-article-layout--offer">
           <div className="ebay-article-layout__gallery">
-            <ArticleImageGallery images={article.images} title={article.title} />
+            <ArticleImageGallery images={article.images} title={article.title} fallbackImage={article} />
           </div>
 
-          <aside className="ebay-article-layout__sidebar section-card offer-sidebar-flat">
-            <div className="detail-meta-list">
-              <div><span>Categoria</span><strong>{article.categoryName}</strong></div>
-              <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
-              <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
-              <div><span>Medidas</span><strong>{article.measurementsText || 'A confirmar'}</strong></div>
+          <aside className="ebay-article-layout__sidebar section-card offer-sidebar-flat offer-sidebar-accent">
+            <div className="page-stack-sm">
+              <div className="page-stack-sm">
+                <p className="section-kicker">Ofertar prenda</p>
+                <h1>{article.title}</h1>
+              </div>
+
+              <div className="detail-meta-list">
+                <div><span>Estado</span><strong>{article.conditionLabel || 'Second hand seleccionada'}</strong></div>
+                <div><span>Categoria</span><strong>{article.categoryName || 'Sin categoria'}</strong></div>
+                <div><span>Talle</span><strong>{article.sizeText || article.sizeCode || 'No especificado'}</strong></div>
+                <div><span>Marca</span><strong>{article.brandName || 'Sin marca'}</strong></div>
+                <div><span>Medidas</span><strong>{article.measurementsText || 'A confirmar'}</strong></div>
+              </div>
             </div>
 
-            <div className="detail-pricing">
+            <div className="detail-pricing detail-pricing--hero offer-pricing-hero">
+              <span className="article-mobile-cta__label">Precio publicado</span>
               <strong className="price-current price-current-large">{formatCurrency(article.salePrice)}</strong>
             </div>
 

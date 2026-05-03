@@ -5,6 +5,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
+import SortableTh from "../../components/SortableTh.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -134,6 +135,12 @@ export default function AdminArticlesPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+  function changeSort(sortBy) {
+    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
+    setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
   async function handleExport(format) {
@@ -656,14 +663,14 @@ export default function AdminArticlesPage() {
                 <thead>
                   <tr>
                     <th>Imagen</th>
-                    <th>Articulo</th>
-                    <th>Categoria</th>
-                    <th>Marca</th>
+                    <SortableTh sortKey="title" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Articulo</SortableTh>
+                    <SortableTh sortKey="categoryName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Categoria</SortableTh>
+                    <SortableTh sortKey="brandName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Marca</SortableTh>
                     <th>Talle</th>
-                    <th>Precio</th>
-                    <th>Stock</th>
-                    <th>Estado</th>
-                    <th>Actualizado</th>
+                    <SortableTh sortKey="discountedPrice" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Precio</SortableTh>
+                    <SortableTh sortKey="quantityAvailable" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Stock</SortableTh>
+                    <SortableTh sortKey="status" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
+                    <SortableTh sortKey="updatedAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Actualizado</SortableTh>
                     <th>Acciones</th>
                   </tr>
                 </thead>

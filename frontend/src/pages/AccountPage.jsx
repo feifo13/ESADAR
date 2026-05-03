@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import SeoHead from '../components/SeoHead.jsx';
 import SmartImage from '../components/SmartImage.jsx';
 import SurfaceModal from '../components/SurfaceModal.jsx';
+import SortableTh from '../components/SortableTh.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useCart } from '../contexts/CartContext.jsx';
 import { useLookups } from '../contexts/LookupsContext.jsx';
@@ -10,6 +11,7 @@ import { useWishlist } from '../contexts/WishlistContext.jsx';
 import { apiFetch } from '../lib/api.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 import { articlePath } from '../lib/routes.js';
+import { getNextSortDirection, sortRows } from '../lib/tableSort.js';
 
 const PAYMENT_METHOD_LABELS = {
   BANK_TRANSFER: 'Transferencia',
@@ -92,6 +94,8 @@ export default function AccountPage() {
   const [orderDetailLoading, setOrderDetailLoading] = useState(false);
   const [orderDetailError, setOrderDetailError] = useState('');
   const [form, setForm] = useState(initialForm);
+  const [wishlistSort, setWishlistSort] = useState({ key: 'title', direction: 'asc' });
+  const [ordersSort, setOrdersSort] = useState({ key: 'createdAt', direction: 'desc' });
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -168,6 +172,40 @@ export default function AccountPage() {
     });
     return [...colors];
   }, [wishlistItems]);
+
+  const sortedWishlistItems = useMemo(
+    () => sortRows(wishlistItems, wishlistSort, {
+      title: (item) => item.title,
+      price: (item) => item.discountedPrice || item.salePrice,
+      status: (item) => (Number(item.quantityAvailable || 0) > 0 && item.status !== 'SOLD_OUT' ? 'Disponible' : 'Agotado'),
+    }),
+    [wishlistItems, wishlistSort],
+  );
+
+  const sortedOrders = useMemo(
+    () => sortRows(orders, ordersSort, {
+      orderNumber: (order) => order.orderNumber,
+      createdAt: (order) => order.createdAt,
+      total: (order) => order.total,
+      orderStatus: (order) => ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus,
+      updatedAt: (order) => order.shippedAt || order.cancelledAt || order.approvedAt || order.reservedUntil || order.createdAt,
+    }),
+    [orders, ordersSort],
+  );
+
+  function toggleWishlistSort(key) {
+    setWishlistSort((current) => ({
+      key,
+      direction: getNextSortDirection(current, key),
+    }));
+  }
+
+  function toggleOrdersSort(key) {
+    setOrdersSort((current) => ({
+      key,
+      direction: getNextSortDirection(current, key, key === 'createdAt' || key === 'updatedAt' ? 'desc' : 'asc'),
+    }));
+  }
 
   function updateField(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -585,14 +623,14 @@ export default function AccountPage() {
                 <thead>
                   <tr>
                     <th>Imagen</th>
-                    <th>Prenda</th>
-                    <th>Precio</th>
-                    <th>Estado</th>
+                    <SortableTh sortKey="title" sort={wishlistSort} onSort={toggleWishlistSort}>Prenda</SortableTh>
+                    <SortableTh sortKey="price" sort={wishlistSort} onSort={toggleWishlistSort}>Precio</SortableTh>
+                    <SortableTh sortKey="status" sort={wishlistSort} onSort={toggleWishlistSort}>Estado</SortableTh>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {wishlistItems.map((item) => {
+                  {sortedWishlistItems.map((item) => {
                     const isAvailable =
                       Number(item.quantityAvailable || 0) > 0 &&
                       item.status !== 'SOLD_OUT';
@@ -775,16 +813,16 @@ export default function AccountPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Orden</th>
-                    <th>Fecha</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Ultima actualizacion</th>
+                    <SortableTh sortKey="orderNumber" sort={ordersSort} onSort={toggleOrdersSort}>Orden</SortableTh>
+                    <SortableTh sortKey="createdAt" sort={ordersSort} onSort={toggleOrdersSort}>Fecha</SortableTh>
+                    <SortableTh sortKey="total" sort={ordersSort} onSort={toggleOrdersSort}>Total</SortableTh>
+                    <SortableTh sortKey="orderStatus" sort={ordersSort} onSort={toggleOrdersSort}>Estado</SortableTh>
+                    <SortableTh sortKey="updatedAt" sort={ordersSort} onSort={toggleOrdersSort}>Ultima actualizacion</SortableTh>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => {
+                  {sortedOrders.map((order) => {
                     const latestStatusDate =
                       order.shippedAt ||
                       order.cancelledAt ||

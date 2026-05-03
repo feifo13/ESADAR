@@ -17,7 +17,8 @@ export default function ProductImageZoom({ image, title, onOpen }) {
     lensLeft: 0,
     lensTop: 0,
   });
-  const zoomImage = image?.zoomSrc || image?.src || '';
+  const mainImage = image?.src || image?.zoomSrc || image?.thumbSrc || '';
+  const zoomImage = image?.zoomSrc || image?.src || image?.thumbSrc || '';
   const backgroundImage = useMemo(() => resolveAssetUrl(zoomImage), [zoomImage]);
 
   function handlePointerMove(event) {
@@ -56,7 +57,7 @@ export default function ProductImageZoom({ image, title, onOpen }) {
         aria-label="Abrir imagen ampliada"
       >
         <SmartImage
-          src={image?.src}
+          src={mainImage}
           alt={image?.altText || title}
           fallbackLabel={title}
           className="product-zoom-main__image"

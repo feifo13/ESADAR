@@ -5,6 +5,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
+import SortableTh from "../../components/SortableTh.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
@@ -195,6 +196,12 @@ export default function AdminLeadsPage() {
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
   }
 
+  function changeSort(sortBy) {
+    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
+    setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
+  }
+
   async function handleStatusSubmit(event) {
     event.preventDefault();
     if (!selectedLeadId) return;
@@ -380,11 +387,11 @@ export default function AdminLeadsPage() {
               <table className="data-table admin-leads-table">
                 <thead>
                   <tr>
-                    <th>Nombre</th>
+                    <SortableTh sortKey="name" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Nombre</SortableTh>
                     <th>Contacto</th>
-                    <th>Origen</th>
-                    <th>Estado</th>
-                    <th>Alta</th>
+                    <SortableTh sortKey="source" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Origen</SortableTh>
+                    <SortableTh sortKey="leadStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
+                    <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Alta</SortableTh>
                     <th>Alertas</th>
                     <th>Guardados</th>
                     <th>Acciones</th>

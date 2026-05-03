@@ -3,6 +3,7 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
+import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
@@ -103,6 +104,12 @@ export default function AdminContactMessagesPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+  function changeSort(sortBy) {
+    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
+    setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
   async function updateStatus(messageId, nextStatus) {
@@ -282,11 +289,11 @@ export default function AdminContactMessagesPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Nombre</th>
-                  <th>Contacto</th>
+                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
+                  <SortableTh sortKey="name" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Nombre</SortableTh>
+                  <SortableTh sortKey="email" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Contacto</SortableTh>
                   <th>Mensaje</th>
-                  <th>Estado</th>
+                  <SortableTh sortKey="status" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
                   <th>Acciones</th>
                 </tr>
               </thead>

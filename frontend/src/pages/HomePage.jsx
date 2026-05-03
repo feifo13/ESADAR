@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useOutletContext } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
-import { storage } from "../lib/storage.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import {
@@ -43,7 +42,6 @@ const initialLeadForm = {
   preferredColor: "",
 };
 
-const VIEW_STORAGE_KEY = "esadar-catalog-view";
 
 const SORT_LABELS = {
   intake_desc: "Mas reciente",
@@ -70,7 +68,6 @@ export default function HomePage() {
     useLookups();
   const { site, pagesByRoute } = useSiteSeo();
   const [filters, setFilters] = useState(initialFilters);
-  const [view, setView] = useState(() => storage.get(VIEW_STORAGE_KEY, "grid"));
   const [featuredItems, setFeaturedItems] = useState([]);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({
@@ -143,10 +140,6 @@ export default function HomePage() {
   }, [brandOptions, categoryOptions, filters, sizeOptions]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
-
-  useEffect(() => {
-    storage.set(VIEW_STORAGE_KEY, view);
-  }, [view]);
 
   useEffect(() => {
     setHeroLogoVisible(false);
@@ -443,22 +436,6 @@ export default function HomePage() {
             <option value="price_desc">Precio mayor a menor</option>
           </select>
 
-          <div className="view-toggle">
-            <button
-              type="button"
-              className={view === "grid" ? "active" : ""}
-              onClick={() => setView("grid")}
-            >
-              Grilla
-            </button>
-            <button
-              type="button"
-              className={view === "list" ? "active" : ""}
-              onClick={() => setView("list")}
-            >
-              Lista
-            </button>
-          </div>
         </div>
       </section>
 
@@ -529,14 +506,12 @@ export default function HomePage() {
               <p className="muted-copy">Cargando prendas seleccionadas…</p>
             </div>
           ) : items.length ? (
-            <div
-              className={`article-grid ${view === "list" ? "article-grid-list" : ""}`}
-            >
+            <div className="article-grid">
               {items.map((article) => (
                 <ArticleCard
                   key={article.id}
                   article={article}
-                  view={view}
+                  view="grid"
                   variant="default"
                 />
               ))}

@@ -4,7 +4,7 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
-import SmartImage from "../../components/SmartImage.jsx";
+import SortableTh from "../../components/SortableTh.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -104,6 +104,12 @@ export default function AdminOrdersPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+  function changeSort(sortBy) {
+    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
+    setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
   return (
@@ -282,14 +288,14 @@ export default function AdminOrdersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
+                  <SortableTh sortKey="orderNumber" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>ID</SortableTh>
+                  <SortableTh sortKey="customerName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Cliente</SortableTh>
                   <th>Email</th>
-                  <th>Fecha</th>
-                  <th>Estado</th>
-                  <th>Metodo de pago</th>
+                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
+                  <SortableTh sortKey="orderStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
+                  <SortableTh sortKey="paymentStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Metodo de pago</SortableTh>
                   <th>Metodo de envio</th>
-                  <th>Total</th>
+                  <SortableTh sortKey="total" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Total</SortableTh>
                   <th>Acciones</th>
                 </tr>
               </thead>
