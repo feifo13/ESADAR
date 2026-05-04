@@ -38,7 +38,7 @@ function TrashIcon() {
   );
 }
 
-function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove }) {
+function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = false }) {
   const quantity = Math.max(1, Number(item.quantity || 1));
   const maxQuantity = Math.max(quantity, Number(item.maxQuantity || quantity));
   const unitPrice = Number(item.discountedPrice || 0);
@@ -87,38 +87,45 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove }) {
         </p>
       </div>
 
-      <div
-        className="summary-item-card__quantity"
-        aria-label={`Cantidad de ${item.title}`}
-      >
-        <button
-          type="button"
-          className="summary-item-card__qty-button"
-          onClick={() => onRemove(item.articleId)}
-          aria-label={`Quitar ${item.title}`}
-          title="Quitar"
-        >
-          <TrashIcon />
-        </button>
-        <input
-          className="summary-item-card__qty-input"
-          type="number"
-          min="1"
-          max={maxQuantity}
-          value={quantity}
-          onChange={handleQuantityInput}
+      {readOnly ? (
+        <div className="summary-item-card__quantity summary-item-card__quantity--readonly">
+          <span>Cant.</span>
+          <strong>{quantity}</strong>
+        </div>
+      ) : (
+        <div
+          className="summary-item-card__quantity"
           aria-label={`Cantidad de ${item.title}`}
-        />
-        <button
-          type="button"
-          className="summary-item-card__qty-button"
-          onClick={() => onQuantityChange(item.articleId, quantity + 1)}
-          aria-label={`Agregar una unidad de ${item.title}`}
-          title="Agregar una unidad"
         >
-          <PlusIcon />
-        </button>
-      </div>
+          <button
+            type="button"
+            className="summary-item-card__qty-button"
+            onClick={() => onRemove(item.articleId)}
+            aria-label={`Quitar ${item.title}`}
+            title="Quitar"
+          >
+            <TrashIcon />
+          </button>
+          <input
+            className="summary-item-card__qty-input"
+            type="number"
+            min="1"
+            max={maxQuantity}
+            value={quantity}
+            onChange={handleQuantityInput}
+            aria-label={`Cantidad de ${item.title}`}
+          />
+          <button
+            type="button"
+            className="summary-item-card__qty-button"
+            onClick={() => onQuantityChange(item.articleId, quantity + 1)}
+            aria-label={`Agregar una unidad de ${item.title}`}
+            title="Agregar una unidad"
+          >
+            <PlusIcon />
+          </button>
+        </div>
+      )}
     </article>
   );
 }

@@ -1217,15 +1217,14 @@ export default function AccountPage() {
                       ].filter(Boolean)}
                       price={formatCurrency(order.total)}
                       actions={[
-                        <button
-                          type="button"
+                        <Link
+                          to={`/cuenta/ordenes/${order.id}`}
                           className="icon-action-button"
                           aria-label={`Ver ${order.orderNumber}`}
                           title="Ver orden"
-                          onClick={() => void openOrderDetail(order.id)}
                         >
                           <EyeIcon />
-                        </button>,
+                        </Link>,
                       ]}
                     />
                   );

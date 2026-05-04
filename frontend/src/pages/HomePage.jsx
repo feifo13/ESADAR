@@ -115,6 +115,7 @@ export default function HomePage() {
     setCatalogFiltersMeta,
     setCatalogSortContent,
     setCatalogSortMeta,
+    notifyMobileStatus,
   } = useMobileMenu();
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
@@ -355,7 +356,11 @@ export default function HomePage() {
             : [...current, ...(response.items || [])],
         );
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudo cargar el catalogo");
+        if (!ignore) {
+          const message = err.message || "No se pudo cargar el catalogo";
+          setError(message);
+          notifyMobileStatus({ type: 'error', icon: 'error', message });
+        }
       } finally {
         if (!ignore) {
           setLoading(false);
@@ -379,11 +384,21 @@ export default function HomePage() {
   function applyMobileFilters(nextFilters) {
     applyFilters(nextFilters);
     setMobileFiltersOpen(false);
+    notifyMobileStatus({
+      type: 'filters',
+      icon: 'filters',
+      message: 'Filtros aplicados',
+    });
   }
 
   function applyMobileSort(nextSort) {
     applyFilters({ ...filters, sort: nextSort || initialFilters.sort });
     setMobileFiltersOpen(false);
+    notifyMobileStatus({
+      type: 'sort',
+      icon: 'sort',
+      message: nextSort && nextSort !== initialFilters.sort ? 'Ordenamiento aplicado' : 'Ordenamiento restablecido',
+    });
   }
 
   function resetNonSortFilters() {
@@ -392,10 +407,12 @@ export default function HomePage() {
       search: filters.search,
       sort: filters.sort,
     });
+    notifyMobileStatus({ type: 'filters', icon: 'filters', message: 'Filtros limpiados' });
   }
 
   function resetSort() {
     applyFilters({ ...filters, sort: initialFilters.sort });
+    notifyMobileStatus({ type: 'sort', icon: 'sort', message: 'Ordenamiento restablecido' });
   }
 
   function resetFilters() {

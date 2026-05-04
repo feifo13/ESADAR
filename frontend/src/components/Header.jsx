@@ -586,6 +586,8 @@ export default function Header({ hideBrand = false }) {
         searchContent={mobileSearchContent}
         filtersContent={catalogFiltersContent}
         sortContent={catalogSortContent}
+        filtersCount={catalogFiltersCount}
+        sortActive={catalogSortActive}
         items={mobileMenuItems}
       />
 

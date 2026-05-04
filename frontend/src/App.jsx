@@ -12,6 +12,7 @@ import ContactPage from './pages/ContactPage.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import NewsletterPage from './pages/NewsletterPage.jsx';
 import AccountPage from './pages/AccountPage.jsx';
+import AccountOrderDetailPage from './pages/AccountOrderDetailPage.jsx';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
 import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
 import BulkArticleCreatePage from './pages/admin/BulkArticleCreatePage.jsx';
@@ -52,6 +53,8 @@ export default function App() {
         <Route path="cuenta/guardados" element={<AccountPage />} />
         <Route path="cuenta/alertas" element={<AccountPage />} />
         <Route path="cuenta/ordenes" element={<AccountPage />} />
+        <Route path="cuenta/ordenes/:id" element={<AccountOrderDetailPage />} />
+        <Route path="account/orders/:id" element={<AccountOrderDetailPage />} />
         <Route
           path="admin/articles"
           element={

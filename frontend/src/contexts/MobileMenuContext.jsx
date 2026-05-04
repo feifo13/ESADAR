@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useCallback, useMemo, useState } from 'react';
 
 const MobileMenuContext = createContext({
   catalogFiltersContent: null,
@@ -7,6 +7,8 @@ const MobileMenuContext = createContext({
   catalogSortActive: false,
   clearCatalogFilters: null,
   clearCatalogSort: null,
+  mobileStatusBand: null,
+  notifyMobileStatus: () => undefined,
   setCatalogFiltersContent: () => undefined,
   setCatalogSortContent: () => undefined,
   setCatalogFiltersMeta: () => undefined,
@@ -24,6 +26,22 @@ export function MobileMenuProvider({ children }) {
     active: false,
     onClear: null,
   });
+  const [mobileStatusBand, setMobileStatusBand] = useState(null);
+
+  const notifyMobileStatus = useCallback((next) => {
+    const payload = typeof next === 'string' ? { message: next } : next || {};
+    if (!payload.message) {
+      setMobileStatusBand(null);
+      return;
+    }
+    setMobileStatusBand({
+      id: Date.now(),
+      type: payload.type || 'info',
+      icon: payload.icon || payload.type || 'info',
+      message: payload.message,
+      duration: Number(payload.duration || 3000),
+    });
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -33,12 +51,21 @@ export function MobileMenuProvider({ children }) {
       catalogSortActive: Boolean(catalogSortMeta.active),
       clearCatalogFilters: catalogFiltersMeta.onClear,
       clearCatalogSort: catalogSortMeta.onClear,
+      mobileStatusBand,
+      notifyMobileStatus,
       setCatalogFiltersContent,
       setCatalogSortContent,
       setCatalogFiltersMeta,
       setCatalogSortMeta,
     }),
-    [catalogFiltersContent, catalogSortContent, catalogFiltersMeta, catalogSortMeta],
+    [
+      catalogFiltersContent,
+      catalogSortContent,
+      catalogFiltersMeta,
+      catalogSortMeta,
+      mobileStatusBand,
+      notifyMobileStatus,
+    ],
   );
 
   return (

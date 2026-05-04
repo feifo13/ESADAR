@@ -82,6 +82,8 @@ export default function MobileMotionMenu({
   searchContent = null,
   filtersContent = null,
   sortContent = null,
+  filtersCount = 0,
+  sortActive = false,
   items = [],
 }) {
   const shouldReduceMotion = useReducedMotion();
@@ -119,6 +121,7 @@ export default function MobileMotionMenu({
     if (open) return;
     setFiltersOpen(false);
     setSortOpen(false);
+    setOpenGroups({});
   }, [open]);
 
   const activePanelVariants = shouldReduceMotion
@@ -157,12 +160,13 @@ export default function MobileMotionMenu({
             type="button"
             className={`${itemClassName} mobile-motion-menu__accordion-trigger`}
             aria-expanded={groupOpen}
-            onClick={() =>
+            onClick={() => {
+              setFiltersOpen(false);
+              setSortOpen(false);
               setOpenGroups((current) => ({
-                ...current,
                 [item.key]: !current[item.key],
-              }))
-            }
+              }));
+            }}
           >
             <span>{item.label}</span>
             <AccordionIndicator open={groupOpen} />
@@ -281,9 +285,14 @@ export default function MobileMotionMenu({
                     type="button"
                     className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
                     aria-expanded={filtersOpen}
-                    onClick={() => setFiltersOpen((current) => !current)}
+                    onClick={() => {
+                      setSortOpen(false);
+                      setOpenGroups({});
+                      setFiltersOpen((current) => !current);
+                    }}
                   >
                     <span>Filtros</span>
+                    {filtersCount > 0 ? <span className="mobile-motion-menu__count-badge">{filtersCount}</span> : null}
                     <AccordionIndicator open={filtersOpen} />
                   </button>
                   {filtersOpen ? (
@@ -319,9 +328,14 @@ export default function MobileMotionMenu({
                     type="button"
                     className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
                     aria-expanded={sortOpen}
-                    onClick={() => setSortOpen((current) => !current)}
+                    onClick={() => {
+                      setFiltersOpen(false);
+                      setOpenGroups({});
+                      setSortOpen((current) => !current);
+                    }}
                   >
                     <span>Ordenamiento</span>
+                    {sortActive ? <span className="mobile-motion-menu__count-badge mobile-motion-menu__count-badge--sort">Activo</span> : null}
                     <AccordionIndicator open={sortOpen} />
                   </button>
                   {sortOpen ? (

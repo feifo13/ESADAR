@@ -6,6 +6,7 @@ import ThemeDock from './ThemeDock.jsx';
 import ScrollChrome from './ScrollChrome.jsx';
 import SeoHead from './SeoHead.jsx';
 import ResponsiveTableLabels from './ResponsiveTableLabels.jsx';
+import MobileStatusBand from './MobileStatusBand.jsx';
 import { MobileMenuProvider } from '../contexts/MobileMenuContext.jsx';
 import esadarWordmark from '../assets/esadar-wordmark.png';
 
@@ -97,6 +98,7 @@ export default function RootLayout() {
       ) : null}
       <MobileMenuProvider>
         <Header hideBrand={isHome && heroLogoVisible} />
+        <MobileStatusBand />
         <main className="page-shell">
           <div className="page-transition-shell">
             <Outlet context={{ setHeroLogoVisible }} />

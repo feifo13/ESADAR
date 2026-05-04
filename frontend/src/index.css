@@ -11317,3 +11317,164 @@ textarea,
   width: 100vw !important;
   height: 100dvh !important;
 }
+
+/* === ESADAR account order detail, mobile bottom band and admin mobile card polish === */
+.mobile-status-band {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 260;
+  min-height: 36px;
+  display: none;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, var(--navy) 8%);
+  color: var(--text);
+  box-shadow: 0 12px 30px rgba(6, 19, 29, 0.22);
+  font-size: 0.86rem;
+  font-weight: 800;
+  animation: mobile-status-band-in 180ms var(--ease-smooth) both;
+}
+
+.mobile-status-band svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mobile-status-band--error {
+  border-color: rgba(180, 35, 24, 0.28);
+  background: color-mix(in srgb, var(--surface) 88%, #b42318 12%);
+}
+
+@keyframes mobile-status-band-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.account-order-detail-page {
+  max-width: 980px;
+}
+
+.account-order-detail-back {
+  justify-self: start;
+}
+
+.account-order-detail-meta .summary-line strong:has(.status-badge) {
+  display: inline-flex;
+}
+
+.account-order-items-card-list {
+  display: grid !important;
+  gap: 12px;
+}
+
+.summary-item-card__quantity--readonly {
+  align-self: center;
+  display: grid;
+  grid-template-columns: auto auto;
+  place-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-item-card__quantity--readonly strong {
+  font-size: 1rem;
+}
+
+.mobile-motion-menu__count-badge {
+  margin-left: auto;
+  min-width: 24px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  background: var(--orange);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mobile-motion-menu__count-badge--sort {
+  background: var(--navy);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 780px) {
+  .mobile-status-band {
+    display: grid;
+  }
+
+  .admin-page-shell .table-shell {
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .admin-page-shell .data-table tbody {
+    gap: 12px !important;
+  }
+
+  .admin-page-shell .data-table tr {
+    padding: 12px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 8px 20px rgba(6, 19, 29, 0.07) !important;
+  }
+
+  .admin-page-shell .data-table td {
+    grid-template-columns: minmax(84px, 32%) minmax(0, 1fr) !important;
+    padding-block: 8px !important;
+  }
+
+  .admin-page-shell .data-table td:first-child {
+    padding-top: 0 !important;
+  }
+
+  .admin-page-shell .data-table td:last-child {
+    padding-bottom: 0 !important;
+  }
+
+  .admin-page-shell .data-table .table-actions {
+    gap: 8px !important;
+  }
+
+  .admin-page-shell .data-table .ghost-button,
+  .admin-page-shell .data-table .button {
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+
+  .account-order-detail-page {
+    width: min(100%, calc(100% - 12px)) !important;
+  }
+
+  .account-order-detail-hero .section-heading {
+    align-items: start;
+  }
+
+  .account-order-detail-meta {
+    grid-template-columns: 1fr !important;
+  }
+}
