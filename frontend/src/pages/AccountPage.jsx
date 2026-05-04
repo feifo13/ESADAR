@@ -1,93 +1,91 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import SeoHead from '../components/SeoHead.jsx';
-import SmartImage from '../components/SmartImage.jsx';
-import SurfaceModal from '../components/SurfaceModal.jsx';
-import SortableTh from '../components/SortableTh.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import { useCart } from '../contexts/CartContext.jsx';
-import { useLookups } from '../contexts/LookupsContext.jsx';
-import { useWishlist } from '../contexts/WishlistContext.jsx';
-import { apiFetch } from '../lib/api.js';
-import { formatCurrency, formatDate } from '../lib/format.js';
-import { articlePath } from '../lib/routes.js';
-import { getNextSortDirection, sortRows } from '../lib/tableSort.js';
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import SeoHead from "../components/SeoHead.jsx";
+import SmartImage from "../components/SmartImage.jsx";
+import SurfaceModal from "../components/SurfaceModal.jsx";
+import SortableTh from "../components/SortableTh.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useCart } from "../contexts/CartContext.jsx";
+import { useLookups } from "../contexts/LookupsContext.jsx";
+import { useWishlist } from "../contexts/WishlistContext.jsx";
+import { apiFetch } from "../lib/api.js";
+import { formatCurrency, formatDate } from "../lib/format.js";
+import { articlePath } from "../lib/routes.js";
+import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
 
 const PAYMENT_METHOD_LABELS = {
-  BANK_TRANSFER: 'Transferencia',
-  MERCADO_PAGO: 'Mercado Pago',
+  BANK_TRANSFER: "Transferencia",
+  MERCADO_PAGO: "Mercado Pago",
 };
 
 const ORDER_STATUS_LABELS = {
-  RESERVED: 'Reservada',
-  PENDING: 'Pendiente',
-  APPROVED: 'Aprobada',
-  SHIPPED: 'Enviada',
-  CANCELLED: 'Cancelada',
-  EXPIRED: 'Vencida',
+  RESERVED: "Reservada",
+  PENDING: "Pendiente",
+  APPROVED: "Aprobada",
+  SHIPPED: "Enviada",
+  CANCELLED: "Cancelada",
+  EXPIRED: "Vencida",
 };
 
 const TAB_ITEMS = [
-  { key: 'perfil', label: 'Mis datos', path: '/cuenta/perfil' },
-  { key: 'preferencias', label: 'Mis preferencias', path: '/cuenta/preferencias' },
-  { key: 'guardados', label: 'Mis guardados', path: '/cuenta/guardados' },
-  { key: 'alertas', label: 'Mis alertas', path: '/cuenta/alertas' },
-  { key: 'ordenes', label: 'Mis ordenes', path: '/cuenta/ordenes' },
+  { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
+  { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
+  { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
+  { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
 ];
 
 const ACCOUNT_TABLE_PAGE_SIZE = 8;
 
 function EyeIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
 
-function LocalTablePagination({ page, totalPages, totalItems, onPrevious, onNext }) {
-  return (
-    <div className="pagination-row pagination-row--top">
-      <span className="muted-copy">Pagina {page} de {totalPages} - {totalItems} registros</span>
-      <div className="table-actions">
-        <button type="button" className="button button-secondary" onClick={onPrevious} disabled={page <= 1}>Anterior</button>
-        <button type="button" className="button button-secondary" onClick={onNext} disabled={page >= totalPages}>Siguiente</button>
-      </div>
-    </div>
-  );
+function LocalTablePagination() {
+  return null;
 }
 
 function getActiveTab(pathname) {
-  if (pathname.includes('/preferencias')) return 'preferencias';
-  if (pathname.includes('/guardados')) return 'guardados';
-  if (pathname.includes('/alertas')) return 'alertas';
-  if (pathname.includes('/ordenes')) return 'ordenes';
-  return 'perfil';
+  if (pathname.includes("/guardados")) return "guardados";
+  if (pathname.includes("/alertas")) return "alertas";
+  if (pathname.includes("/ordenes")) return "ordenes";
+  return "perfil";
 }
 
 const initialForm = {
-  firstName: '',
-  lastName: '',
-  birthDate: '',
-  email: '',
-  phone: '',
-  instagram: '',
-  preferredPaymentMethod: '',
-  preferredShippingMethodId: '',
+  firstName: "",
+  lastName: "",
+  birthDate: "",
+  email: "",
+  phone: "",
+  instagram: "",
+  preferredPaymentMethod: "",
+  preferredShippingMethodId: "",
   defaultAddress: {
-    addressLine: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'Uruguay',
-    deliveryNotes: '',
+    addressLine: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "Uruguay",
+    deliveryNotes: "",
   },
   preferredCategories: [],
   preferredBrands: [],
   preferredSizes: [],
   preferredColors: [],
-  preferenceNotes: '',
+  preferenceNotes: "",
 };
 
 export default function AccountPage() {
@@ -110,17 +108,23 @@ export default function AccountPage() {
 
   const activeTab = getActiveTab(location.pathname);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState('');
-  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
   const [orders, setOrders] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
   const [orderDetailLoading, setOrderDetailLoading] = useState(false);
-  const [orderDetailError, setOrderDetailError] = useState('');
+  const [orderDetailError, setOrderDetailError] = useState("");
   const [form, setForm] = useState(initialForm);
-  const [wishlistSort, setWishlistSort] = useState({ key: 'title', direction: 'asc' });
-  const [ordersSort, setOrdersSort] = useState({ key: 'createdAt', direction: 'desc' });
+  const [wishlistSort, setWishlistSort] = useState({
+    key: "title",
+    direction: "asc",
+  });
+  const [ordersSort, setOrdersSort] = useState({
+    key: "createdAt",
+    direction: "desc",
+  });
   const [wishlistPage, setWishlistPage] = useState(1);
   const [ordersPage, setOrdersPage] = useState(1);
 
@@ -132,54 +136,55 @@ export default function AccountPage() {
     async function loadAccountData() {
       try {
         setProfileLoading(true);
-        setProfileError('');
-        const [profileResponse, ordersResponse, alertsResponse] = await Promise.all([
-          apiFetch('/api/public/account/profile'),
-          apiFetch('/api/public/account/orders'),
-          apiFetch('/api/public/account/alerts'),
-        ]);
+        setProfileError("");
+        const [profileResponse, ordersResponse, alertsResponse] =
+          await Promise.all([
+            apiFetch("/api/public/account/profile"),
+            apiFetch("/api/public/account/orders"),
+            apiFetch("/api/public/account/alerts"),
+          ]);
 
         if (ignore) return;
 
         setForm({
-          firstName: profileResponse.profile?.firstName || '',
-          lastName: profileResponse.profile?.lastName || '',
+          firstName: profileResponse.profile?.firstName || "",
+          lastName: profileResponse.profile?.lastName || "",
           birthDate: profileResponse.profile?.birthDate
             ? String(profileResponse.profile.birthDate).slice(0, 10)
-            : '',
-          email: profileResponse.profile?.email || '',
-          phone: profileResponse.profile?.phone || '',
-          instagram: profileResponse.profile?.instagram || '',
+            : "",
+          email: profileResponse.profile?.email || "",
+          phone: profileResponse.profile?.phone || "",
+          instagram: profileResponse.profile?.instagram || "",
           preferredPaymentMethod:
-            profileResponse.profile?.preferredPaymentMethod || '',
+            profileResponse.profile?.preferredPaymentMethod || "",
           preferredShippingMethodId: profileResponse.profile
             ?.preferredShippingMethodId
             ? String(profileResponse.profile.preferredShippingMethodId)
-            : '',
+            : "",
           defaultAddress: {
             addressLine:
-              profileResponse.profile?.defaultAddress?.addressLine || '',
-            city: profileResponse.profile?.defaultAddress?.city || '',
-            state: profileResponse.profile?.defaultAddress?.state || '',
+              profileResponse.profile?.defaultAddress?.addressLine || "",
+            city: profileResponse.profile?.defaultAddress?.city || "",
+            state: profileResponse.profile?.defaultAddress?.state || "",
             postalCode:
-              profileResponse.profile?.defaultAddress?.postalCode || '',
+              profileResponse.profile?.defaultAddress?.postalCode || "",
             country:
-              profileResponse.profile?.defaultAddress?.country || 'Uruguay',
+              profileResponse.profile?.defaultAddress?.country || "Uruguay",
             deliveryNotes:
-              profileResponse.profile?.defaultAddress?.deliveryNotes || '',
+              profileResponse.profile?.defaultAddress?.deliveryNotes || "",
           },
           preferredCategories:
             profileResponse.profile?.preferredCategories || [],
           preferredBrands: profileResponse.profile?.preferredBrands || [],
           preferredSizes: profileResponse.profile?.preferredSizes || [],
           preferredColors: profileResponse.profile?.preferredColors || [],
-          preferenceNotes: profileResponse.profile?.preferenceNotes || '',
+          preferenceNotes: profileResponse.profile?.preferenceNotes || "",
         });
         setOrders(ordersResponse.items || []);
         setAlerts(alertsResponse.items || []);
       } catch (err) {
         if (!ignore) {
-          setProfileError(err.message || 'No pudimos cargar tu cuenta.');
+          setProfileError(err.message || "No pudimos cargar tu cuenta.");
         }
       } finally {
         if (!ignore) setProfileLoading(false);
@@ -201,29 +206,46 @@ export default function AccountPage() {
   }, [wishlistItems]);
 
   const sortedWishlistItems = useMemo(
-    () => sortRows(wishlistItems, wishlistSort, {
-      title: (item) => item.title,
-      price: (item) => item.discountedPrice || item.salePrice,
-      status: (item) => (Number(item.quantityAvailable || 0) > 0 && item.status !== 'SOLD_OUT' ? 'Disponible' : 'Agotado'),
-    }),
+    () =>
+      sortRows(wishlistItems, wishlistSort, {
+        title: (item) => item.title,
+        price: (item) => item.discountedPrice || item.salePrice,
+        status: (item) =>
+          Number(item.quantityAvailable || 0) > 0 && item.status !== "SOLD_OUT"
+            ? "Disponible"
+            : "Agotado",
+      }),
     [wishlistItems, wishlistSort],
   );
 
   const sortedOrders = useMemo(
-    () => sortRows(orders, ordersSort, {
-      orderNumber: (order) => order.orderNumber,
-      createdAt: (order) => order.createdAt,
-      total: (order) => order.total,
-      orderStatus: (order) => ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus,
-      updatedAt: (order) => order.shippedAt || order.cancelledAt || order.approvedAt || order.reservedUntil || order.createdAt,
-    }),
+    () =>
+      sortRows(orders, ordersSort, {
+        orderNumber: (order) => order.orderNumber,
+        createdAt: (order) => order.createdAt,
+        total: (order) => order.total,
+        orderStatus: (order) =>
+          ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus,
+        updatedAt: (order) =>
+          order.shippedAt ||
+          order.cancelledAt ||
+          order.approvedAt ||
+          order.reservedUntil ||
+          order.createdAt,
+      }),
     [orders, ordersSort],
   );
 
-  const wishlistTotalPages = Math.max(1, Math.ceil(sortedWishlistItems.length / ACCOUNT_TABLE_PAGE_SIZE));
-  const ordersTotalPages = Math.max(1, Math.ceil(sortedOrders.length / ACCOUNT_TABLE_PAGE_SIZE));
-  const pagedWishlistItems = sortedWishlistItems.slice((wishlistPage - 1) * ACCOUNT_TABLE_PAGE_SIZE, wishlistPage * ACCOUNT_TABLE_PAGE_SIZE);
-  const pagedOrders = sortedOrders.slice((ordersPage - 1) * ACCOUNT_TABLE_PAGE_SIZE, ordersPage * ACCOUNT_TABLE_PAGE_SIZE);
+  const wishlistTotalPages = Math.max(
+    1,
+    Math.ceil(sortedWishlistItems.length / ACCOUNT_TABLE_PAGE_SIZE),
+  );
+  const ordersTotalPages = Math.max(
+    1,
+    Math.ceil(sortedOrders.length / ACCOUNT_TABLE_PAGE_SIZE),
+  );
+  const pagedWishlistItems = sortedWishlistItems;
+  const pagedOrders = sortedOrders;
 
   useEffect(() => {
     setWishlistPage((current) => Math.min(current, wishlistTotalPages));
@@ -245,7 +267,11 @@ export default function AccountPage() {
     setOrdersPage(1);
     setOrdersSort((current) => ({
       key,
-      direction: getNextSortDirection(current, key, key === 'createdAt' || key === 'updatedAt' ? 'desc' : 'asc'),
+      direction: getNextSortDirection(
+        current,
+        key,
+        key === "createdAt" || key === "updatedAt" ? "desc" : "asc",
+      ),
     }));
   }
 
@@ -280,10 +306,10 @@ export default function AccountPage() {
 
     try {
       setProfileLoading(true);
-      setProfileError('');
-      setProfileMessage('');
-      await apiFetch('/api/public/account/profile', {
-        method: 'PATCH',
+      setProfileError("");
+      setProfileMessage("");
+      await apiFetch("/api/public/account/profile", {
+        method: "PATCH",
         body: {
           ...form,
           preferredShippingMethodId: form.preferredShippingMethodId || null,
@@ -293,9 +319,9 @@ export default function AccountPage() {
             : null,
         },
       });
-      setProfileMessage('Datos guardados');
+      setProfileMessage("Datos guardados");
     } catch (err) {
-      setProfileError(err.message || 'No se pudieron guardar los datos.');
+      setProfileError(err.message || "No se pudieron guardar los datos.");
     } finally {
       setProfileLoading(false);
     }
@@ -305,12 +331,12 @@ export default function AccountPage() {
     try {
       setOrderModalOpen(true);
       setOrderDetailLoading(true);
-      setOrderDetailError('');
+      setOrderDetailError("");
       const response = await apiFetch(`/api/public/account/orders/${orderId}`);
       setSelectedOrderDetail(response.order || null);
     } catch (err) {
       setOrderDetailError(
-        err.message || 'No pudimos cargar el detalle de la orden.',
+        err.message || "No pudimos cargar el detalle de la orden.",
       );
       setSelectedOrderDetail(null);
     } finally {
@@ -348,7 +374,7 @@ export default function AccountPage() {
             <label
               key={`${name}-${option.id}`}
               className={
-                checked ? 'preference-check is-active' : 'preference-check'
+                checked ? "preference-check is-active" : "preference-check"
               }
             >
               <input
@@ -374,35 +400,21 @@ export default function AccountPage() {
 
       {isAuthenticated ? null : renderGuestState()}
 
-      <section className="section-card page-stack">
-        <div className="section-heading">
-          <div>
-            <p className="section-kicker">Cliente</p>
-            <h1>Mi cuenta</h1>
-            <p className="muted-copy">
-              {isAuthenticated
-                ? `Hola, ${user?.firstName || 'cliente'}. Desde aqui puedes actualizar tus datos, revisar guardados y seguir tus alertas.`
-                : 'Tus guardados siguen disponibles aunque todavia no hayas iniciado sesion.'}
-            </p>
-          </div>
-        </div>
+      <nav className="account-tabs" aria-label="Secciones de cuenta">
+        {TAB_ITEMS.map((tab) => (
+          <NavLink
+            key={tab.key}
+            to={tab.path}
+            className={({ isActive }) =>
+              isActive ? "admin-tab active" : "admin-tab"
+            }
+          >
+            {tab.label}
+          </NavLink>
+        ))}
+      </nav>
 
-        <nav className="account-tabs" aria-label="Secciones de cuenta">
-          {TAB_ITEMS.map((tab) => (
-            <NavLink
-              key={tab.key}
-              to={tab.path}
-              className={({ isActive }) =>
-                isActive ? 'admin-tab active' : 'admin-tab'
-              }
-            >
-              {tab.label}
-            </NavLink>
-          ))}
-        </nav>
-      </section>
-
-      {activeTab === 'perfil' && isAuthenticated ? (
+      {activeTab === "perfil" && isAuthenticated ? (
         <section className="section-card page-stack">
           <div className="section-heading">
             <div>
@@ -418,7 +430,9 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.firstName}
-                  onChange={(event) => updateField('firstName', event.target.value)}
+                  onChange={(event) =>
+                    updateField("firstName", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group">
@@ -426,7 +440,9 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.lastName}
-                  onChange={(event) => updateField('lastName', event.target.value)}
+                  onChange={(event) =>
+                    updateField("lastName", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group">
@@ -435,7 +451,7 @@ export default function AccountPage() {
                   className="input"
                   type="email"
                   value={form.email}
-                  onChange={(event) => updateField('email', event.target.value)}
+                  onChange={(event) => updateField("email", event.target.value)}
                 />
               </label>
               <label className="field-group">
@@ -443,7 +459,7 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.phone}
-                  onChange={(event) => updateField('phone', event.target.value)}
+                  onChange={(event) => updateField("phone", event.target.value)}
                 />
               </label>
               <label className="field-group">
@@ -451,7 +467,9 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.instagram}
-                  onChange={(event) => updateField('instagram', event.target.value)}
+                  onChange={(event) =>
+                    updateField("instagram", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group">
@@ -460,7 +478,9 @@ export default function AccountPage() {
                   className="input"
                   type="date"
                   value={form.birthDate}
-                  onChange={(event) => updateField('birthDate', event.target.value)}
+                  onChange={(event) =>
+                    updateField("birthDate", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group field-group-span-2">
@@ -469,7 +489,7 @@ export default function AccountPage() {
                   className="input"
                   value={form.defaultAddress.addressLine}
                   onChange={(event) =>
-                    updateAddressField('addressLine', event.target.value)
+                    updateAddressField("addressLine", event.target.value)
                   }
                 />
               </label>
@@ -478,7 +498,9 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.defaultAddress.city}
-                  onChange={(event) => updateAddressField('city', event.target.value)}
+                  onChange={(event) =>
+                    updateAddressField("city", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group">
@@ -486,7 +508,9 @@ export default function AccountPage() {
                 <input
                   className="input"
                   value={form.defaultAddress.state}
-                  onChange={(event) => updateAddressField('state', event.target.value)}
+                  onChange={(event) =>
+                    updateAddressField("state", event.target.value)
+                  }
                 />
               </label>
               <label className="field-group">
@@ -495,7 +519,7 @@ export default function AccountPage() {
                   className="input"
                   value={form.defaultAddress.postalCode}
                   onChange={(event) =>
-                    updateAddressField('postalCode', event.target.value)
+                    updateAddressField("postalCode", event.target.value)
                   }
                 />
               </label>
@@ -505,7 +529,7 @@ export default function AccountPage() {
                   className="input"
                   value={form.preferredPaymentMethod}
                   onChange={(event) =>
-                    updateField('preferredPaymentMethod', event.target.value)
+                    updateField("preferredPaymentMethod", event.target.value)
                   }
                 >
                   <option value="">Sin preferencia</option>
@@ -522,7 +546,7 @@ export default function AccountPage() {
                   className="input"
                   value={form.preferredShippingMethodId}
                   onChange={(event) =>
-                    updateField('preferredShippingMethodId', event.target.value)
+                    updateField("preferredShippingMethodId", event.target.value)
                   }
                 >
                   <option value="">Sin preferencia</option>
@@ -540,44 +564,12 @@ export default function AccountPage() {
                   rows="3"
                   value={form.defaultAddress.deliveryNotes}
                   onChange={(event) =>
-                    updateAddressField('deliveryNotes', event.target.value)
+                    updateAddressField("deliveryNotes", event.target.value)
                   }
                 />
               </label>
             </div>
 
-
-
-            {profileError ? <p className="error-copy">{profileError}</p> : null}
-            {profileMessage ? (
-              <p className="success-copy">{profileMessage}</p>
-            ) : null}
-            <div className="inline-action-group">
-              <button
-                type="submit"
-                className="button button-primary"
-                disabled={profileLoading}
-              >
-                {profileLoading ? 'Guardando...' : 'Guardar datos'}
-              </button>
-            </div>
-          </form>
-        </section>
-      ) : null}
-
-      {activeTab === 'preferencias' && isAuthenticated ? (
-        <section className="section-card page-stack">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">Preferencias</p>
-              <h2>Mis preferencias</h2>
-              <p className="muted-copy">
-                Ajusta categorias, marcas, talles y colores para recibir avisos mas utiles.
-              </p>
-            </div>
-          </div>
-
-          <form className="page-stack" onSubmit={handleSubmit}>
             <div className="page-stack-sm">
               <div>
                 <p className="section-kicker">Preferencias</p>
@@ -587,21 +579,21 @@ export default function AccountPage() {
                 <div>
                   <strong>Categorias</strong>
                   {renderPreferencesCheckboxes(
-                    'preferredCategories',
+                    "preferredCategories",
                     categoryOptions.slice(0, 12),
                   )}
                 </div>
                 <div>
                   <strong>Marcas</strong>
                   {renderPreferencesCheckboxes(
-                    'preferredBrands',
+                    "preferredBrands",
                     brandOptions.slice(0, 12),
                   )}
                 </div>
                 <div>
                   <strong>Talles</strong>
                   {renderPreferencesCheckboxes(
-                    'preferredSizes',
+                    "preferredSizes",
                     sizeOptions.slice(0, 12),
                   )}
                 </div>
@@ -616,15 +608,15 @@ export default function AccountPage() {
                             key={color}
                             className={
                               checked
-                                ? 'preference-check is-active'
-                                : 'preference-check'
+                                ? "preference-check is-active"
+                                : "preference-check"
                             }
                           >
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() =>
-                                togglePreferenceField('preferredColors', color)
+                                togglePreferenceField("preferredColors", color)
                               }
                             />
                             <span>{color}</span>
@@ -646,7 +638,7 @@ export default function AccountPage() {
                     rows="3"
                     value={form.preferenceNotes}
                     onChange={(event) =>
-                      updateField('preferenceNotes', event.target.value)
+                      updateField("preferenceNotes", event.target.value)
                     }
                   />
                 </label>
@@ -663,15 +655,14 @@ export default function AccountPage() {
                 className="button button-primary"
                 disabled={profileLoading}
               >
-                {profileLoading ? 'Guardando...' : 'Guardar preferencias'}
+                {profileLoading ? "Guardando..." : "Guardar datos"}
               </button>
             </div>
           </form>
         </section>
       ) : null}
 
-
-      {activeTab === 'guardados' ? (
+      {activeTab === "guardados" ? (
         <section className="section-card page-stack">
           <div className="section-heading">
             <div>
@@ -698,150 +689,178 @@ export default function AccountPage() {
                 page={wishlistPage}
                 totalPages={wishlistTotalPages}
                 totalItems={sortedWishlistItems.length}
-                onPrevious={() => setWishlistPage((current) => Math.max(1, current - 1))}
-                onNext={() => setWishlistPage((current) => Math.min(wishlistTotalPages, current + 1))}
+                onPrevious={() =>
+                  setWishlistPage((current) => Math.max(1, current - 1))
+                }
+                onNext={() =>
+                  setWishlistPage((current) =>
+                    Math.min(wishlistTotalPages, current + 1),
+                  )
+                }
               />
               <div className="table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Imagen</th>
-                    <SortableTh sortKey="title" sort={wishlistSort} onSort={toggleWishlistSort}>Prenda</SortableTh>
-                    <SortableTh sortKey="price" sort={wishlistSort} onSort={toggleWishlistSort}>Precio</SortableTh>
-                    <SortableTh sortKey="status" sort={wishlistSort} onSort={toggleWishlistSort}>Estado</SortableTh>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedWishlistItems.map((item) => {
-                    const isAvailable =
-                      Number(item.quantityAvailable || 0) > 0 &&
-                      item.status !== 'SOLD_OUT';
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Imagen</th>
+                      <SortableTh
+                        sortKey="title"
+                        sort={wishlistSort}
+                        onSort={toggleWishlistSort}
+                      >
+                        Prenda
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="price"
+                        sort={wishlistSort}
+                        onSort={toggleWishlistSort}
+                      >
+                        Precio
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="status"
+                        sort={wishlistSort}
+                        onSort={toggleWishlistSort}
+                      >
+                        Estado
+                      </SortableTh>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagedWishlistItems.map((item) => {
+                      const isAvailable =
+                        Number(item.quantityAvailable || 0) > 0 &&
+                        item.status !== "SOLD_OUT";
 
-                    return (
-                      <tr key={item.articleId}>
-                        <td>
-                          <Link
-                            to={articlePath(item)}
-                            className="table-thumb-link"
-                            aria-label={`Ver ${item.title}`}
-                          >
-                            <SmartImage
-                              src={item.image}
-                              alt={item.title}
-                              fallbackLabel={item.title}
-                              className="table-thumb-image"
-                            />
-                          </Link>
-                        </td>
-                        <td>
-                          <div className="cell-stack">
+                      return (
+                        <tr key={item.articleId}>
+                          <td>
                             <Link
                               to={articlePath(item)}
-                              className="table-strong-link"
+                              className="table-thumb-link"
+                              aria-label={`Ver ${item.title}`}
                             >
-                              {item.title}
+                              <SmartImage
+                                src={item.image}
+                                alt={item.title}
+                                fallbackLabel={item.title}
+                                className="table-thumb-image"
+                              />
                             </Link>
-                            <span className="muted-copy">
-                              {item.sizeLabel || 'Talle no especificado'}
-                              {item.conditionLabel
-                                ? ` · ${item.conditionLabel}`
-                                : ''}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <strong>
-                            {formatCurrency(item.discountedPrice || item.salePrice)}
-                          </strong>
-                        </td>
-                        <td>
-                          {isAvailable
-                            ? item.allowOffers
-                              ? 'Disponible · ofertable'
-                              : 'Disponible'
-                            : 'Agotado'}
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() =>
-                                toggleItem(item, {
-                                  articleId: item.articleId,
-                                  slug: item.slug,
-                                  title: item.title,
-                                  salePrice: item.salePrice,
-                                  discountType: item.discountType,
-                                  discountValue: item.discountValue,
-                                  discountedPrice: item.discountedPrice,
-                                  status: item.status,
-                                  conditionLabel: item.conditionLabel,
-                                  color: item.color,
-                                  material: item.material,
-                                  quantityAvailable: item.quantityAvailable,
-                                  brandName: item.brandName,
-                                  sizeLabel: item.sizeLabel,
-                                  image: item.image,
-                                  allowOffers: item.allowOffers,
-                                })
-                              }
-                              disabled={pendingIds.includes(Number(item.articleId))}
-                            >
-                              Remover
-                            </button>
-                            <Link
-                              to={articlePath(item)}
-                              className="ghost-button"
-                            >
-                              Ver prenda
-                            </Link>
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              disabled={!isAvailable}
-                              onClick={(event) => {
-                                addItem(
-                                  {
-                                    id: item.articleId,
+                          </td>
+                          <td>
+                            <div className="cell-stack">
+                              <Link
+                                to={articlePath(item)}
+                                className="table-strong-link"
+                              >
+                                {item.title}
+                              </Link>
+                              <span className="muted-copy">
+                                {item.sizeLabel || "Talle no especificado"}
+                                {item.conditionLabel
+                                  ? ` · ${item.conditionLabel}`
+                                  : ""}
+                              </span>
+                            </div>
+                          </td>
+                          <td>
+                            <strong>
+                              {formatCurrency(
+                                item.discountedPrice || item.salePrice,
+                              )}
+                            </strong>
+                          </td>
+                          <td>
+                            {isAvailable
+                              ? item.allowOffers
+                                ? "Disponible · ofertable"
+                                : "Disponible"
+                              : "Agotado"}
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() =>
+                                  toggleItem(item, {
+                                    articleId: item.articleId,
                                     slug: item.slug,
                                     title: item.title,
-                                    brandName: item.brandName,
-                                    sizeText: item.sizeLabel,
-                                    primaryImage: item.image,
                                     salePrice: item.salePrice,
                                     discountType: item.discountType,
                                     discountValue: item.discountValue,
                                     discountedPrice: item.discountedPrice,
-                                    quantityAvailable: item.quantityAvailable,
                                     status: item.status,
-                                  },
-                                  1,
-                                  {
-                                    sourceRect:
-                                      event?.currentTarget?.getBoundingClientRect?.() ||
-                                      null,
-                                  },
-                                );
-                              }}
-                            >
-                              Agregar al carrito
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                                    conditionLabel: item.conditionLabel,
+                                    color: item.color,
+                                    material: item.material,
+                                    quantityAvailable: item.quantityAvailable,
+                                    brandName: item.brandName,
+                                    sizeLabel: item.sizeLabel,
+                                    image: item.image,
+                                    allowOffers: item.allowOffers,
+                                  })
+                                }
+                                disabled={pendingIds.includes(
+                                  Number(item.articleId),
+                                )}
+                              >
+                                Remover
+                              </button>
+                              <Link
+                                to={articlePath(item)}
+                                className="ghost-button"
+                              >
+                                Ver prenda
+                              </Link>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                disabled={!isAvailable}
+                                onClick={(event) => {
+                                  addItem(
+                                    {
+                                      id: item.articleId,
+                                      slug: item.slug,
+                                      title: item.title,
+                                      brandName: item.brandName,
+                                      sizeText: item.sizeLabel,
+                                      primaryImage: item.image,
+                                      salePrice: item.salePrice,
+                                      discountType: item.discountType,
+                                      discountValue: item.discountValue,
+                                      discountedPrice: item.discountedPrice,
+                                      quantityAvailable: item.quantityAvailable,
+                                      status: item.status,
+                                    },
+                                    1,
+                                    {
+                                      sourceRect:
+                                        event?.currentTarget?.getBoundingClientRect?.() ||
+                                        null,
+                                    },
+                                  );
+                                }}
+                              >
+                                Agregar al carrito
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </>
           ) : null}
         </section>
       ) : null}
 
-      {activeTab === 'alertas' ? (
+      {activeTab === "alertas" ? (
         <section className="section-card page-stack">
           <div className="section-heading">
             <div>
@@ -862,7 +881,7 @@ export default function AccountPage() {
             {alerts.map((alert) => (
               <article key={alert.id} className="history-row">
                 <div>
-                  <strong>{alert.articleTitle || 'Alerta general'}</strong>
+                  <strong>{alert.articleTitle || "Alerta general"}</strong>
                   <p className="muted-copy">
                     {alert.alertType} · {alert.status}
                   </p>
@@ -874,7 +893,7 @@ export default function AccountPage() {
         </section>
       ) : null}
 
-      {activeTab === 'ordenes' ? (
+      {activeTab === "ordenes" ? (
         <section className="section-card page-stack">
           <div className="section-heading">
             <div>
@@ -898,71 +917,107 @@ export default function AccountPage() {
                 page={ordersPage}
                 totalPages={ordersTotalPages}
                 totalItems={sortedOrders.length}
-                onPrevious={() => setOrdersPage((current) => Math.max(1, current - 1))}
-                onNext={() => setOrdersPage((current) => Math.min(ordersTotalPages, current + 1))}
+                onPrevious={() =>
+                  setOrdersPage((current) => Math.max(1, current - 1))
+                }
+                onNext={() =>
+                  setOrdersPage((current) =>
+                    Math.min(ordersTotalPages, current + 1),
+                  )
+                }
               />
               <div className="table-shell">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <SortableTh sortKey="orderNumber" sort={ordersSort} onSort={toggleOrdersSort}>Orden</SortableTh>
-                    <SortableTh sortKey="createdAt" sort={ordersSort} onSort={toggleOrdersSort}>Fecha</SortableTh>
-                    <SortableTh sortKey="total" sort={ordersSort} onSort={toggleOrdersSort}>Total</SortableTh>
-                    <SortableTh sortKey="orderStatus" sort={ordersSort} onSort={toggleOrdersSort}>Estado</SortableTh>
-                    <SortableTh sortKey="updatedAt" sort={ordersSort} onSort={toggleOrdersSort}>Ultima actualizacion</SortableTh>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedOrders.map((order) => {
-                    const latestStatusDate =
-                      order.shippedAt ||
-                      order.cancelledAt ||
-                      order.approvedAt ||
-                      order.reservedUntil ||
-                      order.createdAt;
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <SortableTh
+                        sortKey="orderNumber"
+                        sort={ordersSort}
+                        onSort={toggleOrdersSort}
+                      >
+                        Orden
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="createdAt"
+                        sort={ordersSort}
+                        onSort={toggleOrdersSort}
+                      >
+                        Fecha
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="total"
+                        sort={ordersSort}
+                        onSort={toggleOrdersSort}
+                      >
+                        Total
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="orderStatus"
+                        sort={ordersSort}
+                        onSort={toggleOrdersSort}
+                      >
+                        Estado
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="updatedAt"
+                        sort={ordersSort}
+                        onSort={toggleOrdersSort}
+                      >
+                        Ultima actualizacion
+                      </SortableTh>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pagedOrders.map((order) => {
+                      const latestStatusDate =
+                        order.shippedAt ||
+                        order.cancelledAt ||
+                        order.approvedAt ||
+                        order.reservedUntil ||
+                        order.createdAt;
 
-                    return (
-                      <tr key={order.id}>
-                        <td>
-                          <div className="cell-stack">
-                            <strong>{order.orderNumber}</strong>
-                            <span className="muted-copy">
-                              {order.itemsCount} prendas ·{' '}
-                              {PAYMENT_METHOD_LABELS[order.paymentMethod] ||
-                                order.paymentMethod}
-                              {order.shippingMethodName
-                                ? ` · ${order.shippingMethodName}`
-                                : ''}
-                            </span>
-                          </div>
-                        </td>
-                        <td>{formatDate(order.createdAt)}</td>
-                        <td>
-                          <strong>{formatCurrency(order.total)}</strong>
-                        </td>
-                        <td>
-                          {ORDER_STATUS_LABELS[order.orderStatus] ||
-                            order.orderStatus}
-                        </td>
-                        <td>{formatDate(latestStatusDate)}</td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              type="button"
-                              className="ghost-button"
-                              onClick={() => void openOrderDetail(order.id)}
-                            >
-                              Detalles
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr key={order.id}>
+                          <td>
+                            <div className="cell-stack">
+                              <strong>{order.orderNumber}</strong>
+                              <span className="muted-copy">
+                                {order.itemsCount} prendas ·{" "}
+                                {PAYMENT_METHOD_LABELS[order.paymentMethod] ||
+                                  order.paymentMethod}
+                                {order.shippingMethodName
+                                  ? ` · ${order.shippingMethodName}`
+                                  : ""}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{formatDate(order.createdAt)}</td>
+                          <td>
+                            <strong>{formatCurrency(order.total)}</strong>
+                          </td>
+                          <td>
+                            {ORDER_STATUS_LABELS[order.orderStatus] ||
+                              order.orderStatus}
+                          </td>
+                          <td>{formatDate(latestStatusDate)}</td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={() => void openOrderDetail(order.id)}
+                              >
+                                Detalles
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </>
           ) : null}
         </section>
@@ -974,7 +1029,7 @@ export default function AccountPage() {
         title={
           selectedOrderDetail
             ? `Orden ${selectedOrderDetail.orderNumber}`
-            : 'Detalle de orden'
+            : "Detalle de orden"
         }
         description="Seguimiento visible para tu compra."
         wide
@@ -982,7 +1037,9 @@ export default function AccountPage() {
         {orderDetailLoading ? (
           <p className="muted-copy">Cargando detalle...</p>
         ) : null}
-        {orderDetailError ? <p className="error-copy">{orderDetailError}</p> : null}
+        {orderDetailError ? (
+          <p className="error-copy">{orderDetailError}</p>
+        ) : null}
 
         {selectedOrderDetail ? (
           <div className="page-stack">
@@ -1026,26 +1083,46 @@ export default function AccountPage() {
                     </thead>
                     <tbody>
                       {selectedOrderDetail.items.map((item) => {
-                        const itemPath = item.articleSlug || item.articleId
-                          ? articlePath({ slug: item.articleSlug, id: item.articleId, articleId: item.articleId })
-                          : null;
+                        const itemPath =
+                          item.articleSlug || item.articleId
+                            ? articlePath({
+                                slug: item.articleSlug,
+                                id: item.articleId,
+                                articleId: item.articleId,
+                              })
+                            : null;
 
                         return (
                           <tr key={item.id}>
                             <td className="cell-truncate">
                               <div className="cell-stack cell-stack--compact">
-                                <strong title={item.articleTitle}>{item.articleTitle}</strong>
-                                <span className="muted-copy">#{item.articleId || 's/d'}</span>
+                                <strong title={item.articleTitle}>
+                                  {item.articleTitle}
+                                </strong>
+                                <span className="muted-copy">
+                                  #{item.articleId || "s/d"}
+                                </span>
                               </div>
                             </td>
-                            <td className="cell-truncate">{item.brandName || 'Sin marca'}</td>
-                            <td className="cell-truncate">{item.size || 'Sin talle'}</td>
+                            <td className="cell-truncate">
+                              {item.brandName || "Sin marca"}
+                            </td>
+                            <td className="cell-truncate">
+                              {item.size || "Sin talle"}
+                            </td>
                             <td>{item.quantity}</td>
                             <td>{formatCurrency(item.finalUnitPrice)}</td>
-                            <td><strong>{formatCurrency(item.lineTotal)}</strong></td>
+                            <td>
+                              <strong>{formatCurrency(item.lineTotal)}</strong>
+                            </td>
                             <td>
                               {itemPath ? (
-                                <Link className="icon-action-button" to={itemPath} aria-label={`Ver ${item.articleTitle}`} title="Ver prenda">
+                                <Link
+                                  className="icon-action-button"
+                                  to={itemPath}
+                                  aria-label={`Ver ${item.articleTitle}`}
+                                  title="Ver prenda"
+                                >
                                   <EyeIcon />
                                 </Link>
                               ) : (
@@ -1068,10 +1145,11 @@ export default function AccountPage() {
                       <article key={entry.id} className="history-row">
                         <div>
                           <strong>
-                            {ORDER_STATUS_LABELS[entry.toStatus] || entry.toStatus}
+                            {ORDER_STATUS_LABELS[entry.toStatus] ||
+                              entry.toStatus}
                           </strong>
                           <p className="muted-copy">
-                            {entry.reason || 'Sin comentario adicional'}
+                            {entry.reason || "Sin comentario adicional"}
                           </p>
                         </div>
                         <span>{formatDate(entry.changedAt)}</span>

@@ -150,12 +150,7 @@ export default function Header({ hideBrand = false }) {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount, cartFx } = useCart();
-  const {
-    activeCatalogFilterCount,
-    catalogFiltersContent,
-    catalogSortContent,
-    clearCatalogFilters,
-  } = useMobileMenu();
+  const { catalogFiltersContent, catalogFiltersCount, clearCatalogFilters } = useMobileMenu();
   const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
@@ -316,7 +311,6 @@ export default function Header({ hideBrand = false }) {
   const accountMenuChildren = isAuthenticated
     ? [
         { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
-        { key: "account-preferences", label: "Preferencias", to: "/cuenta/preferencias" },
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
         { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
         { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
@@ -384,27 +378,43 @@ export default function Header({ hideBrand = false }) {
 
   function renderMenuButton() {
     return (
-      <motion.button
-        type="button"
-        className="ghost-button header-actions-mobile__menu"
-        aria-controls={mobileMenuId}
-        aria-expanded={mobileMenuOpen}
-        aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
-        onClick={() => setMobileMenuOpen((current) => !current)}
-        initial={false}
-        whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
-      >
-        <motion.span
-          animate={
-            mobileMenuOpen
-              ? { rotate: -3, scale: 0.95 }
-              : { rotate: 0, scale: 1 }
-          }
-          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }}
+      <span className="header-mobile-menu-wrap">
+        <motion.button
+          type="button"
+          className="ghost-button header-actions-mobile__menu"
+          aria-controls={mobileMenuId}
+          aria-expanded={mobileMenuOpen}
+          aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
+          onClick={() => setMobileMenuOpen((current) => !current)}
+          initial={false}
+          whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
         >
-          <MenuGlyph />
-        </motion.span>
-      </motion.button>
+          <motion.span
+            animate={
+              mobileMenuOpen
+                ? { rotate: -3, scale: 0.95 }
+                : { rotate: 0, scale: 1 }
+            }
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }}
+          >
+            <MenuGlyph />
+          </motion.span>
+        </motion.button>
+        {catalogFiltersCount > 0 ? (
+          <button
+            type="button"
+            className="mobile-filter-count-badge"
+            onClick={(event) => {
+              event.stopPropagation();
+              clearCatalogFilters?.();
+            }}
+            aria-label={`Limpiar ${catalogFiltersCount} filtros activos`}
+            title="Limpiar filtros"
+          >
+            {catalogFiltersCount}
+          </button>
+        ) : null}
+      </span>
     );
   }
 
@@ -486,17 +496,6 @@ export default function Header({ hideBrand = false }) {
 
           <div className="header-mobile-shell">
             {renderMenuButton()}
-            {activeCatalogFilterCount > 0 && clearCatalogFilters ? (
-              <button
-                type="button"
-                className="header-filter-count-button"
-                onClick={clearCatalogFilters}
-                aria-label={`Limpiar ${activeCatalogFilterCount} filtros activos`}
-                title="Limpiar filtros"
-              >
-                {activeCatalogFilterCount}
-              </button>
-            ) : null}
             <Link
               to="/"
               className={`brand-mark brand-mark--mobile ${hideBrand ? "brand-mark--hidden" : ""}`}
@@ -527,7 +526,6 @@ export default function Header({ hideBrand = false }) {
         }
         searchContent={mobileSearchContent}
         filtersContent={catalogFiltersContent}
-        sortContent={catalogSortContent}
         items={mobileMenuItems}
       />
 

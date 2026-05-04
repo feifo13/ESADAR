@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -58,16 +58,11 @@ function getLabel(options, id, fallback) {
 
 export default function HomePage() {
   const heroRef = useRef(null);
-  const searchInputRef = useRef(null);
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
+  const loadMoreRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
-  const {
-    setActiveCatalogFilterCount,
-    setCatalogFiltersContent,
-    setCatalogSortContent,
-    setClearCatalogFilters,
-  } = useMobileMenu();
+  const { setCatalogFiltersContent, setCatalogFiltersMeta } = useMobileMenu();
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
@@ -144,36 +139,6 @@ export default function HomePage() {
     return chips;
   }, [brandOptions, categoryOptions, filters, sizeOptions]);
 
-
-  const updateFilterField = useCallback((name, nextValue) => {
-    setItems([]);
-    setPage(1);
-    setFilters((current) => ({ ...current, [name]: nextValue }));
-  }, []);
-
-  const clearCatalogFilterSelection = useCallback(() => {
-    setItems([]);
-    setPage(1);
-    setFilters((current) => ({
-      ...initialFilters,
-      search: current.search,
-      sort: current.sort,
-    }));
-  }, []);
-
-  const activeCatalogFilterCount = useMemo(
-    () =>
-      [
-        filters.categoryId,
-        filters.brandId,
-        filters.sizeId,
-        filters.discounted,
-        filters.offerable,
-        filters.featured,
-      ].filter(Boolean).length,
-    [filters],
-  );
-
   const mobileCatalogFiltersContent = useMemo(
     () => (
       <ArticleFilters
@@ -181,70 +146,54 @@ export default function HomePage() {
         onChange={applyMobileFilters}
         onApplied={() => setMobileFiltersOpen(false)}
         idPrefix="mobile-filter"
-        showSort={false}
       />
     ),
     [filters],
   );
 
-  const mobileCatalogSortContent = useMemo(
-    () => (
-      <div className="mobile-menu-sort-panel">
-        <label className="sr-only" htmlFor="mobile-menu-sort-select">
-          Ordenar catalogo
-        </label>
-        <select
-          id="mobile-menu-sort-select"
-          className="input"
-          value={filters.sort}
-          onChange={(event) => updateFilterField("sort", event.target.value)}
-        >
-          <option value="intake_desc">Ingreso mas reciente</option>
-          <option value="intake_asc">Ingreso mas antiguo</option>
-          <option value="price_asc">Precio menor a mayor</option>
-          <option value="price_desc">Precio mayor a menor</option>
-        </select>
-      </div>
-    ),
-    [filters.sort, updateFilterField],
-  );
+  useEffect(() => {
+    const isCatalogView =
+      location.pathname === "/" || location.pathname === "/articles";
+    setCatalogFiltersContent(
+      isCatalogView ? mobileCatalogFiltersContent : null,
+    );
+    return () => setCatalogFiltersContent(null);
+  }, [
+    location.pathname,
+    mobileCatalogFiltersContent,
+    setCatalogFiltersContent,
+  ]);
 
   useEffect(() => {
     const isCatalogView =
       location.pathname === "/" || location.pathname === "/articles";
 
-    setCatalogFiltersContent(
-      isCatalogView ? mobileCatalogFiltersContent : null,
-    );
-    setCatalogSortContent(
-      isCatalogView ? mobileCatalogSortContent : null,
-    );
-    setActiveCatalogFilterCount(
-      isCatalogView ? activeCatalogFilterCount : 0,
-    );
-    setClearCatalogFilters(
-      isCatalogView ? () => clearCatalogFilterSelection : null,
-    );
+    setCatalogFiltersMeta({
+      count: isCatalogView ? activeFilterChips.length : 0,
+      onClear: isCatalogView ? () => resetFilters() : null,
+    });
 
-    return () => {
-      setCatalogFiltersContent(null);
-      setCatalogSortContent(null);
-      setActiveCatalogFilterCount(0);
-      setClearCatalogFilters(null);
-    };
-  }, [
-    activeCatalogFilterCount,
-    clearCatalogFilterSelection,
-    location.pathname,
-    mobileCatalogFiltersContent,
-    mobileCatalogSortContent,
-    setActiveCatalogFilterCount,
-    setCatalogFiltersContent,
-    setCatalogSortContent,
-    setClearCatalogFilters,
-  ]);
+    return () => setCatalogFiltersMeta({ count: 0, onClear: null });
+  }, [activeFilterChips.length, location.pathname, setCatalogFiltersMeta]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+    if (!sentinel || !canLoadMore || loading || loadingMore) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setPage((current) => current + 1);
+        }
+      },
+      { root: null, rootMargin: "420px 0px", threshold: 0.01 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [canLoadMore, loading, loadingMore, items.length]);
 
   useEffect(() => {
     setHeroLogoVisible(false);
@@ -330,29 +279,6 @@ export default function HomePage() {
     };
   }, [page, queryString]);
 
-  useEffect(() => {
-    function handleShortcut(event) {
-      const target = event.target;
-      const isTypingElement =
-        target instanceof HTMLElement &&
-        ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-
-      if (
-        event.key === "/" &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !isTypingElement
-      ) {
-        event.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    }
-
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, []);
-
   function applyFilters(nextFilters) {
     setItems([]);
     setPage(1);
@@ -363,8 +289,6 @@ export default function HomePage() {
     applyFilters(nextFilters);
     setMobileFiltersOpen(false);
   }
-
-
 
   function resetFilters() {
     applyFilters({ ...initialFilters });
@@ -522,32 +446,6 @@ export default function HomePage() {
         />
       </section>
 
-      {/* <section className="catalog-topbar-shell">
-        <div className="container catalog-topbar-row catalog-topbar-row--fancy">
-          <input
-            ref={searchInputRef}
-            type="search"
-            className="input search-input-main"
-            placeholder="Buscar por titulo, marca o categoria"
-            value={filters.search}
-            onChange={(event) =>
-              updateFilterField("search", event.target.value)
-            }
-          />
-
-          <select
-            className="input sort-select"
-            value={filters.sort}
-            onChange={(event) => updateFilterField("sort", event.target.value)}
-          >
-            <option value="intake_desc">Ingreso mas reciente</option>
-            <option value="intake_asc">Ingreso mas antiguo</option>
-            <option value="price_asc">Precio menor a mayor</option>
-            <option value="price_desc">Precio mayor a menor</option>
-          </select>
-        </div>
-      </section> */}
-
       {/* <section
         className="mobile-catalog-filter-shell container"
         aria-label="Filtros del catalogo"
@@ -702,15 +600,16 @@ export default function HomePage() {
           )}
 
           {canLoadMore ? (
-            <div className="load-more-row load-more-row-left">
-              <button
-                type="button"
-                className="button button-secondary"
-                disabled={loadingMore}
-                onClick={() => setPage((current) => current + 1)}
-              >
-                {loadingMore ? "Cargando mas…" : "Ver mas"}
-              </button>
+            <div
+              ref={loadMoreRef}
+              className="infinite-scroll-sentinel"
+              aria-live="polite"
+            >
+              <span className="muted-copy">
+                {loadingMore
+                  ? "Cargando mas prendas…"
+                  : "Desliza para cargar mas prendas"}
+              </span>
             </div>
           ) : null}
         </div>

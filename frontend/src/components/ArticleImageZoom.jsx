@@ -7,7 +7,7 @@ export default function ArticleImageZoom({ image, title }) {
   const src = image?.src || image?.zoomSrc || image?.thumbSrc || '';
   const zoomSrc = image?.zoomSrc || image?.src || image?.thumbSrc || src;
   const resolvedSrc = resolveAssetUrl(src);
-  const resolvedZoomSrc = resolveAssetUrl(zoomSrc || src);
+  const resolvedZoomSrc = resolveAssetUrl(zoomSrc || src) || resolvedSrc;
   const alt = image?.altText || title || 'Imagen de articulo';
 
   if (!resolvedSrc) {
@@ -29,15 +29,14 @@ export default function ArticleImageZoom({ image, title }) {
     <div className="article-image-zoom" aria-label="Imagen principal con zoom">
       <InnerImageZoom
         src={resolvedSrc}
-        zoomSrc={resolvedZoomSrc || resolvedSrc}
-        sources={image?.sources || []}
+        zoomSrc={resolvedZoomSrc}
         zoomType="hover"
-        zoomScale={2.8}
+        moveType="pan"
+        zoomScale={1.65}
         zoomPreload={true}
         fullscreenOnMobile={true}
+        mobileBreakpoint={960}
         hideHint={true}
-        fadeDuration={0}
-        className="article-inner-image-zoom"
         imgAttributes={{
           alt,
           className: 'article-image-zoom__image',

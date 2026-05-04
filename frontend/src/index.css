@@ -10427,71 +10427,31 @@ textarea,
   }
 }
 
-/* === ESADAR pass 9: mobile cleanup, tabs, preferences and library zoom === */
-.header-mobile-shell {
-  gap: 8px;
-}
-
-.header-filter-count-button {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  display: none;
-  place-items: center;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 0 !important;
-  background: var(--orange);
-  color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.mobile-menu-sort-panel {
-  display: grid;
-  gap: 10px;
-}
-
-.mobile-motion-menu__accordion-body--sort {
-  padding: 10px 0 12px;
-}
-
-.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
-.wishlist-heart-button[data-wishlist-active="false"] .wishlist-heart-icon path,
-.article-card--catalog .article-card-heart.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
-.article-gallery-favorite.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
-.featured-motion-card__favorite.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
-.article-card-heart--editorial.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path {
-  fill: transparent !important;
-  stroke: currentColor !important;
-  stroke-width: 1.9 !important;
-}
-
-.wishlist-heart-button[aria-pressed="true"] .wishlist-heart-icon path,
-.wishlist-heart-button[data-wishlist-active="true"] .wishlist-heart-icon path {
-  fill: currentColor !important;
-  stroke: currentColor !important;
-}
-
-.article-image-zoom,
-.article-inner-image-zoom,
-.article-image-zoom .iiz,
-.article-image-zoom .iiz__img {
-  width: 100%;
-  height: 100%;
-}
-
+/* === ESADAR pass 10: zoom visible, desktop search, tabs and infinite lists === */
 .article-image-zoom {
-  position: relative;
+  width: 100%;
+  min-height: clamp(460px, 62vw, 760px);
+  max-height: 78vh;
   display: grid;
   place-items: center;
-  min-height: clamp(420px, 62vh, 760px);
   overflow: hidden;
   background: var(--surface-soft);
 }
 
+.article-image-zoom .iiz,
+.article-image-zoom .iiz__btn,
+.article-image-zoom .iiz__img,
+.article-image-zoom__image,
+.article-image-zoom__fallback-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 78vh !important;
+  display: block !important;
+}
+
 .article-image-zoom .iiz {
+  min-height: clamp(460px, 62vw, 760px);
   display: grid !important;
   place-items: center;
   overflow: hidden !important;
@@ -10501,155 +10461,293 @@ textarea,
 .article-image-zoom .iiz__img,
 .article-image-zoom__image,
 .article-image-zoom__fallback-image {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
-  max-height: clamp(420px, 62vh, 760px);
   object-fit: contain !important;
+  background: var(--surface-soft);
 }
 
 .article-image-zoom .iiz__zoom-img {
-  max-width: none !important;
-  max-height: none !important;
   object-fit: contain !important;
+  background: var(--surface-soft);
 }
 
-.article-image-zoom .iiz__zoom-portal {
-  z-index: 150 !important;
+.infinite-scroll-sentinel,
+.infinite-scroll-end {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  place-items: center start;
+  padding: 14px 0;
 }
 
-@media (min-width: 721px) {
-  .admin-page-shell > .admin-toolbar,
-  .account-page-shell .account-tabs {
+@media (min-width: 781px) {
+  .admin-toolbar,
+  .account-tabs {
     display: flex !important;
+    align-items: flex-end;
     gap: 0 !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    padding: 4px 4px 0 !important;
-    border-bottom: 1px solid rgba(16, 43, 52, 0.14);
+    padding: 0 0 0 8px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
     background: transparent !important;
+    overflow-x: auto;
   }
 
-  .admin-page-shell .admin-tab,
-  .account-page-shell .admin-tab {
-    min-height: 42px;
-    padding: 11px 16px;
-    border: 1px solid rgba(16, 43, 52, 0.14) !important;
-    border-bottom: 0 !important;
-    border-radius: 0 !important;
-    background: #ffffff !important;
-    color: #102b34 !important;
+  .admin-toolbar .admin-tab,
+  .account-tabs .admin-tab {
+    position: relative;
+    min-height: 44px;
+    margin: 0 0 -1px 0;
+    padding: 12px 18px;
+    border: 1px solid var(--border) !important;
+    border-bottom-color: var(--border) !important;
+    background: color-mix(in srgb, var(--surface) 90%, var(--bg)) !important;
+    color: var(--muted) !important;
+    box-shadow: none !important;
     white-space: nowrap;
   }
 
-  .admin-page-shell .admin-tab.active,
-  .account-page-shell .admin-tab.active {
-    background: var(--navy) !important;
-    color: #ffffff !important;
-    border-color: var(--navy) !important;
+  .admin-toolbar .admin-tab + .admin-tab,
+  .account-tabs .admin-tab + .admin-tab {
+    margin-left: -1px;
+  }
+
+  .admin-toolbar .admin-tab:hover,
+  .account-tabs .admin-tab:hover {
+    color: var(--text) !important;
+    background: color-mix(in srgb, var(--surface) 82%, var(--aqua) 8%) !important;
+  }
+
+  .admin-toolbar .admin-tab.active,
+  .account-tabs .admin-tab.active {
+    z-index: 1;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+    border-top-color: var(--aqua) !important;
+    border-bottom-color: var(--surface) !important;
+    background: var(--surface) !important;
+    box-shadow: inset 0 3px 0 var(--aqua) !important;
   }
 }
 
-.app-shell--account-view .account-page-shell .section-card,
-.app-shell--account-view .account-page-shell .nested-card,
-.app-shell--account-view .account-page-shell .history-row,
-.app-shell--checkout-view .checkout-shell,
-.app-shell--checkout-view .checkout-shell .section-card,
-.app-shell--checkout-view .checkout-shell .nested-card,
-.app-shell--checkout-view .checkout-item,
-.app-shell--checkout-view .checkout-side-summary,
-.app-shell--checkout-view .checkout-confirm-panel,
-.app-shell--checkout-view .checkout-confirm-summary,
-.app-shell--admin-view .admin-page-shell .section-card,
-.app-shell--admin-view .admin-page-shell .nested-card,
-.app-shell--admin-view .admin-page-shell .history-row,
-.app-shell--admin-view .admin-page-shell .admin-row-card {
-  background: #ffffff !important;
-  color: #102b34 !important;
-  border-color: rgba(16, 43, 52, 0.14) !important;
+.app-shell--admin-view .section-card,
+.app-shell--admin-view .nested-card,
+.app-shell--admin-view .history-row,
+.app-shell--admin-view .checkout-side-summary,
+.app-shell--admin-view .checkout-confirm-summary,
+.account-page-shell .section-card,
+.account-page-shell .nested-card,
+.app-shell--checkout-view .section-card,
+.app-shell--checkout-view .nested-card,
+.checkout-shell,
+.checkout-step-grid,
+.checkout-confirmation-grid,
+.checkout-sidebar,
+.checkout-items,
+.order-summary-card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
-.app-shell--account-view .account-page-shell h1,
-.app-shell--account-view .account-page-shell h2,
-.app-shell--account-view .account-page-shell h3,
-.app-shell--account-view .account-page-shell h4,
-.app-shell--account-view .account-page-shell strong,
-.app-shell--checkout-view .checkout-page-stack h1,
-.app-shell--checkout-view .checkout-page-stack h2,
-.app-shell--checkout-view .checkout-page-stack h3,
-.app-shell--checkout-view .checkout-page-stack h4,
-.app-shell--checkout-view .checkout-page-stack strong,
-.app-shell--admin-view .admin-page-shell h1,
-.app-shell--admin-view .admin-page-shell h2,
-.app-shell--admin-view .admin-page-shell h3,
-.app-shell--admin-view .admin-page-shell h4,
-.app-shell--admin-view .admin-page-shell strong {
-  color: #102b34 !important;
+.app-shell--admin-view .input,
+.app-shell--admin-view .textarea,
+.app-shell--admin-view select.input,
+.app-shell--admin-view input.input,
+.account-page-shell .input,
+.account-page-shell .textarea,
+.account-page-shell select.input,
+.account-page-shell input.input,
+.app-shell--checkout-view .input,
+.app-shell--checkout-view .textarea,
+.app-shell--checkout-view select.input,
+.app-shell--checkout-view input.input {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
-.app-shell--account-view .account-page-shell .muted-copy,
-.app-shell--account-view .account-page-shell .field-label,
-.app-shell--account-view .account-page-shell .section-kicker,
-.app-shell--checkout-view .checkout-page-stack .muted-copy,
-.app-shell--checkout-view .checkout-page-stack .field-label,
-.app-shell--checkout-view .checkout-page-stack .section-kicker,
-.app-shell--admin-view .admin-page-shell .muted-copy,
-.app-shell--admin-view .admin-page-shell .field-label,
-.app-shell--admin-view .admin-page-shell .section-kicker {
-  color: #5c7379 !important;
+.app-shell--admin-view .muted-copy,
+.app-shell--admin-view .inline-note,
+.app-shell--admin-view .field-label,
+.app-shell--admin-view .section-kicker,
+.account-page-shell .muted-copy,
+.account-page-shell .inline-note,
+.account-page-shell .field-label,
+.account-page-shell .section-kicker,
+.app-shell--checkout-view .muted-copy,
+.app-shell--checkout-view .inline-note,
+.app-shell--checkout-view .field-label,
+.app-shell--checkout-view .section-kicker {
+  color: var(--muted) !important;
 }
 
-.app-shell--account-view .account-page-shell .input,
-.app-shell--account-view .account-page-shell .textarea,
-.app-shell--account-view .account-page-shell select.input,
-.app-shell--checkout-view .checkout-page-stack .input,
-.app-shell--checkout-view .checkout-page-stack .textarea,
-.app-shell--checkout-view .checkout-page-stack select.input,
-.app-shell--admin-view .admin-page-shell .input,
-.app-shell--admin-view .admin-page-shell .textarea,
-.app-shell--admin-view .admin-page-shell select.input {
-  background: #ffffff !important;
-  color: #102b34 !important;
-  border-color: rgba(16, 43, 52, 0.18) !important;
+.app-shell--admin-view .section-card h1,
+.app-shell--admin-view .section-card h2,
+.app-shell--admin-view .section-card h3,
+.app-shell--admin-view .section-card h4,
+.account-page-shell .section-card h1,
+.account-page-shell .section-card h2,
+.account-page-shell .section-card h3,
+.account-page-shell .section-card h4,
+.app-shell--checkout-view h1,
+.app-shell--checkout-view h2,
+.app-shell--checkout-view h3,
+.app-shell--checkout-view h4 {
+  color: var(--text) !important;
+}
+
+.wishlist-heart-button:not(.is-active) .wishlist-heart-icon,
+.wishlist-heart-button:not(.is-active) .wishlist-heart-icon path,
+.wishlist-heart-icon:not(.is-active),
+.wishlist-heart-icon:not(.is-active) path {
+  fill: transparent !important;
+  stroke: currentColor !important;
 }
 
 @media (max-width: 960px) {
-  .header-filter-count-button {
-    display: grid;
-  }
-}
-
-@media (max-width: 720px) {
-  .section-card.page-stack {
-    padding: 0 !important;
-    border-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  .admin-page-shell > .admin-toolbar,
-  .account-page-shell .account-tabs {
-    display: none !important;
-  }
-
-  .catalog-content > .active-filters-row,
-  .active-filters-row--mobile-sticky {
-    display: none !important;
-  }
-
-  .article-image-zoom {
-    min-height: min(76vh, 560px);
-    background: var(--surface-soft);
+  .article-image-zoom,
+  .article-image-zoom .iiz {
+    min-height: 0;
+    max-height: 68vh;
   }
 
   .article-image-zoom .iiz,
+  .article-image-zoom .iiz__btn,
   .article-image-zoom .iiz__img,
   .article-image-zoom__image {
-    max-height: min(76vh, 560px) !important;
+    height: auto !important;
+    max-height: 68vh !important;
   }
 
-  .article-image-zoom .iiz__zoom-portal,
-  .iiz__zoom-portal {
-    z-index: 160 !important;
+  .header-mobile-menu-wrap {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
   }
+
+  .mobile-filter-count-badge {
+    position: absolute;
+    right: -7px;
+    top: -6px;
+    min-width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--surface);
+    background: var(--orange);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 0 6px;
+    cursor: pointer;
+    z-index: 3;
+  }
+
+}
+
+
+/* === ESADAR pass 11: filtros dentro del panel, solapas y rollback admin pagination === */
+.account-page-header {
+  width: 100%;
+}
+
+@media (min-width: 781px) {
+  .admin-toolbar,
+  .account-tabs {
+    width: 100%;
+    display: flex !important;
+    align-items: flex-end;
+    gap: 0 !important;
+    padding: 0 0 0 8px !important;
+    margin-bottom: -24px;
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: transparent !important;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .admin-toolbar .admin-tab,
+  .account-tabs .admin-tab {
+    position: relative;
+    min-height: 44px;
+    margin: 0 0 -1px 0;
+    padding: 12px 18px;
+    border: 1px solid var(--border) !important;
+    border-bottom-color: var(--border) !important;
+    background: color-mix(in srgb, var(--surface) 92%, var(--bg)) !important;
+    color: var(--muted) !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+  }
+
+  .admin-toolbar .admin-tab + .admin-tab,
+  .account-tabs .admin-tab + .admin-tab {
+    margin-left: -1px;
+  }
+
+  .admin-toolbar .admin-tab:hover,
+  .account-tabs .admin-tab:hover {
+    color: var(--text) !important;
+    background: color-mix(in srgb, var(--surface) 84%, var(--aqua) 8%) !important;
+  }
+
+  .admin-toolbar .admin-tab.active,
+  .account-tabs .admin-tab.active {
+    z-index: 1;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+    border-top-color: var(--aqua) !important;
+    border-bottom-color: var(--surface) !important;
+    background: var(--surface) !important;
+    box-shadow: inset 0 3px 0 var(--aqua) !important;
+  }
+
+  .admin-toolbar + .section-card,
+  .account-tabs + .section-card {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+}
+
+.app-shell--admin-view .section-card,
+.app-shell--admin-view .nested-card,
+.app-shell--admin-view .history-row,
+.app-shell--admin-view .checkout-side-summary,
+.app-shell--admin-view .checkout-confirm-summary,
+.account-page-shell .section-card,
+.account-page-shell .nested-card,
+.app-shell--checkout-view .section-card,
+.app-shell--checkout-view .nested-card,
+.checkout-shell,
+.checkout-step-grid,
+.checkout-confirmation-grid,
+.checkout-sidebar,
+.checkout-items,
+.order-summary-card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.app-shell--admin-view .input,
+.app-shell--admin-view .textarea,
+.app-shell--admin-view select.input,
+.app-shell--admin-view input.input,
+.account-page-shell .input,
+.account-page-shell .textarea,
+.account-page-shell select.input,
+.account-page-shell input.input,
+.app-shell--checkout-view .input,
+.app-shell--checkout-view .textarea,
+.app-shell--checkout-view select.input,
+.app-shell--checkout-view input.input {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.pagination-row__manual-actions {
+  display: flex !important;
 }
