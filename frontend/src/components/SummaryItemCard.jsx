@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import SmartImage from "./SmartImage.jsx";
-import { formatCurrency } from "../lib/format.js";
+import { cn, formatCurrency } from "../lib/format.js";
 
 function PlusIcon() {
   return (
@@ -38,7 +38,7 @@ function TrashIcon() {
   );
 }
 
-export default function SummaryItemCard({ item, onQuantityChange, onRemove }) {
+function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove }) {
   const quantity = Math.max(1, Number(item.quantity || 1));
   const maxQuantity = Math.max(quantity, Number(item.maxQuantity || quantity));
   const unitPrice = Number(item.discountedPrice || 0);
@@ -121,4 +121,130 @@ export default function SummaryItemCard({ item, onQuantityChange, onRemove }) {
       </div>
     </article>
   );
+}
+
+function GenericSummaryItemCard({
+  className = "",
+  image,
+  imageAlt,
+  imageFallbackLabel,
+  imageTo,
+  badge = null,
+  title,
+  titleTo,
+  subtitle = null,
+  meta = [],
+  price = null,
+  comparePrice = null,
+  footer = null,
+  actions = [],
+}) {
+  const MediaTag = imageTo ? Link : "div";
+  const mediaProps = imageTo ? { to: imageTo } : {};
+  const TitleTag = titleTo ? Link : "div";
+  const titleProps = titleTo ? { to: titleTo } : {};
+
+  return (
+    <article
+      className={cn(
+        "summary-item-card",
+        "summary-item-card--account",
+        !image ? "summary-item-card--no-media" : "",
+        className,
+      )}
+    >
+      <div className="summary-item-card__main">
+        {image ? (
+          <MediaTag
+            {...mediaProps}
+            className={cn(
+              "summary-item-card__media",
+              imageTo ? "summary-item-card__media-link" : "",
+            )}
+            aria-label={imageTo ? `Ver ${title}` : undefined}
+          >
+            <SmartImage
+              src={image}
+              alt={imageAlt || title}
+              fallbackLabel={imageFallbackLabel || title}
+              className="summary-item-card__image"
+            />
+          </MediaTag>
+        ) : null}
+
+        <div className="summary-item-card__body">
+          {badge ? (
+            <div className="summary-item-card__badge-row">{badge}</div>
+          ) : null}
+
+          <TitleTag
+            {...titleProps}
+            className={cn(
+              "summary-item-card__title",
+              titleTo ? "summary-item-card__title-link" : "",
+            )}
+          >
+            {title}
+          </TitleTag>
+
+          {subtitle ? (
+            <p className="summary-item-card__subtitle">{subtitle}</p>
+          ) : null}
+
+          {meta.length ? (
+            <div className="summary-item-card__meta-list">
+              {meta.map((item, index) => (
+                <div
+                  key={`${title}-meta-${index}`}
+                  className="summary-item-card__meta-line"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {price != null || comparePrice != null ? (
+            <div className="summary-item-card__price-block">
+              {comparePrice != null ? (
+                <span className="summary-item-card__price-compare">
+                  {comparePrice}
+                </span>
+              ) : null}
+              {price != null ? (
+                <strong className="summary-item-card__price-current">
+                  {price}
+                </strong>
+              ) : null}
+            </div>
+          ) : null}
+
+          {footer ? (
+            <div className="summary-item-card__footer">{footer}</div>
+          ) : null}
+        </div>
+      </div>
+
+      {actions.length ? (
+        <div className="summary-item-card__actions">
+          {actions.map((action, index) => (
+            <div
+              key={`${title}-action-${index}`}
+              className="summary-item-card__action-slot"
+            >
+              {action}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+export default function SummaryItemCard(props) {
+  if (props.item) {
+    return <CheckoutSummaryItemCard {...props} />;
+  }
+
+  return <GenericSummaryItemCard {...props} />;
 }

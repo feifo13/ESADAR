@@ -576,10 +576,29 @@ export async function listAccountAlerts(userId) {
         aia.created_at AS createdAt,
         aia.updated_at AS updatedAt,
         a.title AS articleTitle,
-        a.slug AS articleSlug
+        a.slug AS articleSlug,
+        a.status AS articleStatus,
+        a.sale_price AS salePrice,
+        a.discount_type AS discountType,
+        a.discount_value AS discountValue,
+        a.discounted_price AS discountedPrice,
+        a.quantity_available AS quantityAvailable,
+        a.allow_offers AS allowOffers,
+        b.name AS brandName,
+        COALESCE(a.size_text, s.code) AS sizeLabel,
+        (
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS image
       FROM article_interest_alerts aia
       LEFT JOIN articles a ON a.id = aia.article_id
+      LEFT JOIN brands b ON b.id = a.brand_id
+      LEFT JOIN sizes s ON s.id = a.size_id
       WHERE aia.potential_customer_id = ?
+        AND aia.status = 'ACTIVE'
       ORDER BY aia.created_at DESC, aia.id DESC
     `,
     [potentialCustomer.id],
@@ -594,5 +613,76 @@ export async function listAccountAlerts(userId) {
     updatedAt: row.updatedAt,
     articleTitle: row.articleTitle || null,
     articleSlug: row.articleSlug || null,
+    brandName: row.brandName || null,
+    sizeLabel: row.sizeLabel || null,
+    salePrice: Number(row.salePrice || 0),
+    discountType: row.discountType || null,
+    discountValue: Number(row.discountValue || 0),
+    discountedPrice: Number(row.discountedPrice || 0),
+    quantityAvailable: Number(row.quantityAvailable || 0),
+    image: row.image || '',
+    allowOffers: Boolean(row.allowOffers),
+    articleStatus: row.articleStatus || null,
   }));
+}
+
+export async function removeAccountAlert(userId, alertId, auditContext = {}) {
+  return withTransaction(async (connection) => {
+    const customer = await findCustomerByUserId(userId, connection);
+    if (!customer) {
+      throw notFound('Customer not found');
+    }
+
+    const potentialCustomer = await findPotentialCustomerByLinkedCustomerId(customer.id, connection);
+    if (!potentialCustomer?.id) {
+      throw notFound('Alert not found');
+    }
+
+    const [rows] = await connection.execute(
+      `
+        SELECT id, article_id AS articleId, alert_type AS alertType, status
+        FROM article_interest_alerts
+        WHERE id = ?
+          AND potential_customer_id = ?
+        LIMIT 1
+      `,
+      [alertId, potentialCustomer.id],
+    );
+
+    const alert = rows[0];
+    if (!alert) {
+      throw notFound('Alert not found');
+    }
+
+    await connection.execute(
+      `
+        UPDATE article_interest_alerts
+        SET status = 'INACTIVE'
+        WHERE id = ?
+      `,
+      [alertId],
+    );
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'STOCK_ALERT_REMOVED',
+        entityType: 'article_interest_alerts',
+        entityId: Number(alertId),
+        metadataJson: {
+          articleId: alert.articleId != null ? Number(alert.articleId) : null,
+          alertType: alert.alertType,
+          previousStatus: alert.status,
+          nextStatus: 'INACTIVE',
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return { ok: true, alertId: Number(alertId) };
+  });
 }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { requireAuth } from '../../middlewares/auth.js';
 import {
+  deletePublicAccountAlert,
   getPublicAccountAlerts,
   getPublicAccountOrder,
   getPublicAccountOrders,
@@ -18,5 +19,6 @@ router.patch('/profile', asyncHandler(putPublicAccountProfile));
 router.get('/orders', asyncHandler(getPublicAccountOrders));
 router.get('/orders/:id', asyncHandler(getPublicAccountOrder));
 router.get('/alerts', asyncHandler(getPublicAccountAlerts));
+router.delete('/alerts/:id', asyncHandler(deletePublicAccountAlert));
 
 export default router;

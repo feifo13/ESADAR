@@ -877,7 +877,7 @@ select.input option,
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
-  border-radius: 999px;
+  /* border-radius: 999px; */
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -10514,7 +10514,11 @@ textarea,
   .admin-toolbar .admin-tab:hover,
   .account-tabs .admin-tab:hover {
     color: var(--text) !important;
-    background: color-mix(in srgb, var(--surface) 82%, var(--aqua) 8%) !important;
+    background: color-mix(
+      in srgb,
+      var(--surface) 82%,
+      var(--aqua) 8%
+    ) !important;
   }
 
   .admin-toolbar .admin-tab.active,
@@ -10643,9 +10647,7 @@ textarea,
     cursor: pointer;
     z-index: 3;
   }
-
 }
-
 
 /* === ESADAR pass 11: filtros dentro del panel, solapas y rollback admin pagination === */
 .account-page-header {
@@ -10690,7 +10692,11 @@ textarea,
   .admin-toolbar .admin-tab:hover,
   .account-tabs .admin-tab:hover {
     color: var(--text) !important;
-    background: color-mix(in srgb, var(--surface) 84%, var(--aqua) 8%) !important;
+    background: color-mix(
+      in srgb,
+      var(--surface) 84%,
+      var(--aqua) 8%
+    ) !important;
   }
 
   .admin-toolbar .admin-tab.active,
@@ -10933,5 +10939,143 @@ textarea,
 
   .summary-item-card__price-row strong {
     font-size: 1.18rem;
+  }
+}
+
+/* === Account mobile cards: wishlist, alerts, orders === */
+.line-through-copy {
+  text-decoration: line-through;
+}
+
+.status-available {
+  background: rgba(14, 143, 98, 0.12);
+  color: #0e8f62;
+}
+
+.status-sold_out {
+  background: rgba(180, 35, 24, 0.12);
+  color: #b42318;
+}
+
+.account-mobile-list {
+  display: none;
+}
+
+.summary-item-card--account {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 12px;
+}
+
+.summary-item-card--account .summary-item-card__main {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.summary-item-card--account.summary-item-card--no-media
+  .summary-item-card__main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.summary-item-card--account .summary-item-card__badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-item-card--account .summary-item-card__title-link {
+  color: #102b34;
+}
+
+.summary-item-card--account .summary-item-card__subtitle {
+  margin: 0;
+  color: #5c7379;
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.summary-item-card--account .summary-item-card__meta-list {
+  display: grid;
+  gap: 4px;
+}
+
+.summary-item-card--account .summary-item-card__meta-line {
+  color: #5c7379;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.summary-item-card--account .summary-item-card__price-block {
+  display: grid;
+  gap: 2px;
+}
+
+.summary-item-card--account .summary-item-card__price-current {
+  color: #102b34;
+  font-size: 1.32rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.summary-item-card--account .summary-item-card__price-compare {
+  color: #5c7379;
+  font-size: 0.88rem;
+  text-decoration: line-through;
+}
+
+.summary-item-card--account .summary-item-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.summary-item-card--account .summary-item-card__action-slot {
+  display: flex;
+}
+
+.summary-item-card__favorite-action.wishlist-heart-button {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  border: 1px solid rgba(16, 43, 52, 0.26);
+  background: #fff;
+  color: #102b34;
+}
+
+.summary-item-card__alert-action.is-active {
+  background: color-mix(in srgb, var(--aqua) 10%, #fff);
+  color: #102b34;
+}
+
+.summary-item-card__alert-action.is-pending {
+  opacity: 0.55;
+}
+
+.summary-item-card__icon-placeholder {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.account-desktop-list .history-row {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-desktop-list .table-actions {
+  align-items: center;
+}
+
+@media (max-width: 780px) {
+  .account-mobile-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .account-desktop-table,
+  .account-desktop-list {
+    display: none !important;
   }
 }

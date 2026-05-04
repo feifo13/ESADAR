@@ -2,8 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import SmartImage from "../components/SmartImage.jsx";
+import StatusBadge from "../components/StatusBadge.jsx";
+import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import SurfaceModal from "../components/SurfaceModal.jsx";
 import SortableTh from "../components/SortableTh.jsx";
+import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
+import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
+import { BellIcon, CartIcon } from "../components/ActionIcons.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
@@ -25,6 +30,13 @@ const ORDER_STATUS_LABELS = {
   SHIPPED: "Enviada",
   CANCELLED: "Cancelada",
   EXPIRED: "Vencida",
+};
+
+const ALERT_TYPE_LABELS = {
+  BACK_IN_STOCK: "Avisarme si vuelve",
+  SIMILAR_ITEMS: "Avisarme si entra algo similar",
+  PRICE_OR_OFFER: "Avisarme por precio u oferta",
+  NEW_ARRIVALS: "Avisarme por ingresos",
 };
 
 const TAB_ITEMS = [
@@ -127,6 +139,8 @@ export default function AccountPage() {
   });
   const [wishlistPage, setWishlistPage] = useState(1);
   const [ordersPage, setOrdersPage] = useState(1);
+  const [alertPendingIds, setAlertPendingIds] = useState([]);
+  const [alertError, setAlertError] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -254,6 +268,93 @@ export default function AccountPage() {
   useEffect(() => {
     setOrdersPage((current) => Math.min(current, ordersTotalPages));
   }, [ordersTotalPages]);
+
+  function isArticleAvailable(item) {
+    return (
+      Number(item?.quantityAvailable || 0) > 0 &&
+      item?.status !== "SOLD_OUT" &&
+      item?.articleStatus !== "SOLD_OUT"
+    );
+  }
+
+  function getAvailabilityBadge(item) {
+    return (
+      <StatusBadge
+        status={isArticleAvailable(item) ? "AVAILABLE" : "SOLD_OUT"}
+        labels={{ AVAILABLE: "Disponible", SOLD_OUT: "Agotado" }}
+      />
+    );
+  }
+
+  function getWishlistItemPayload(item) {
+    return {
+      articleId: item.articleId,
+      slug: item.slug,
+      title: item.title,
+      salePrice: item.salePrice,
+      discountType: item.discountType,
+      discountValue: item.discountValue,
+      discountedPrice: item.discountedPrice,
+      status: item.status,
+      conditionLabel: item.conditionLabel,
+      color: item.color,
+      material: item.material,
+      quantityAvailable: item.quantityAvailable,
+      brandName: item.brandName,
+      sizeLabel: item.sizeLabel,
+      image: item.image,
+      allowOffers: item.allowOffers,
+    };
+  }
+
+  function addArticleToCart(item, event) {
+    addItem(
+      {
+        id: item.articleId,
+        slug: item.slug || item.articleSlug,
+        title: item.title || item.articleTitle,
+        brandName: item.brandName,
+        sizeText: item.sizeLabel,
+        primaryImage: item.image,
+        salePrice: item.salePrice,
+        discountType: item.discountType,
+        discountValue: item.discountValue,
+        discountedPrice: item.discountedPrice,
+        quantityAvailable: item.quantityAvailable,
+        status: item.status || item.articleStatus,
+      },
+      1,
+      {
+        sourceRect:
+          event?.currentTarget?.getBoundingClientRect?.() || null,
+      },
+    );
+  }
+
+  function getOrderLatestStatusDate(order) {
+    return (
+      order.shippedAt ||
+      order.cancelledAt ||
+      order.approvedAt ||
+      order.reservedUntil ||
+      order.createdAt
+    );
+  }
+
+  async function handleRemoveAlert(alertId) {
+    try {
+      setAlertError("");
+      setAlertPendingIds((current) => [...current, alertId]);
+      await apiFetch(`/api/public/account/alerts/${alertId}`, {
+        method: "DELETE",
+      });
+      setAlerts((current) => current.filter((alert) => alert.id !== alertId));
+    } catch (err) {
+      setAlertError(err.message || "No pudimos actualizar la alerta.");
+    } finally {
+      setAlertPendingIds((current) => current.filter((id) => id !== alertId));
+    }
+  }
 
   function toggleWishlistSort(key) {
     setWishlistPage(1);
@@ -698,7 +799,71 @@ export default function AccountPage() {
                   )
                 }
               />
-              <div className="table-shell">
+
+              <div className="account-mobile-list">
+                {pagedWishlistItems.map((item) => {
+                  const isAvailable = isArticleAvailable(item);
+                  const currentPrice = Number(
+                    item.discountedPrice || item.salePrice || 0,
+                  );
+                  const comparePrice =
+                    Number(item.salePrice || 0) > currentPrice
+                      ? formatCurrency(item.salePrice)
+                      : null;
+
+                  return (
+                    <SummaryItemCard
+                      key={`wishlist-mobile-${item.articleId}`}
+                      image={item.image}
+                      imageAlt={item.title}
+                      imageFallbackLabel={item.title}
+                      imageTo={articlePath(item)}
+                      badge={getAvailabilityBadge(item)}
+                      title={item.title}
+                      titleTo={articlePath(item)}
+                      subtitle={item.sizeLabel || "Talle no especificado"}
+                      meta={[
+                        item.brandName ? `Marca: ${item.brandName}` : null,
+                        item.conditionLabel || null,
+                      ].filter(Boolean)}
+                      price={formatCurrency(currentPrice)}
+                      comparePrice={comparePrice}
+                      actions={[
+                        <WishlistHeartButton
+                          active
+                          pending={pendingIds.includes(Number(item.articleId))}
+                          className="summary-item-card__favorite-action"
+                          labelActive="Quitar de guardados"
+                          labelInactive="Guardar articulo"
+                          onToggle={() =>
+                            void toggleItem(item, getWishlistItemPayload(item))
+                          }
+                        />,
+                        <Link
+                          to={articlePath(item)}
+                          className="icon-action-button"
+                          aria-label={`Ver ${item.title}`}
+                          title="Ver prenda"
+                        >
+                          <EyeIcon />
+                        </Link>,
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          aria-label={`Agregar ${item.title} al carrito`}
+                          title="Agregar al carrito"
+                          disabled={!isAvailable}
+                          onClick={(event) => addArticleToCart(item, event)}
+                        >
+                          <CartIcon />
+                        </button>,
+                      ]}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="table-shell account-desktop-table">
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -877,19 +1042,143 @@ export default function AccountPage() {
           {isAuthenticated && !alerts.length ? (
             <p className="muted-copy">Todavia no tienes alertas activas.</p>
           ) : null}
-          <div className="history-list">
-            {alerts.map((alert) => (
-              <article key={alert.id} className="history-row">
-                <div>
-                  <strong>{alert.articleTitle || "Alerta general"}</strong>
-                  <p className="muted-copy">
-                    {alert.alertType} · {alert.status}
-                  </p>
-                </div>
-                <span>{formatDate(alert.createdAt)}</span>
-              </article>
-            ))}
-          </div>
+          {alertError ? <p className="error-copy">{alertError}</p> : null}
+
+          {isAuthenticated && alerts.length ? (
+            <>
+              <div className="account-mobile-list">
+                {alerts.map((alert) => {
+                  const alertPath =
+                    alert.articleId || alert.articleSlug
+                      ? articlePath({
+                          articleId: alert.articleId,
+                          articleSlug: alert.articleSlug,
+                          slug: alert.articleSlug,
+                        })
+                      : null;
+                  const isAvailable = isArticleAvailable(alert);
+                  const currentPrice = Number(
+                    alert.discountedPrice || alert.salePrice || 0,
+                  );
+                  const comparePrice =
+                    Number(alert.salePrice || 0) > currentPrice
+                      ? formatCurrency(alert.salePrice)
+                      : null;
+                  const alertPending = alertPendingIds.includes(alert.id);
+
+                  return (
+                    <SummaryItemCard
+                      key={`alert-mobile-${alert.id}`}
+                      image={alert.image || null}
+                      imageAlt={alert.articleTitle || "Alerta"}
+                      imageFallbackLabel={alert.articleTitle || "Alerta"}
+                      imageTo={alertPath || undefined}
+                      badge={
+                        alert.articleId ? (
+                          getAvailabilityBadge(alert)
+                        ) : (
+                          <StatusBadge
+                            status={alert.status}
+                            labels={{ ACTIVE: "Activa", INACTIVE: "Inactiva" }}
+                          />
+                        )
+                      }
+                      title={alert.articleTitle || "Alerta general"}
+                      titleTo={alertPath || undefined}
+                      subtitle={
+                        alert.sizeLabel ||
+                        ALERT_TYPE_LABELS[alert.alertType] ||
+                        alert.alertType
+                      }
+                      meta={[
+                        alert.brandName ? `Marca: ${alert.brandName}` : null,
+                        `Alerta: ${
+                          ALERT_TYPE_LABELS[alert.alertType] ||
+                          alert.alertType
+                        }`,
+                        `Creada: ${formatDate(alert.createdAt)}`,
+                      ].filter(Boolean)}
+                      price={alert.articleId ? formatCurrency(currentPrice) : null}
+                      comparePrice={alert.articleId ? comparePrice : null}
+                      actions={[
+                        <button
+                          type="button"
+                          className={`icon-action-button summary-item-card__alert-action${
+                            alertPending ? " is-pending" : " is-active"
+                          }`}
+                          aria-label="Quitar alerta"
+                          title="Quitar alerta"
+                          disabled={alertPending}
+                          onClick={() => void handleRemoveAlert(alert.id)}
+                        >
+                          <BellIcon active />
+                        </button>,
+                        alertPath ? (
+                          <Link
+                            to={alertPath}
+                            className="icon-action-button"
+                            aria-label={`Ver ${alert.articleTitle || "alerta"}`}
+                            title="Ver prenda"
+                          >
+                            <EyeIcon />
+                          </Link>
+                        ) : (
+                          <span
+                            className="icon-action-button summary-item-card__icon-placeholder"
+                            aria-hidden="true"
+                          >
+                            <EyeIcon />
+                          </span>
+                        ),
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          aria-label={`Agregar ${
+                            alert.articleTitle || "prenda"
+                          } al carrito`}
+                          title="Agregar al carrito"
+                          disabled={!alert.articleId || !isAvailable}
+                          onClick={(event) => addArticleToCart(alert, event)}
+                        >
+                          <CartIcon />
+                        </button>,
+                      ]}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="history-list account-desktop-list">
+                {alerts.map((alert) => (
+                  <article key={alert.id} className="history-row">
+                    <div>
+                      <strong>{alert.articleTitle || "Alerta general"}</strong>
+                      <p className="muted-copy">
+                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType} · {alert.status}
+                      </p>
+                    </div>
+                    <div className="table-actions">
+                      <span>{formatDate(alert.createdAt)}</span>
+                      <button
+                        type="button"
+                        className={`icon-action-button summary-item-card__alert-action${
+                          alertPendingIds.includes(alert.id)
+                            ? " is-pending"
+                            : " is-active"
+                        }`}
+                        aria-label="Quitar alerta"
+                        title="Quitar alerta"
+                        disabled={alertPendingIds.includes(alert.id)}
+                        onClick={() => void handleRemoveAlert(alert.id)}
+                      >
+                        <BellIcon active />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : null}
         </section>
       ) : null}
 
@@ -926,7 +1215,49 @@ export default function AccountPage() {
                   )
                 }
               />
-              <div className="table-shell">
+
+              <div className="account-mobile-list">
+                {pagedOrders.map((order) => {
+                  const latestStatusDate = getOrderLatestStatusDate(order);
+                  return (
+                    <SummaryItemCard
+                      key={`order-mobile-${order.id}`}
+                      badge={<OrderStatusBadge status={order.orderStatus} />}
+                      title={order.orderNumber}
+                      subtitle={`${order.itemsCount} prenda${
+                        order.itemsCount === 1 ? "" : "s"
+                      }`}
+                      meta={[
+                        `Fecha: ${formatDate(order.createdAt)}`,
+                        `Pago: ${
+                          PAYMENT_METHOD_LABELS[order.paymentMethod] ||
+                          order.paymentMethod
+                        }`,
+                        order.shippingMethodName
+                          ? `Envio: ${order.shippingMethodName}`
+                          : null,
+                        `Ultima actualizacion: ${formatDate(
+                          latestStatusDate,
+                        )}`,
+                      ].filter(Boolean)}
+                      price={formatCurrency(order.total)}
+                      actions={[
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          aria-label={`Ver ${order.orderNumber}`}
+                          title="Ver orden"
+                          onClick={() => void openOrderDetail(order.id)}
+                        >
+                          <EyeIcon />
+                        </button>,
+                      ]}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="table-shell account-desktop-table">
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -997,18 +1328,19 @@ export default function AccountPage() {
                             <strong>{formatCurrency(order.total)}</strong>
                           </td>
                           <td>
-                            {ORDER_STATUS_LABELS[order.orderStatus] ||
-                              order.orderStatus}
+                            <OrderStatusBadge status={order.orderStatus} />
                           </td>
                           <td>{formatDate(latestStatusDate)}</td>
                           <td>
                             <div className="table-actions">
                               <button
                                 type="button"
-                                className="ghost-button"
+                                className="icon-action-button"
+                                aria-label={`Ver ${order.orderNumber}`}
+                                title="Ver orden"
                                 onClick={() => void openOrderDetail(order.id)}
                               >
-                                Detalles
+                                <EyeIcon />
                               </button>
                             </div>
                           </td>

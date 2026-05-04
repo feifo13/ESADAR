@@ -4,6 +4,7 @@ import {
   listAccountAlerts,
   getAccountOrderDetail,
   listAccountOrders,
+  removeAccountAlert,
   saveAccountProfile,
 } from './account.service.js';
 
@@ -41,4 +42,10 @@ export async function getPublicAccountOrder(req, res) {
 export async function getPublicAccountAlerts(req, res) {
   const items = await listAccountAlerts(req.auth.userId);
   return res.json({ ok: true, items });
+}
+
+
+export async function deletePublicAccountAlert(req, res) {
+  const result = await removeAccountAlert(req.auth.userId, Number(req.params.id), getAuditContext(req));
+  return res.json({ ok: true, ...result });
 }

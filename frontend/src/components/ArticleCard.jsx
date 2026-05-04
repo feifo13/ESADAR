@@ -233,12 +233,12 @@ export default function ArticleCard({
         </div>
 
         <div className="article-card-pricebox">
-          <span className="price-current">{formatCurrency(price)}</span>
           {discounted ? (
             <span className="price-old">
               {formatCurrency(article.salePrice)}
             </span>
           ) : null}
+          <span className="price-current">{formatCurrency(price)}</span>
         </div>
 
         <div className="article-card-actions article-card-actions--catalog">
