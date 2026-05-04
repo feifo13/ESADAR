@@ -150,7 +150,12 @@ export default function Header({ hideBrand = false }) {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount, cartFx } = useCart();
-  const { catalogFiltersContent } = useMobileMenu();
+  const {
+    activeCatalogFilterCount,
+    catalogFiltersContent,
+    catalogSortContent,
+    clearCatalogFilters,
+  } = useMobileMenu();
   const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
@@ -311,6 +316,7 @@ export default function Header({ hideBrand = false }) {
   const accountMenuChildren = isAuthenticated
     ? [
         { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
+        { key: "account-preferences", label: "Preferencias", to: "/cuenta/preferencias" },
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
         { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
         { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
@@ -480,6 +486,17 @@ export default function Header({ hideBrand = false }) {
 
           <div className="header-mobile-shell">
             {renderMenuButton()}
+            {activeCatalogFilterCount > 0 && clearCatalogFilters ? (
+              <button
+                type="button"
+                className="header-filter-count-button"
+                onClick={clearCatalogFilters}
+                aria-label={`Limpiar ${activeCatalogFilterCount} filtros activos`}
+                title="Limpiar filtros"
+              >
+                {activeCatalogFilterCount}
+              </button>
+            ) : null}
             <Link
               to="/"
               className={`brand-mark brand-mark--mobile ${hideBrand ? "brand-mark--hidden" : ""}`}
@@ -510,6 +527,7 @@ export default function Header({ hideBrand = false }) {
         }
         searchContent={mobileSearchContent}
         filtersContent={catalogFiltersContent}
+        sortContent={catalogSortContent}
         items={mobileMenuItems}
       />
 

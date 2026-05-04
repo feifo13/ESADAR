@@ -64,7 +64,7 @@ const listVariants = {
 function AccordionIndicator({ open }) {
   return (
     <span
-      className={`mobile-motion-menu__accordion-indicator${open ? ' is-open' : ''}`}
+      className={`mobile-motion-menu__accordion-indicator${open ? " is-open" : ""}`}
       aria-hidden="true"
     >
       +
@@ -81,11 +81,13 @@ export default function MobileMotionMenu({
   headerContent = null,
   searchContent = null,
   filtersContent = null,
+  sortContent = null,
   items = [],
 }) {
   const shouldReduceMotion = useReducedMotion();
   const panelRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState({});
 
   useEffect(() => {
@@ -115,16 +117,16 @@ export default function MobileMotionMenu({
 
   const activePanelVariants = shouldReduceMotion
     ? {
-      closed: { x: "-100%" },
-      open: { x: 0, transition: { duration: 0.12 } },
-    }
+        closed: { x: "-100%" },
+        open: { x: 0, transition: { duration: 0.12 } },
+      }
     : panelVariants;
 
   const activeItemVariants = shouldReduceMotion
     ? {
-      closed: { opacity: 0 },
-      open: { opacity: 1, transition: { duration: 0.12 } },
-    }
+        closed: { opacity: 0 },
+        open: { opacity: 1, transition: { duration: 0.12 } },
+      }
     : itemVariants;
 
   const activeListVariants = shouldReduceMotion
@@ -137,7 +139,9 @@ export default function MobileMotionMenu({
       "mobile-motion-menu__item",
       nested ? "mobile-motion-menu__item--nested" : "",
       item.className || "",
-    ].filter(Boolean).join(" ");
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     if (item.kind === "group") {
       const groupOpen = Boolean(openGroups[item.key]);
@@ -147,17 +151,21 @@ export default function MobileMotionMenu({
             type="button"
             className={`${itemClassName} mobile-motion-menu__accordion-trigger`}
             aria-expanded={groupOpen}
-            onClick={() => setOpenGroups((current) => ({
-              ...current,
-              [item.key]: !current[item.key],
-            }))}
+            onClick={() =>
+              setOpenGroups((current) => ({
+                ...current,
+                [item.key]: !current[item.key],
+              }))
+            }
           >
             <span>{item.label}</span>
             <AccordionIndicator open={groupOpen} />
           </button>
           {groupOpen ? (
             <div className="mobile-motion-menu__group-body">
-              {(item.children || []).map((child) => renderItem(child, { nested: true }))}
+              {(item.children || []).map((child) =>
+                renderItem(child, { nested: true }),
+              )}
             </div>
           ) : null}
         </div>
@@ -184,7 +192,9 @@ export default function MobileMotionMenu({
       <NavLink
         key={item.key}
         to={item.to}
-        className={({ isActive }) => [itemClassName, isActive ? "is-active" : ""].filter(Boolean).join(" ")}
+        className={({ isActive }) =>
+          [itemClassName, isActive ? "is-active" : ""].filter(Boolean).join(" ")
+        }
         onClick={() => onClose?.()}
       >
         {item.label}
@@ -227,18 +237,20 @@ export default function MobileMotionMenu({
               ) : (
                 <div className="page-stack-sm">
                   <h3>{title}</h3>
-                  {description ? <p className="muted-copy">{description}</p> : null}
+                  {description ? (
+                    <p className="muted-copy">{description}</p>
+                  ) : null}
                 </div>
               )}
 
-              <button
+              {/* <button
                 type="button"
                 className="mobile-motion-menu__close"
                 onClick={() => onClose?.()}
                 aria-label="Cerrar menu"
               >
                 {"\u00D7"}
-              </button>
+              </button> */}
             </div>
 
             <motion.nav
@@ -247,12 +259,18 @@ export default function MobileMotionMenu({
               variants={activeListVariants}
             >
               {searchContent ? (
-                <motion.div variants={activeItemVariants} className="mobile-nav-sheet__search">
+                <motion.div
+                  variants={activeItemVariants}
+                  className="mobile-nav-sheet__search"
+                >
                   {searchContent}
                 </motion.div>
               ) : null}
               {filtersContent ? (
-                <motion.div variants={activeItemVariants} className="mobile-nav-sheet__filters">
+                <motion.div
+                  variants={activeItemVariants}
+                  className="mobile-nav-sheet__filters"
+                >
                   <button
                     type="button"
                     className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
@@ -266,15 +284,40 @@ export default function MobileMotionMenu({
                     <div
                       className="mobile-motion-menu__accordion-body"
                       onClickCapture={(event) => {
-                        const actionButton = event.target.closest?.('button');
+                        const actionButton = event.target.closest?.("button");
                         if (!actionButton) return;
-                        const actionLabel = actionButton.textContent?.trim().toLowerCase() || '';
-                        if (actionLabel.includes('aplicar filtros') || actionLabel.includes('limpiar')) {
+                        const actionLabel =
+                          actionButton.textContent?.trim().toLowerCase() || "";
+                        if (
+                          actionLabel.includes("aplicar filtros") ||
+                          actionLabel.includes("limpiar")
+                        ) {
                           window.setTimeout(() => setFiltersOpen(false), 0);
                         }
                       }}
                     >
                       {filtersContent}
+                    </div>
+                  ) : null}
+                </motion.div>
+              ) : null}
+              {sortContent ? (
+                <motion.div
+                  variants={activeItemVariants}
+                  className="mobile-nav-sheet__sort"
+                >
+                  <button
+                    type="button"
+                    className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
+                    aria-expanded={sortOpen}
+                    onClick={() => setSortOpen((current) => !current)}
+                  >
+                    <span>Ordenamiento</span>
+                    <AccordionIndicator open={sortOpen} />
+                  </button>
+                  {sortOpen ? (
+                    <div className="mobile-motion-menu__accordion-body mobile-motion-menu__accordion-body--sort">
+                      {sortContent}
                     </div>
                   ) : null}
                 </motion.div>

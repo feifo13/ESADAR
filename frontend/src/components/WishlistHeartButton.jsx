@@ -43,6 +43,7 @@ export default function WishlistHeartButton({
       ].filter(Boolean).join(' ')}
       aria-label={active ? labelActive : labelInactive}
       aria-pressed={active}
+      data-wishlist-active={active ? 'true' : 'false'}
       disabled={pending}
       onClick={() => {
         setBursting(true);

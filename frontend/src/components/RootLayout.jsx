@@ -85,7 +85,7 @@ export default function RootLayout() {
 
   return (
     <div
-      className={`app-shell${showIntro ? ' app-shell--intro-active' : ''}${isCheckoutView ? ' app-shell--checkout-view' : ''}${isAdminView ? ' app-shell--admin-view' : ''}`}
+      className={`app-shell${showIntro ? ' app-shell--intro-active' : ''}${isCheckoutView ? ' app-shell--checkout-view' : ''}${isAdminView ? ' app-shell--admin-view' : ''}${isAccountView ? ' app-shell--account-view' : ''}`}
     >
       <ResponsiveTableLabels />
       {shouldNoIndex ? (

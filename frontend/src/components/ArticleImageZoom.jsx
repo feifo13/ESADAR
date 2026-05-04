@@ -30,10 +30,14 @@ export default function ArticleImageZoom({ image, title }) {
       <InnerImageZoom
         src={resolvedSrc}
         zoomSrc={resolvedZoomSrc || resolvedSrc}
+        sources={image?.sources || []}
         zoomType="hover"
+        zoomScale={2.8}
         zoomPreload={true}
         fullscreenOnMobile={true}
         hideHint={true}
+        fadeDuration={0}
+        className="article-inner-image-zoom"
         imgAttributes={{
           alt,
           className: 'article-image-zoom__image',

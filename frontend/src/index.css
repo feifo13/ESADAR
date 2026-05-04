@@ -10426,3 +10426,230 @@ textarea,
     padding-bottom: 12px;
   }
 }
+
+/* === ESADAR pass 9: mobile cleanup, tabs, preferences and library zoom === */
+.header-mobile-shell {
+  gap: 8px;
+}
+
+.header-filter-count-button {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: none;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0 !important;
+  background: var(--orange);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mobile-menu-sort-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-motion-menu__accordion-body--sort {
+  padding: 10px 0 12px;
+}
+
+.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
+.wishlist-heart-button[data-wishlist-active="false"] .wishlist-heart-icon path,
+.article-card--catalog .article-card-heart.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
+.article-gallery-favorite.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
+.featured-motion-card__favorite.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path,
+.article-card-heart--editorial.wishlist-heart-button[aria-pressed="false"] .wishlist-heart-icon path {
+  fill: transparent !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+}
+
+.wishlist-heart-button[aria-pressed="true"] .wishlist-heart-icon path,
+.wishlist-heart-button[data-wishlist-active="true"] .wishlist-heart-icon path {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+.article-image-zoom,
+.article-inner-image-zoom,
+.article-image-zoom .iiz,
+.article-image-zoom .iiz__img {
+  width: 100%;
+  height: 100%;
+}
+
+.article-image-zoom {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(420px, 62vh, 760px);
+  overflow: hidden;
+  background: var(--surface-soft);
+}
+
+.article-image-zoom .iiz {
+  display: grid !important;
+  place-items: center;
+  overflow: hidden !important;
+  cursor: zoom-in;
+}
+
+.article-image-zoom .iiz__img,
+.article-image-zoom__image,
+.article-image-zoom__fallback-image {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: clamp(420px, 62vh, 760px);
+  object-fit: contain !important;
+}
+
+.article-image-zoom .iiz__zoom-img {
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+.article-image-zoom .iiz__zoom-portal {
+  z-index: 150 !important;
+}
+
+@media (min-width: 721px) {
+  .admin-page-shell > .admin-toolbar,
+  .account-page-shell .account-tabs {
+    display: flex !important;
+    gap: 0 !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding: 4px 4px 0 !important;
+    border-bottom: 1px solid rgba(16, 43, 52, 0.14);
+    background: transparent !important;
+  }
+
+  .admin-page-shell .admin-tab,
+  .account-page-shell .admin-tab {
+    min-height: 42px;
+    padding: 11px 16px;
+    border: 1px solid rgba(16, 43, 52, 0.14) !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #102b34 !important;
+    white-space: nowrap;
+  }
+
+  .admin-page-shell .admin-tab.active,
+  .account-page-shell .admin-tab.active {
+    background: var(--navy) !important;
+    color: #ffffff !important;
+    border-color: var(--navy) !important;
+  }
+}
+
+.app-shell--account-view .account-page-shell .section-card,
+.app-shell--account-view .account-page-shell .nested-card,
+.app-shell--account-view .account-page-shell .history-row,
+.app-shell--checkout-view .checkout-shell,
+.app-shell--checkout-view .checkout-shell .section-card,
+.app-shell--checkout-view .checkout-shell .nested-card,
+.app-shell--checkout-view .checkout-item,
+.app-shell--checkout-view .checkout-side-summary,
+.app-shell--checkout-view .checkout-confirm-panel,
+.app-shell--checkout-view .checkout-confirm-summary,
+.app-shell--admin-view .admin-page-shell .section-card,
+.app-shell--admin-view .admin-page-shell .nested-card,
+.app-shell--admin-view .admin-page-shell .history-row,
+.app-shell--admin-view .admin-page-shell .admin-row-card {
+  background: #ffffff !important;
+  color: #102b34 !important;
+  border-color: rgba(16, 43, 52, 0.14) !important;
+}
+
+.app-shell--account-view .account-page-shell h1,
+.app-shell--account-view .account-page-shell h2,
+.app-shell--account-view .account-page-shell h3,
+.app-shell--account-view .account-page-shell h4,
+.app-shell--account-view .account-page-shell strong,
+.app-shell--checkout-view .checkout-page-stack h1,
+.app-shell--checkout-view .checkout-page-stack h2,
+.app-shell--checkout-view .checkout-page-stack h3,
+.app-shell--checkout-view .checkout-page-stack h4,
+.app-shell--checkout-view .checkout-page-stack strong,
+.app-shell--admin-view .admin-page-shell h1,
+.app-shell--admin-view .admin-page-shell h2,
+.app-shell--admin-view .admin-page-shell h3,
+.app-shell--admin-view .admin-page-shell h4,
+.app-shell--admin-view .admin-page-shell strong {
+  color: #102b34 !important;
+}
+
+.app-shell--account-view .account-page-shell .muted-copy,
+.app-shell--account-view .account-page-shell .field-label,
+.app-shell--account-view .account-page-shell .section-kicker,
+.app-shell--checkout-view .checkout-page-stack .muted-copy,
+.app-shell--checkout-view .checkout-page-stack .field-label,
+.app-shell--checkout-view .checkout-page-stack .section-kicker,
+.app-shell--admin-view .admin-page-shell .muted-copy,
+.app-shell--admin-view .admin-page-shell .field-label,
+.app-shell--admin-view .admin-page-shell .section-kicker {
+  color: #5c7379 !important;
+}
+
+.app-shell--account-view .account-page-shell .input,
+.app-shell--account-view .account-page-shell .textarea,
+.app-shell--account-view .account-page-shell select.input,
+.app-shell--checkout-view .checkout-page-stack .input,
+.app-shell--checkout-view .checkout-page-stack .textarea,
+.app-shell--checkout-view .checkout-page-stack select.input,
+.app-shell--admin-view .admin-page-shell .input,
+.app-shell--admin-view .admin-page-shell .textarea,
+.app-shell--admin-view .admin-page-shell select.input {
+  background: #ffffff !important;
+  color: #102b34 !important;
+  border-color: rgba(16, 43, 52, 0.18) !important;
+}
+
+@media (max-width: 960px) {
+  .header-filter-count-button {
+    display: grid;
+  }
+}
+
+@media (max-width: 720px) {
+  .section-card.page-stack {
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .admin-page-shell > .admin-toolbar,
+  .account-page-shell .account-tabs {
+    display: none !important;
+  }
+
+  .catalog-content > .active-filters-row,
+  .active-filters-row--mobile-sticky {
+    display: none !important;
+  }
+
+  .article-image-zoom {
+    min-height: min(76vh, 560px);
+    background: var(--surface-soft);
+  }
+
+  .article-image-zoom .iiz,
+  .article-image-zoom .iiz__img,
+  .article-image-zoom__image {
+    max-height: min(76vh, 560px) !important;
+  }
+
+  .article-image-zoom .iiz__zoom-portal,
+  .iiz__zoom-portal {
+    z-index: 160 !important;
+  }
+}

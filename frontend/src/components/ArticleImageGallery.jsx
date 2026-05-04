@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import ProductImageZoom from './ProductImageZoom.jsx';
+import ArticleImageZoom from './ArticleImageZoom.jsx';
 import SmartImage from './SmartImage.jsx';
 
 export default function ArticleImageGallery({ images = [], title, fallbackImage = null }) {
@@ -84,7 +84,6 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
   }, [fallbackImage, images, title]);
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
   const active = normalized[activeIndex] || normalized[0];
 
   useEffect(() => {
@@ -93,10 +92,6 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
 
   useEffect(() => {
     function handleKeydown(event) {
-      if (event.key === 'Escape') {
-        setLightboxOpen(false);
-      }
-
       if (event.key === 'ArrowLeft') {
         setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length);
       }
@@ -135,30 +130,8 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
 
       <div className="article-gallery-main">
         <div className="gallery-count" aria-live="polite">{activeIndex + 1} / {normalized.length}</div>
-        <ProductImageZoom image={active} title={title} onOpen={() => setLightboxOpen(true)} />
+        <ArticleImageZoom image={active} title={title} />
       </div>
-
-      {lightboxOpen ? (
-        <div className="gallery-zoom-backdrop" onClick={() => setLightboxOpen(false)}>
-          <div className="gallery-zoom-dialog gallery-zoom-dialog--wide" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className="gallery-zoom-close" onClick={() => setLightboxOpen(false)} aria-label="Cerrar zoom">X</button>
-            <SmartImage
-              src={active.zoomSrc || active.src}
-              alt={active.altText || title}
-              fallbackLabel={title}
-              className="gallery-zoom-image"
-              loading="eager"
-              fetchPriority="high"
-            />
-            {normalized.length > 1 ? (
-              <div className="gallery-zoom-nav">
-                <button type="button" onClick={() => setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length)}>Anterior</button>
-                <button type="button" onClick={() => setActiveIndex((current) => (current + 1) % normalized.length)}>Siguiente</button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

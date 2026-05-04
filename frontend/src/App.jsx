@@ -48,6 +48,7 @@ export default function App() {
         <Route path="avisos" element={<NewsletterPage />} />
         <Route path="cuenta" element={<AccountPage />} />
         <Route path="cuenta/perfil" element={<AccountPage />} />
+        <Route path="cuenta/preferencias" element={<AccountPage />} />
         <Route path="cuenta/guardados" element={<AccountPage />} />
         <Route path="cuenta/alertas" element={<AccountPage />} />
         <Route path="cuenta/ordenes" element={<AccountPage />} />

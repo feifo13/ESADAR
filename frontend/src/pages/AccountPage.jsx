@@ -29,6 +29,7 @@ const ORDER_STATUS_LABELS = {
 
 const TAB_ITEMS = [
   { key: 'perfil', label: 'Mis datos', path: '/cuenta/perfil' },
+  { key: 'preferencias', label: 'Mis preferencias', path: '/cuenta/preferencias' },
   { key: 'guardados', label: 'Mis guardados', path: '/cuenta/guardados' },
   { key: 'alertas', label: 'Mis alertas', path: '/cuenta/alertas' },
   { key: 'ordenes', label: 'Mis ordenes', path: '/cuenta/ordenes' },
@@ -58,6 +59,7 @@ function LocalTablePagination({ page, totalPages, totalItems, onPrevious, onNext
 }
 
 function getActiveTab(pathname) {
+  if (pathname.includes('/preferencias')) return 'preferencias';
   if (pathname.includes('/guardados')) return 'guardados';
   if (pathname.includes('/alertas')) return 'alertas';
   if (pathname.includes('/ordenes')) return 'ordenes';
@@ -544,6 +546,38 @@ export default function AccountPage() {
               </label>
             </div>
 
+
+
+            {profileError ? <p className="error-copy">{profileError}</p> : null}
+            {profileMessage ? (
+              <p className="success-copy">{profileMessage}</p>
+            ) : null}
+            <div className="inline-action-group">
+              <button
+                type="submit"
+                className="button button-primary"
+                disabled={profileLoading}
+              >
+                {profileLoading ? 'Guardando...' : 'Guardar datos'}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {activeTab === 'preferencias' && isAuthenticated ? (
+        <section className="section-card page-stack">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Preferencias</p>
+              <h2>Mis preferencias</h2>
+              <p className="muted-copy">
+                Ajusta categorias, marcas, talles y colores para recibir avisos mas utiles.
+              </p>
+            </div>
+          </div>
+
+          <form className="page-stack" onSubmit={handleSubmit}>
             <div className="page-stack-sm">
               <div>
                 <p className="section-kicker">Preferencias</p>
@@ -629,12 +663,13 @@ export default function AccountPage() {
                 className="button button-primary"
                 disabled={profileLoading}
               >
-                {profileLoading ? 'Guardando...' : 'Guardar datos'}
+                {profileLoading ? 'Guardando...' : 'Guardar preferencias'}
               </button>
             </div>
           </form>
         </section>
       ) : null}
+
 
       {activeTab === 'guardados' ? (
         <section className="section-card page-stack">

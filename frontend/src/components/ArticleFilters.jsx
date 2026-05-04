@@ -33,6 +33,7 @@ export default function ArticleFilters({
   onChange,
   onApplied,
   idPrefix = "filter",
+  showSort = true,
 }) {
   const filters = useMemo(
     () => normalizeFilters(value),
@@ -63,7 +64,9 @@ export default function ArticleFilters({
   }
 
   function clearFilters() {
-    const nextFilters = { ...defaultFilters };
+    const nextFilters = showSort
+      ? { ...defaultFilters }
+      : { ...defaultFilters, sort: filters.sort, search: filters.search };
     setDraftFilters(nextFilters);
     onChange(nextFilters);
     onApplied?.(nextFilters);
@@ -77,36 +80,23 @@ export default function ArticleFilters({
         </div>
       </div>
 
-      <div className="filters-sidebar-group">
-        {/* <label className="field-label" htmlFor={`${idPrefix}-search`}>
-          Busqueda
-        </label> */}
-        <input
-          id={`${idPrefix}-search`}
-          className="input"
-          type="search"
-          value={draftFilters.search}
-          onChange={(event) => updateField("search", event.target.value)}
-          placeholder="Titulo, marca o categoria"
-        />
-      </div>
 
-      <div className="filters-sidebar-group">
-        {/* <label className="field-label" htmlFor={`${idPrefix}-sort`}>
-          Orden
-        </label> */}
-        <select
-          id={`${idPrefix}-sort`}
-          className="input"
-          value={draftFilters.sort}
-          onChange={(event) => updateField("sort", event.target.value)}
-        >
-          <option value="intake_desc">Ingreso mas reciente</option>
-          <option value="intake_asc">Ingreso mas antiguo</option>
-          <option value="price_asc">Precio menor a mayor</option>
-          <option value="price_desc">Precio mayor a menor</option>
-        </select>
-      </div>
+      {showSort ? (
+        <div className="filters-sidebar-group">
+          <select
+            id={`${idPrefix}-sort`}
+            className="input"
+            value={draftFilters.sort}
+            onChange={(event) => updateField("sort", event.target.value)}
+            aria-label="Ordenar catalogo"
+          >
+            <option value="intake_desc">Ingreso mas reciente</option>
+            <option value="intake_asc">Ingreso mas antiguo</option>
+            <option value="price_asc">Precio menor a mayor</option>
+            <option value="price_desc">Precio mayor a menor</option>
+          </select>
+        </div>
+      ) : null}
 
       <div className="filters-sidebar-group">
         {/* <label className="field-label" htmlFor={`${idPrefix}-category`}>

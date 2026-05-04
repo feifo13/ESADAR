@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useOutletContext } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -62,7 +62,12 @@ export default function HomePage() {
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
-  const { setCatalogFiltersContent } = useMobileMenu();
+  const {
+    setActiveCatalogFilterCount,
+    setCatalogFiltersContent,
+    setCatalogSortContent,
+    setClearCatalogFilters,
+  } = useMobileMenu();
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
@@ -139,6 +144,36 @@ export default function HomePage() {
     return chips;
   }, [brandOptions, categoryOptions, filters, sizeOptions]);
 
+
+  const updateFilterField = useCallback((name, nextValue) => {
+    setItems([]);
+    setPage(1);
+    setFilters((current) => ({ ...current, [name]: nextValue }));
+  }, []);
+
+  const clearCatalogFilterSelection = useCallback(() => {
+    setItems([]);
+    setPage(1);
+    setFilters((current) => ({
+      ...initialFilters,
+      search: current.search,
+      sort: current.sort,
+    }));
+  }, []);
+
+  const activeCatalogFilterCount = useMemo(
+    () =>
+      [
+        filters.categoryId,
+        filters.brandId,
+        filters.sizeId,
+        filters.discounted,
+        filters.offerable,
+        filters.featured,
+      ].filter(Boolean).length,
+    [filters],
+  );
+
   const mobileCatalogFiltersContent = useMemo(
     () => (
       <ArticleFilters
@@ -146,22 +181,67 @@ export default function HomePage() {
         onChange={applyMobileFilters}
         onApplied={() => setMobileFiltersOpen(false)}
         idPrefix="mobile-filter"
+        showSort={false}
       />
     ),
     [filters],
   );
 
+  const mobileCatalogSortContent = useMemo(
+    () => (
+      <div className="mobile-menu-sort-panel">
+        <label className="sr-only" htmlFor="mobile-menu-sort-select">
+          Ordenar catalogo
+        </label>
+        <select
+          id="mobile-menu-sort-select"
+          className="input"
+          value={filters.sort}
+          onChange={(event) => updateFilterField("sort", event.target.value)}
+        >
+          <option value="intake_desc">Ingreso mas reciente</option>
+          <option value="intake_asc">Ingreso mas antiguo</option>
+          <option value="price_asc">Precio menor a mayor</option>
+          <option value="price_desc">Precio mayor a menor</option>
+        </select>
+      </div>
+    ),
+    [filters.sort, updateFilterField],
+  );
+
   useEffect(() => {
     const isCatalogView =
       location.pathname === "/" || location.pathname === "/articles";
+
     setCatalogFiltersContent(
       isCatalogView ? mobileCatalogFiltersContent : null,
     );
-    return () => setCatalogFiltersContent(null);
+    setCatalogSortContent(
+      isCatalogView ? mobileCatalogSortContent : null,
+    );
+    setActiveCatalogFilterCount(
+      isCatalogView ? activeCatalogFilterCount : 0,
+    );
+    setClearCatalogFilters(
+      isCatalogView ? () => clearCatalogFilterSelection : null,
+    );
+
+    return () => {
+      setCatalogFiltersContent(null);
+      setCatalogSortContent(null);
+      setActiveCatalogFilterCount(0);
+      setClearCatalogFilters(null);
+    };
   }, [
+    activeCatalogFilterCount,
+    clearCatalogFilterSelection,
     location.pathname,
     mobileCatalogFiltersContent,
+    mobileCatalogSortContent,
+    setActiveCatalogFilterCount,
     setCatalogFiltersContent,
+    setCatalogSortContent,
+    setClearCatalogFilters,
   ]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
@@ -284,9 +364,7 @@ export default function HomePage() {
     setMobileFiltersOpen(false);
   }
 
-  function updateFilterField(name, nextValue) {
-    applyFilters({ ...filters, [name]: nextValue });
-  }
+
 
   function resetFilters() {
     applyFilters({ ...initialFilters });
