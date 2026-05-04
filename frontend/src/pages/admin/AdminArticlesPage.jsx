@@ -7,6 +7,7 @@ import SmartImage from "../../components/SmartImage.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import { EditIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -738,9 +739,12 @@ export default function AdminArticlesPage() {
                           <div className="table-actions">
                             <Link
                               to={`/admin/articles/${article.id}/edit`}
-                              className="button button-secondary button-compact"
+                              className="button button-secondary button-compact admin-icon-action"
+                              aria-label={`Editar ${article.title}`}
+                              title="Editar"
                             >
-                              Editar
+                              <EditIcon />
+                              <span className="admin-action-label">Editar</span>
                             </Link>
                           </div>
                         </td>

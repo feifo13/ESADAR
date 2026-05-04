@@ -13,6 +13,7 @@ import { articleOfferPath } from "../lib/routes.js";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
@@ -33,6 +34,7 @@ export default function ArticlePage() {
   const { addItem, getItem } = useCart();
   const { site } = useSiteSeo();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
+  const { notifyMobileStatus } = useMobileMenu();
   const [article, setArticle] = useState(null);
   const [relatedState, setRelatedState] = useState({
     mode: "empty",
@@ -135,20 +137,30 @@ export default function ArticlePage() {
     { name: article.title, url: canonicalUrl },
   ];
 
+  function isMobileViewport() {
+    return typeof window !== "undefined" && window.matchMedia("(max-width: 780px)").matches;
+  }
+
   function showStockNotice(result) {
     if (!result || result.ok) return;
-    if (result.code === "OUT_OF_STOCK") {
-      setStockDialog({
-        title: "Articulo agotado",
-        message: "Esta prenda no tiene stock disponible en este momento.",
-      });
+
+    const nextDialog = result.code === "OUT_OF_STOCK"
+      ? {
+          title: "Articulo agotado",
+          message: "Esta prenda no tiene stock disponible ahora.",
+        }
+      : {
+          title: "Stock maximo alcanzado",
+          message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
+        };
+
+    if (isMobileViewport()) {
+      setStockDialog(null);
+      notifyMobileStatus({ type: "error", icon: "error", message: nextDialog.message });
       return;
     }
 
-    setStockDialog({
-      title: "Stock maximo alcanzado",
-      message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
-    });
+    setStockDialog(nextDialog);
   }
 
   async function handleWishlistToggle() {
@@ -240,14 +252,21 @@ export default function ArticlePage() {
         },
       });
 
-      setAlertSuccess(
-        isSoldOut
-          ? "Te vamos a avisar si esta prenda vuelve o aparece algo muy parecido."
-          : "Te vamos a avisar si entra algo similar a esta prenda.",
-      );
+      const successMessage = isSoldOut
+        ? "Alerta guardada: te avisamos si vuelve o entra algo similar."
+        : "Alerta guardada: te avisamos si entra algo similar.";
+      setAlertSuccess(successMessage);
       setAlertForm(initialAlertForm);
+      if (isMobileViewport()) {
+        setAlertModalOpen(false);
+        notifyMobileStatus({ type: "success", icon: "success", message: successMessage });
+      }
     } catch (err) {
-      setAlertError(err.message || "No pudimos guardar tu alerta.");
+      const errorMessage = err.message || "No pudimos guardar tu alerta.";
+      setAlertError(errorMessage);
+      if (isMobileViewport()) {
+        notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
+      }
     } finally {
       setAlertSubmitting(false);
     }

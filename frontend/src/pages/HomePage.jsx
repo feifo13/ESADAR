@@ -109,6 +109,8 @@ export default function HomePage() {
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const loadMoreRef = useRef(null);
+  const lastAutoLoadPageRef = useRef(1);
+
   const { setHeroLogoVisible } = useOutletContext();
   const {
     setCatalogFiltersContent,
@@ -117,10 +119,12 @@ export default function HomePage() {
     setCatalogSortMeta,
     notifyMobileStatus,
   } = useMobileMenu();
+
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
   const { site, pagesByRoute } = useSiteSeo();
+
   const [filters, setFilters] = useState(initialFilters);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [featuredItems, setFeaturedItems] = useState([]);
@@ -131,6 +135,7 @@ export default function HomePage() {
     total: 0,
   });
   const [page, setPage] = useState(1);
+  const [articlesExhausted, setArticlesExhausted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
@@ -225,10 +230,12 @@ export default function HomePage() {
   useEffect(() => {
     const isCatalogView =
       location.pathname === "/" || location.pathname === "/articles";
+
     setCatalogFiltersContent(
       isCatalogView ? mobileCatalogFiltersContent : null,
     );
     setCatalogSortContent(isCatalogView ? mobileCatalogSortContent : null);
+
     return () => {
       setCatalogFiltersContent(null);
       setCatalogSortContent(null);
@@ -268,24 +275,46 @@ export default function HomePage() {
     setCatalogSortMeta,
   ]);
 
-  const canLoadMore = items.length < Number(pagination.total || 0);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      Number(pagination.total || 0) /
+        Math.max(1, Number(pagination.pageSize || 20)),
+    ),
+  );
+
+  const canLoadMore =
+    !articlesExhausted &&
+    items.length < Number(pagination.total || 0) &&
+    page < totalPages;
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
-    if (!sentinel || !canLoadMore || loading || loadingMore) return undefined;
+
+    if (!sentinel || !canLoadMore || loading || loadingMore) {
+      return undefined;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setPage((current) => current + 1);
-        }
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+
+        setPage((current) => {
+          const nextPage = current + 1;
+
+          if (nextPage > totalPages) return current;
+          if (lastAutoLoadPageRef.current >= nextPage) return current;
+
+          lastAutoLoadPageRef.current = nextPage;
+          return nextPage;
+        });
       },
-      { root: null, rootMargin: "420px 0px", threshold: 0.01 },
+      { root: null, rootMargin: "220px 0px", threshold: 0.01 },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [canLoadMore, loading, loadingMore, items.length]);
+  }, [canLoadMore, loading, loadingMore, totalPages]);
 
   useEffect(() => {
     setHeroLogoVisible(false);
@@ -309,11 +338,15 @@ export default function HomePage() {
     if (location.pathname !== "/articles") return;
 
     const nextSearch = new URLSearchParams(location.search).get("search") || "";
+
     setFilters((current) =>
       current.search === nextSearch
         ? current
         : { ...current, search: nextSearch },
     );
+
+    lastAutoLoadPageRef.current = 1;
+    setArticlesExhausted(false);
     setPage(1);
   }, [location.pathname, location.search]);
 
@@ -345,21 +378,36 @@ export default function HomePage() {
         setError("");
         if (page === 1) setLoading(true);
         if (page > 1) setLoadingMore(true);
+
         const response = await apiFetch(`/api/public/articles?${queryString}`);
         if (ignore) return;
-        setPagination(
-          response.pagination || { page: 1, pageSize: 20, total: 0 },
-        );
-        setItems((current) =>
-          page === 1
-            ? response.items || []
-            : [...current, ...(response.items || [])],
-        );
+
+        const nextItems = response.items || [];
+        const nextPagination = response.pagination || {
+          page: 1,
+          pageSize: 20,
+          total: 0,
+        };
+
+        setPagination(nextPagination);
+
+        if (page === 1) {
+          setArticlesExhausted(false);
+          setItems(nextItems);
+          return;
+        }
+
+        if (!nextItems.length) {
+          setArticlesExhausted(true);
+          return;
+        }
+
+        setItems((current) => [...current, ...nextItems]);
       } catch (err) {
         if (!ignore) {
           const message = err.message || "No se pudo cargar el catalogo";
           setError(message);
-          notifyMobileStatus({ type: 'error', icon: 'error', message });
+          notifyMobileStatus({ type: "error", icon: "error", message });
         }
       } finally {
         if (!ignore) {
@@ -375,9 +423,15 @@ export default function HomePage() {
     };
   }, [page, queryString]);
 
-  function applyFilters(nextFilters) {
+  function resetPaginationState() {
+    lastAutoLoadPageRef.current = 1;
+    setArticlesExhausted(false);
     setItems([]);
     setPage(1);
+  }
+
+  function applyFilters(nextFilters) {
+    resetPaginationState();
     setFilters(nextFilters);
   }
 
@@ -385,19 +439,26 @@ export default function HomePage() {
     applyFilters(nextFilters);
     setMobileFiltersOpen(false);
     notifyMobileStatus({
-      type: 'filters',
-      icon: 'filters',
-      message: 'Filtros aplicados',
+      type: "filters",
+      icon: "filters",
+      message: "Filtros aplicados",
     });
   }
 
   function applyMobileSort(nextSort) {
-    applyFilters({ ...filters, sort: nextSort || initialFilters.sort });
+    const safeSort = nextSort || initialFilters.sort;
+
+    resetPaginationState();
+    setFilters((current) => ({ ...current, sort: safeSort }));
     setMobileFiltersOpen(false);
+
     notifyMobileStatus({
-      type: 'sort',
-      icon: 'sort',
-      message: nextSort && nextSort !== initialFilters.sort ? 'Ordenamiento aplicado' : 'Ordenamiento restablecido',
+      type: "sort",
+      icon: "sort",
+      message:
+        safeSort !== initialFilters.sort
+          ? "Ordenamiento aplicado sin quitar filtros"
+          : "Ordenamiento restablecido",
     });
   }
 
@@ -407,12 +468,20 @@ export default function HomePage() {
       search: filters.search,
       sort: filters.sort,
     });
-    notifyMobileStatus({ type: 'filters', icon: 'filters', message: 'Filtros limpiados' });
+    notifyMobileStatus({
+      type: "filters",
+      icon: "filters",
+      message: "Filtros limpiados",
+    });
   }
 
   function resetSort() {
     applyFilters({ ...filters, sort: initialFilters.sort });
-    notifyMobileStatus({ type: 'sort', icon: 'sort', message: 'Ordenamiento restablecido' });
+    notifyMobileStatus({
+      type: "sort",
+      icon: "sort",
+      message: "Ordenamiento restablecido",
+    });
   }
 
   function resetFilters() {

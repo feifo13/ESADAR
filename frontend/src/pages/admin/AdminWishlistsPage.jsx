@@ -5,6 +5,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import { EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -400,7 +401,7 @@ export default function AdminWishlistsPage() {
                     <span>
                       {formatCurrency(item.discountedPrice || item.salePrice)}
                     </span>
-                    <Link to={articlePath(item)}>Ver articulo</Link>
+                    <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver articulo</span></Link>
                   </div>
                 </div>
               ))}
@@ -573,7 +574,7 @@ export default function AdminWishlistsPage() {
                         {formatCurrency(item.discountedPrice || item.salePrice)}
                       </strong>
                       <span>{formatDate(item.savedAt)}</span>
-                      <Link to={articlePath(item)}>Ver</Link>
+                      <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver</span></Link>
                     </div>
                   </article>
                 ))}

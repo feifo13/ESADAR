@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 const overlayVariants = {
@@ -87,6 +87,7 @@ export default function MobileMotionMenu({
   items = [],
 }) {
   const shouldReduceMotion = useReducedMotion();
+  const location = useLocation();
   const panelRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -142,6 +143,44 @@ export default function MobileMotionMenu({
     ? { closed: {}, open: {} }
     : listVariants;
 
+  function matchesCurrentPath(to) {
+    if (!to) return false;
+    const currentPath = location.pathname;
+    const normalizedTo = String(to).replace(/\/$/, "") || "/";
+    if (currentPath === normalizedTo) return true;
+    if (normalizedTo !== "/" && currentPath.startsWith(`${normalizedTo}/`)) {
+      return true;
+    }
+    if (normalizedTo.startsWith("/cuenta") && currentPath.startsWith("/account")) {
+      return true;
+    }
+    return false;
+  }
+
+  function itemHasCurrentPath(item) {
+    if (!item) return false;
+    if (matchesCurrentPath(item.to)) return true;
+    return (item.children || []).some((child) => itemHasCurrentPath(child));
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const activeGroup = items.find((item) => item.kind === "group" && itemHasCurrentPath(item));
+    if (activeGroup?.key) {
+      setFiltersOpen(false);
+      setSortOpen(false);
+      setOpenGroups({ [activeGroup.key]: true });
+    }
+
+    const scrollTimer = window.setTimeout(() => {
+      panelRef.current
+        ?.querySelector?.(".mobile-motion-menu__item.is-active")
+        ?.scrollIntoView?.({ block: "center", inline: "nearest" });
+    }, 80);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [open, location.pathname, items]);
+
   function renderItem(item, { nested = false } = {}) {
     const itemClassName = [
       "mobile-nav-sheet__link",
@@ -154,11 +193,12 @@ export default function MobileMotionMenu({
 
     if (item.kind === "group") {
       const groupOpen = Boolean(openGroups[item.key]);
+      const groupActive = itemHasCurrentPath(item);
       return (
         <div key={item.key} className="mobile-motion-menu__group">
           <button
             type="button"
-            className={`${itemClassName} mobile-motion-menu__accordion-trigger`}
+            className={`${itemClassName} mobile-motion-menu__accordion-trigger${groupActive ? " is-active" : ""}`}
             aria-expanded={groupOpen}
             onClick={() => {
               setFiltersOpen(false);

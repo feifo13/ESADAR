@@ -6,6 +6,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
+import { EyeIcon } from "../../components/ActionIcons.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
@@ -435,13 +436,16 @@ export default function AdminLeadsPage() {
                         <div className="table-actions">
                           <button
                             type="button"
-                            className="button button-secondary button-compact"
+                            className="button button-secondary button-compact admin-icon-action"
                             onClick={() => {
                               setSelectedLeadId(lead.id);
                               setDetailModalOpen(true);
                             }}
+                            aria-label={`Ver detalles de ${lead.firstName} ${lead.lastName}`}
+                            title="Detalles"
                           >
-                            Detalles
+                            <EyeIcon />
+                            <span className="admin-action-label">Detalles</span>
                           </button>
                         </div>
                       </td>

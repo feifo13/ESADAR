@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
@@ -98,6 +99,7 @@ export default function CheckoutPage() {
   const { user, isAuthenticated } = useAuth();
   const { shippingMethodOptions, paymentMethodOptions, lookupError } =
     useLookups();
+  const { notifyMobileStatus } = useMobileMenu();
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
@@ -323,19 +325,28 @@ export default function CheckoutPage() {
 
   function showStockDialog(result) {
     if (!result || result.ok) return;
-    if (result.code === "OUT_OF_STOCK") {
-      setStockDialog({
-        title: "Sin stock disponible",
-        message:
-          "Este artículo ya no tiene unidades disponibles para la compra.",
+
+    const nextDialog = result.code === "OUT_OF_STOCK"
+      ? {
+          title: "Sin stock disponible",
+          message: "Esta prenda ya no tiene unidades disponibles.",
+        }
+      : {
+          title: "Cantidad máxima disponible",
+          message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de esta prenda.`,
+        };
+
+    if (isMobileSummary) {
+      setStockDialog(null);
+      notifyMobileStatus({
+        type: "error",
+        icon: "error",
+        message: nextDialog.message,
       });
       return;
     }
 
-    setStockDialog({
-      title: "Cantidad máxima disponible",
-      message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de este artículo con el stock actual.`,
-    });
+    setStockDialog(nextDialog);
   }
 
   function renderSummaryStep() {

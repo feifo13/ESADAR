@@ -5,6 +5,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import { ArchiveIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -350,27 +351,36 @@ export default function AdminContactMessagesPage() {
                         {item.status !== "READ" ? (
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() => void openMessageModal(item)}
+                            aria-label={`Leer mensaje de ${item.firstName} ${item.lastName}`}
+                            title="Leer"
                           >
-                            Leer
+                            <EyeIcon />
+                            <span className="admin-action-label">Leer</span>
                           </button>
                         ) : (
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() => void openMessageModal(item)}
+                            aria-label={`Leer mensaje de ${item.firstName} ${item.lastName}`}
+                            title="Leer"
                           >
-                            Leer
+                            <EyeIcon />
+                            <span className="admin-action-label">Leer</span>
                           </button>
                         )}
                         {item.status !== "ARCHIVED" ? (
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() => updateStatus(item.id, "ARCHIVED")}
+                            aria-label={`Archivar mensaje de ${item.firstName} ${item.lastName}`}
+                            title="Archivar"
                           >
-                            Archivar
+                            <ArchiveIcon />
+                            <span className="admin-action-label">Archivar</span>
                           </button>
                         ) : null}
                       </div>

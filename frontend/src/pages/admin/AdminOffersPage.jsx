@@ -4,6 +4,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import { BanIcon, CheckIcon, XIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -354,30 +355,39 @@ export default function AdminOffersPage() {
                         <div className="table-actions">
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() =>
                               handleStatusChange(offer.id, "ACCEPTED")
                             }
+                            aria-label={`Aceptar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                            title="Aceptar"
                           >
-                            Aceptar
+                            <CheckIcon />
+                            <span className="admin-action-label">Aceptar</span>
                           </button>
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() =>
                               handleStatusChange(offer.id, "REJECTED")
                             }
+                            aria-label={`Rechazar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                            title="Rechazar"
                           >
-                            Rechazar
+                            <XIcon />
+                            <span className="admin-action-label">Rechazar</span>
                           </button>
                           <button
                             type="button"
-                            className="ghost-button"
+                            className="ghost-button admin-icon-action"
                             onClick={() =>
                               handleStatusChange(offer.id, "CANCELLED")
                             }
+                            aria-label={`Cancelar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                            title="Cancelar"
                           >
-                            Cancelar
+                            <BanIcon />
+                            <span className="admin-action-label">Cancelar</span>
                           </button>
                         </div>
                       ) : (

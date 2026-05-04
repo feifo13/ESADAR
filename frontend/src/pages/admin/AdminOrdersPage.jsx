@@ -6,6 +6,7 @@ import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
+import { EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -348,9 +349,12 @@ export default function AdminOrdersPage() {
                       <div className="table-actions">
                         <Link
                           to={`/admin/orders/${order.id}`}
-                          className="ghost-button"
+                          className="ghost-button admin-icon-action"
+                          aria-label={`Ver orden ${order.orderNumber}`}
+                          title="Ver orden"
                         >
-                          Ver orden
+                          <EyeIcon />
+                          <span className="admin-action-label">Ver orden</span>
                         </Link>
                       </div>
                     </td>
