@@ -122,6 +122,41 @@ function SearchIcon() {
   );
 }
 
+function FilterIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 5h16" />
+      <path d="M7 12h10" />
+      <path d="M10 19h4" />
+    </svg>
+  );
+}
+
+function SortIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 4v16" />
+      <path d="M4 7l3-3 3 3" />
+      <path d="M17 20V4" />
+      <path d="M14 17l3 3 3-3" />
+    </svg>
+  );
+}
+
 function MenuGlyph() {
   return (
     <svg viewBox="0 0 44 44" aria-hidden="true" className="menu-glyph">
@@ -150,7 +185,14 @@ export default function Header({ hideBrand = false }) {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const { cartCount, cartFx } = useCart();
-  const { catalogFiltersContent, catalogFiltersCount, clearCatalogFilters } = useMobileMenu();
+  const {
+    catalogFiltersContent,
+    catalogSortContent,
+    catalogFiltersCount,
+    catalogSortActive,
+    clearCatalogFilters,
+    clearCatalogSort,
+  } = useMobileMenu();
   const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
@@ -400,20 +442,37 @@ export default function Header({ hideBrand = false }) {
             <MenuGlyph />
           </motion.span>
         </motion.button>
-        {catalogFiltersCount > 0 ? (
-          <button
-            type="button"
-            className="mobile-filter-count-badge"
-            onClick={(event) => {
-              event.stopPropagation();
-              clearCatalogFilters?.();
-            }}
-            aria-label={`Limpiar ${catalogFiltersCount} filtros activos`}
-            title="Limpiar filtros"
-          >
-            {catalogFiltersCount}
-          </button>
-        ) : null}
+        <span className="mobile-catalog-indicators" aria-hidden={catalogFiltersCount > 0 || catalogSortActive ? undefined : "true"}>
+          {catalogFiltersCount > 0 ? (
+            <button
+              type="button"
+              className="mobile-catalog-indicator mobile-catalog-indicator--filters"
+              onClick={(event) => {
+                event.stopPropagation();
+                clearCatalogFilters?.();
+              }}
+              aria-label={`Limpiar ${catalogFiltersCount} filtros activos`}
+              title="Limpiar filtros"
+            >
+              <FilterIcon />
+              <span>{catalogFiltersCount}</span>
+            </button>
+          ) : null}
+          {catalogSortActive ? (
+            <button
+              type="button"
+              className="mobile-catalog-indicator mobile-catalog-indicator--sort"
+              onClick={(event) => {
+                event.stopPropagation();
+                clearCatalogSort?.();
+              }}
+              aria-label="Restablecer ordenamiento"
+              title="Restablecer orden"
+            >
+              <SortIcon />
+            </button>
+          ) : null}
+        </span>
       </span>
     );
   }
@@ -526,6 +585,7 @@ export default function Header({ hideBrand = false }) {
         }
         searchContent={mobileSearchContent}
         filtersContent={catalogFiltersContent}
+        sortContent={catalogSortContent}
         items={mobileMenuItems}
       />
 

@@ -877,7 +877,7 @@ select.input option,
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
-  /* border-radius: 999px; */
+  border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -10514,11 +10514,7 @@ textarea,
   .admin-toolbar .admin-tab:hover,
   .account-tabs .admin-tab:hover {
     color: var(--text) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface) 82%,
-      var(--aqua) 8%
-    ) !important;
+    background: color-mix(in srgb, var(--surface) 82%, var(--aqua) 8%) !important;
   }
 
   .admin-toolbar .admin-tab.active,
@@ -10647,7 +10643,9 @@ textarea,
     cursor: pointer;
     z-index: 3;
   }
+
 }
+
 
 /* === ESADAR pass 11: filtros dentro del panel, solapas y rollback admin pagination === */
 .account-page-header {
@@ -10692,11 +10690,7 @@ textarea,
   .admin-toolbar .admin-tab:hover,
   .account-tabs .admin-tab:hover {
     color: var(--text) !important;
-    background: color-mix(
-      in srgb,
-      var(--surface) 84%,
-      var(--aqua) 8%
-    ) !important;
+    background: color-mix(in srgb, var(--surface) 84%, var(--aqua) 8%) !important;
   }
 
   .admin-toolbar .admin-tab.active,
@@ -10942,6 +10936,7 @@ textarea,
   }
 }
 
+
 /* === Account mobile cards: wishlist, alerts, orders === */
 .line-through-copy {
   text-decoration: line-through;
@@ -10974,8 +10969,7 @@ textarea,
   align-items: start;
 }
 
-.summary-item-card--account.summary-item-card--no-media
-  .summary-item-card__main {
+.summary-item-card--account.summary-item-card--no-media .summary-item-card__main {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -11029,20 +11023,36 @@ textarea,
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: flex-end;
 }
 
 .summary-item-card--account .summary-item-card__action-slot {
   display: flex;
 }
 
-.summary-item-card__favorite-action.wishlist-heart-button {
-  width: 38px;
-  min-width: 38px;
-  height: 38px;
-  border: 1px solid rgba(16, 43, 52, 0.26);
-  background: #fff;
-  color: #102b34;
+.summary-item-card__favorite-action.wishlist-heart-button,
+.summary-item-card__favorite-action.wishlist-heart-button:hover,
+.summary-item-card__favorite-action.wishlist-heart-button.is-active {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #fc4c02 !important;
+}
+
+.summary-item-card__favorite-action .wishlist-heart-icon {
+  width: 28px !important;
+  height: 28px !important;
+  filter: drop-shadow(0 2px 5px rgba(6, 19, 29, 0.28));
+}
+
+.summary-item-card__favorite-action .wishlist-heart-icon path {
+  fill: currentColor !important;
+  stroke: currentColor !important;
 }
 
 .summary-item-card__alert-action.is-active {
@@ -11077,5 +11087,107 @@ textarea,
   .account-desktop-table,
   .account-desktop-list {
     display: none !important;
+  }
+}
+
+
+/* === ESADAR mobile catalog filters/sort indicators === */
+.featured-rail .rail-scroller {
+  overflow-x: auto;
+  overflow-y: hidden !important;
+  overscroll-behavior-y: none;
+}
+
+.mobile-catalog-indicators {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: -7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.mobile-catalog-indicators:empty {
+  display: none;
+}
+
+.mobile-catalog-indicator {
+  position: relative;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--surface);
+  background: var(--orange);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(6, 19, 29, 0.18);
+}
+
+.mobile-catalog-indicator svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mobile-catalog-indicator span {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 1px solid var(--surface);
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.mobile-catalog-indicator--sort {
+  background: var(--navy);
+}
+
+.mobile-sort-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-sort-panel .field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-sort-panel .field-group > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mobile-sort-panel__actions {
+  margin-top: 0;
+}
+
+.mobile-motion-menu__accordion-body--sort {
+  padding-inline: 0;
+}
+
+@media (max-width: 380px) {
+  .mobile-catalog-indicators {
+    left: calc(100% + 1px);
+    gap: 2px;
+  }
+
+  .mobile-catalog-indicator {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
   }
 }

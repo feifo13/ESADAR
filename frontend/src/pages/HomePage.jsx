@@ -56,13 +56,66 @@ function getLabel(options, id, fallback) {
   );
 }
 
+function CatalogSortControl({ value, onChange, onApplied }) {
+  const [draftSort, setDraftSort] = useState(value || initialFilters.sort);
+
+  useEffect(() => {
+    setDraftSort(value || initialFilters.sort);
+  }, [value]);
+
+  function applySort(nextSort = draftSort) {
+    onChange(nextSort || initialFilters.sort);
+    onApplied?.(nextSort || initialFilters.sort);
+  }
+
+  return (
+    <div className="mobile-sort-panel" aria-label="Ordenamiento del catalogo">
+      <label className="field-group" htmlFor="mobile-sort-control">
+        <span>Ordenar prendas</span>
+        <select
+          id="mobile-sort-control"
+          className="input"
+          value={draftSort}
+          onChange={(event) => setDraftSort(event.target.value)}
+        >
+          <option value="intake_desc">Ingreso mas reciente</option>
+          <option value="intake_asc">Ingreso mas antiguo</option>
+          <option value="price_asc">Precio menor a mayor</option>
+          <option value="price_desc">Precio mayor a menor</option>
+        </select>
+      </label>
+      <div className="filters-sidebar-actions mobile-sort-panel__actions">
+        <button
+          type="button"
+          className="button button-primary"
+          onClick={() => applySort()}
+        >
+          Aplicar orden
+        </button>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={() => applySort(initialFilters.sort)}
+        >
+          Limpiar orden
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const heroRef = useRef(null);
   const featuredSectionRef = useRef(null);
   const catalogSectionRef = useRef(null);
   const loadMoreRef = useRef(null);
   const { setHeroLogoVisible } = useOutletContext();
-  const { setCatalogFiltersContent, setCatalogFiltersMeta } = useMobileMenu();
+  const {
+    setCatalogFiltersContent,
+    setCatalogFiltersMeta,
+    setCatalogSortContent,
+    setCatalogSortMeta,
+  } = useMobileMenu();
   const location = useLocation();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
@@ -146,10 +199,27 @@ export default function HomePage() {
         onChange={applyMobileFilters}
         onApplied={() => setMobileFiltersOpen(false)}
         idPrefix="mobile-filter"
+        showSort={false}
       />
     ),
     [filters],
   );
+
+  const mobileCatalogSortContent = useMemo(
+    () => (
+      <CatalogSortControl
+        value={filters.sort}
+        onChange={applyMobileSort}
+        onApplied={() => setMobileFiltersOpen(false)}
+      />
+    ),
+    [filters.sort],
+  );
+
+  const activeMobileFilterCount = activeFilterChips.filter(
+    (chip) => chip.key !== "sort" && chip.key !== "search",
+  ).length;
+  const activeMobileSort = filters.sort !== initialFilters.sort;
 
   useEffect(() => {
     const isCatalogView =
@@ -157,11 +227,17 @@ export default function HomePage() {
     setCatalogFiltersContent(
       isCatalogView ? mobileCatalogFiltersContent : null,
     );
-    return () => setCatalogFiltersContent(null);
+    setCatalogSortContent(isCatalogView ? mobileCatalogSortContent : null);
+    return () => {
+      setCatalogFiltersContent(null);
+      setCatalogSortContent(null);
+    };
   }, [
     location.pathname,
     mobileCatalogFiltersContent,
+    mobileCatalogSortContent,
     setCatalogFiltersContent,
+    setCatalogSortContent,
   ]);
 
   useEffect(() => {
@@ -169,12 +245,27 @@ export default function HomePage() {
       location.pathname === "/" || location.pathname === "/articles";
 
     setCatalogFiltersMeta({
-      count: isCatalogView ? activeFilterChips.length : 0,
-      onClear: isCatalogView ? () => resetFilters() : null,
+      count: isCatalogView ? activeMobileFilterCount : 0,
+      onClear: isCatalogView ? () => resetNonSortFilters() : null,
+    });
+    setCatalogSortMeta({
+      active: isCatalogView ? activeMobileSort : false,
+      onClear: isCatalogView ? () => resetSort() : null,
     });
 
-    return () => setCatalogFiltersMeta({ count: 0, onClear: null });
-  }, [activeFilterChips.length, location.pathname, setCatalogFiltersMeta]);
+    return () => {
+      setCatalogFiltersMeta({ count: 0, onClear: null });
+      setCatalogSortMeta({ active: false, onClear: null });
+    };
+  }, [
+    activeMobileFilterCount,
+    activeMobileSort,
+    filters.search,
+    filters.sort,
+    location.pathname,
+    setCatalogFiltersMeta,
+    setCatalogSortMeta,
+  ]);
 
   const canLoadMore = items.length < Number(pagination.total || 0);
 
@@ -288,6 +379,23 @@ export default function HomePage() {
   function applyMobileFilters(nextFilters) {
     applyFilters(nextFilters);
     setMobileFiltersOpen(false);
+  }
+
+  function applyMobileSort(nextSort) {
+    applyFilters({ ...filters, sort: nextSort || initialFilters.sort });
+    setMobileFiltersOpen(false);
+  }
+
+  function resetNonSortFilters() {
+    applyFilters({
+      ...initialFilters,
+      search: filters.search,
+      sort: filters.sort,
+    });
+  }
+
+  function resetSort() {
+    applyFilters({ ...filters, sort: initialFilters.sort });
   }
 
   function resetFilters() {

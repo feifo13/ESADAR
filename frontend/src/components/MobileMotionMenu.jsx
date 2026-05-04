@@ -115,6 +115,12 @@ export default function MobileMotionMenu({
     panelRef.current?.focus();
   }, [open]);
 
+  useEffect(() => {
+    if (open) return;
+    setFiltersOpen(false);
+    setSortOpen(false);
+  }, [open]);
+
   const activePanelVariants = shouldReduceMotion
     ? {
         closed: { x: "-100%" },
@@ -292,7 +298,10 @@ export default function MobileMotionMenu({
                           actionLabel.includes("aplicar filtros") ||
                           actionLabel.includes("limpiar")
                         ) {
-                          window.setTimeout(() => setFiltersOpen(false), 0);
+                          window.setTimeout(() => {
+                            setFiltersOpen(false);
+                            onClose?.();
+                          }, 0);
                         }
                       }}
                     >
@@ -316,7 +325,24 @@ export default function MobileMotionMenu({
                     <AccordionIndicator open={sortOpen} />
                   </button>
                   {sortOpen ? (
-                    <div className="mobile-motion-menu__accordion-body mobile-motion-menu__accordion-body--sort">
+                    <div
+                      className="mobile-motion-menu__accordion-body mobile-motion-menu__accordion-body--sort"
+                      onClickCapture={(event) => {
+                        const actionButton = event.target.closest?.("button");
+                        if (!actionButton) return;
+                        const actionLabel =
+                          actionButton.textContent?.trim().toLowerCase() || "";
+                        if (
+                          actionLabel.includes("aplicar orden") ||
+                          actionLabel.includes("limpiar orden")
+                        ) {
+                          window.setTimeout(() => {
+                            setSortOpen(false);
+                            onClose?.();
+                          }, 0);
+                        }
+                      }}
+                    >
                       {sortContent}
                     </div>
                   ) : null}

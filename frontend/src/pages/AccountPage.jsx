@@ -832,7 +832,7 @@ export default function AccountPage() {
                         <WishlistHeartButton
                           active
                           pending={pendingIds.includes(Number(item.articleId))}
-                          className="summary-item-card__favorite-action"
+                          className="summary-item-card__favorite-action wishlist-heart-button--bare"
                           labelActive="Quitar de guardados"
                           labelInactive="Guardar articulo"
                           onToggle={() =>
@@ -946,71 +946,33 @@ export default function AccountPage() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                onClick={() =>
-                                  toggleItem(item, {
-                                    articleId: item.articleId,
-                                    slug: item.slug,
-                                    title: item.title,
-                                    salePrice: item.salePrice,
-                                    discountType: item.discountType,
-                                    discountValue: item.discountValue,
-                                    discountedPrice: item.discountedPrice,
-                                    status: item.status,
-                                    conditionLabel: item.conditionLabel,
-                                    color: item.color,
-                                    material: item.material,
-                                    quantityAvailable: item.quantityAvailable,
-                                    brandName: item.brandName,
-                                    sizeLabel: item.sizeLabel,
-                                    image: item.image,
-                                    allowOffers: item.allowOffers,
-                                  })
+                              <WishlistHeartButton
+                                active
+                                pending={pendingIds.includes(Number(item.articleId))}
+                                className="summary-item-card__favorite-action wishlist-heart-button--bare"
+                                labelActive="Quitar de guardados"
+                                labelInactive="Guardar articulo"
+                                onToggle={() =>
+                                  void toggleItem(item, getWishlistItemPayload(item))
                                 }
-                                disabled={pendingIds.includes(
-                                  Number(item.articleId),
-                                )}
-                              >
-                                Remover
-                              </button>
+                              />
                               <Link
                                 to={articlePath(item)}
-                                className="ghost-button"
+                                className="icon-action-button"
+                                aria-label={`Ver ${item.title}`}
+                                title="Ver prenda"
                               >
-                                Ver prenda
+                                <EyeIcon />
                               </Link>
                               <button
                                 type="button"
-                                className="ghost-button"
+                                className="icon-action-button"
+                                aria-label={`Agregar ${item.title} al carrito`}
+                                title="Agregar al carrito"
                                 disabled={!isAvailable}
-                                onClick={(event) => {
-                                  addItem(
-                                    {
-                                      id: item.articleId,
-                                      slug: item.slug,
-                                      title: item.title,
-                                      brandName: item.brandName,
-                                      sizeText: item.sizeLabel,
-                                      primaryImage: item.image,
-                                      salePrice: item.salePrice,
-                                      discountType: item.discountType,
-                                      discountValue: item.discountValue,
-                                      discountedPrice: item.discountedPrice,
-                                      quantityAvailable: item.quantityAvailable,
-                                      status: item.status,
-                                    },
-                                    1,
-                                    {
-                                      sourceRect:
-                                        event?.currentTarget?.getBoundingClientRect?.() ||
-                                        null,
-                                    },
-                                  );
-                                }}
+                                onClick={(event) => addArticleToCart(item, event)}
                               >
-                                Agregar al carrito
+                                <CartIcon />
                               </button>
                             </div>
                           </td>

@@ -173,9 +173,7 @@ function GenericSummaryItemCard({
         ) : null}
 
         <div className="summary-item-card__body">
-          {badge ? (
-            <div className="summary-item-card__badge-row">{badge}</div>
-          ) : null}
+          {badge ? <div className="summary-item-card__badge-row">{badge}</div> : null}
 
           <TitleTag
             {...titleProps}
@@ -187,17 +185,12 @@ function GenericSummaryItemCard({
             {title}
           </TitleTag>
 
-          {subtitle ? (
-            <p className="summary-item-card__subtitle">{subtitle}</p>
-          ) : null}
+          {subtitle ? <p className="summary-item-card__subtitle">{subtitle}</p> : null}
 
           {meta.length ? (
             <div className="summary-item-card__meta-list">
               {meta.map((item, index) => (
-                <div
-                  key={`${title}-meta-${index}`}
-                  className="summary-item-card__meta-line"
-                >
+                <div key={`${title}-meta-${index}`} className="summary-item-card__meta-line">
                   {item}
                 </div>
               ))}
@@ -206,32 +199,21 @@ function GenericSummaryItemCard({
 
           {price != null || comparePrice != null ? (
             <div className="summary-item-card__price-block">
+              {price != null ? <strong className="summary-item-card__price-current">{price}</strong> : null}
               {comparePrice != null ? (
-                <span className="summary-item-card__price-compare">
-                  {comparePrice}
-                </span>
-              ) : null}
-              {price != null ? (
-                <strong className="summary-item-card__price-current">
-                  {price}
-                </strong>
+                <span className="summary-item-card__price-compare">{comparePrice}</span>
               ) : null}
             </div>
           ) : null}
 
-          {footer ? (
-            <div className="summary-item-card__footer">{footer}</div>
-          ) : null}
+          {footer ? <div className="summary-item-card__footer">{footer}</div> : null}
         </div>
       </div>
 
       {actions.length ? (
         <div className="summary-item-card__actions">
           {actions.map((action, index) => (
-            <div
-              key={`${title}-action-${index}`}
-              className="summary-item-card__action-slot"
-            >
+            <div key={`${title}-action-${index}`} className="summary-item-card__action-slot">
               {action}
             </div>
           ))}
@@ -248,3 +230,4 @@ export default function SummaryItemCard(props) {
 
   return <GenericSummaryItemCard {...props} />;
 }
+
