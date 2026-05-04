@@ -4,6 +4,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import SmartImage from "../components/SmartImage.jsx";
+import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
 import { apiFetch } from "../lib/api.js";
 
@@ -42,6 +43,32 @@ function readDraft() {
   } catch {
     return null;
   }
+}
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia(query);
+    const handleChange = (event) => setMatches(event.matches);
+
+    setMatches(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, [query]);
+
+  return matches;
 }
 
 function TrashIcon() {
@@ -92,6 +119,7 @@ export default function CheckoutPage() {
     steps.findIndex((step) => step.key === currentStepKey),
   );
   const currentStep = steps[currentStepIndex] || steps[0];
+  const isMobileSummary = useMediaQuery("(max-width: 780px)");
 
   useEffect(() => {
     if (!shippingMethodOptions.length) return;
@@ -317,83 +345,102 @@ export default function CheckoutPage() {
           <div className="section-heading compact-heading">
             <div>
               <p className="section-kicker">Resumen</p>
-              <h2>Prendas en la orden</h2>
+              {/* <h2>Prendas en la orden</h2> */}
             </div>
           </div>
 
-          <div className="table-shell checkout-items-table-shell">
-            <table className="data-table checkout-items-table">
-              <thead>
-                <tr>
-                  <th>Img</th>
-                  <th>Prenda</th>
-                  <th>Marca</th>
-                  <th>Talle</th>
-                  <th>Cant.</th>
-                  <th>Unitario</th>
-                  <th>Total</th>
-                  <th>Accion</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.articleId}>
-                    <td>
-                      <SmartImage
-                        src={item.image}
-                        alt={item.title}
-                        fallbackLabel={item.title}
-                        className="table-thumb-image"
-                      />
-                    </td>
-                    <td className="cell-truncate">
-                      <strong title={item.title}>{item.title}</strong>
-                    </td>
-                    <td className="cell-truncate">
-                      {item.brandName || "Sin marca"}
-                    </td>
-                    <td className="cell-truncate">
-                      {item.sizeLabel || "Sin talle"}
-                    </td>
-                    <td>
-                      <input
-                        className="input input-small checkout-qty-input"
-                        type="number"
-                        min="1"
-                        max={item.maxQuantity || item.quantity}
-                        value={item.quantity}
-                        aria-label={`Cantidad de ${item.title}`}
-                        onChange={(event) => {
-                          const result = updateQuantity(
-                            item.articleId,
-                            Number(event.target.value || 1),
-                          );
-                          showStockDialog(result);
-                        }}
-                      />
-                    </td>
-                    <td>{formatCurrency(item.discountedPrice)}</td>
-                    <td>
-                      <strong>
-                        {formatCurrency(item.discountedPrice * item.quantity)}
-                      </strong>
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="icon-action-button"
-                        onClick={() => removeItem(item.articleId)}
-                        aria-label={`Quitar ${item.title}`}
-                        title="Quitar"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </td>
+          {isMobileSummary ? (
+            <div
+              className="summary-item-card-list"
+              aria-label="Prendas de la orden"
+            >
+              {items.map((item) => (
+                <SummaryItemCard
+                  key={item.articleId}
+                  item={item}
+                  onRemove={removeItem}
+                  onQuantityChange={(articleId, quantity) => {
+                    const result = updateQuantity(articleId, quantity);
+                    showStockDialog(result);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="table-shell checkout-items-table-shell">
+              <table className="data-table checkout-items-table">
+                <thead>
+                  <tr>
+                    <th>Img</th>
+                    <th>Prenda</th>
+                    <th>Marca</th>
+                    <th>Talle</th>
+                    <th>Cant.</th>
+                    <th>Unitario</th>
+                    <th>Total</th>
+                    <th>Accion</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.articleId}>
+                      <td>
+                        <SmartImage
+                          src={item.image}
+                          alt={item.title}
+                          fallbackLabel={item.title}
+                          className="table-thumb-image"
+                        />
+                      </td>
+                      <td className="cell-truncate">
+                        <strong title={item.title}>{item.title}</strong>
+                      </td>
+                      <td className="cell-truncate">
+                        {item.brandName || "Sin marca"}
+                      </td>
+                      <td className="cell-truncate">
+                        {item.sizeLabel || "Sin talle"}
+                      </td>
+                      <td>
+                        <input
+                          className="input input-small checkout-qty-input"
+                          type="number"
+                          min="1"
+                          max={item.maxQuantity || item.quantity}
+                          value={item.quantity}
+                          aria-label={`Cantidad de ${item.title}`}
+                          onChange={(event) => {
+                            const result = updateQuantity(
+                              item.articleId,
+                              Number(event.target.value || 1),
+                            );
+                            showStockDialog(result);
+                          }}
+                        />
+                      </td>
+                      <td>{formatCurrency(item.discountedPrice)}</td>
+                      <td>
+                        <strong>
+                          {formatCurrency(item.discountedPrice * item.quantity)}
+                        </strong>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          onClick={() => removeItem(item.articleId)}
+                          aria-label={`Quitar ${item.title}`}
+                          title="Quitar"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <aside className="checkout-side-summary section-card nested-card">
@@ -699,12 +746,10 @@ export default function CheckoutPage() {
         <section className="section-card checkout-shell">
           <div className="checkout-shell-header">
             <div>
-              <p className="section-kicker">Proceso de compra</p>
-              <h1>{currentStep.label}</h1>
+              <p className="section-kicker">
+                Proceso de compra: {currentStepIndex + 1} de {steps.length}
+              </p>
             </div>
-            <p className="muted-copy checkout-shell-copy">
-              Paso {currentStepIndex + 1} de {steps.length}
-            </p>
           </div>
 
           <div className="checkout-steps-row" aria-label="Pasos de compra">
