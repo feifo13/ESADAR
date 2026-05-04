@@ -153,7 +153,7 @@ export default function AdminOrderDetailPage() {
               <div className="history-list">
                 {order.history.map((entry) => (
                   <div key={entry.id} className="history-row">
-                    <strong>{HISTORY_STATUS_LABELS[entry.toStatus] || entry.toStatus}</strong>
+                    <strong><StatusBadge status={entry.toStatus} labels={HISTORY_STATUS_LABELS} /></strong>
                     <span>{entry.reason}</span>
                     <span>{formatDate(entry.changedAt)}</span>
                   </div>
@@ -173,7 +173,7 @@ export default function AdminOrderDetailPage() {
               <p className="muted-copy">Aprobada: {formatDate(order.approvedAt)}</p>
               <p className="muted-copy">Enviada: {formatDate(order.shippedAt)}</p>
               <p className="muted-copy">Cancelada: {formatDate(order.cancelledAt)}</p>
-              <p className="muted-copy">Estado de pago: <strong>{PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</strong></p>
+              <p className="muted-copy">Estado de pago: <strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>
             </div>
 
             <div className="section-card nested-card stack-gap-sm">

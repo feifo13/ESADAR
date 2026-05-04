@@ -6,6 +6,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
+import StatusBadge from "../../components/StatusBadge.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -731,7 +732,7 @@ export default function AdminArticlesPage() {
                           <strong>{formatCurrency(article.discountedPrice || article.salePrice)}</strong>
                         </td>
                         <td>{article.quantityAvailable}</td>
-                        <td>{ARTICLE_STATUS_LABELS[article.status] || article.status}</td>
+                        <td><StatusBadge status={article.status} labels={ARTICLE_STATUS_LABELS} /></td>
                         <td>{formatDate(article.updatedAt || article.intakeDate)}</td>
                         <td>
                           <div className="table-actions">

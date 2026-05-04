@@ -179,7 +179,9 @@ export default function OfferPage() {
                 <div>
                   <span>Estado</span>
                   <strong>
-                    {article.conditionLabel || "Second hand seleccionada"}
+                    <span className="status-badge status-available">
+                      {article.conditionLabel || "Second hand seleccionada"}
+                    </span>
                   </strong>
                 </div>
                 <div>

@@ -3,12 +3,22 @@ import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
+import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+
+const PAYMENT_STATUS_LABELS = {
+  PENDING: "Pendiente",
+  APPROVED: "Aprobado",
+  REJECTED: "Rechazado",
+  FAILED: "Fallido",
+  REFUNDED: "Reintegrado",
+  PAID: "Pagado",
+};
 
 const initialFilters = {
   q: "",
@@ -307,7 +317,7 @@ export default function AdminOrdersPage() {
                   <th>Email</th>
                   <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
                   <SortableTh sortKey="orderStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
-                  <SortableTh sortKey="paymentStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Metodo de pago</SortableTh>
+                  <SortableTh sortKey="paymentStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Pago</SortableTh>
                   <th>Metodo de envio</th>
                   <SortableTh sortKey="total" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Total</SortableTh>
                   <th>Acciones</th>
@@ -326,7 +336,12 @@ export default function AdminOrdersPage() {
                     <td>{order.customer.email || "Sin email"}</td>
                     <td>{formatDate(order.createdAt)}</td>
                     <td><OrderStatusBadge status={order.orderStatus} /></td>
-                    <td>{order.paymentMethod || "-"}</td>
+                    <td>
+                      <div className="cell-stack cell-stack--compact">
+                        <span>{order.paymentMethod || "-"}</span>
+                        <StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} />
+                      </div>
+                    </td>
                     <td>{order.shippingMethodDescription || order.shippingMethodName || "-"}</td>
                     <td><strong>{formatCurrency(order.total)}</strong></td>
                     <td>

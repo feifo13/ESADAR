@@ -4,11 +4,24 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
+import StatusBadge from "../../components/StatusBadge.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
 import { buildQueryString } from "../../lib/query.js";
+
+const ALERT_STATUS_LABELS = {
+  ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+};
+
+const ARTICLE_STATUS_LABELS = {
+  ACTIVE: "Activa",
+  INACTIVE: "Inactiva",
+  RESERVED: "Reservada",
+  SOLD_OUT: "Agotada",
+};
 
 const initialFilters = {
   q: "",
@@ -576,7 +589,8 @@ export default function AdminWishlistsPage() {
                           {alert.articleTitle || "Alerta general"}
                         </strong>
                         <p className="muted-copy">
-                          {alert.alertType} · {alert.status}
+                          {alert.alertType} ·{" "}
+                          <StatusBadge status={alert.status} labels={ALERT_STATUS_LABELS} />
                         </p>
                       </div>
                       <span>{formatDate(alert.createdAt)}</span>

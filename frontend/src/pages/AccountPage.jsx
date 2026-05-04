@@ -23,6 +23,15 @@ const PAYMENT_METHOD_LABELS = {
   MERCADO_PAGO: "Mercado Pago",
 };
 
+const PAYMENT_STATUS_LABELS = {
+  PENDING: "Pendiente",
+  APPROVED: "Aprobado",
+  REJECTED: "Rechazado",
+  FAILED: "Fallido",
+  REFUNDED: "Reintegrado",
+  PAID: "Pagado",
+};
+
 const ORDER_STATUS_LABELS = {
   RESERVED: "Reservada",
   PENDING: "Pendiente",
@@ -1116,7 +1125,11 @@ export default function AccountPage() {
                     <div>
                       <strong>{alert.articleTitle || "Alerta general"}</strong>
                       <p className="muted-copy">
-                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType} · {alert.status}
+                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType} ·{" "}
+                        <StatusBadge
+                          status={alert.status}
+                          labels={{ ACTIVE: "Activa", INACTIVE: "Inactiva" }}
+                        />
                       </p>
                     </div>
                     <div className="table-actions">
@@ -1341,13 +1354,17 @@ export default function AccountPage() {
               <p className="summary-line">
                 <span>Estado actual</span>
                 <strong>
-                  {ORDER_STATUS_LABELS[selectedOrderDetail.orderStatus] ||
-                    selectedOrderDetail.orderStatus}
+                  <OrderStatusBadge status={selectedOrderDetail.orderStatus} />
                 </strong>
               </p>
               <p className="summary-line">
                 <span>Pago</span>
-                <strong>{selectedOrderDetail.paymentStatus}</strong>
+                <strong>
+                  <StatusBadge
+                    status={selectedOrderDetail.paymentStatus}
+                    labels={PAYMENT_STATUS_LABELS}
+                  />
+                </strong>
               </p>
               <p className="summary-line">
                 <span>Total</span>
@@ -1439,8 +1456,7 @@ export default function AccountPage() {
                       <article key={entry.id} className="history-row">
                         <div>
                           <strong>
-                            {ORDER_STATUS_LABELS[entry.toStatus] ||
-                              entry.toStatus}
+                            <OrderStatusBadge status={entry.toStatus} />
                           </strong>
                           <p className="muted-copy">
                             {entry.reason || "Sin comentario adicional"}
