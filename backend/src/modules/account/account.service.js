@@ -9,6 +9,7 @@ import {
   findPotentialCustomerByLinkedCustomerId,
 } from '../customers/customer-helpers.js';
 import { getOrderDetail } from '../orders/orders.service.js';
+import { generateOrderReceiptPdf } from './pdf/order-receipt-pdf.js';
 
 function parseJsonField(value, fallback = []) {
   if (value == null || value === '') return fallback;
@@ -494,7 +495,7 @@ export async function listAccountOrders(userId) {
   }));
 }
 
-export async function getAccountOrderDetail(userId, orderId) {
+async function assertAccountOrderOwnership(userId, orderId) {
   const customer = await findCustomerByUserId(userId);
 
   const [ownershipRows] = await pool.execute(
@@ -511,6 +512,10 @@ export async function getAccountOrderDetail(userId, orderId) {
   if (!ownershipRows.length) {
     throw notFound('Order not found');
   }
+}
+
+export async function getAccountOrderDetail(userId, orderId) {
+  await assertAccountOrderOwnership(userId, orderId);
 
   const order = await getOrderDetail(orderId);
 
@@ -532,6 +537,15 @@ export async function getAccountOrderDetail(userId, orderId) {
     cancellationReason: order.cancellationReason || null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    customer: order.customer
+      ? {
+          firstName: order.customer.firstName || null,
+          lastName: order.customer.lastName || null,
+          email: order.customer.email || null,
+          phone: order.customer.phone || null,
+          address: order.customer.address || null,
+        }
+      : null,
     items: (order.items || []).map((item) => ({
       id: Number(item.id),
       articleId: item.articleId != null ? Number(item.articleId) : null,
@@ -552,6 +566,18 @@ export async function getAccountOrderDetail(userId, orderId) {
       changedAt: entry.changedAt,
       source: entry.source || null,
     })),
+  };
+}
+
+
+export async function getAccountOrderReceiptPdf(userId, orderId) {
+  await assertAccountOrderOwnership(userId, orderId);
+  const order = await getOrderDetail(orderId);
+  const pdfBuffer = await generateOrderReceiptPdf(order);
+
+  return {
+    orderNumber: order.orderNumber,
+    pdfBuffer,
   };
 }
 

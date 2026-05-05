@@ -14,7 +14,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
-import { apiFetch } from "../lib/api.js";
+import { apiDownload, apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
@@ -496,6 +496,24 @@ export default function AccountPage() {
       setSelectedOrderDetail(null);
     } finally {
       setOrderDetailLoading(false);
+    }
+  }
+
+
+  async function downloadOrderReceipt(order) {
+    try {
+      const orderNumber = order?.orderNumber || order?.id || 'orden';
+      await apiDownload(`/api/public/account/orders/${order.id}/receipt.pdf`, {
+        extension: 'pdf',
+        fileName: `boleta-${orderNumber}.pdf`,
+      });
+    } catch (err) {
+      const errorMessage = getFriendlyErrorMessage(
+        err,
+        'No pudimos generar la boleta de la orden.',
+      );
+      setOrderDetailError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
     }
   }
 
@@ -1286,6 +1304,15 @@ export default function AccountPage() {
                         >
                           <EyeIcon />
                         </Link>,
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          aria-label={`Descargar boleta ${order.orderNumber}`}
+                          title="Descargar boleta"
+                          onClick={() => void downloadOrderReceipt(order)}
+                        >
+                          PDF
+                        </button>,
                       ]}
                     />
                   );
@@ -1377,6 +1404,15 @@ export default function AccountPage() {
                               >
                                 <EyeIcon />
                               </button>
+                              <button
+                                type="button"
+                                className="icon-action-button"
+                                aria-label={`Descargar boleta ${order.orderNumber}`}
+                                title="Descargar boleta"
+                                onClick={() => void downloadOrderReceipt(order)}
+                              >
+                                PDF
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1411,6 +1447,15 @@ export default function AccountPage() {
 
         {selectedOrderDetail ? (
           <div className="page-stack">
+            <div className="inline-action-group">
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => void downloadOrderReceipt(selectedOrderDetail)}
+              >
+                Descargar boleta PDF
+              </button>
+            </div>
             <div className="admin-detail-meta">
               <p className="summary-line">
                 <span>Estado actual</span>

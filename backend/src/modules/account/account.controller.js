@@ -3,6 +3,7 @@ import {
   getAccountProfile,
   listAccountAlerts,
   getAccountOrderDetail,
+  getAccountOrderReceiptPdf,
   listAccountOrders,
   removeAccountAlert,
   saveAccountProfile,
@@ -37,6 +38,20 @@ export async function getPublicAccountOrders(req, res) {
 export async function getPublicAccountOrder(req, res) {
   const order = await getAccountOrderDetail(req.auth.userId, Number(req.params.id));
   return res.json({ ok: true, order });
+}
+
+
+export async function getPublicAccountOrderReceiptPdf(req, res) {
+  const { orderNumber, pdfBuffer } = await getAccountOrderReceiptPdf(
+    req.auth.userId,
+    Number(req.params.id),
+  );
+  const safeOrderNumber = String(orderNumber || req.params.id).replace(/[^a-zA-Z0-9_-]/g, '-');
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.setHeader('Content-Disposition', `attachment; filename="boleta-${safeOrderNumber}.pdf"`);
+  return res.send(pdfBuffer);
 }
 
 export async function getPublicAccountAlerts(req, res) {

@@ -5,7 +5,7 @@ import OrderStatusBadge from '../components/OrderStatusBadge.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import SummaryItemCard from '../components/SummaryItemCard.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { apiFetch } from '../lib/api.js';
+import { apiDownload, apiFetch } from '../lib/api.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 
 const PAYMENT_STATUS_LABELS = {
@@ -28,6 +28,8 @@ export default function AccountOrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [receiptLoading, setReceiptLoading] = useState(false);
+  const [receiptError, setReceiptError] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
@@ -51,6 +53,24 @@ export default function AccountOrderDetailPage() {
       ignore = true;
     };
   }, [id, isAuthenticated]);
+
+
+  async function downloadReceipt() {
+    if (!order?.id) return;
+
+    try {
+      setReceiptLoading(true);
+      setReceiptError('');
+      await apiDownload(`/api/public/account/orders/${order.id}/receipt.pdf`, {
+        extension: 'pdf',
+        fileName: `boleta-${order.orderNumber || order.id}.pdf`,
+      });
+    } catch (err) {
+      setReceiptError(err.message || 'No pudimos generar la boleta de la orden.');
+    } finally {
+      setReceiptLoading(false);
+    }
+  }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
@@ -82,8 +102,19 @@ export default function AccountOrderDetailPage() {
                 <p className="section-kicker">Orden</p>
                 <h1>{order.orderNumber}</h1>
               </div>
-              <OrderStatusBadge status={order.orderStatus} />
+              <div className="inline-action-group">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => void downloadReceipt()}
+                  disabled={receiptLoading}
+                >
+                  {receiptLoading ? 'Generando...' : 'Descargar boleta PDF'}
+                </button>
+                <OrderStatusBadge status={order.orderStatus} />
+              </div>
             </div>
+            {receiptError ? <p className="error-copy">{receiptError}</p> : null}
             <div className="admin-detail-meta account-order-detail-meta">
               <p className="summary-line"><span>Creada</span><strong>{formatDate(order.createdAt)}</strong></p>
               <p className="summary-line"><span>Pago</span><strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>

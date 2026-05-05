@@ -5,6 +5,7 @@ import {
   deletePublicAccountAlert,
   getPublicAccountAlerts,
   getPublicAccountOrder,
+  getPublicAccountOrderReceiptPdf,
   getPublicAccountOrders,
   getPublicAccountProfile,
   putPublicAccountProfile,
@@ -17,6 +18,7 @@ router.get('/profile', asyncHandler(getPublicAccountProfile));
 router.put('/profile', asyncHandler(putPublicAccountProfile));
 router.patch('/profile', asyncHandler(putPublicAccountProfile));
 router.get('/orders', asyncHandler(getPublicAccountOrders));
+router.get('/orders/:id/receipt.pdf', asyncHandler(getPublicAccountOrderReceiptPdf));
 router.get('/orders/:id', asyncHandler(getPublicAccountOrder));
 router.get('/alerts', asyncHandler(getPublicAccountAlerts));
 router.delete('/alerts/:id', asyncHandler(deletePublicAccountAlert));
