@@ -20,7 +20,7 @@ import {
   toAbsoluteUrl,
 } from "../lib/seo.js";
 import { getPublicSessionToken } from "../lib/publicSession.js";
-import { firstValidationMessage, getAtLeastOneContactValidationMessage, getEmailValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import { firstValidationMessage, getEmailValidationMessage, notifyFormStatus } from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 
 const initialAlertForm = {
@@ -47,6 +47,7 @@ export default function ArticlePage() {
   const [feedback, setFeedback] = useState("");
   const [stockDialog, setStockDialog] = useState(null);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertInlineOpen, setAlertInlineOpen] = useState(false);
   const [alertForm, setAlertForm] = useState(initialAlertForm);
   const [alertSubmitting, setAlertSubmitting] = useState(false);
   const [alertError, setAlertError] = useState("");
@@ -142,6 +143,18 @@ export default function ArticlePage() {
     return typeof window !== "undefined" && window.matchMedia("(max-width: 780px)").matches;
   }
 
+  function openStockAlertForm() {
+    setAlertError("");
+    setAlertSuccess("");
+    if (isMobileViewport()) {
+      setAlertInlineOpen((current) => !current);
+      setAlertModalOpen(false);
+      return;
+    }
+    setAlertInlineOpen(false);
+    setAlertModalOpen(true);
+  }
+
   function showStockNotice(result) {
     if (!result || result.ok) return;
 
@@ -229,14 +242,9 @@ export default function ArticlePage() {
 
     try {
       const validationMessage = firstValidationMessage(
-        getAtLeastOneContactValidationMessage(
-          {
-            email: alertForm.email,
-            phone: alertForm.phone,
-            instagram: alertForm.instagram,
-          },
-          "al menos un contacto: email, WhatsApp o Instagram",
-        ),
+        String(alertForm.firstName || "").trim() ? "" : "Completa nombre.",
+        String(alertForm.email || "").trim() ? "" : "Completa email.",
+        String(alertForm.phone || "").trim() ? "" : "Completa WhatsApp.",
         getEmailValidationMessage(alertForm.email),
       );
       if (validationMessage) {
@@ -278,7 +286,7 @@ export default function ArticlePage() {
       setAlertSuccess(successMessage);
       setAlertForm(initialAlertForm);
       if (isMobileViewport()) {
-        setAlertModalOpen(false);
+        setAlertInlineOpen(false);
         notifyFormStatus(notifyMobileStatus, "success", successMessage);
       }
     } catch (err) {
@@ -290,6 +298,98 @@ export default function ArticlePage() {
     } finally {
       setAlertSubmitting(false);
     }
+  }
+
+  function renderStockAlertForm({ inline = false } = {}) {
+    return (
+      <form
+        className={inline ? "page-stack stock-alert-inline-form" : "page-stack stock-alert-modal-form"}
+        onSubmit={handleStockAlertSubmit}
+        noValidate
+      >
+        <div className="admin-filter-grid stock-alert-form-grid">
+          <label className="field-group">
+            <span>Nombre</span>
+            <input
+              className="input"
+              value={alertForm.firstName}
+              required
+              onChange={(event) =>
+                setAlertForm((current) => ({
+                  ...current,
+                  firstName: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>Email</span>
+            <input
+              className="input"
+              type="email"
+              value={alertForm.email}
+              required
+              onChange={(event) =>
+                setAlertForm((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>WhatsApp</span>
+            <input
+              className="input"
+              value={alertForm.phone}
+              required
+              onChange={(event) =>
+                setAlertForm((current) => ({
+                  ...current,
+                  phone: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="field-group">
+            <span>Instagram</span>
+            <input
+              className="input"
+              value={alertForm.instagram}
+              onChange={(event) =>
+                setAlertForm((current) => ({
+                  ...current,
+                  instagram: event.target.value,
+                }))
+              }
+            />
+          </label>
+        </div>
+
+        {alertError ? <p className="error-copy">{alertError}</p> : null}
+        {alertSuccess ? <p className="success-copy">{alertSuccess}</p> : null}
+
+        <div className="dialog-actions stock-alert-actions">
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => {
+              setAlertInlineOpen(false);
+              setAlertModalOpen(false);
+            }}
+          >
+            Cerrar
+          </button>
+          <button
+            type="submit"
+            className="button button-primary"
+            disabled={alertSubmitting}
+          >
+            {alertSubmitting ? "Guardando..." : "Guardar alerta"}
+          </button>
+        </div>
+      </form>
+    );
   }
 
   return (
@@ -462,13 +562,27 @@ export default function ArticlePage() {
               <button
                 type="button"
                 className="button button-secondary article-stock-alert-button"
-                onClick={() => setAlertModalOpen(true)}
+                onClick={openStockAlertForm}
               >
                 {isSoldOut
                   ? "Avisame si vuelve o entra algo similar"
                   : "Avisame si entra algo similar"}
               </button>
             </div>
+
+            {alertInlineOpen ? (
+              <section className="section-card page-stack-sm stock-alert-inline-panel">
+                <div>
+                  <p className="section-kicker">Seguimiento</p>
+                  <h3>
+                    {isSoldOut
+                      ? "Avisame si vuelve o entra algo similar"
+                      : "Avisame si entra algo similar"}
+                  </h3>
+                </div>
+                {renderStockAlertForm({ inline: true })}
+              </section>
+            ) : null}
 
             {/* <div className="section-card page-stack-sm article-side-note article-info-accordion">
               <details>
@@ -563,85 +677,7 @@ export default function ArticlePage() {
                 ? "Avisame si vuelve o entra algo similar"
                 : "Avisame si entra algo similar"}
             </h3>
-            <form className="page-stack" onSubmit={handleStockAlertSubmit} noValidate>
-              <div className="admin-filter-grid">
-                <label className="field-group">
-                  <span>Nombre</span>
-                  <input
-                    className="input"
-                    value={alertForm.firstName}
-                    onChange={(event) =>
-                      setAlertForm((current) => ({
-                        ...current,
-                        firstName: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="field-group">
-                  <span>Email</span>
-                  <input
-                    className="input"
-                    type="email"
-                    value={alertForm.email}
-                    onChange={(event) =>
-                      setAlertForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="field-group">
-                  <span>WhatsApp</span>
-                  <input
-                    className="input"
-                    value={alertForm.phone}
-                    onChange={(event) =>
-                      setAlertForm((current) => ({
-                        ...current,
-                        phone: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="field-group">
-                  <span>Instagram</span>
-                  <input
-                    className="input"
-                    value={alertForm.instagram}
-                    onChange={(event) =>
-                      setAlertForm((current) => ({
-                        ...current,
-                        instagram: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-
-              {alertError ? <p className="error-copy">{alertError}</p> : null}
-              {alertSuccess ? (
-                <p className="success-copy">{alertSuccess}</p>
-              ) : null}
-
-              <div className="dialog-actions">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={() => setAlertModalOpen(false)}
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="submit"
-                  className="button button-primary"
-                  disabled={alertSubmitting}
-                >
-                  {alertSubmitting ? "Guardando..." : "Guardar alerta"}
-                </button>
-              </div>
-            </form>
+            {renderStockAlertForm()}
           </div>
         </div>
       ) : null}

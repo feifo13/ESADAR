@@ -704,10 +704,6 @@ export default function AdminArticleFormPage() {
             <div>
               <p className="section-kicker">Paso 1</p>
               <h2>Datos principales</h2>
-              <p className="muted-copy">
-                Completa solo lo humanamente necesario para identificar bien la
-                prenda.
-              </p>
             </div>
 
             <div className="form-grid-two">
@@ -871,10 +867,6 @@ export default function AdminArticleFormPage() {
             <div>
               <p className="section-kicker">Paso 2</p>
               <h2>Venta y stock</h2>
-              <p className="muted-copy">
-                Define precio, stock y condiciones comerciales sin exponerte a
-                campos tecnicos innecesarios.
-              </p>
             </div>
 
             <div className="form-grid-two">
@@ -1099,11 +1091,6 @@ export default function AdminArticleFormPage() {
             <div>
               <p className="section-kicker">Paso 3</p>
               <h2>Imagenes</h2>
-              <p className="muted-copy helper-note">
-                Las previews se muestran chicas y ordenadas para que puedas
-                revisar rapido cual es la principal, borrar o reordenar sin
-                romper la vista.
-              </p>
             </div>
 
             {existingImages.length ? (

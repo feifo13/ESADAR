@@ -1398,8 +1398,9 @@ export default function AccountPage() {
             ? `Orden ${selectedOrderDetail.orderNumber}`
             : "Detalle de orden"
         }
-        description="Seguimiento visible para tu compra."
+        description=""
         wide
+        className="account-order-detail-modal"
       >
         {orderDetailLoading ? (
           <p className="muted-copy">Cargando detalle...</p>

@@ -254,6 +254,9 @@ export default function Header({ hideBrand = false }) {
   const isAdmin = user?.roles?.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
   );
+  const isCheckoutView = location.pathname.startsWith("/checkout");
+  const isAccountView = location.pathname.startsWith("/cuenta");
+  const isAdminView = location.pathname.startsWith("/admin");
 
   function openCart() {
     navigate("/checkout/resumen", {
@@ -548,7 +551,14 @@ export default function Header({ hideBrand = false }) {
             />
           </Link>
 
-          {desktopSearchContent}
+          {isCheckoutView || isAccountView || isAdminView ? (
+            <span
+              className="header-search-desktop-placeholder"
+              aria-hidden="true"
+            />
+          ) : (
+            desktopSearchContent
+          )}
 
           <div className="header-actions header-actions--ordered header-actions--desktop">
             {isAuthenticated ? (
