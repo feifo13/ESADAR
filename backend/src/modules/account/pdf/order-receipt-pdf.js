@@ -384,7 +384,7 @@ function drawHeader(doc, order) {
     });
   }
 
-  drawText(doc, "Comprobante de comrpa", 355, top + 28, {
+  drawText(doc, "Comprobante de compra", 355, top + 28, {
     size: 23,
     bold: true,
     color: COLORS.navy,
@@ -647,7 +647,7 @@ function drawItemRow(doc, item, y) {
 
 function addContinuationPage(doc, order) {
   doc.addPage({ size: [PAGE.width, PAGE.height], margin: 0 });
-  drawText(doc, "Comprobante de comrpa", PAGE.margin, 28, {
+  drawText(doc, "Comprobante de compra", PAGE.margin, 28, {
     size: 16,
     bold: true,
     color: COLORS.navy,
