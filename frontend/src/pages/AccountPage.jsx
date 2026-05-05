@@ -579,7 +579,7 @@ export default function AccountPage() {
           </div>
 
           <form className="page-stack" onSubmit={handleSubmit} noValidate>
-            <div className="admin-filter-grid">
+            <div className="form-grid-two">
               <label className="field-group">
                 <span>Nombre</span>
                 <input

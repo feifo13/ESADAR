@@ -6206,6 +6206,7 @@ a.button.button-primary {
   align-items: center;
   flex-wrap: wrap;
   color: var(--muted);
+  margin-bottom: 10px;
 }
 
 .breadcrumb-row strong {
@@ -6574,7 +6575,7 @@ a.button.button-primary {
   gap: 8px;
   padding: 10px 14px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 0px;
   background: var(--surface);
 }
 
@@ -8910,8 +8911,9 @@ textarea,
   }
 
   .article-page-shell .breadcrumb-row {
-    justify-content: center;
+    justify-content: flex-start;
     text-align: center;
+    margin-bottom: 10px;
   }
 
   .ebay-article-layout {
