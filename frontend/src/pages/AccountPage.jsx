@@ -13,10 +13,19 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  getFriendlyErrorMessage,
+  getMinLengthValidationMessage,
+  getRequiredValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 
 const PAYMENT_METHOD_LABELS = {
   BANK_TRANSFER: "Transferencia",
@@ -51,7 +60,7 @@ const ALERT_TYPE_LABELS = {
 const TAB_ITEMS = [
   { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
   { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
-  { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
+  // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
   { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
 ];
 
@@ -126,6 +135,7 @@ export default function AccountPage() {
     shippingMethodOptions,
     paymentMethodOptions,
   } = useLookups();
+  const { notifyMobileStatus } = useMobileMenu();
 
   const activeTab = getActiveTab(location.pathname);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -334,8 +344,7 @@ export default function AccountPage() {
       },
       1,
       {
-        sourceRect:
-          event?.currentTarget?.getBoundingClientRect?.() || null,
+        sourceRect: event?.currentTarget?.getBoundingClientRect?.() || null,
       },
     );
   }
@@ -415,6 +424,35 @@ export default function AccountPage() {
     event.preventDefault();
 
     try {
+      const validationMessage = firstValidationMessage(
+        getRequiredValidationMessage(form.firstName, "el nombre"),
+        getMinLengthValidationMessage(form.firstName, 2, "el nombre"),
+        getRequiredValidationMessage(form.lastName, "el apellido"),
+        getMinLengthValidationMessage(form.lastName, 2, "el apellido"),
+        getRequiredValidationMessage(form.email, "el email"),
+        getEmailValidationMessage(form.email),
+        getRequiredValidationMessage(form.phone, "el teléfono"),
+        getRequiredValidationMessage(form.birthDate, "la fecha de nacimiento"),
+        getRequiredValidationMessage(
+          form.defaultAddress.addressLine,
+          "la dirección de envío",
+        ),
+        getRequiredValidationMessage(form.defaultAddress.city, "la ciudad"),
+        getRequiredValidationMessage(
+          form.defaultAddress.state,
+          "el departamento",
+        ),
+        getRequiredValidationMessage(
+          form.defaultAddress.postalCode,
+          "el código postal",
+        ),
+      );
+      if (validationMessage) {
+        setProfileError(validationMessage);
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        return;
+      }
+
       setProfileLoading(true);
       setProfileError("");
       setProfileMessage("");
@@ -429,9 +467,16 @@ export default function AccountPage() {
             : null,
         },
       });
-      setProfileMessage("Datos guardados");
+      const successMessage = "Datos guardados";
+      setProfileMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      setProfileError(err.message || "No se pudieron guardar los datos.");
+      const errorMessage = getFriendlyErrorMessage(
+        err,
+        "No se pudieron guardar los datos.",
+      );
+      setProfileError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setProfileLoading(false);
     }
@@ -533,7 +578,7 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <form className="page-stack" onSubmit={handleSubmit}>
+          <form className="page-stack" onSubmit={handleSubmit} noValidate>
             <div className="admin-filter-grid">
               <label className="field-group">
                 <span>Nombre</span>
@@ -543,6 +588,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateField("firstName", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -553,6 +599,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateField("lastName", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -562,6 +609,7 @@ export default function AccountPage() {
                   type="email"
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
+                  required
                 />
               </label>
               <label className="field-group">
@@ -570,6 +618,7 @@ export default function AccountPage() {
                   className="input"
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
+                  required
                 />
               </label>
               <label className="field-group">
@@ -591,6 +640,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateField("birthDate", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group field-group-span-2">
@@ -601,6 +651,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateAddressField("addressLine", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -611,6 +662,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateAddressField("city", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -621,6 +673,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateAddressField("state", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -631,6 +684,7 @@ export default function AccountPage() {
                   onChange={(event) =>
                     updateAddressField("postalCode", event.target.value)
                   }
+                  required
                 />
               </label>
               <label className="field-group">
@@ -957,12 +1011,17 @@ export default function AccountPage() {
                             <div className="table-actions">
                               <WishlistHeartButton
                                 active
-                                pending={pendingIds.includes(Number(item.articleId))}
+                                pending={pendingIds.includes(
+                                  Number(item.articleId),
+                                )}
                                 className="summary-item-card__favorite-action wishlist-heart-button--bare"
                                 labelActive="Quitar de guardados"
                                 labelInactive="Guardar articulo"
                                 onToggle={() =>
-                                  void toggleItem(item, getWishlistItemPayload(item))
+                                  void toggleItem(
+                                    item,
+                                    getWishlistItemPayload(item),
+                                  )
                                 }
                               />
                               <Link
@@ -979,7 +1038,9 @@ export default function AccountPage() {
                                 aria-label={`Agregar ${item.title} al carrito`}
                                 title="Agregar al carrito"
                                 disabled={!isAvailable}
-                                onClick={(event) => addArticleToCart(item, event)}
+                                onClick={(event) =>
+                                  addArticleToCart(item, event)
+                                }
                               >
                                 <CartIcon />
                               </button>
@@ -1064,12 +1125,13 @@ export default function AccountPage() {
                       meta={[
                         alert.brandName ? `Marca: ${alert.brandName}` : null,
                         `Alerta: ${
-                          ALERT_TYPE_LABELS[alert.alertType] ||
-                          alert.alertType
+                          ALERT_TYPE_LABELS[alert.alertType] || alert.alertType
                         }`,
                         `Creada: ${formatDate(alert.createdAt)}`,
                       ].filter(Boolean)}
-                      price={alert.articleId ? formatCurrency(currentPrice) : null}
+                      price={
+                        alert.articleId ? formatCurrency(currentPrice) : null
+                      }
                       comparePrice={alert.articleId ? comparePrice : null}
                       actions={[
                         <button
@@ -1125,7 +1187,8 @@ export default function AccountPage() {
                     <div>
                       <strong>{alert.articleTitle || "Alerta general"}</strong>
                       <p className="muted-copy">
-                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType} ·{" "}
+                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType}{" "}
+                        ·{" "}
                         <StatusBadge
                           status={alert.status}
                           labels={{ ACTIVE: "Activa", INACTIVE: "Inactiva" }}
@@ -1211,9 +1274,7 @@ export default function AccountPage() {
                         order.shippingMethodName
                           ? `Envio: ${order.shippingMethodName}`
                           : null,
-                        `Ultima actualizacion: ${formatDate(
-                          latestStatusDate,
-                        )}`,
+                        `Ultima actualizacion: ${formatDate(latestStatusDate)}`,
                       ].filter(Boolean)}
                       price={formatCurrency(order.total)}
                       actions={[

@@ -8,6 +8,7 @@ import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
 import { apiFetch } from "../lib/api.js";
+import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
 
 const STORAGE_KEY = "esadar-checkout-draft";
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
@@ -163,9 +164,7 @@ export default function CheckoutPage() {
     null;
   const total = subtotal + Number(shipping?.cost || 0);
 
-  const buyerComplete =
-    isAuthenticated ||
-    (guest.firstName.trim().length >= 2 && guest.lastName.trim().length >= 2);
+  const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
   const paymentComplete = Boolean(paymentMethod);
   const shippingComplete = Boolean(shippingMethodId);
 
@@ -217,33 +216,55 @@ export default function CheckoutPage() {
     navigate,
   ]);
 
+  function getGuestBuyerValidationMessage() {
+    return firstValidationMessage(
+      getRequiredValidationMessage(guest.firstName, "el nombre del comprador"),
+      getRequiredValidationMessage(guest.lastName, "el apellido del comprador"),
+      getRequiredValidationMessage(guest.birthDate, "la fecha de nacimiento"),
+      getRequiredValidationMessage(guest.phone, "el teléfono"),
+      getRequiredValidationMessage(guest.address, "la dirección"),
+      getRequiredValidationMessage(guest.email, "el email"),
+      getEmailValidationMessage(guest.email),
+    );
+  }
+
   function goToStep(index) {
     if (index > maxAllowedStepIndex) return;
     navigate(`/checkout/${steps[index].key}`);
+  }
+
+  function showCheckoutMessage(type, message) {
+    if (type === "error") {
+      setError(message);
+    } else {
+      setSuccess(message);
+    }
+    notifyFormStatus(notifyMobileStatus, type, message);
   }
 
   function validateCurrentStep() {
     setError("");
 
     if (currentStepKey === "resumen" && !items.length) {
-      setError("Tu carrito está vacío.");
+      showCheckoutMessage("error", "Tu carrito está vacío.");
       return false;
     }
 
-    if (currentStepKey === "comprador" && !buyerComplete) {
-      setError(
-        "Completa al menos nombre y apellido del comprador para continuar.",
-      );
-      return false;
+    if (currentStepKey === "comprador" && !isAuthenticated) {
+      const validationMessage = getGuestBuyerValidationMessage();
+      if (validationMessage) {
+        showCheckoutMessage("error", validationMessage);
+        return false;
+      }
     }
 
     if (currentStepKey === "pago" && !paymentComplete) {
-      setError("Selecciona un medio de pago para continuar.");
+      showCheckoutMessage("error", "Selecciona un medio de pago para continuar.");
       return false;
     }
 
     if (currentStepKey === "envio" && !shippingComplete) {
-      setError("Selecciona un método de envío para continuar.");
+      showCheckoutMessage("error", "Selecciona un método de envío para continuar.");
       return false;
     }
 
@@ -263,8 +284,16 @@ export default function CheckoutPage() {
 
   async function handleConfirmOrder() {
     if (!completion.confirmacion || !items.length) {
-      setError("Completa los pasos previos antes de confirmar la orden.");
+      showCheckoutMessage("error", "Completa los pasos previos antes de confirmar la orden.");
       return;
+    }
+
+    if (!isAuthenticated) {
+      const validationMessage = getGuestBuyerValidationMessage();
+      if (validationMessage) {
+        showCheckoutMessage("error", validationMessage);
+        return;
+      }
     }
 
     try {
@@ -285,10 +314,10 @@ export default function CheckoutPage() {
       if (!isAuthenticated) {
         payload.guest = {
           ...guest,
-          birthDate: guest.birthDate || null,
-          email: guest.email || null,
-          address: guest.address || null,
-          phone: guest.phone || null,
+          birthDate: guest.birthDate,
+          email: guest.email,
+          address: guest.address,
+          phone: guest.phone,
           instagram: guest.instagram || null,
         };
       }
@@ -317,7 +346,7 @@ export default function CheckoutPage() {
         state: { orderNumber },
       });
     } catch (err) {
-      setError(err.message || "No se pudo crear la orden");
+      showCheckoutMessage("error", getFriendlyErrorMessage(err, "No se pudo crear la orden."));
     } finally {
       setSubmitting(false);
     }
@@ -546,6 +575,7 @@ export default function CheckoutPage() {
                   birthDate: event.target.value,
                 }))
               }
+              required
             />
           </label>
           <label className="field-group">
@@ -559,6 +589,7 @@ export default function CheckoutPage() {
                   phone: event.target.value,
                 }))
               }
+              required
             />
           </label>
           <label className="field-group form-grid-span-two">
@@ -572,6 +603,7 @@ export default function CheckoutPage() {
                   address: event.target.value,
                 }))
               }
+              required
             />
           </label>
           <label className="field-group">
@@ -599,6 +631,7 @@ export default function CheckoutPage() {
                   email: event.target.value,
                 }))
               }
+              required
             />
           </label>
         </div>

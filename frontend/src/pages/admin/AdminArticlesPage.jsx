@@ -9,9 +9,11 @@ import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { EditIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+import { notifyFormStatus } from "../../lib/validation.js";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -41,6 +43,7 @@ function formatPreviewList(values = []) {
 
 export default function AdminArticlesPage() {
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const { notifyMobileStatus } = useMobileMenu();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -99,7 +102,11 @@ export default function AdminArticlesPage() {
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudo cargar articulos");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudo cargar articulos";
+          setError(errorMessage);
+          notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -140,7 +147,8 @@ export default function AdminArticlesPage() {
   }
 
   function changeSort(sortBy) {
-    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    const sortDir =
+      filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
@@ -156,9 +164,13 @@ export default function AdminArticlesPage() {
         fileName: `esadar-articulos-${today}.${format}`,
         extension: format,
       });
-      setMessage(`Exportacion ${format.toUpperCase()} generada correctamente.`);
+      const successMessage = `Exportacion ${format.toUpperCase()} generada correctamente.`;
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      setError(err.message || "No se pudo exportar el catalogo");
+      const errorMessage = err.message || "No se pudo exportar el catalogo";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setExportingFormat("");
     }
@@ -178,11 +190,13 @@ export default function AdminArticlesPage() {
           extension: format,
         },
       );
-      setMessage(
-        `Plantilla ${type === "simple" ? "simple" : "completa"} ${format.toUpperCase()} descargada.`,
-      );
+      const successMessage = `Plantilla ${type === "simple" ? "simple" : "completa"} ${format.toUpperCase()} descargada.`;
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      setError(err.message || "No se pudo descargar la plantilla");
+      const errorMessage = err.message || "No se pudo descargar la plantilla";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setDownloadingTemplate("");
     }
@@ -190,7 +204,10 @@ export default function AdminArticlesPage() {
 
   async function handlePreviewImport() {
     if (!importFile) {
-      setError("Selecciona un archivo CSV o XLSX antes de previsualizar.");
+      const errorMessage =
+        "Selecciona un archivo CSV o XLSX antes de previsualizar.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       return;
     }
 
@@ -211,7 +228,10 @@ export default function AdminArticlesPage() {
       });
       setPreview(response);
     } catch (err) {
-      setError(err.message || "No se pudo generar la previsualizacion");
+      const errorMessage =
+        err.message || "No se pudo generar la previsualizacion";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setPreviewLoading(false);
     }
@@ -219,7 +239,10 @@ export default function AdminArticlesPage() {
 
   async function handleRunImport() {
     if (!importFile) {
-      setError("Selecciona un archivo CSV o XLSX antes de importar.");
+      const errorMessage =
+        "Selecciona un archivo CSV o XLSX antes de importar.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       return;
     }
 
@@ -239,15 +262,17 @@ export default function AdminArticlesPage() {
         body: formData,
       });
 
-      setMessage(
-        `Importacion lista. Creados: ${response.summary?.rowsCreated || 0}, actualizados: ${response.summary?.rowsUpdated || 0}, omitidos: ${response.summary?.rowsSkipped || 0}, errores: ${response.summary?.rowsFailed || 0}, advertencias: ${response.summary?.warningsCount || 0}.`,
-      );
+      const successMessage = `Importacion lista. Creados: ${response.summary?.rowsCreated || 0}, actualizados: ${response.summary?.rowsUpdated || 0}, omitidos: ${response.summary?.rowsSkipped || 0}, errores: ${response.summary?.rowsFailed || 0}, advertencias: ${response.summary?.warningsCount || 0}.`;
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setPreview(null);
       setImportFile(null);
       setFileInputKey((current) => current + 1);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      setError(err.message || "No se pudo completar la importacion");
+      const errorMessage = err.message || "No se pudo completar la importacion";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setImporting(false);
     }
@@ -290,12 +315,12 @@ export default function AdminArticlesPage() {
                 ? "Exportando XLSX..."
                 : "Exportar XLSX"}
             </button>
-            <Link
+            {/* <Link
               to="/admin/articles/bulk-create"
               className="button button-secondary"
             >
               Crear multiples articulos desde UI
-            </Link>
+            </Link> */}
             <Link to="/admin/articles/new" className="button button-primary">
               Nuevo articulo
             </Link>
@@ -679,21 +704,65 @@ export default function AdminArticlesPage() {
                 <thead>
                   <tr>
                     <th>Imagen</th>
-                    <SortableTh sortKey="title" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Articulo</SortableTh>
-                    <SortableTh sortKey="categoryName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Categoria</SortableTh>
-                    <SortableTh sortKey="brandName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Marca</SortableTh>
+                    <SortableTh
+                      sortKey="title"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Articulo
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="categoryName"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Categoria
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="brandName"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Marca
+                    </SortableTh>
                     <th>Talle</th>
-                    <SortableTh sortKey="discountedPrice" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Precio</SortableTh>
-                    <SortableTh sortKey="quantityAvailable" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Stock</SortableTh>
-                    <SortableTh sortKey="status" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
-                    <SortableTh sortKey="updatedAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Actualizado</SortableTh>
+                    <SortableTh
+                      sortKey="discountedPrice"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Precio
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="quantityAvailable"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Stock
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="status"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Estado
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="updatedAt"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Actualizado
+                    </SortableTh>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((article) => {
                     const categoryName =
-                      article.category?.name || article.categoryName || "Sin categoria";
+                      article.category?.name ||
+                      article.categoryName ||
+                      "Sin categoria";
                     const brandName =
                       article.brand?.name || article.brandName || "Sin marca";
                     const sizeName =
@@ -705,7 +774,11 @@ export default function AdminArticlesPage() {
                     return (
                       <tr key={article.id}>
                         <td>
-                          <Link to={`/admin/articles/${article.id}/edit`} className="table-thumb-link" aria-label={`Editar ${article.title}`}>
+                          <Link
+                            to={`/admin/articles/${article.id}/edit`}
+                            className="table-thumb-link"
+                            aria-label={`Editar ${article.title}`}
+                          >
                             <SmartImage
                               src={
                                 article.primaryImageDetail ||
@@ -720,21 +793,37 @@ export default function AdminArticlesPage() {
                         </td>
                         <td>
                           <div className="cell-stack">
-                            <Link to={`/admin/articles/${article.id}/edit`} className="table-strong-link">
+                            <Link
+                              to={`/admin/articles/${article.id}/edit`}
+                              className="table-strong-link"
+                            >
                               {article.title}
                             </Link>
-                            <span className="muted-copy">Codigo: {article.internalCode || "Sin codigo"}</span>
+                            <span className="muted-copy">
+                              Codigo: {article.internalCode || "Sin codigo"}
+                            </span>
                           </div>
                         </td>
                         <td>{categoryName}</td>
                         <td>{brandName}</td>
                         <td>{sizeName}</td>
                         <td>
-                          <strong>{formatCurrency(article.discountedPrice || article.salePrice)}</strong>
+                          <strong>
+                            {formatCurrency(
+                              article.discountedPrice || article.salePrice,
+                            )}
+                          </strong>
                         </td>
                         <td>{article.quantityAvailable}</td>
-                        <td><StatusBadge status={article.status} labels={ARTICLE_STATUS_LABELS} /></td>
-                        <td>{formatDate(article.updatedAt || article.intakeDate)}</td>
+                        <td>
+                          <StatusBadge
+                            status={article.status}
+                            labels={ARTICLE_STATUS_LABELS}
+                          />
+                        </td>
+                        <td>
+                          {formatDate(article.updatedAt || article.intakeDate)}
+                        </td>
                         <td>
                           <div className="table-actions">
                             <Link

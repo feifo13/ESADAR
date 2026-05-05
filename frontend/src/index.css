@@ -11639,3 +11639,120 @@ textarea,
     border: 0 !important;
   }
 }
+
+/* === ESADAR targeted fixes: header search, mobile form notices and favicon pass === */
+@media (min-width: 901px) {
+  .site-header .header-inner--compact {
+    display: grid !important;
+    grid-template-columns: minmax(120px, 220px) minmax(280px, 560px) minmax(280px, 1fr) !important;
+    align-items: center !important;
+    gap: 18px !important;
+  }
+
+  .header-search-desktop {
+    display: block !important;
+    width: min(100%, 540px) !important;
+    justify-self: center !important;
+  }
+
+  .header-search-desktop__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .header-search-desktop__field svg {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .header-search-desktop__field .input {
+    width: 100%;
+    min-height: 44px;
+    padding-left: 42px;
+    border-radius: 999px;
+    background: #fff !important;
+    color: #102b34 !important;
+  }
+
+  .header-actions--desktop {
+    justify-self: end !important;
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .header-search-desktop {
+    display: none !important;
+  }
+}
+
+@media (max-width: 780px) {
+  form .error-copy,
+  form .success-copy,
+  .auth-card > .error-copy,
+  .auth-card > .success-copy,
+  .lead-capture-form > .error-copy,
+  .lead-capture-form > .success-copy,
+  .checkout-navigation-status .error-copy,
+  .checkout-navigation-status .success-copy,
+  .offer-sidebar-flat > .error-copy,
+  .offer-sidebar-flat > .success-copy,
+  .admin-page-shell .section-card > .error-copy,
+  .admin-page-shell .section-card > .success-copy,
+  .admin-page-shell .surface-modal-card .error-copy,
+  .admin-page-shell .surface-modal-card .success-copy,
+  .dialog-card form .error-copy,
+  .dialog-card form .success-copy {
+    display: none !important;
+  }
+}
+
+/* === ESADAR pass: center desktop/tablet header search without touching actions === */
+@media (min-width: 901px) {
+  .site-header .header-inner--compact.header-inner--mobile-balanced {
+    position: relative !important;
+    display: flex !important;
+    grid-template-columns: none !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 18px !important;
+  }
+
+  .site-header .brand-mark--desktop,
+  .site-header .header-actions--desktop {
+    position: relative !important;
+    z-index: 2 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .site-header .header-actions--desktop {
+    margin-left: auto !important;
+    justify-content: flex-end !important;
+  }
+
+  .site-header .header-search-desktop {
+    position: absolute !important;
+    z-index: 1 !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: clamp(320px, 33vw, 680px) !important;
+    max-width: calc(100vw - 720px) !important;
+    min-width: min(320px, calc(100vw - 620px)) !important;
+    justify-self: auto !important;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .site-header .header-search-desktop {
+    width: clamp(260px, 28vw, 360px) !important;
+    max-width: calc(100vw - 560px) !important;
+    min-width: min(260px, calc(100vw - 560px)) !important;
+  }
+}

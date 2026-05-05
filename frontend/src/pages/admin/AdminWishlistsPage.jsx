@@ -401,7 +401,13 @@ export default function AdminWishlistsPage() {
                     <span>
                       {formatCurrency(item.discountedPrice || item.salePrice)}
                     </span>
-                    <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver articulo</span></Link>
+                    <Link
+                      to={articlePath(item)}
+                      className="admin-inline-icon-link"
+                    >
+                      <EyeIcon />
+                      <span>Ver articulo</span>
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -574,13 +580,19 @@ export default function AdminWishlistsPage() {
                         {formatCurrency(item.discountedPrice || item.salePrice)}
                       </strong>
                       <span>{formatDate(item.savedAt)}</span>
-                      <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver</span></Link>
+                      <Link
+                        to={articlePath(item)}
+                        className="admin-inline-icon-link"
+                      >
+                        <EyeIcon />
+                        <span>Ver</span>
+                      </Link>
                     </div>
                   </article>
                 ))}
               </div>
 
-              <div className="page-stack-sm">
+              {/* <div className="page-stack-sm">
                 <h3>Alertas relacionadas</h3>
                 {(selectedWishlist.alerts || []).length ? (
                   selectedWishlist.alerts.map((alert) => (
@@ -600,7 +612,7 @@ export default function AdminWishlistsPage() {
                 ) : (
                   <p className="muted-copy">Sin alertas asociadas.</p>
                 )}
-              </div>
+              </div> */}
 
               <div className="page-stack-sm">
                 <h3>Eventos relacionados</h3>

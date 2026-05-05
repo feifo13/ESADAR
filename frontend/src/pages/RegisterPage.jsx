@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useMobileMenu } from '../contexts/MobileMenuContext.jsx';
+import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getMinLengthValidationMessage, getRequiredValidationMessage, notifyFormStatus } from '../lib/validation.js';
 
 const initialState = {
   firstName: '',
@@ -16,6 +18,7 @@ const initialState = {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { notifyMobileStatus } = useMobileMenu();
   const [form, setForm] = useState(initialState);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,18 +30,38 @@ export default function RegisterPage() {
   async function handleSubmit(event) {
     event.preventDefault();
     try {
+      const validationMessage = firstValidationMessage(
+        getRequiredValidationMessage(form.firstName, 'el nombre'),
+        getMinLengthValidationMessage(form.firstName, 2, 'el nombre'),
+        getRequiredValidationMessage(form.lastName, 'el apellido'),
+        getMinLengthValidationMessage(form.lastName, 2, 'el apellido'),
+        getRequiredValidationMessage(form.birthDate, 'la fecha de nacimiento'),
+        getRequiredValidationMessage(form.phone, 'el teléfono'),
+        getRequiredValidationMessage(form.address, 'la dirección'),
+        getRequiredValidationMessage(form.email, 'el email'),
+        getEmailValidationMessage(form.email),
+        getRequiredValidationMessage(form.password, 'el password'),
+        getMinLengthValidationMessage(form.password, 6, 'el password'),
+      );
+      if (validationMessage) {
+        setError(validationMessage);
+        notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+        return;
+      }
       setSubmitting(true);
       setError('');
       await register({
         ...form,
-        birthDate: form.birthDate || null,
-        address: form.address || null,
-        phone: form.phone || null,
+        birthDate: form.birthDate,
+        address: form.address,
+        phone: form.phone,
         instagram: form.instagram || null,
       });
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'No se pudo crear el usuario');
+      const errorMessage = getFriendlyErrorMessage(err, 'No se pudo crear el usuario.');
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -46,7 +69,7 @@ export default function RegisterPage() {
 
   return (
     <div className="container auth-shell">
-      <form className="section-card auth-card" onSubmit={handleSubmit}>
+      <form className="section-card auth-card" onSubmit={handleSubmit} noValidate>
         <p className="section-kicker">Crear usuario</p>
         <h1>Tu cuenta para comprar más rápido</h1>
 
@@ -61,15 +84,15 @@ export default function RegisterPage() {
           </label>
           <label className="field-group">
             <span>Fecha de nacimiento</span>
-            <input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} />
+            <input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} required />
           </label>
           <label className="field-group">
             <span>Teléfono</span>
-            <input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} />
+            <input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} required />
           </label>
           <label className="field-group form-grid-span-two">
             <span>Dirección</span>
-            <input className="input" value={form.address} onChange={(event) => update('address', event.target.value)} />
+            <input className="input" value={form.address} onChange={(event) => update('address', event.target.value)} required />
           </label>
           <label className="field-group">
             <span>Instagram</span>

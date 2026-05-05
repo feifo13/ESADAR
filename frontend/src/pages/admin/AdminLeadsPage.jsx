@@ -11,6 +11,8 @@ import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
 import { buildQueryString } from "../../lib/query.js";
+import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
+import { notifyFormStatus } from "../../lib/validation.js";
 
 const LEAD_STATUS_LABELS = {
   NEW: "Nuevo",
@@ -70,6 +72,7 @@ function renderContact(lead) {
 }
 
 export default function AdminLeadsPage() {
+  const { notifyMobileStatus } = useMobileMenu();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -126,7 +129,11 @@ export default function AdminLeadsPage() {
         );
 
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudieron cargar los leads");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudieron cargar los leads";
+          setError(errorMessage);
+          notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -136,7 +143,7 @@ export default function AdminLeadsPage() {
     return () => {
       ignore = true;
     };
-  }, [query]);
+  }, [query, notifyMobileStatus]);
 
   useEffect(() => {
     let ignore = false;
@@ -236,9 +243,13 @@ export default function AdminLeadsPage() {
             : item,
         ),
       );
-      setMessage("El lead fue actualizado correctamente.");
+      const successMessage = "El lead fue actualizado correctamente.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      setDetailError(err.message || "No se pudo actualizar el lead");
+      const errorMessage = err.message || "No se pudo actualizar el lead";
+      setDetailError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setSavingStatus(false);
     }
@@ -434,19 +445,15 @@ export default function AdminLeadsPage() {
                       <td>{lead.wishlistItemsCount || 0}</td>
                       <td>
                         <div className="table-actions">
-                          <button
-                            type="button"
+                          <Link
+                            to={`/admin/leads/${lead.id}`}
                             className="button button-secondary button-compact admin-icon-action"
-                            onClick={() => {
-                              setSelectedLeadId(lead.id);
-                              setDetailModalOpen(true);
-                            }}
-                            aria-label={`Ver detalles de ${lead.firstName} ${lead.lastName}`}
-                            title="Detalles"
+                            aria-label={`Ver detalle de ${lead.firstName} ${lead.lastName}`}
+                            title="Ver detalle"
                           >
                             <EyeIcon />
-                            <span className="admin-action-label">Detalles</span>
-                          </button>
+                            <span className="admin-action-label">Ver detalle</span>
+                          </Link>
                         </div>
                       </td>
                     </tr>
@@ -567,7 +574,7 @@ export default function AdminLeadsPage() {
                 </div>
               </div>
 
-              <form className="page-stack" onSubmit={handleStatusSubmit}>
+              <form className="page-stack" onSubmit={handleStatusSubmit} noValidate>
                 <p className="section-kicker">Seguimiento interno</p>
 
                 <label className="field-group">

@@ -354,7 +354,7 @@ export default function Header({ hideBrand = false }) {
     ? [
         { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
-        { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
+        // { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
         { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
       ]
     : [
@@ -370,11 +370,11 @@ export default function Header({ hideBrand = false }) {
       label: "Nuevo articulo",
       to: "/admin/articles/new",
     },
-    {
-      key: "admin-article-bulk",
-      label: "Crear multiples",
-      to: "/admin/articles/bulk-create",
-    },
+    // {
+    //   key: "admin-article-bulk",
+    //   label: "Crear multiples",
+    //   to: "/admin/articles/bulk-create",
+    // },
     { key: "admin-orders", label: "Ordenes", to: "/admin/orders" },
     { key: "admin-offers", label: "Ofertas", to: "/admin/offers" },
     {
@@ -437,12 +437,19 @@ export default function Header({ hideBrand = false }) {
                 ? { rotate: -3, scale: 0.95 }
                 : { rotate: 0, scale: 1 }
             }
-            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }}
+            transition={
+              shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }
+            }
           >
             <MenuGlyph />
           </motion.span>
         </motion.button>
-        <span className="mobile-catalog-indicators" aria-hidden={catalogFiltersCount > 0 || catalogSortActive ? undefined : "true"}>
+        <span
+          className="mobile-catalog-indicators"
+          aria-hidden={
+            catalogFiltersCount > 0 || catalogSortActive ? undefined : "true"
+          }
+        >
           {catalogFiltersCount > 0 ? (
             <button
               type="button"
@@ -502,6 +509,29 @@ export default function Header({ hideBrand = false }) {
     </form>
   );
 
+  const desktopSearchContent = (
+    <form
+      className="header-search-desktop"
+      onSubmit={handleMobileSearchSubmit}
+      role="search"
+    >
+      <label className="sr-only" htmlFor="site-header-search-input">
+        Buscar prendas
+      </label>
+      <div className="header-search-desktop__field">
+        <SearchIcon />
+        <input
+          id="site-header-search-input"
+          className="input"
+          type="search"
+          value={mobileSearch}
+          onChange={(event) => setMobileSearch(event.target.value)}
+          placeholder="Buscar prendas"
+        />
+      </div>
+    </form>
+  );
+
   return (
     <>
       <header className="site-header">
@@ -517,6 +547,8 @@ export default function Header({ hideBrand = false }) {
               className="brand-mark__logo"
             />
           </Link>
+
+          {desktopSearchContent}
 
           <div className="header-actions header-actions--ordered header-actions--desktop">
             {isAuthenticated ? (

@@ -9,6 +9,8 @@ import { toAbsoluteUrl } from "../lib/seo.js";
 import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { articlePath } from "../lib/routes.js";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { firstValidationMessage, getEmailValidationMessage, getPositiveNumberValidationMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
 
 const initialGuest = {
   firstName: "",
@@ -23,6 +25,7 @@ export default function OfferPage() {
   const { slugOrId } = useParams();
   const { user, isAuthenticated } = useAuth();
   const { site } = useSiteSeo();
+  const { notifyMobileStatus } = useMobileMenu();
   const [article, setArticle] = useState(null);
   const [related, setRelated] = useState([]);
   const [offer, setOffer] = useState("");
@@ -81,6 +84,18 @@ export default function OfferPage() {
     if (!article) return;
 
     try {
+      const validationMessage = firstValidationMessage(
+        !isAuthenticated ? getRequiredValidationMessage(guest.firstName, "el nombre") : "",
+        !isAuthenticated ? getRequiredValidationMessage(guest.lastName, "el apellido") : "",
+        !isAuthenticated ? getEmailValidationMessage(guest.email) : "",
+        getPositiveNumberValidationMessage(offer, "una oferta"),
+      );
+      if (validationMessage) {
+        setError(validationMessage);
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        return;
+      }
+
       setSubmitting(true);
       setError("");
       setSuccess("");
@@ -106,14 +121,16 @@ export default function OfferPage() {
         body: payload,
       });
 
-      setSuccess(
-        `Tu oferta quedo registrada con estado ${response.offer.status}.`,
-      );
+      const successMessage = `Tu oferta quedo registrada con estado ${response.offer.status}.`;
+      setSuccess(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setOffer("");
       setMessage("");
       if (!isAuthenticated) setGuest(initialGuest);
     } catch (err) {
-      setError(err.message || "No se pudo registrar la oferta");
+      const errorMessage = err.message || "No se pudo registrar la oferta";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setSubmitting(false);
     }

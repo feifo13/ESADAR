@@ -4,6 +4,28 @@ export function getApiUrl() {
   return API_URL;
 }
 
+
+function getApiErrorMessage(payload) {
+  const rawMessage = payload?.message || payload?.error || '';
+  if (String(rawMessage).toLowerCase() !== 'validation error') {
+    return rawMessage;
+  }
+
+  const fieldErrors = payload?.details?.fieldErrors || payload?.details?.field_errors;
+  if (fieldErrors && typeof fieldErrors === 'object') {
+    const firstKey = Object.keys(fieldErrors).find((key) => {
+      const value = fieldErrors[key];
+      return Array.isArray(value) ? Boolean(value.length) : Boolean(value);
+    });
+
+    if (firstKey) {
+      return 'Revisa los campos requeridos antes de continuar.';
+    }
+  }
+
+  return 'Revisa los campos requeridos antes de continuar.';
+}
+
 function getStoredToken() {
   try {
     return JSON.parse(window.localStorage.getItem('miami-closet-token') || 'null');
@@ -53,7 +75,7 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    const message = payload?.message || payload?.error || 'Ocurrió un error en la API';
+    const message = getApiErrorMessage(payload) || 'Ocurrió un error en la API';
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;
@@ -99,7 +121,7 @@ export async function apiDownload(path, options = {}) {
       payload = null;
     }
 
-    const message = payload?.message || payload?.error || 'Ocurrio un error al exportar';
+    const message = getApiErrorMessage(payload) || 'Ocurrio un error al exportar';
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;

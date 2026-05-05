@@ -2,6 +2,8 @@ import { useState } from 'react';
 import SeoHead from '../components/SeoHead.jsx';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { apiFetch } from '../lib/api.js';
+import { useMobileMenu } from '../contexts/MobileMenuContext.jsx';
+import { firstValidationMessage, getEmailValidationMessage, getRequiredValidationMessage, notifyFormStatus } from '../lib/validation.js';
 import { toAbsoluteUrl } from '../lib/seo.js';
 
 const initialState = {
@@ -16,6 +18,7 @@ const initialState = {
 
 export default function ContactPage() {
   const { site, pagesByRoute } = useSiteSeo();
+  const { notifyMobileStatus } = useMobileMenu();
   const contactSeo = pagesByRoute['/contact'] || null;
   const [form, setForm] = useState(initialState);
   const [sent, setSent] = useState(false);
@@ -30,6 +33,17 @@ export default function ContactPage() {
     event.preventDefault();
 
     try {
+      const validationMessage = firstValidationMessage(
+        getRequiredValidationMessage(form.firstName, 'el nombre'),
+        getRequiredValidationMessage(form.lastName, 'el apellido'),
+        getEmailValidationMessage(form.email),
+        getRequiredValidationMessage(form.message, 'la consulta'),
+      );
+      if (validationMessage) {
+        setError(validationMessage);
+        notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+        return;
+      }
       setSubmitting(true);
       setError('');
 
@@ -47,9 +61,12 @@ export default function ContactPage() {
       });
 
       setSent(true);
+      notifyFormStatus(notifyMobileStatus, 'success', 'Consulta enviada correctamente.');
       setForm(initialState);
     } catch (err) {
-      setError(err.message || 'No se pudo enviar tu consulta');
+      const errorMessage = err.message || 'No se pudo enviar tu consulta';
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -64,7 +81,7 @@ export default function ContactPage() {
         url={toAbsoluteUrl('/contact', site)}
       />
 
-      <form className="section-card auth-card" onSubmit={handleSubmit}>
+      <form className="section-card auth-card" onSubmit={handleSubmit} noValidate>
         <p className="section-kicker">Contacto</p>
         <h1>Escribenos</h1>
         <p className="muted-copy">

@@ -8,6 +8,8 @@ import BulkArticleImageChecklist, {
 } from "../../components/admin/BulkArticleImageChecklist.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
+import { notifyFormStatus } from "../../lib/validation.js";
 
 const FORM_STEPS = [
   { key: "main", label: "Paso 1", title: "Datos principales" },
@@ -176,6 +178,7 @@ export default function AdminArticleFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const { notifyMobileStatus } = useMobileMenu();
   const [form, setForm] = useState(toFormState(null));
   const [imageChecklist, setImageChecklist] = useState(() =>
     createEmptyImageState(),
@@ -337,6 +340,7 @@ export default function AdminArticleFormPage() {
     const validationMessage = validateStep(activeStep);
     if (stepIndex > activeStep && validationMessage) {
       setError(validationMessage);
+      notifyFormStatus(notifyMobileStatus, "error", validationMessage);
       return;
     }
 
@@ -350,6 +354,7 @@ export default function AdminArticleFormPage() {
     const validationMessage = validateStep(0) || validateStep(1);
     if (validationMessage) {
       setError(validationMessage);
+      notifyFormStatus(notifyMobileStatus, "error", validationMessage);
       return;
     }
 
@@ -467,17 +472,19 @@ export default function AdminArticleFormPage() {
       }
 
       await refreshArticle(articleId);
-      setMessage(
-        isEdit
-          ? "Articulo actualizado correctamente."
-          : "Articulo creado correctamente.",
-      );
+      const successMessage = isEdit
+        ? "Articulo actualizado correctamente."
+        : "Articulo creado correctamente.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
 
       if (!isEdit) {
         navigate(`/admin/articles/${articleId}/edit`, { replace: true });
       }
     } catch (err) {
-      setError(err.message || "No se pudo guardar el articulo");
+      const errorMessage = err.message || "No se pudo guardar el articulo";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setSaving(false);
     }
@@ -506,8 +513,17 @@ export default function AdminArticleFormPage() {
       );
       setExistingImages(sortImages(response.images || []));
       setMessage("Los datos de la imagen fueron actualizados.");
+      notifyFormStatus(
+        notifyMobileStatus,
+        "success",
+        "Los datos de la imagen fueron actualizados.",
+      );
     } catch (err) {
-      setError(err.message || "No se pudo actualizar la imagen");
+      {
+        const errorMessage = err.message || "No se pudo actualizar la imagen";
+        setError(errorMessage);
+        notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      }
     } finally {
       setImageActionId("");
     }
@@ -527,8 +543,18 @@ export default function AdminArticleFormPage() {
       );
       setExistingImages(sortImages(response.images || []));
       setMessage("La imagen primaria fue actualizada.");
+      notifyFormStatus(
+        notifyMobileStatus,
+        "success",
+        "La imagen primaria fue actualizada.",
+      );
     } catch (err) {
-      setError(err.message || "No se pudo marcar la imagen primaria");
+      {
+        const errorMessage =
+          err.message || "No se pudo marcar la imagen primaria";
+        setError(errorMessage);
+        notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      }
     } finally {
       setImageActionId("");
     }
@@ -547,8 +573,17 @@ export default function AdminArticleFormPage() {
       );
       setExistingImages(sortImages(response.images || []));
       setMessage("La imagen fue eliminada.");
+      notifyFormStatus(
+        notifyMobileStatus,
+        "success",
+        "La imagen fue eliminada.",
+      );
     } catch (err) {
-      setError(err.message || "No se pudo eliminar la imagen");
+      {
+        const errorMessage = err.message || "No se pudo eliminar la imagen";
+        setError(errorMessage);
+        notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      }
     } finally {
       setImageActionId("");
     }
@@ -582,8 +617,17 @@ export default function AdminArticleFormPage() {
       );
       setExistingImages(sortImages(response.images || []));
       setMessage("El orden de las imagenes fue actualizado.");
+      notifyFormStatus(
+        notifyMobileStatus,
+        "success",
+        "El orden de las imagenes fue actualizado.",
+      );
     } catch (err) {
-      setError(err.message || "No se pudo reordenar la imagen");
+      {
+        const errorMessage = err.message || "No se pudo reordenar la imagen";
+        setError(errorMessage);
+        notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      }
     } finally {
       setImageActionId("");
     }
@@ -610,16 +654,20 @@ export default function AdminArticleFormPage() {
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
 
-      <form className="section-card page-stack" onSubmit={handleSubmit}>
+      <form
+        className="section-card page-stack"
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
             <h1>{isEdit ? "Editar articulo" : "Nuevo articulo"}</h1>
-            <p className="muted-copy">
+            {/* <p className="muted-copy">
               Alta individual guiada. Si prefieres cargar varios articulos
               juntos, usa la opcion visible en Articulos {">"} Crear multiples
               articulos.
-            </p>
+            </p> */}
           </div>
           <Link to="/admin/articles" className="ghost-button linklike">
             Volver
@@ -1186,11 +1234,11 @@ export default function AdminArticleFormPage() {
 
             <div className="page-stack-sm">
               <h3>Imagenes nuevas</h3>
-              <p className="field-helper">
+              {/* <p className="field-helper">
                 Carga las mismas tarjetas guiadas que en crear multiples
                 articulos: frente, espalda, etiqueta, textura y detalles. Las
                 imagenes se suben al guardar el articulo.
-              </p>
+              </p> */}
               <BulkArticleImageChecklist
                 value={imageChecklist}
                 title={form.title}

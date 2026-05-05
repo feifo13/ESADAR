@@ -20,6 +20,7 @@ import {
   toAbsoluteUrl,
 } from "../lib/seo.js";
 import { getPublicSessionToken } from "../lib/publicSession.js";
+import { firstValidationMessage, getAtLeastOneContactValidationMessage, getEmailValidationMessage, notifyFormStatus } from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 
 const initialAlertForm = {
@@ -227,6 +228,25 @@ export default function ArticlePage() {
     event.preventDefault();
 
     try {
+      const validationMessage = firstValidationMessage(
+        getAtLeastOneContactValidationMessage(
+          {
+            email: alertForm.email,
+            phone: alertForm.phone,
+            instagram: alertForm.instagram,
+          },
+          "al menos un contacto: email, WhatsApp o Instagram",
+        ),
+        getEmailValidationMessage(alertForm.email),
+      );
+      if (validationMessage) {
+        setAlertError(validationMessage);
+        if (isMobileViewport()) {
+          notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        }
+        return;
+      }
+
       setAlertSubmitting(true);
       setAlertError("");
       setAlertSuccess("");
@@ -259,13 +279,13 @@ export default function ArticlePage() {
       setAlertForm(initialAlertForm);
       if (isMobileViewport()) {
         setAlertModalOpen(false);
-        notifyMobileStatus({ type: "success", icon: "success", message: successMessage });
+        notifyFormStatus(notifyMobileStatus, "success", successMessage);
       }
     } catch (err) {
       const errorMessage = err.message || "No pudimos guardar tu alerta.";
       setAlertError(errorMessage);
       if (isMobileViewport()) {
-        notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
+        notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       }
     } finally {
       setAlertSubmitting(false);
@@ -401,7 +421,11 @@ export default function ArticlePage() {
                   });
                   showStockNotice(result);
                   if (result?.ok) {
-                    setFeedback("Articulo agregado al carrito.");
+                    const successMessage = "Articulo agregado al carrito.";
+                    setFeedback(successMessage);
+                    if (isMobileViewport()) {
+                      notifyFormStatus(notifyMobileStatus, "success", successMessage);
+                    }
                   }
                 }}
               >
@@ -539,7 +563,7 @@ export default function ArticlePage() {
                 ? "Avisame si vuelve o entra algo similar"
                 : "Avisame si entra algo similar"}
             </h3>
-            <form className="page-stack" onSubmit={handleStockAlertSubmit}>
+            <form className="page-stack" onSubmit={handleStockAlertSubmit} noValidate>
               <div className="admin-filter-grid">
                 <label className="field-group">
                   <span>Nombre</span>

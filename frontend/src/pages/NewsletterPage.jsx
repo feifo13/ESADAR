@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getRequiredSelectValidationMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
 
 const initialLeadForm = {
   firstName: "",
@@ -17,6 +19,7 @@ const initialLeadForm = {
 
 export default function NewsletterPage() {
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const { notifyMobileStatus } = useMobileMenu();
   const [leadForm, setLeadForm] = useState(initialLeadForm);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState("");
@@ -30,6 +33,21 @@ export default function NewsletterPage() {
     event.preventDefault();
 
     try {
+      const validationMessage = firstValidationMessage(
+        getRequiredValidationMessage(leadForm.firstName, "el nombre"),
+        getRequiredValidationMessage(leadForm.email, "el email"),
+        getEmailValidationMessage(leadForm.email),
+        getRequiredValidationMessage(leadForm.phone, "el WhatsApp"),
+        getRequiredSelectValidationMessage(leadForm.preferredCategory, "la categoría"),
+        getRequiredSelectValidationMessage(leadForm.preferredBrand, "la marca"),
+        getRequiredSelectValidationMessage(leadForm.preferredSize, "el talle"),
+        getRequiredValidationMessage(leadForm.preferredColor, "el color"),
+      );
+      if (validationMessage) {
+        setLeadError(validationMessage);
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        return;
+      }
       setLeadSubmitting(true);
       setLeadError("");
       setLeadSuccess("");
@@ -37,9 +55,9 @@ export default function NewsletterPage() {
       await apiFetch("/api/public/leads/newsletter", {
         method: "POST",
         body: {
-          firstName: leadForm.firstName || null,
-          email: leadForm.email || null,
-          phone: leadForm.phone || null,
+          firstName: leadForm.firstName,
+          email: leadForm.email,
+          phone: leadForm.phone,
           instagram: leadForm.instagram || null,
           preferredCategories: leadForm.preferredCategory
             ? [leadForm.preferredCategory]
@@ -56,12 +74,14 @@ export default function NewsletterPage() {
         },
       });
 
-      setLeadSuccess(
-        "Te vamos a avisar cuando entren prendas que encajen con tu estilo.",
-      );
+      const successMessage = "Te vamos a avisar cuando entren prendas que encajen con tu estilo.";
+      setLeadSuccess(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setLeadForm(initialLeadForm);
     } catch (err) {
-      setLeadError(err.message || "No pudimos guardar tu preferencia ahora.");
+      const errorMessage = getFriendlyErrorMessage(err, "No pudimos guardar tu preferencia ahora.");
+      setLeadError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setLeadSubmitting(false);
     }
@@ -90,7 +110,7 @@ export default function NewsletterPage() {
           </p>
         </div>
 
-        <form className="lead-capture-form" onSubmit={handleLeadSubmit}>
+        <form className="lead-capture-form" onSubmit={handleLeadSubmit} noValidate>
           <div className="form-grid-two">
             <label className="field-group">
               <span>Nombre</span>
@@ -100,6 +120,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("firstName", event.target.value)
                 }
+                required
               />
             </label>
             <label className="field-group">
@@ -111,6 +132,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("email", event.target.value)
                 }
+                required
               />
             </label>
             <label className="field-group">
@@ -121,6 +143,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("phone", event.target.value)
                 }
+                required
               />
             </label>
             <label className="field-group">
@@ -141,6 +164,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("preferredCategory", event.target.value)
                 }
+                required
               >
                 <option value="">Sin preferencia</option>
                 {categoryOptions.map((option) => (
@@ -158,6 +182,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("preferredBrand", event.target.value)
                 }
+                required
               >
                 <option value="">Sin preferencia</option>
                 {brandOptions.map((option) => (
@@ -175,6 +200,7 @@ export default function NewsletterPage() {
                 onChange={(event) =>
                   updateLeadField("preferredSize", event.target.value)
                 }
+                required
               >
                 <option value="">Sin preferencia</option>
                 {sizeOptions.map((option) => (
@@ -193,6 +219,7 @@ export default function NewsletterPage() {
                   updateLeadField("preferredColor", event.target.value)
                 }
                 placeholder="Ej: negro, azul, neutros"
+                required
               />
             </label>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
@@ -9,6 +10,8 @@ import { ArchiveIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
+import { notifyFormStatus } from "../../lib/validation.js";
 
 const CONTACT_STATUS_LABELS = {
   NEW: "Nuevo",
@@ -29,6 +32,7 @@ const initialFilters = {
 };
 
 export default function AdminContactMessagesPage() {
+  const { notifyMobileStatus } = useMobileMenu();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -71,8 +75,11 @@ export default function AdminContactMessagesPage() {
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
       } catch (err) {
-        if (!ignore)
-          setError(err.message || "No se pudieron cargar los mensajes");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudieron cargar los mensajes";
+          setError(errorMessage);
+          notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -82,7 +89,7 @@ export default function AdminContactMessagesPage() {
     return () => {
       ignore = true;
     };
-  }, [query, refreshNonce]);
+  }, [query, refreshNonce, notifyMobileStatus]);
 
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
@@ -117,14 +124,24 @@ export default function AdminContactMessagesPage() {
     try {
       setError("");
       setMessage("");
-      await apiFetch(`/api/admin/contact-messages/${messageId}/status`, {
+      const response = await apiFetch(`/api/admin/contact-messages/${messageId}/status`, {
         method: "PATCH",
         body: { status: nextStatus },
       });
+      setItems((current) =>
+        current.map((item) =>
+          Number(item.id) === Number(messageId)
+            ? { ...item, ...(response.message || {}), status: response.message?.status || nextStatus }
+            : item,
+        ),
+      );
       setMessage("El estado del mensaje fue actualizado.");
+      notifyFormStatus(notifyMobileStatus, "success", "El estado del mensaje fue actualizado.");
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      setError(err.message || "No se pudo actualizar el mensaje");
+      const errorMessage = err.message || "No se pudo actualizar el mensaje";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     }
   }
 
@@ -145,6 +162,20 @@ export default function AdminContactMessagesPage() {
   async function handleReplySubmit() {
     if (!selectedMessage) return;
 
+    if (!selectedMessage.email) {
+      const errorMessage = "Este contacto no tiene email para responder.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      return;
+    }
+
+    if (!replyText.trim()) {
+      const errorMessage = "Escribe una respuesta antes de enviar.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      return;
+    }
+
     try {
       setReplyLoading(true);
       setError("");
@@ -160,10 +191,14 @@ export default function AdminContactMessagesPage() {
         current ? { ...current, ...response.message } : current,
       );
       setReplyText("");
-      setMessage("La respuesta fue enviada correctamente.");
+      const successMessage = "La respuesta fue enviada correctamente.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      setError(err.message || "No se pudo enviar la respuesta");
+      const errorMessage = err.message || "No se pudo enviar la respuesta";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
       setReplyLoading(false);
     }
@@ -178,6 +213,7 @@ export default function AdminContactMessagesPage() {
             <p className="section-kicker">Administracion</p>
             <h1>Contactos</h1>
           </div>
+          <p className="muted-copy">{pagination.total || 0} mensajes</p>
         </div>
 
         <ResponsiveFilterPanel
@@ -348,29 +384,15 @@ export default function AdminContactMessagesPage() {
                     </td>
                     <td>
                       <div className="table-actions">
-                        {item.status !== "READ" ? (
-                          <button
-                            type="button"
-                            className="ghost-button admin-icon-action"
-                            onClick={() => void openMessageModal(item)}
-                            aria-label={`Leer mensaje de ${item.firstName} ${item.lastName}`}
-                            title="Leer"
-                          >
-                            <EyeIcon />
-                            <span className="admin-action-label">Leer</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="ghost-button admin-icon-action"
-                            onClick={() => void openMessageModal(item)}
-                            aria-label={`Leer mensaje de ${item.firstName} ${item.lastName}`}
-                            title="Leer"
-                          >
-                            <EyeIcon />
-                            <span className="admin-action-label">Leer</span>
-                          </button>
-                        )}
+                        <Link
+                          className="ghost-button admin-icon-action"
+                          to={`/admin/contact-messages/${item.id}`}
+                          aria-label={`Ver detalle de ${item.firstName} ${item.lastName}`}
+                          title="Ver detalle"
+                        >
+                          <EyeIcon />
+                          <span className="admin-action-label">Ver detalle</span>
+                        </Link>
                         {item.status !== "ARCHIVED" ? (
                           <button
                             type="button"

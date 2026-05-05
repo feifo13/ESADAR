@@ -20,8 +20,10 @@ import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage.jsx';
 import AdminOffersPage from './pages/admin/AdminOffersPage.jsx';
 import AdminContactMessagesPage from './pages/admin/AdminContactMessagesPage.jsx';
+import AdminContactMessageDetailPage from './pages/admin/AdminContactMessageDetailPage.jsx';
 import AdminAuditPage from './pages/admin/AdminAuditPage.jsx';
 import AdminLeadsPage from './pages/admin/AdminLeadsPage.jsx';
+import AdminLeadDetailPage from './pages/admin/AdminLeadDetailPage.jsx';
 import AdminWishlistsPage from './pages/admin/AdminWishlistsPage.jsx';
 import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
 
@@ -120,6 +122,14 @@ export default function App() {
           }
         />
         <Route
+          path="admin/contact-messages/:id"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminContactMessageDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admin/wishlists"
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
@@ -140,6 +150,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminLeadsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/leads/:id"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminLeadDetailPage />
             </ProtectedRoute>
           }
         />
