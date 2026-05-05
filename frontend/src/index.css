@@ -101,7 +101,7 @@ img {
 }
 .page-stack {
   display: grid;
-  gap: 24px;
+  /* gap: 24px; */
 }
 .section-card {
   background: var(--surface);
