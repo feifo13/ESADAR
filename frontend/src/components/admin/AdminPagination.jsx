@@ -13,7 +13,7 @@ export default function AdminPagination({
         Pagina {page} de {totalPages} - {totalItems} registros
       </span>
 
-      <div className="table-actions">
+      <div className="table-actions pagination-actions">
         <button
           type="button"
           className="button button-secondary"

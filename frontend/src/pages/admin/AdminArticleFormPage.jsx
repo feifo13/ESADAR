@@ -1374,7 +1374,7 @@ export default function AdminArticleFormPage() {
               : null}
           </div>
 
-          <div className="inline-action-group">
+          <div className="inline-action-group wizard-navigation-actions">
             {activeStep > 0 ? (
               <button
                 type="button"

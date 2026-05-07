@@ -9,7 +9,13 @@ import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
 import { apiFetch } from "../lib/api.js";
-import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  getFriendlyErrorMessage,
+  getRequiredValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 
 const STORAGE_KEY = "esadar-checkout-draft";
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
@@ -260,12 +266,18 @@ export default function CheckoutPage() {
     }
 
     if (currentStepKey === "pago" && !paymentComplete) {
-      showCheckoutMessage("error", "Selecciona un medio de pago para continuar.");
+      showCheckoutMessage(
+        "error",
+        "Selecciona un medio de pago para continuar.",
+      );
       return false;
     }
 
     if (currentStepKey === "envio" && !shippingComplete) {
-      showCheckoutMessage("error", "Selecciona un método de envío para continuar.");
+      showCheckoutMessage(
+        "error",
+        "Selecciona un método de envío para continuar.",
+      );
       return false;
     }
 
@@ -285,7 +297,10 @@ export default function CheckoutPage() {
 
   async function handleConfirmOrder() {
     if (!completion.confirmacion || !items.length) {
-      showCheckoutMessage("error", "Completa los pasos previos antes de confirmar la orden.");
+      showCheckoutMessage(
+        "error",
+        "Completa los pasos previos antes de confirmar la orden.",
+      );
       return;
     }
 
@@ -347,7 +362,10 @@ export default function CheckoutPage() {
         state: { orderNumber },
       });
     } catch (err) {
-      showCheckoutMessage("error", getFriendlyErrorMessage(err, "No se pudo crear la orden."));
+      showCheckoutMessage(
+        "error",
+        getFriendlyErrorMessage(err, "No se pudo crear la orden."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -356,15 +374,16 @@ export default function CheckoutPage() {
   function showStockNotice(result) {
     if (!result || result.ok) return;
 
-    const nextDialog = result.code === "OUT_OF_STOCK"
-      ? {
-          title: "Sin stock disponible",
-          message: "Esta prenda ya no tiene unidades disponibles.",
-        }
-      : {
-          title: "Cantidad máxima disponible",
-          message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de esta prenda.`,
-        };
+    const nextDialog =
+      result.code === "OUT_OF_STOCK"
+        ? {
+            title: "Sin stock disponible",
+            message: "Esta prenda ya no tiene unidades disponibles.",
+          }
+        : {
+            title: "Cantidad máxima disponible",
+            message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de esta prenda.`,
+          };
 
     notifyError(nextDialog.message);
   }
@@ -835,9 +854,6 @@ export default function CheckoutPage() {
               Anterior
             </button>
 
-            <div className="checkout-navigation-status">
-            </div>
-
             {currentStepKey === "confirmacion" ? (
               <button
                 type="button"
@@ -859,7 +875,6 @@ export default function CheckoutPage() {
           </div>
         </section>
       </div>
-
     </>
   );
 }

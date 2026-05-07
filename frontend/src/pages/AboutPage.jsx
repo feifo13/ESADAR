@@ -36,14 +36,25 @@ export default function AboutPage() {
       <section className="section-card page-stack">
         <div>
           <p className="section-kicker">Sobre nosotros</p>
-          <h1>Una tienda curada, no un marketplace.</h1>
+          <h1></h1>
         </div>
         <p className="muted-copy">
-          ESADAR trabaja sobre una idea simple: mostrar ropa second hand
-          seleccionada con claridad, con buenas fotos y con foco real en cada
-          prenda.
+          Creemos que la ropa con historia tiene un valor que la moda pasajera
+          nunca va a poder igualar.
+          <p className="muted-copy">
+            En Esadar nos dedicamos a rescatar piezas clásicas y contemporáneas,
+            dándole una nueva vida a prendas que para algunos ya recorrieron su
+            camino, pero que para vos esté a punto de comenzar su mejor etapa.
+          </p>
+          <p className="muted-copy">
+            Cada prenda es elegida con cuidado, pensando no solo en cómo se ve,
+            sino también en lo que transmite. Porque para nosotros vestir no es
+            solamente usar ropa: es conectar con una historia, apropiarse de
+            ella y darle un lugar en la tuya. Gracias por elegir piezas con
+            identidad, carácter y darle una nueva oportunidad.
+          </p>
         </p>
-        <p className="muted-copy">
+        {/* <p className="muted-copy">
           Nos interesan las piezas unicas, el sportswear, lo vintage y las
           prendas modernas que todavia tienen mucho para dar. Cada ingreso se
           elige una por una.
@@ -52,7 +63,7 @@ export default function AboutPage() {
           No hay stock infinito ni referencias repetidas. Esa es parte de la
           gracia: el catalogo cambia, las prendas vuelan y cada pieza entra
           porque vale la pena.
-        </p>
+        </p> */}
       </section>
     </div>
   );
