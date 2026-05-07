@@ -181,7 +181,7 @@ export default function AdminOrderDetailPage() {
                       <p className="muted-copy">{item.brandName || 'Sin marca'} - {item.size || 'Sin talle'}</p>
                       {item.acceptedOffer ? (
                         <p className="muted-copy">
-                          <span className="pill pill-offer">Oferta aceptada</span> original {formatCurrency(item.salePrice)} · oferta {formatCurrency(item.acceptedOffer.price)} · aplica a {item.acceptedOffer.quantity || 1} unidad
+                          <span className="pill pill-offer">Oferta aceptada</span> original {formatCurrency(item.salePrice)} - oferta {formatCurrency(item.acceptedOffer.price)} - ahorro {formatCurrency(Math.max(0, Number(item.salePrice || 0) - Number(item.acceptedOffer.price || 0)))} - aplica a {item.acceptedOffer.quantity || 1} unidad
                         </p>
                       ) : null}
                     </div>

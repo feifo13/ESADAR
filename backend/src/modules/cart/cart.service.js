@@ -320,7 +320,7 @@ async function getCartById(cartId, connection) {
   );
 
   if (!cartRows.length) {
-    throw notFound('Cart not found');
+    throw notFound('Carrito no encontrado.');
   }
 
   const [itemRows] = await connection.execute(
@@ -412,13 +412,13 @@ async function getArticleForCart(articleId, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Article not found');
+    throw notFound('Articulo no encontrado.');
   }
 
   const article = rows[0];
 
   if (article.status !== 'ACTIVE') {
-    throw badRequest('This article is not available for the cart');
+    throw badRequest('Esta prenda no esta disponible para agregar al carrito.');
   }
 
   return {
@@ -448,7 +448,7 @@ async function getOwnedCartItem(cartId, itemId, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Cart item not found');
+    throw notFound('Item de carrito no encontrado.');
   }
 
   return rows[0];
@@ -456,7 +456,7 @@ async function getOwnedCartItem(cartId, itemId, connection) {
 
 function ensureCartStock(article, requestedQuantity) {
   if (requestedQuantity > Number(article.quantityAvailable || 0)) {
-    throw badRequest('Article does not have enough stock available for the cart');
+    throw badRequest('No hay stock suficiente para esa prenda.');
   }
 }
 
@@ -544,6 +544,7 @@ async function getAcceptedOfferForCart(userId, articleId, cartId, connection) {
         )
       ORDER BY o.accepted_at DESC, o.id DESC
       LIMIT 1
+      FOR UPDATE
     `,
     [userId, articleId, cartId],
   );

@@ -75,13 +75,13 @@ export async function createOrder(input, actor, auditContext) {
     for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
       const article = articlesById.get(articleId);
       if (!article) {
-        throw notFound(`Article ${articleId} not found`);
+        throw notFound(`Articulo ${articleId} no encontrado.`);
       }
       if (article.status !== 'ACTIVE') {
-        throw badRequest(`Article ${article.id} is not available for purchase`);
+        throw badRequest(`La prenda ${article.id} no esta disponible para comprar.`);
       }
       if (Number(article.quantityAvailable) < quantity) {
-        throw badRequest(`Article ${article.id} does not have enough stock available`);
+        throw badRequest(`No hay stock suficiente para la prenda ${article.id}.`);
       }
     }
 
@@ -92,7 +92,7 @@ export async function createOrder(input, actor, auditContext) {
     for (const item of input.items) {
       const article = articlesById.get(item.articleId);
       if (!article) {
-        throw notFound(`Article ${item.articleId} not found`);
+        throw notFound(`Articulo ${item.articleId} no encontrado.`);
       }
 
       const salePrice = Number(article.salePrice);
@@ -107,6 +107,9 @@ export async function createOrder(input, actor, auditContext) {
 
       if (acceptedOffer && offerQuantity > 0) {
         const acceptedOfferPrice = Number(acceptedOffer.offeredAmount);
+        if (acceptedOfferPrice > salePrice) {
+          throw badRequest('La oferta aceptada supera el precio publicado actual.');
+        }
         const lineTotal = acceptedOfferPrice * offerQuantity;
         subtotal += salePrice * offerQuantity;
         discountTotal += (salePrice - acceptedOfferPrice) * offerQuantity;
@@ -255,7 +258,7 @@ export async function createOrder(input, actor, auditContext) {
         const [offerUpdateResult] = await connection.execute(
           `
             UPDATE offers
-            SET consumed_at = NOW(), consumed_order_id = ?, updated_by = ?
+            SET status = 'USED', consumed_at = NOW(), consumed_order_id = ?, updated_by = ?
             WHERE id = ? AND status = 'ACCEPTED' AND consumed_at IS NULL
           `,
           [orderId, auditContext.actorUserId, item.acceptedOfferId],
@@ -264,6 +267,20 @@ export async function createOrder(input, actor, auditContext) {
         if (!offerUpdateResult.affectedRows) {
           throw badRequest('La oferta aceptada ya fue usada o no esta disponible.');
         }
+
+        await connection.execute(
+          `
+            INSERT INTO offer_status_history (
+              offer_id,
+              from_status,
+              to_status,
+              reason,
+              changed_by,
+              source
+            ) VALUES (?, 'ACCEPTED', 'USED', 'Oferta usada en una orden', ?, ?)
+          `,
+          [item.acceptedOfferId, auditContext.actorUserId, auditContext.source],
+        );
       }
 
       await connection.execute(
@@ -489,7 +506,7 @@ export async function approveOrder(id, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
     if (!['RESERVED', 'PENDING'].includes(before.orderStatus)) {
-      throw badRequest('Only reserved or pending orders can be approved');
+      throw badRequest('Solo se pueden aprobar ordenes reservadas o pendientes.');
     }
 
     await connection.execute(
@@ -568,7 +585,7 @@ export async function cancelOrder(id, reason, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
     if (!['RESERVED', 'PENDING'].includes(before.orderStatus)) {
-      throw badRequest('Only reserved or pending orders can be cancelled in this starter');
+      throw badRequest('Solo se pueden cancelar ordenes reservadas o pendientes.');
     }
 
     const [items] = await connection.execute(
@@ -648,7 +665,7 @@ export async function shipOrder(id, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
     if (before.orderStatus !== 'APPROVED') {
-      throw badRequest('Only approved orders can be marked as shipped');
+      throw badRequest('Solo se pueden marcar como enviadas las ordenes aprobadas.');
     }
 
     await connection.execute(
@@ -704,7 +721,7 @@ export async function createOrderPayment(id, input, auditContext) {
     const before = await getOrderById(id, connection);
 
     if (before.payments.length) {
-      throw badRequest('This order already has a registered payment');
+      throw badRequest('Esta orden ya tiene un pago registrado.');
     }
 
     const amount = Number(input.amount ?? before.total);
@@ -788,7 +805,7 @@ async function resolveOrderOwner(input, actor, connection) {
   }
 
   if (!input.guest) {
-    throw badRequest('Guest checkout data is required when there is no authenticated user');
+    throw badRequest('Necesitamos los datos del comprador para confirmar la orden.');
   }
 
   const potentialCustomer = await createPotentialCustomerFromInput(
@@ -816,7 +833,7 @@ async function getShippingMethod(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Shipping method not found');
+    throw notFound('Metodo de envio no encontrado.');
   }
 
   return rows[0];
@@ -869,7 +886,7 @@ async function getOrderById(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Order not found');
+    throw notFound('Orden no encontrada.');
   }
 
   const order = normalizeOrderDetailRow(rows[0]);

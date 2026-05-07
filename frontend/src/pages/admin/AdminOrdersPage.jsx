@@ -311,7 +311,7 @@ export default function AdminOrdersPage() {
             </label>
 
             <label className="field-group">
-              <span>Page size</span>
+              <span>Tamano de pagina</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}

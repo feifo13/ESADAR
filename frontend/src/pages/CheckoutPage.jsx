@@ -488,7 +488,10 @@ export default function CheckoutPage() {
                             <small className="muted-copy">Aplica a 1 unidad · ahorro {formatCurrency(getOfferSavings(item))}</small>
                           </span>
                         ) : (
-                          formatCurrency(item.discountedPrice)
+                          <span className="checkout-regular-price">
+                            <span className="muted-copy">Precio normal</span>
+                            <strong>{formatCurrency(item.discountedPrice)}</strong>
+                          </span>
                         )}
                       </td>
                       <td>

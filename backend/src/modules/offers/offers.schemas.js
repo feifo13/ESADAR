@@ -17,11 +17,22 @@ const guestOfferSchema = z.object({
   address: z.string().trim().max(255).optional().nullable(),
   phone: z.string().trim().max(50).optional().nullable(),
   instagram: z.string().trim().max(100).optional().nullable(),
+}).superRefine((value, ctx) => {
+  const hasContact = [value.email, value.phone, value.instagram]
+    .some((item) => String(item || '').trim());
+
+  if (!hasContact) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['email'],
+      message: 'Deja al menos un medio de contacto: email, telefono o Instagram.',
+    });
+  }
 });
 
 export const createOfferSchema = z.object({
   articleId: z.coerce.number().int().positive(),
-  offeredAmount: z.coerce.number().positive(),
+  offeredAmount: z.coerce.number().finite().positive().max(9999999999.99),
   message: z.preprocess(
     (value) => {
       const text = typeof value === 'string' ? value.trim() : '';
@@ -39,7 +50,7 @@ export const updateOfferStatusSchema = z.object({
 
 export const adminOfferListQuerySchema = z.object({
   q: optionalTrimmedString(150),
-  status: optionalEnum(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED']),
+  status: optionalEnum(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED', 'USED']),
   categoryId: optionalPositiveInt,
   brandId: optionalPositiveInt,
   dateFrom: optionalDateString,

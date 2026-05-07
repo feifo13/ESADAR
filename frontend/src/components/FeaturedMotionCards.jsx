@@ -106,7 +106,7 @@ export default function FeaturedMotionCards({ title, items = [] }) {
             <h3>{article.title}</h3>
             <div className="featured-motion-card__meta">
               <span>
-                {article.conditionLabel || "Second hand seleccionada"}
+                {article.conditionLabel || "Segunda mano seleccionada"}
               </span>
               <strong>{formatCurrency(price)}</strong>
             </div>

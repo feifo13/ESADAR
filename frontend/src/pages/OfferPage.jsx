@@ -12,6 +12,7 @@ import { articlePath } from "../lib/routes.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import {
   firstValidationMessage,
+  getAtLeastOneContactValidationMessage,
   getEmailValidationMessage,
   getPositiveNumberValidationMessage,
   getRequiredValidationMessage,
@@ -97,6 +98,16 @@ export default function OfferPage() {
         !isAuthenticated
           ? getRequiredValidationMessage(guest.lastName, "el apellido")
           : "",
+        !isAuthenticated
+          ? getAtLeastOneContactValidationMessage(
+              {
+                email: guest.email,
+                phone: guest.phone,
+                instagram: guest.instagram,
+              },
+              "un email, telefono o Instagram",
+            )
+          : "",
         !isAuthenticated ? getEmailValidationMessage(guest.email) : "",
         getPositiveNumberValidationMessage(offer, "una oferta"),
       );
@@ -131,7 +142,7 @@ export default function OfferPage() {
         body: payload,
       });
 
-      const successMessage = `Tu oferta quedo registrada con estado ${response.offer.status}.`;
+      const successMessage = "Tu oferta quedo registrada. Te avisaremos cuando la respondamos.";
       setSuccess(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setOffer("");
@@ -207,7 +218,7 @@ export default function OfferPage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Second hand seleccionada"}
+                      {article.conditionLabel || "Segunda mano seleccionada"}
                     </span>
                   </strong>
                 </div>

@@ -23,6 +23,7 @@ const OFFER_SORTS = {
 export async function createOffer(input, actor, auditContext) {
   return withTransaction(async (connection) => {
     const article = await getOfferableArticle(input.articleId, connection);
+    assertOfferedAmountIsValid(input.offeredAmount, article);
 
     const owner = actor?.userId
       ? await resolveAuthenticatedOfferOwner(actor.userId, connection)
@@ -68,7 +69,7 @@ export async function createOffer(input, actor, auditContext) {
       `,
       [
         offerId,
-        'Oferta creada desde la vista pública.',
+        'Oferta creada desde la vista publica.',
         auditContext.actorUserId || null,
         auditContext.source,
       ],
@@ -334,11 +335,17 @@ export async function listOffersForUser(userId) {
 }
 
 export async function changeOfferStatus(id, input, auditContext) {
-  return withTransaction(async (connection) => {
-    const before = await getOfferById(id, connection);
+  let shouldSendAcceptedEmail = false;
+
+  const offer = await withTransaction(async (connection) => {
+    const before = await getOfferById(id, connection, { forUpdate: true });
 
     if (before.status !== 'PENDING') {
-      throw badRequest('Only pending offers can be updated from backoffice');
+      throw badRequest('Solo se pueden actualizar ofertas pendientes desde administracion.');
+    }
+
+    if (input.status === 'ACCEPTED') {
+      assertOfferedAmountIsValid(before.offeredAmount, before.article);
     }
 
     const sql = `
@@ -349,10 +356,13 @@ export async function changeOfferStatus(id, input, auditContext) {
         rejected_at = ${input.status === 'REJECTED' ? 'NOW()' : 'rejected_at'},
         cancelled_at = ${input.status === 'CANCELLED' ? 'NOW()' : 'cancelled_at'},
         updated_by = ?
-      WHERE id = ?
+      WHERE id = ? AND status = 'PENDING'
     `;
 
-    await connection.execute(sql, [input.status, auditContext.actorUserId, id]);
+    const [updateResult] = await connection.execute(sql, [input.status, auditContext.actorUserId, id]);
+    if (!updateResult.affectedRows) {
+      throw badRequest('La oferta ya fue respondida o no esta disponible.');
+    }
 
     await connection.execute(
       `
@@ -369,7 +379,7 @@ export async function changeOfferStatus(id, input, auditContext) {
         id,
         before.status,
         input.status,
-        input.reason || `Offer ${String(input.status || '').toLowerCase()} from backoffice`,
+        input.reason || `Oferta ${getStatusReasonLabel(input.status)} desde administracion`,
         auditContext.actorUserId,
         auditContext.source,
       ],
@@ -398,13 +408,19 @@ export async function changeOfferStatus(id, input, auditContext) {
     );
 
     if (input.status === 'ACCEPTED') {
-      sendAcceptedOfferEmail(after).catch((error) => {
-        console.warn('[offers] accepted offer email failed', error?.message || error);
-      });
+      shouldSendAcceptedEmail = true;
     }
 
     return after;
   });
+
+  if (shouldSendAcceptedEmail) {
+    sendAcceptedOfferEmail(offer).catch((error) => {
+      console.warn('[offers] accepted offer email failed', error?.message || error);
+    });
+  }
+
+  return offer;
 }
 
 async function resolveAuthenticatedOfferOwner(userId, connection) {
@@ -420,7 +436,7 @@ async function resolveAuthenticatedOfferOwner(userId, connection) {
 
 async function resolveGuestOfferOwner(guest, connection) {
   if (!guest) {
-    throw badRequest('Guest contact data is required to create an offer');
+    throw badRequest('Necesitamos tus datos de contacto para crear la oferta.');
   }
 
   const existingLead = await findPotentialCustomerByContact(guest, connection);
@@ -446,6 +462,7 @@ async function getOfferableArticle(articleId, connection) {
       SELECT
         id,
         title,
+        sale_price AS salePrice,
         allow_offers AS allowOffers,
         status,
         quantity_available AS quantityAvailable
@@ -458,23 +475,24 @@ async function getOfferableArticle(articleId, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Article not found');
+    throw notFound('Articulo no encontrado.');
   }
 
   const article = rows[0];
 
   if (!article.allowOffers) {
-    throw badRequest('This article does not accept offers');
+    throw badRequest('Esta prenda no acepta ofertas.');
   }
 
   if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
-    throw badRequest('This article is not available for offers right now');
+    throw badRequest('Esta prenda no esta disponible para ofertas en este momento.');
   }
 
   return article;
 }
 
-async function getOfferById(id, connection) {
+async function getOfferById(id, connection, options = {}) {
+  const lockClause = options.forUpdate ? 'FOR UPDATE' : '';
   const [rows] = await connection.execute(
     `
       SELECT
@@ -516,12 +534,13 @@ async function getOfferById(id, connection) {
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       WHERE o.id = ?
       LIMIT 1
+      ${lockClause}
     `,
     [id],
   );
 
   if (!rows.length) {
-    throw notFound('Offer not found');
+    throw notFound('Oferta no encontrada.');
   }
 
   const offer = normalizeOfferRow(rows[0]);
@@ -588,4 +607,24 @@ function normalizeOfferRow(row) {
 
 export function getOfferPagination(query, defaults = {}) {
   return getPagination(query, defaults);
+}
+
+function assertOfferedAmountIsValid(offeredAmount, article) {
+  const amount = Number(offeredAmount);
+  const publishedPrice = Number(article?.salePrice || article?.discountedPrice || 0);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw badRequest('Ingresa un monto de oferta valido.');
+  }
+
+  if (publishedPrice > 0 && amount > publishedPrice) {
+    throw badRequest('La oferta no puede superar el precio publicado.');
+  }
+}
+
+function getStatusReasonLabel(status) {
+  if (status === 'ACCEPTED') return 'aceptada';
+  if (status === 'REJECTED') return 'rechazada';
+  if (status === 'CANCELLED') return 'cancelada';
+  return String(status || '').toLowerCase();
 }

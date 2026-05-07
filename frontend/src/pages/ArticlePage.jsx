@@ -476,7 +476,7 @@ export default function ArticlePage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Second hand seleccionada"}
+                      {article.conditionLabel || "Segunda mano seleccionada"}
                     </span>
                   </strong>
                 </div>
@@ -527,8 +527,8 @@ export default function ArticlePage() {
 
             {acceptedOffer ? (
               <p className="checkbox-row-accent">
-                Tienes una oferta aceptada para esta prenda: {formatCurrency(acceptedOffer.offeredAmount)}.
-                Se aplicará a 1 unidad en el carrito.
+                Tenes una oferta aceptada: {formatCurrency(acceptedOffer.offeredAmount)}.
+                Aplica a 1 unidad.
               </p>
             ) : null}
 

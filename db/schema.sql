@@ -550,7 +550,7 @@ CREATE TABLE offers (
   potential_customer_id BIGINT UNSIGNED NULL,
   offered_price DECIMAL(12,2) NOT NULL,
   currency_code CHAR(3) NOT NULL DEFAULT 'UYU',
-  status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+  status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED','USED') NOT NULL DEFAULT 'PENDING',
   expires_at DATETIME NULL,
   accepted_at DATETIME NULL,
   rejected_at DATETIME NULL,
@@ -576,14 +576,15 @@ CREATE TABLE offers (
   CONSTRAINT fk_offers_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_offers_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_offers_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_offers_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+  CONSTRAINT fk_offers_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_offers_consumed_order FOREIGN KEY (consumed_order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE offer_status_history (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   offer_id BIGINT UNSIGNED NOT NULL,
-  from_status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED') NULL,
-  to_status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED') NOT NULL,
+  from_status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED','USED') NULL,
+  to_status ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED','CANCELLED','USED') NOT NULL,
   reason TEXT NULL,
   changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   changed_by BIGINT UNSIGNED NULL,
@@ -595,6 +596,12 @@ CREATE TABLE offer_status_history (
   CONSTRAINT fk_offer_status_history_offer FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_offer_status_history_changed_by FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+ALTER TABLE cart_items
+  ADD CONSTRAINT fk_cart_items_accepted_offer FOREIGN KEY (accepted_offer_id) REFERENCES offers(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE order_items
+  ADD CONSTRAINT fk_order_items_accepted_offer FOREIGN KEY (accepted_offer_id) REFERENCES offers(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- =========================================================
 -- 8) Payments

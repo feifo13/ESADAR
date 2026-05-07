@@ -45,8 +45,9 @@ export async function sendAcceptedOfferEmail(offer) {
     '',
     `Aceptamos tu oferta por ${articleTitle}.`,
     `Precio aceptado: ${amount}.`,
+    'La oferta aplica a 1 unidad.',
     '',
-    'Al ingresar al sistema vas a ver la oferta aceptada y se aplicará a 1 unidad de esa prenda en tu carrito.',
+    'Para comprar, ingresa al sistema y agrega la prenda al carrito. Vas a ver la oferta aceptada disponible en tu cuenta.',
     articleUrl,
     '',
     'Equipo ESADAR',
@@ -57,8 +58,13 @@ export async function sendAcceptedOfferEmail(offer) {
       <p>Hola ${escapeHtml(name)},</p>
       <p><strong>Aceptamos tu oferta</strong> por ${escapeHtml(articleTitle)}.</p>
       <p>Precio aceptado: <strong>${escapeHtml(amount)}</strong>.</p>
-      <p>Al ingresar al sistema vas a ver la oferta aceptada y se aplicará a <strong>1 unidad</strong> de esa prenda en tu carrito.</p>
-      <p><a href="${escapeHtml(articleUrl)}">Ver prenda</a></p>
+      <p>La oferta aplica a <strong>1 unidad</strong>.</p>
+      <p>Para comprar, ingresa al sistema y agrega la prenda al carrito. Vas a ver la oferta aceptada disponible en tu cuenta.</p>
+      <p>
+        <a href="${escapeHtml(articleUrl)}" style="display:inline-block;padding:12px 18px;background:#20b8c7;color:#ffffff;text-decoration:none;font-weight:700;">
+          Ver prenda
+        </a>
+      </p>
       <p>Equipo ESADAR</p>
     </div>
   `;

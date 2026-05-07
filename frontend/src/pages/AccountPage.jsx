@@ -55,6 +55,7 @@ const OFFER_STATUS_LABELS = {
   REJECTED: "Rechazada",
   CANCELLED: "Cancelada",
   EXPIRED: "Vencida",
+  USED: "Usada",
 };
 
 const ALERT_TYPE_LABELS = {
@@ -1270,6 +1271,7 @@ export default function AccountPage() {
               {offers.map((offer) => {
                 const article = offer.article || {};
                 const isAcceptedAvailable = offer.status === "ACCEPTED" && !offer.consumedAt;
+                const displayStatus = offer.consumedAt || offer.status === "USED" ? "USED" : offer.status;
                 const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
                 const offeredAmount = Number(offer.offeredAmount || 0);
                 const savings = Math.max(0, originalPrice - offeredAmount);
@@ -1279,14 +1281,14 @@ export default function AccountPage() {
                     image={article.image}
                     imageAlt={article.title}
                     imageTo={article.slug ? articlePath(article) : undefined}
-                    badge={<StatusBadge status={offer.status} labels={OFFER_STATUS_LABELS} />}
+                    badge={<StatusBadge status={displayStatus} labels={OFFER_STATUS_LABELS} />}
                     title={article.title || `Oferta #${offer.id}`}
                     titleTo={article.slug ? articlePath(article) : undefined}
                     subtitle={`${article.brandName || "Sin marca"} · Oferta por 1 unidad`}
                     meta={[
                       `Creada: ${formatDate(offer.createdAt)}`,
                       offer.acceptedAt ? `Respondida: ${formatDate(offer.acceptedAt)}` : null,
-                      offer.consumedAt ? `Usada en orden #${offer.consumedOrderId}` : null,
+                      offer.consumedAt ? `Usada en orden #${offer.consumedOrderId}` : displayStatus === "USED" ? "Usada" : null,
                       isAcceptedAvailable ? `Ahorro: ${formatCurrency(savings)}` : null,
                     ].filter(Boolean)}
                     price={formatCurrency(offeredAmount)}

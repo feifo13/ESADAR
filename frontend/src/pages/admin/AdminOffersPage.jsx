@@ -18,6 +18,7 @@ const OFFER_STATUS_LABELS = {
   REJECTED: "Rechazada",
   CANCELLED: "Cancelada",
   EXPIRED: "Vencida",
+  USED: "Usada",
 };
 
 const initialFilters = {
@@ -152,6 +153,9 @@ export default function AdminOffersPage() {
           </div>
         </div>
 
+        {error ? <p className="error-copy">{error}</p> : null}
+        {message ? <p className="success-copy">{message}</p> : null}
+
         <ResponsiveFilterPanel
           title="Filtros de ofertas"
           description=""
@@ -188,6 +192,7 @@ export default function AdminOffersPage() {
                 <option value="REJECTED">Rechazadas</option>
                 <option value="CANCELLED">Canceladas</option>
                 <option value="EXPIRED">Vencidas</option>
+                <option value="USED">Usadas</option>
               </select>
             </label>
 
@@ -275,7 +280,7 @@ export default function AdminOffersPage() {
             </label>
 
             <label className="field-group">
-              <span>Page size</span>
+              <span>Tamano de pagina</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -319,7 +324,9 @@ export default function AdminOffersPage() {
                 </tr>
               </thead>
               <tbody>
-                {offers.map((offer) => (
+                {offers.map((offer) => {
+                  const displayStatus = offer.consumedAt || offer.status === "USED" ? "USED" : offer.status;
+                  return (
                   <tr key={offer.id}>
                     <td>{formatDate(offer.createdAt)}</td>
                     <td>
@@ -351,7 +358,7 @@ export default function AdminOffersPage() {
                     <td>
                       <div className="cell-stack cell-stack--compact">
                         <StatusBadge
-                          status={offer.status}
+                          status={displayStatus}
                           labels={OFFER_STATUS_LABELS}
                         />
                         {offer.consumedAt ? (
@@ -406,7 +413,8 @@ export default function AdminOffersPage() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
 
                 {!offers.length ? (
                   <tr>
