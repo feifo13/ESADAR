@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { Link, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
@@ -122,6 +122,7 @@ export default function HomePage() {
   } = useMobileMenu();
 
   const location = useLocation();
+  const navigate = useNavigate();
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
   const { site, pagesByRoute } = useSiteSeo();
@@ -474,6 +475,9 @@ export default function HomePage() {
   function applyFilters(nextFilters) {
     resetPaginationState();
     setFilters(nextFilters);
+    if (location.pathname === "/articles" && location.search && !nextFilters.search) {
+      navigate("/articles", { replace: true });
+    }
   }
 
   function applyMobileFilters(nextFilters) {

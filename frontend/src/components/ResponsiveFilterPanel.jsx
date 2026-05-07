@@ -50,7 +50,10 @@ export default function ResponsiveFilterPanel({
         <button
           type="button"
           className="button button-secondary"
-          onClick={() => onClear()}
+          onClick={() => {
+            onClear();
+            if (isMobile) setMobileOpen(false);
+          }}
         >
           {clearLabel}
         </button>

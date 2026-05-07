@@ -663,6 +663,7 @@ export default function AdminArticleFormPage() {
           <div>
             <p className="section-kicker">Administracion</p>
             <h1>{isEdit ? "Editar articulo" : "Nuevo articulo"}</h1>
+
             {/* <p className="muted-copy">
               Alta individual guiada. Si prefieres cargar varios articulos
               juntos, usa la opcion visible en Articulos {">"} Crear multiples
@@ -1203,7 +1204,6 @@ export default function AdminArticleFormPage() {
                             : "Borrar"}
                         </button>
                       </div>
-
                     </div>
                   </article>
                 ))}

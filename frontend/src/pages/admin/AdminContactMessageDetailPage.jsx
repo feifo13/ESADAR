@@ -104,7 +104,7 @@ export default function AdminContactMessageDetailPage() {
   }
 
   return (
-    <div className="container page-stack admin-page-shell admin-detail-page">
+    <div className="container page-stack admin-page-shell admin-detail-page admin-contact-detail-page">
       <AdminToolbar />
       <button
         type="button"

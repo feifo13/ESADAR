@@ -16,6 +16,7 @@ import {
   reorderAdminArticleImages,
   updateAdminArticleImage,
   updateAdminArticle,
+  updateAdminArticleQuickFlags,
   updateAdminArticleStatus,
   uploadAdminArticleImages,
 } from './articles.controller.js';
@@ -48,6 +49,7 @@ adminRouter.post(
 adminRouter.get('/:id', asyncHandler(getAdminArticle));
 adminRouter.post('/', asyncHandler(createAdminArticle));
 adminRouter.put('/:id', asyncHandler(updateAdminArticle));
+adminRouter.patch('/:id/quick-flags', asyncHandler(updateAdminArticleQuickFlags));
 adminRouter.patch('/:id/status', asyncHandler(updateAdminArticleStatus));
 adminRouter.post(
   '/:id/images',

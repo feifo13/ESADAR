@@ -9,6 +9,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { ArchiveIcon, EditIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -24,6 +25,8 @@ const ARTICLE_STATUS_LABELS = {
 const initialFilters = {
   q: "",
   status: "",
+  featured: "",
+  offerable: "",
   categoryId: "",
   brandId: "",
   sizeId: "",
@@ -40,9 +43,28 @@ function formatPreviewList(values = []) {
   return values.join(" | ");
 }
 
+function QuickToggle({ checked, label, onText, offText, onClick }) {
+  return (
+    <button
+      type="button"
+      className={checked ? "quick-toggle-switch is-on" : "quick-toggle-switch"}
+      role="switch"
+      aria-checked={checked}
+      onClick={onClick}
+    >
+      <span className="quick-toggle-switch__label">{label}</span>
+      <span className="quick-toggle-switch__track" aria-hidden="true">
+        <span className="quick-toggle-switch__thumb" />
+      </span>
+      <span className="quick-toggle-switch__state">{checked ? onText : offText}</span>
+    </button>
+  );
+}
+
 export default function AdminArticlesPage() {
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -79,6 +101,8 @@ export default function AdminArticlesPage() {
     [
       filters.q,
       filters.status,
+      filters.featured,
+      filters.offerable,
       filters.categoryId,
       filters.brandId,
       filters.sizeId,
@@ -302,6 +326,58 @@ export default function AdminArticlesPage() {
     }
   }
 
+  async function handleQuickToggle(article, field) {
+    const config = {
+      status: {
+        payload: { status: article.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+        success:
+          article.status === "ACTIVE"
+            ? "Artículo desactivado correctamente."
+            : "Artículo activado correctamente.",
+        fallbackError: "No se pudo actualizar el estado del artículo.",
+      },
+      isFeatured: {
+        payload: { isFeatured: !article.isFeatured },
+        success: !article.isFeatured
+          ? "Artículo marcado como destacado."
+          : "Artículo quitado de destacados.",
+        fallbackError: "No se pudo actualizar destacado.",
+      },
+      allowOffers: {
+        payload: { allowOffers: !article.allowOffers },
+        success: !article.allowOffers
+          ? "El artículo ahora acepta ofertas."
+          : "El artículo ya no acepta ofertas.",
+        fallbackError: "No se pudo actualizar aceptación de ofertas.",
+      },
+    }[field];
+
+    if (!config) return;
+
+    try {
+      setError("");
+      setMessage("");
+      const response = await apiFetch(`/api/admin/articles/${article.id}/quick-flags`, {
+        method: "PATCH",
+        body: config.payload,
+      });
+
+      setItems((current) =>
+        current.map((item) =>
+          Number(item.id) === Number(article.id)
+            ? { ...item, ...(response.article || {}) }
+            : item,
+        ),
+      );
+      setMessage(config.success);
+      notifySuccess(config.success);
+    } catch (err) {
+      const errorMessage = err.message || config.fallbackError;
+      setError(errorMessage);
+      notifyError(errorMessage);
+    }
+  }
+
   return (
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
@@ -386,6 +462,32 @@ export default function AdminArticlesPage() {
                 <option value="INACTIVE">Inactivas</option>
                 <option value="RESERVED">Reservadas</option>
                 <option value="SOLD_OUT">Agotadas</option>
+              </select>
+            </label>
+
+            <label className="field-group">
+              <span>Destacado</span>
+              <select
+                className="input"
+                value={draftFilters.featured}
+                onChange={(event) => updateDraft("featured", event.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="true">Destacados</option>
+                <option value="false">No destacados</option>
+              </select>
+            </label>
+
+            <label className="field-group">
+              <span>Acepta ofertas</span>
+              <select
+                className="input"
+                value={draftFilters.offerable}
+                onChange={(event) => updateDraft("offerable", event.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="true">Acepta ofertas</option>
+                <option value="false">No acepta ofertas</option>
               </select>
             </label>
 
@@ -494,7 +596,7 @@ export default function AdminArticlesPage() {
             </label>
 
             <label className="field-group">
-              <span>Page size</span>
+              <span>Por pagina</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -770,6 +872,7 @@ export default function AdminArticlesPage() {
                     >
                       Estado
                     </SortableTh>
+                    <th>Controles</th>
                     <SortableTh
                       sortKey="updatedAt"
                       sort={{ key: filters.sortBy, direction: filters.sortDir }}
@@ -843,6 +946,31 @@ export default function AdminArticlesPage() {
                             status={article.status}
                             labels={ARTICLE_STATUS_LABELS}
                           />
+                        </td>
+                        <td>
+                          <div className="admin-article-toggles">
+                            <QuickToggle
+                              checked={article.status === "ACTIVE"}
+                              label="Activo"
+                              onText="Sí"
+                              offText="No"
+                              onClick={() => void handleQuickToggle(article, "status")}
+                            />
+                            <QuickToggle
+                              checked={Boolean(article.isFeatured)}
+                              label="Destacado"
+                              onText="Sí"
+                              offText="No"
+                              onClick={() => void handleQuickToggle(article, "isFeatured")}
+                            />
+                            <QuickToggle
+                              checked={Boolean(article.allowOffers)}
+                              label="Acepta ofertas"
+                              onText="Sí"
+                              offText="No"
+                              onClick={() => void handleQuickToggle(article, "allowOffers")}
+                            />
+                          </div>
                         </td>
                         <td>
                           {formatDate(article.updatedAt || article.intakeDate)}

@@ -64,9 +64,7 @@ export default function ArticleFilters({
   }
 
   function clearFilters() {
-    const nextFilters = showSort
-      ? { ...defaultFilters }
-      : { ...defaultFilters, sort: filters.sort, search: filters.search };
+    const nextFilters = { ...defaultFilters };
     setDraftFilters(nextFilters);
     onChange(nextFilters);
     onApplied?.(nextFilters);

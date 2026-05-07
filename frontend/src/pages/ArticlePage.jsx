@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
+import { EditIcon } from "../components/ActionIcons.jsx";
 import { apiFetch } from "../lib/api.js";
 import {
   formatCurrency,
@@ -35,7 +36,7 @@ const initialAlertForm = {
 export default function ArticlePage() {
   const { slugOrId } = useParams();
   const { addItem, getItem } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { site } = useSiteSeo();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   const { notifyMobileStatus } = useMobileMenu();
@@ -54,6 +55,9 @@ export default function ArticlePage() {
   const [alertError, setAlertError] = useState("");
   const [alertSuccess, setAlertSuccess] = useState("");
   const [acceptedOffer, setAcceptedOffer] = useState(null);
+  const canEditArticle = user?.roles?.some((role) =>
+    ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -470,6 +474,16 @@ export default function ArticlePage() {
                 <p className="section-kicker">Prenda</p>
                 <h1>{article.title}</h1>
               </div>
+
+              {canEditArticle ? (
+                <Link
+                  to={`/admin/articles/${article.id}/edit`}
+                  className="button button-secondary article-admin-edit-button"
+                >
+                  <EditIcon />
+                  <span>Editar artículo</span>
+                </Link>
+              ) : null}
 
               <div className="detail-meta-list">
                 <div>

@@ -240,7 +240,7 @@ INSERT INTO articles (
   ('ART-0004', 'levis-501-denim-38', 'Levis 501 Denim Azul 38', @cat_pantalones, @brand_levis, @size_38, NULL, 'Cintura 38 / Largo 104 cm', 'Jean recto vintage de lavado medio.', 520.00, 100.00, 130.00, 1990.00, 'NONE', 0.00, 0, 0, '2026-03-04', 1, 1, 0, 0, 'ACTIVE', 'Denim americano original.', @admin_user_id, @admin_user_id),
   ('ART-0005', 'new-balance-shorts-negros-m', 'New Balance Shorts Negros', @cat_shorts, @brand_nb, @size_m, NULL, 'Cintura 39 cm / Largo 44 cm', 'Short deportivo liviano con cintura elástica.', 150.00, 50.00, 90.00, 790.00, 'FIXED', 100.00, 0, 1, '2026-03-05', 1, 1, 0, 0, 'ACTIVE', 'Ideal para cápsula deportiva.', @admin_user_id, @admin_user_id),
   ('ART-0006', 'tommy-jacket-roja-xl', 'Tommy Hilfiger Jacket Roja XL', @cat_camperas, @brand_tommy, @size_xl, NULL, 'Pecho 67 cm / Largo 74 cm', 'Campera liviana color block con cierre metálico.', 430.00, 120.00, 120.00, 2190.00, 'NONE', 0.00, 1, 0, '2026-03-06', 1, 0, 1, 0, 'RESERVED', 'Reservada por checkout pendiente.', @admin_user_id, @admin_user_id),
-  ('ART-0007', 'reebok-crewneck-verde-l', 'Reebok Crewneck Verde L', @cat_buzos, @brand_reebok, @size_l, NULL, 'Pecho 61 cm / Largo 70 cm', 'Crewneck verde vintage con bordado frontal.', 260.00, 70.00, 100.00, 1390.00, 'NONE', 0.00, 0, 0, '2026-03-07', 1, 0, 0, 1, 'SOLD_OUT', 'Vendido en demo seed.', @admin_user_id, @admin_user_id),
+  ('ART-0007', 'reebok-crewneck-verde-l', 'Reebok Crewneck Verde L', @cat_buzos, @brand_reebok, @size_l, NULL, 'Pecho 61 cm / Largo 70 cm', 'Crewneck verde vintage con bordado frontal.', 260.00, 70.00, 100.00, 1390.00, 'NONE', 0.00, 1, 0, '2026-03-07', 1, 0, 0, 1, 'SOLD_OUT', 'Vendido en demo seed con oferta usada.', @admin_user_id, @admin_user_id),
   ('ART-0008', 'russell-hoodie-azul-xl', 'Russell Athletic Hoodie Azul XL', @cat_buzos, @brand_russell, @size_xl, NULL, 'Pecho 65 cm / Largo 71 cm', 'Hoodie pesado con excelente caída.', 290.00, 80.00, 100.00, 1490.00, 'NONE', 0.00, 1, 0, '2026-03-08', 1, 1, 0, 0, 'INACTIVE', 'Desactivado para edición.', @admin_user_id, @admin_user_id),
   ('ART-0009', 'puma-track-pants-negro-m', 'Puma Track Pants Negro M', @cat_pantalones, @brand_puma, @size_m, NULL, 'Cintura 40 cm / Largo 101 cm', 'Pantalón deportivo con tiras laterales.', 250.00, 70.00, 100.00, 1290.00, 'NONE', 0.00, 1, 0, '2026-03-09', 1, 1, 0, 0, 'ACTIVE', 'Sportswear moderno.', @admin_user_id, @admin_user_id),
   ('ART-0010', 'nike-cap-beige-unico', 'Nike Cap Beige Unico', @cat_accesorios, @brand_nike, NULL, 'UNICO', 'Circunferencia regulable', 'Gorra beige con swoosh bordado.', 120.00, 40.00, 80.00, 690.00, 'NONE', 0.00, 1, 0, '2026-03-10', 1, 1, 0, 0, 'ACTIVE', 'Accesorio curado para completar look.', @admin_user_id, @admin_user_id)
@@ -420,7 +420,7 @@ SELECT
   'ORD-20260314-0002', @customer_lucia_id, NULL, @customer_user_id, @ship_dac,
   'DAC interior', 260.00,
   'MERCADO_PAGO', 'PAID', 'SHIPPED',
-  1390.00, 0.00, 1650.00,
+  1390.00, 190.00, 1460.00,
   '2026-03-14 11:00:00', '2026-03-14 10:20:00', NULL, '2026-03-14 15:30:00',
   NULL, 'Orden demo ya enviada.', '2026-03-14 09:45:00', '2026-03-14 15:30:00', @admin_user_id, @operator_user_id
 WHERE NOT EXISTS (
@@ -540,12 +540,12 @@ WHERE NOT EXISTS (
 
 INSERT INTO offers (
   article_id, customer_id, potential_customer_id, offered_price, currency_code,
-  status, expires_at, accepted_at, rejected_at, cancelled_at, notes,
+  status, expires_at, accepted_at, rejected_at, cancelled_at, consumed_at, consumed_order_id, notes,
   created_at, updated_at, created_by, updated_by
 )
 SELECT
   @art_1, NULL, @potential_camila_id, 1350.00, 'UYU',
-  'PENDING', '2026-03-16 12:00:00', NULL, NULL, NULL, 'Oferta pendiente en windbreaker Nike.',
+  'PENDING', '2026-03-16 12:00:00', NULL, NULL, NULL, NULL, NULL, 'Oferta pendiente en windbreaker Nike.',
   '2026-03-15 11:20:00', '2026-03-15 11:20:00', NULL, NULL
 WHERE NOT EXISTS (
   SELECT 1 FROM offers WHERE article_id = @art_1 AND potential_customer_id = @potential_camila_id AND offered_price = 1350.00
@@ -553,19 +553,81 @@ WHERE NOT EXISTS (
 
 INSERT INTO offers (
   article_id, customer_id, potential_customer_id, offered_price, currency_code,
-  status, expires_at, accepted_at, rejected_at, cancelled_at, notes,
+  status, expires_at, accepted_at, rejected_at, cancelled_at, consumed_at, consumed_order_id, notes,
   created_at, updated_at, created_by, updated_by
 )
 SELECT
   @art_3, @customer_lucia_id, NULL, 780.00, 'UYU',
-  'ACCEPTED', '2026-03-14 20:00:00', '2026-03-14 16:45:00', NULL, NULL, 'Oferta aceptada manualmente en backoffice.',
+  'ACCEPTED', '2026-12-31 20:00:00', '2026-03-14 16:45:00', NULL, NULL, NULL, NULL, 'Oferta aceptada manualmente en backoffice.',
   '2026-03-14 16:00:00', '2026-03-14 16:45:00', @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (
   SELECT 1 FROM offers WHERE article_id = @art_3 AND customer_id = @customer_lucia_id AND offered_price = 780.00
 );
 
+INSERT INTO offers (
+  article_id, customer_id, potential_customer_id, offered_price, currency_code,
+  status, expires_at, accepted_at, rejected_at, cancelled_at, consumed_at, consumed_order_id, notes,
+  created_at, updated_at, created_by, updated_by
+)
+SELECT
+  @art_7, @customer_lucia_id, NULL, 1200.00, 'UYU',
+  'USED', '2026-03-15 12:00:00', '2026-03-14 09:20:00', NULL, NULL, '2026-03-14 09:45:00', @ord_2, 'Oferta aceptada y usada en orden enviada.',
+  '2026-03-14 09:05:00', '2026-03-14 09:45:00', @admin_user_id, @customer_user_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM offers WHERE article_id = @art_7 AND customer_id = @customer_lucia_id AND offered_price = 1200.00
+);
+
+INSERT INTO offers (
+  article_id, customer_id, potential_customer_id, offered_price, currency_code,
+  status, expires_at, accepted_at, rejected_at, cancelled_at, consumed_at, consumed_order_id, notes,
+  created_at, updated_at, created_by, updated_by
+)
+SELECT
+  @art_10, @customer_lucia_id, NULL, 520.00, 'UYU',
+  'REJECTED', '2026-03-16 20:00:00', NULL, '2026-03-15 13:10:00', NULL, NULL, NULL, 'Oferta rechazada de ejemplo.',
+  '2026-03-15 12:40:00', '2026-03-15 13:10:00', @admin_user_id, @admin_user_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM offers WHERE article_id = @art_10 AND customer_id = @customer_lucia_id AND offered_price = 520.00
+);
+
 SET @offer_1 := (SELECT id FROM offers WHERE article_id = @art_1 AND potential_customer_id = @potential_camila_id AND offered_price = 1350.00 LIMIT 1);
 SET @offer_2 := (SELECT id FROM offers WHERE article_id = @art_3 AND customer_id = @customer_lucia_id AND offered_price = 780.00 LIMIT 1);
+SET @offer_3 := (SELECT id FROM offers WHERE article_id = @art_7 AND customer_id = @customer_lucia_id AND offered_price = 1200.00 LIMIT 1);
+SET @offer_4 := (SELECT id FROM offers WHERE article_id = @art_10 AND customer_id = @customer_lucia_id AND offered_price = 520.00 LIMIT 1);
+
+UPDATE offers
+SET status = 'ACCEPTED',
+    expires_at = '2026-12-31 20:00:00',
+    accepted_at = '2026-03-14 16:45:00',
+    consumed_at = NULL,
+    consumed_order_id = NULL
+WHERE id = @offer_2;
+
+UPDATE offers
+SET status = 'USED',
+    accepted_at = '2026-03-14 09:20:00',
+    consumed_at = '2026-03-14 09:45:00',
+    consumed_order_id = @ord_2
+WHERE id = @offer_3;
+
+UPDATE offers
+SET status = 'REJECTED',
+    rejected_at = '2026-03-15 13:10:00'
+WHERE id = @offer_4;
+
+UPDATE orders
+SET subtotal_snapshot = 1390.00,
+    discount_total_snapshot = 190.00,
+    total_snapshot = 1460.00
+WHERE id = @ord_2;
+
+UPDATE order_items
+SET line_total_snapshot = 1200.00,
+    accepted_offer_id = @offer_3,
+    accepted_offer_price_snapshot = 1200.00,
+    accepted_offer_quantity_snapshot = 1
+WHERE order_id = @ord_2
+  AND article_id = @art_7;
 
 INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
 SELECT @offer_1, NULL, 'PENDING', 'Oferta creada desde la vista pública.', '2026-03-15 11:20:00', NULL, 'FRONTEND'
@@ -583,6 +645,36 @@ INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, chan
 SELECT @offer_2, 'PENDING', 'ACCEPTED', 'Oferta aceptada por admin.', '2026-03-14 16:45:00', @admin_user_id, 'BACKOFFICE'
 WHERE NOT EXISTS (
   SELECT 1 FROM offer_status_history WHERE offer_id = @offer_2 AND to_status = 'ACCEPTED' AND changed_at = '2026-03-14 16:45:00'
+);
+
+INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
+SELECT @offer_3, NULL, 'PENDING', 'Oferta creada por cliente registrado.', '2026-03-14 09:05:00', @customer_user_id, 'FRONTEND'
+WHERE NOT EXISTS (
+  SELECT 1 FROM offer_status_history WHERE offer_id = @offer_3 AND to_status = 'PENDING' AND changed_at = '2026-03-14 09:05:00'
+);
+
+INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
+SELECT @offer_3, 'PENDING', 'ACCEPTED', 'Oferta aceptada por admin.', '2026-03-14 09:20:00', @admin_user_id, 'BACKOFFICE'
+WHERE NOT EXISTS (
+  SELECT 1 FROM offer_status_history WHERE offer_id = @offer_3 AND to_status = 'ACCEPTED' AND changed_at = '2026-03-14 09:20:00'
+);
+
+INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
+SELECT @offer_3, 'ACCEPTED', 'USED', 'Oferta usada al crear la orden.', '2026-03-14 09:45:00', @customer_user_id, 'SYSTEM'
+WHERE NOT EXISTS (
+  SELECT 1 FROM offer_status_history WHERE offer_id = @offer_3 AND to_status = 'USED' AND changed_at = '2026-03-14 09:45:00'
+);
+
+INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
+SELECT @offer_4, NULL, 'PENDING', 'Oferta creada por cliente registrado.', '2026-03-15 12:40:00', @customer_user_id, 'FRONTEND'
+WHERE NOT EXISTS (
+  SELECT 1 FROM offer_status_history WHERE offer_id = @offer_4 AND to_status = 'PENDING' AND changed_at = '2026-03-15 12:40:00'
+);
+
+INSERT INTO offer_status_history (offer_id, from_status, to_status, reason, changed_at, changed_by, source)
+SELECT @offer_4, 'PENDING', 'REJECTED', 'Oferta rechazada por admin.', '2026-03-15 13:10:00', @admin_user_id, 'BACKOFFICE'
+WHERE NOT EXISTS (
+  SELECT 1 FROM offer_status_history WHERE offer_id = @offer_4 AND to_status = 'REJECTED' AND changed_at = '2026-03-15 13:10:00'
 );
 
 -- =========================================================
@@ -606,12 +698,17 @@ INSERT INTO payments (
   currency_code, status, paid_at, raw_response_json, created_at, updated_at, created_by, updated_by
 )
 SELECT
-  @ord_2, 'MERCADO_PAGO', 'Mercado Pago', 'MP-DEMO-0002', 1650.00,
+  @ord_2, 'MERCADO_PAGO', 'Mercado Pago', 'MP-DEMO-0002', 1460.00,
   'UYU', 'APPROVED', '2026-03-14 10:18:00', JSON_OBJECT('status_detail','approved','collector_id','demo_collector_01'),
   '2026-03-14 10:18:00', '2026-03-14 10:18:00', @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (
   SELECT 1 FROM payments WHERE order_id = @ord_2 AND provider_reference = 'MP-DEMO-0002'
 );
+
+UPDATE payments
+SET amount = 1460.00
+WHERE order_id = @ord_2
+  AND provider_reference = 'MP-DEMO-0002';
 
 INSERT INTO payments (
   order_id, payment_method, provider_name, provider_reference, amount,

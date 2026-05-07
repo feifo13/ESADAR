@@ -13,6 +13,7 @@ import {
   reorderArticleImages,
   updateArticleImage,
   updateArticle,
+  updateArticleQuickFlags,
 } from "./articles.service.js";
 import {
   adminArticleListQuerySchema,
@@ -22,6 +23,7 @@ import {
   articleImageUpdateSchema,
   articleImportOptionsSchema,
   articleImportTemplateQuerySchema,
+  articleQuickFlagsSchema,
   articleStatusSchema,
   articleUpdateSchema,
   adminBulkArticleCreateSchema,
@@ -171,6 +173,16 @@ export async function updateAdminArticleStatus(req, res) {
   const article = await changeArticleStatus(
     Number(req.params.id),
     input.status,
+    getAuditContext(req),
+  );
+  return res.json({ ok: true, article });
+}
+
+export async function updateAdminArticleQuickFlags(req, res) {
+  const input = articleQuickFlagsSchema.parse(req.body);
+  const article = await updateArticleQuickFlags(
+    Number(req.params.id),
+    input,
     getAuditContext(req),
   );
   return res.json({ ok: true, article });

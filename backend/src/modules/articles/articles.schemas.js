@@ -158,10 +158,26 @@ export const articleStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
 });
 
+export const articleQuickFlagsSchema = z
+  .object({
+    status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']).optional(),
+    isFeatured: z.coerce.boolean().optional(),
+    allowOffers: z.coerce.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.status !== undefined ||
+      value.isFeatured !== undefined ||
+      value.allowOffers !== undefined,
+    { message: 'Debes enviar al menos un campo para actualizar' },
+  );
+
 export const adminArticleListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   search: optionalTrimmedString(150),
   status: optionalEnum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+  featured: optionalBooleanish,
+  offerable: optionalBooleanish,
   categoryId: optionalPositiveInt,
   brandId: optionalPositiveInt,
   sizeId: optionalPositiveInt,

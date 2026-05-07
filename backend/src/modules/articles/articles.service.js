@@ -195,6 +195,16 @@ function buildAdminArticleFilters(filters) {
     params.push(filters.status);
   }
 
+  if (filters.featured !== undefined) {
+    clauses.push('a.is_featured = ?');
+    params.push(filters.featured ? 1 : 0);
+  }
+
+  if (filters.offerable !== undefined) {
+    clauses.push('a.allow_offers = ?');
+    params.push(filters.offerable ? 1 : 0);
+  }
+
   if (filters.categoryId) {
     clauses.push('a.category_id = ?');
     params.push(filters.categoryId);
@@ -1044,6 +1054,67 @@ export async function changeArticleStatus(id, status, auditContext) {
         beforeJson: before,
         afterJson: after,
         metadataJson: { fromStatus: before.status, toStatus: after.status },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
+}
+
+export async function updateArticleQuickFlags(id, input, auditContext) {
+  return withTransaction(async (connection) => {
+    const before = await getAdminArticleByIdWithConnection(id, connection);
+    const nextStatus = input.status ?? before.status;
+    const nextIsFeatured = input.isFeatured ?? before.isFeatured;
+    const nextAllowOffers = input.allowOffers ?? before.allowOffers;
+
+    if (
+      nextAllowOffers &&
+      before.discountType !== 'NONE' &&
+      Number(before.discountValue || 0) > 0
+    ) {
+      throw badRequest('No se puede activar ofertas en un artículo con descuento.');
+    }
+
+    await connection.execute(
+      `
+        UPDATE articles
+        SET
+          status = ?,
+          is_featured = ?,
+          allow_offers = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [
+        nextStatus,
+        nextIsFeatured ? 1 : 0,
+        nextAllowOffers ? 1 : 0,
+        auditContext.actorUserId,
+        id,
+      ],
+    );
+
+    const after = await getAdminArticleByIdWithConnection(id, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'ARTICLE_QUICK_FLAGS_UPDATED',
+        entityType: 'articles',
+        entityId: id,
+        beforeJson: before,
+        afterJson: after,
+        metadataJson: {
+          status: input.status !== undefined ? { from: before.status, to: after.status } : undefined,
+          isFeatured: input.isFeatured !== undefined ? { from: before.isFeatured, to: after.isFeatured } : undefined,
+          allowOffers: input.allowOffers !== undefined ? { from: before.allowOffers, to: after.allowOffers } : undefined,
+        },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,

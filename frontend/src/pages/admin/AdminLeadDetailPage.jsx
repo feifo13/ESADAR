@@ -58,7 +58,7 @@ export default function AdminLeadDetailPage() {
   }
 
   return (
-    <div className="container page-stack admin-page-shell admin-detail-page">
+    <div className="container page-stack admin-page-shell admin-detail-page admin-lead-detail-page">
       <AdminToolbar />
       <button type="button" className="ghost-button linklike account-order-detail-back" onClick={() => navigate(-1)}>Volver</button>
       <section className="section-card page-stack">

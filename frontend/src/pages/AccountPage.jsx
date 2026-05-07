@@ -68,7 +68,7 @@ const ALERT_TYPE_LABELS = {
 const TAB_ITEMS = [
   { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
   { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
-  { key: "ofertas", label: "Mis ofertas", path: "/cuenta/ofertas" },
+  { key: "ofertas", label: "Mis ofertas", path: "/cuenta/offers" },
   // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
   { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
 ];
@@ -98,10 +98,19 @@ function LocalTablePagination() {
 
 function getActiveTab(pathname) {
   if (pathname.includes("/guardados")) return "guardados";
-  if (pathname.includes("/ofertas")) return "ofertas";
+  if (pathname.includes("/ofertas") || pathname.includes("/offers")) return "ofertas";
   if (pathname.includes("/alertas")) return "alertas";
   if (pathname.includes("/ordenes")) return "ordenes";
   return "perfil";
+}
+
+function getOfferDisplayStatus(offer) {
+  if (offer?.consumedAt || offer?.status === "USED") return "USED";
+  return offer?.status || "PENDING";
+}
+
+function getOfferResponseDate(offer) {
+  return offer?.acceptedAt || offer?.rejectedAt || offer?.cancelledAt || null;
 }
 
 const initialForm = {
@@ -1262,70 +1271,130 @@ export default function AccountPage() {
             <p className="muted-copy">Inicia sesion para revisar tus ofertas.</p>
           ) : null}
 
-          {isAuthenticated && !offers.length ? (
+          {isAuthenticated && profileLoading ? (
+            <p className="muted-copy">Cargando ofertas...</p>
+          ) : null}
+
+          {isAuthenticated && profileError ? (
+            <p className="error-copy">{profileError}</p>
+          ) : null}
+
+          {isAuthenticated && !profileLoading && !profileError && !offers.length ? (
             <p className="muted-copy">Todavia no tienes ofertas registradas.</p>
           ) : null}
 
-          {isAuthenticated && offers.length ? (
-            <div className="summary-item-card-list account-offers-list">
+          {isAuthenticated && !profileLoading && !profileError && offers.length ? (
+            <>
+              <div className="table-shell account-offers-table-shell">
+                <table className="data-table account-offers-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Artículo</th>
+                      <th>Precio original</th>
+                      <th>Monto ofertado</th>
+                      <th>Estado</th>
+                      <th>Respuesta / uso</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {offers.map((offer) => {
+                      const article = offer.article || {};
+                      const displayStatus = getOfferDisplayStatus(offer);
+                      const isAcceptedAvailable = displayStatus === "ACCEPTED";
+                      const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
+                      const offeredAmount = Number(offer.offeredAmount || 0);
+                      const articleLink = articlePath(article);
+                      return (
+                        <tr
+                          key={`offer-row-${offer.id}`}
+                          className={[
+                            "account-offer-row",
+                            isAcceptedAvailable ? "account-offer-row--accepted" : "",
+                            displayStatus === "USED" ? "account-offer-row--used" : "",
+                          ].filter(Boolean).join(" ")}
+                        >
+                          <td>{formatDate(offer.createdAt)}</td>
+                          <td>
+                            <div className="cell-stack account-offer-article-cell">
+                              <Link to={articleLink} className="table-strong-link">
+                                {article.title || `Oferta #${offer.id}`}
+                              </Link>
+                              <span className="muted-copy">
+                                {article.brandName || "Sin marca"} - Aplica a 1 unidad
+                              </span>
+                              {isAcceptedAvailable ? (
+                                <span className="pill pill-offer">Lista para comprar</span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td>{originalPrice ? formatCurrency(originalPrice) : "Sin precio"}</td>
+                          <td><strong>{formatCurrency(offeredAmount)}</strong></td>
+                          <td><StatusBadge status={displayStatus} labels={OFFER_STATUS_LABELS} /></td>
+                          <td>
+                            {offer.consumedAt
+                              ? `Usada${offer.consumedOrderId ? ` en orden #${offer.consumedOrderId}` : ""}`
+                              : getOfferResponseDate(offer)
+                                ? formatDate(getOfferResponseDate(offer))
+                                : "Sin respuesta"}
+                          </td>
+                          <td>
+                            <Link className="button button-secondary button-compact account-offer-link" to={articleLink}>
+                              <EyeIcon />
+                              <span>Ver artículo</span>
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="summary-item-card-list account-offers-list account-offers-list--mobile">
               {offers.map((offer) => {
                 const article = offer.article || {};
-                const isAcceptedAvailable = offer.status === "ACCEPTED" && !offer.consumedAt;
-                const displayStatus = offer.consumedAt || offer.status === "USED" ? "USED" : offer.status;
+                const displayStatus = getOfferDisplayStatus(offer);
+                const isAcceptedAvailable = displayStatus === "ACCEPTED";
                 const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
                 const offeredAmount = Number(offer.offeredAmount || 0);
                 const savings = Math.max(0, originalPrice - offeredAmount);
+                const articleLink = articlePath(article);
                 return (
                   <SummaryItemCard
                     key={`offer-${offer.id}`}
+                    className={[
+                      isAcceptedAvailable ? "summary-item-card--accepted-offer" : "",
+                      displayStatus === "USED" ? "account-offer-card--used" : "",
+                    ].filter(Boolean).join(" ")}
                     image={article.image}
                     imageAlt={article.title}
-                    imageTo={article.slug ? articlePath(article) : undefined}
+                    imageTo={articleLink}
                     badge={<StatusBadge status={displayStatus} labels={OFFER_STATUS_LABELS} />}
                     title={article.title || `Oferta #${offer.id}`}
-                    titleTo={article.slug ? articlePath(article) : undefined}
-                    subtitle={`${article.brandName || "Sin marca"} · Oferta por 1 unidad`}
+                    titleTo={articleLink}
+                    subtitle={`${article.brandName || "Sin marca"} - Oferta por 1 unidad`}
                     meta={[
                       `Creada: ${formatDate(offer.createdAt)}`,
-                      offer.acceptedAt ? `Respondida: ${formatDate(offer.acceptedAt)}` : null,
-                      offer.consumedAt ? `Usada en orden #${offer.consumedOrderId}` : displayStatus === "USED" ? "Usada" : null,
+                      getOfferResponseDate(offer) ? `Respondida: ${formatDate(getOfferResponseDate(offer))}` : null,
+                      offer.consumedAt ? `Usada${offer.consumedOrderId ? ` en orden #${offer.consumedOrderId}` : ""}` : null,
                       isAcceptedAvailable ? `Ahorro: ${formatCurrency(savings)}` : null,
                     ].filter(Boolean)}
                     price={formatCurrency(offeredAmount)}
                     comparePrice={originalPrice ? formatCurrency(originalPrice) : null}
+                    footer={isAcceptedAvailable ? "Aceptada: entra al artículo para comprar. Aplica a 1 unidad." : null}
                     actions={[
-                      article.slug ? (
-                        <Link className="icon-action-button" to={articlePath(article)} title="Ver articulo" aria-label="Ver articulo">
-                          <EyeIcon />
-                        </Link>
-                      ) : null,
-                      isAcceptedAvailable ? (
-                        <button
-                          type="button"
-                          className="icon-action-button"
-                          title="Agregar oferta al carrito"
-                          aria-label="Agregar oferta al carrito"
-                          disabled={Number(article.quantityAvailable || 0) <= 0}
-                          onClick={(event) => addArticleToCart({
-                            ...offer,
-                            articleId: article.id,
-                            slug: article.slug,
-                            title: article.title,
-                            image: article.image,
-                            salePrice: article.salePrice,
-                            discountedPrice: article.discountedPrice,
-                            quantityAvailable: article.quantityAvailable,
-                            brandName: article.brandName,
-                          }, event)}
-                        >
-                          <CartIcon />
-                        </button>
-                      ) : null,
-                    ].filter(Boolean)}
+                      <Link key="view-article" className="button button-secondary button-compact account-offer-link" to={articleLink}>
+                        <EyeIcon />
+                        <span>Ver artículo</span>
+                      </Link>,
+                    ]}
                   />
                 );
               })}
-            </div>
+              </div>
+            </>
           ) : null}
         </section>
       ) : null}
