@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import Header from './Header.jsx';
 import ThemeDock from './ThemeDock.jsx';
@@ -19,12 +19,14 @@ const CART_REPLAY_FADE_MS = 350;
 
 export default function RootLayout() {
   const location = useLocation();
+  const navigationType = useNavigationType();
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
   const [introStage, setIntroStage] = useState('hidden');
   const [introKey, setIntroKey] = useState(0);
   const [introDuration, setIntroDuration] = useState(INTRO_INITIAL_VISIBLE_MS);
   const [introFadeDuration, setIntroFadeDuration] = useState(INTRO_INITIAL_FADE_MS);
   const didInitialIntro = useRef(false);
+  const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === '/';
   const isCheckoutView = location.pathname.startsWith('/checkout');
   const isAdminView = location.pathname.startsWith('/admin');
@@ -33,10 +35,24 @@ export default function RootLayout() {
   const shouldNoIndex = isCheckoutView || isAdminView || isAuthView || isAccountView;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }
-  }, [location.key]);
+    if (typeof window === 'undefined') return undefined;
+
+    const restoreTop = navigationType === 'POP'
+      ? scrollPositionsRef.current.get(location.key) || 0
+      : 0;
+
+    const frameId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: restoreTop, left: 0, behavior: 'auto' });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      scrollPositionsRef.current.set(
+        location.key,
+        window.scrollY || document.documentElement.scrollTop || 0,
+      );
+    };
+  }, [location.key, navigationType]);
 
   useEffect(() => {
     const reduceMotion =

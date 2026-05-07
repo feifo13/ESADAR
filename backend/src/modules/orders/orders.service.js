@@ -504,10 +504,10 @@ export async function cancelOrder(id, reason, auditContext) {
         `
           UPDATE articles
           SET
-            quantity_available = quantity_available + ?,
-            quantity_reserved = GREATEST(quantity_reserved - ?, 0),
+            quantity_available = quantity_available + LEAST(quantity_reserved, ?),
+            quantity_reserved = quantity_reserved - LEAST(quantity_reserved, ?),
             status = CASE
-              WHEN quantity_available + ? > 0 THEN 'ACTIVE'
+              WHEN quantity_available + LEAST(quantity_reserved, ?) > 0 THEN 'ACTIVE'
               ELSE status
             END,
             updated_by = ?

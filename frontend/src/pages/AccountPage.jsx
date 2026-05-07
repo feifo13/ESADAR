@@ -5,14 +5,14 @@ import SmartImage from "../components/SmartImage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import SortableTh from "../components/SortableTh.jsx";
-import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
-import { BellIcon, CartIcon } from "../components/ActionIcons.jsx";
+import { BellIcon, CartIcon, XIcon } from "../components/ActionIcons.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { useNotification } from "../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
 import { articlePath } from "../lib/routes.js";
@@ -135,6 +135,7 @@ export default function AccountPage() {
     paymentMethodOptions,
   } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError } = useNotification();
 
   const activeTab = getActiveTab(location.pathname);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -321,8 +322,18 @@ export default function AccountPage() {
     };
   }
 
+  function showStockNotice(result) {
+    if (!result || result.ok) return;
+
+    const message = result.code === "OUT_OF_STOCK"
+      ? "Esta prenda no tiene stock disponible ahora."
+      : `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`;
+
+    notifyError(message);
+  }
+
   function addArticleToCart(item, event) {
-    addItem(
+    const result = addItem(
       {
         id: item.articleId,
         slug: item.slug || item.articleSlug,
@@ -342,6 +353,22 @@ export default function AccountPage() {
         sourceRect: event?.currentTarget?.getBoundingClientRect?.() || null,
       },
     );
+
+    showStockNotice(result);
+    if (result?.ok) {
+      notifySuccess("Articulo agregado al carrito.");
+    }
+  }
+
+  async function removeWishlistItem(item) {
+    const result = await toggleItem(item, getWishlistItemPayload(item));
+
+    if (!result.ok) {
+      notifyError(result.error?.message || "No pudimos actualizar tus guardados.");
+      return;
+    }
+
+    notifySuccess("Quitamos la prenda de tus guardados.");
   }
 
   function getOrderLatestStatusDate(order) {
@@ -882,16 +909,16 @@ export default function AccountPage() {
                       price={formatCurrency(currentPrice)}
                       comparePrice={comparePrice}
                       actions={[
-                        <WishlistHeartButton
-                          active
-                          pending={pendingIds.includes(Number(item.articleId))}
-                          className="summary-item-card__favorite-action wishlist-heart-button--bare"
-                          labelActive="Quitar de guardados"
-                          labelInactive="Guardar articulo"
-                          onToggle={() =>
-                            void toggleItem(item, getWishlistItemPayload(item))
-                          }
-                        />,
+                        <button
+                          type="button"
+                          className="icon-action-button summary-item-card__remove-action"
+                          aria-label={`Quitar ${item.title} de guardados`}
+                          title="Quitar de guardados"
+                          disabled={pendingIds.includes(Number(item.articleId))}
+                          onClick={() => void removeWishlistItem(item)}
+                        >
+                          <XIcon />
+                        </button>,
                         <Link
                           to={articlePath(item)}
                           className="icon-action-button"
@@ -999,21 +1026,18 @@ export default function AccountPage() {
                           </td>
                           <td>
                             <div className="table-actions">
-                              <WishlistHeartButton
-                                active
-                                pending={pendingIds.includes(
+                              <button
+                                type="button"
+                                className="icon-action-button summary-item-card__remove-action"
+                                aria-label={`Quitar ${item.title} de guardados`}
+                                title="Quitar de guardados"
+                                disabled={pendingIds.includes(
                                   Number(item.articleId),
                                 )}
-                                className="summary-item-card__favorite-action wishlist-heart-button--bare"
-                                labelActive="Quitar de guardados"
-                                labelInactive="Guardar articulo"
-                                onToggle={() =>
-                                  void toggleItem(
-                                    item,
-                                    getWishlistItemPayload(item),
-                                  )
-                                }
-                              />
+                                onClick={() => void removeWishlistItem(item)}
+                              >
+                                <XIcon />
+                              </button>
                               <Link
                                 to={articlePath(item)}
                                 className="icon-action-button"
