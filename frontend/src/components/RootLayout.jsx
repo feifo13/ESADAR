@@ -1,9 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import Header from './Header.jsx';
-import Footer from './Footer.jsx';
 import ThemeDock from './ThemeDock.jsx';
 import ScrollChrome from './ScrollChrome.jsx';
+import FooterScrollScene from './FooterScrollScene.jsx';
 import SeoHead from './SeoHead.jsx';
 import ResponsiveTableLabels from './ResponsiveTableLabels.jsx';
 import MobileStatusBand from './MobileStatusBand.jsx';
@@ -105,7 +105,7 @@ export default function RootLayout() {
           </div>
         </main>
       </MobileMenuProvider>
-      <Footer />
+      <FooterScrollScene />
       <ThemeDock />
       <ScrollChrome />
 

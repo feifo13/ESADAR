@@ -73,7 +73,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="container auth-shell">
+    <div className="container page-stack contact-page-shell">
       <SeoHead
         title={contactSeo?.title || `Contacto | ${site.name}`}
         description={contactSeo?.description || 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.'}
@@ -81,7 +81,7 @@ export default function ContactPage() {
         url={toAbsoluteUrl('/contact', site)}
       />
 
-      <form className="section-card auth-card" onSubmit={handleSubmit} noValidate>
+      <form className="section-card auth-card contact-form-card" onSubmit={handleSubmit} noValidate>
         <p className="section-kicker">Contacto</p>
         <h1>Escribenos</h1>
         <p className="muted-copy">
@@ -97,9 +97,11 @@ export default function ContactPage() {
           <label className="field-group form-grid-span-two"><span>Consulta</span><textarea className="input textarea" value={form.message} onChange={(event) => update('message', event.target.value)} required /></label>
         </div>
         {error ? <p className="error-copy">{error}</p> : null}
-        <button className="button button-primary" type="submit" disabled={submitting}>
-          {submitting ? 'Enviando…' : 'Enviar'}
-        </button>
+        <div className="contact-form-actions">
+          <button className="button button-primary" type="submit" disabled={submitting}>
+            {submitting ? 'Enviando…' : 'Enviar'}
+          </button>
+        </div>
       </form>
 
       {sent ? (

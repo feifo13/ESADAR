@@ -811,6 +811,22 @@ export default function HomePage() {
 
       <section className="container section-card lead-capture-card lead-capture-card--cta">
         <div className="lead-capture-copy">
+          <p className="section-kicker">Contacto</p>
+          <h2>¿Tenes una consulta o viste algo que te interesa?</h2>
+          <p className="muted-copy">
+            Escribinos por prendas, talles, ingresos nuevos o formas de entrega.
+          </p>
+        </div>
+        <Link
+          className="button button-primary lead-capture-cta-button"
+          to="/contact"
+        >
+          Contacto
+        </Link>
+      </section>
+
+      <section className="container section-card lead-capture-card lead-capture-card--cta">
+        <div className="lead-capture-copy">
           <p className="section-kicker">¡Ey!</p>
           <h2>¿Queres enterarte cuando entra ropa nueva?</h2>
           <p className="muted-copy">

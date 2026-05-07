@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import esadarWordmark from "../assets/esadar-wordmark.png";
 
 export default function Footer() {
   const { user } = useAuth();
@@ -10,16 +9,7 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className="container footer-grid footer-grid-logo">
-        <div className="footer-brand-block">
-          <img
-            src={esadarWordmark}
-            alt="ESADAR"
-            className="footer-logo-image"
-          />
-          <p className="footer-copy">Mile y Fede ♥ sentados en un arbol</p>
-        </div>
-
+      <div className="container footer-grid footer-grid-nav">
         <div>
           <p className="footer-title">Navegación</p>
           <div className="footer-links">

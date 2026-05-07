@@ -182,11 +182,22 @@ export default function AdminContactMessageDetailPage() {
               ) : null}
             </div>
 
-            <form className="page-stack" onSubmit={handleReplySubmit} noValidate>
+            <form
+              className="section-card nested-card page-stack-sm admin-contact-reply-card"
+              onSubmit={handleReplySubmit}
+              noValidate
+            >
+              <div className="stack-gap-sm">
+                <p className="section-kicker">Respuesta</p>
+                <h2>Responder por email</h2>
+                <p className="muted-copy">
+                  La respuesta se enviara al email del contacto y quedara registrada como gestionada.
+                </p>
+              </div>
               <label className="field-group">
-                <span>Respuesta</span>
+                <span>Mensaje de respuesta</span>
                 <textarea
-                  className="input textarea"
+                  className="input textarea admin-contact-reply-textarea"
                   value={replyText}
                   onChange={(event) => setReplyText(event.target.value)}
                   placeholder={
@@ -201,13 +212,15 @@ export default function AdminContactMessageDetailPage() {
                   Este contacto no tiene email asociado, por eso no se puede responder desde la app.
                 </p>
               ) : null}
-              <button
-                type="submit"
-                className="button button-primary"
-                disabled={saving || !message.email}
-              >
-                {saving ? 'Enviando...' : 'Enviar respuesta'}
-              </button>
+              <div className="admin-contact-reply-actions">
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  disabled={saving || !message.email}
+                >
+                  {saving ? 'Enviando...' : 'Enviar respuesta'}
+                </button>
+              </div>
             </form>
           </>
         ) : null}

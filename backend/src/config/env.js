@@ -15,6 +15,17 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function getSmtpPassword() {
+  const password = process.env.SMTP_PASSWORD || '';
+  const host = String(process.env.SMTP_HOST || '').toLowerCase();
+
+  if (host.includes('smtp.gmail.com')) {
+    return password.replace(/\s+/g, '');
+  }
+
+  return password;
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: (process.env.NODE_ENV || 'development') === 'production',
@@ -44,9 +55,9 @@ export const env = {
     port: toNumber(process.env.SMTP_PORT, 587),
     secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
     user: process.env.SMTP_USER || '',
-    password: process.env.SMTP_PASSWORD || '',
-    fromEmail: process.env.SMTP_FROM_EMAIL || '',
+    password: getSmtpPassword(),
+    fromEmail: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
     fromName: process.env.SMTP_FROM_NAME || process.env.STORE_NAME || 'ESADAR',
-    replyTo: process.env.SMTP_REPLY_TO || '',
+    replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || '',
   },
 };
