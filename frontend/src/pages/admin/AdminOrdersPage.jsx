@@ -6,9 +6,9 @@ import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
-import { EyeIcon } from "../../components/ActionIcons.jsx";
+import { DownloadIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
-import { apiFetch } from "../../lib/api.js";
+import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
 
@@ -115,6 +115,19 @@ export default function AdminOrdersPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+
+  async function handleDownloadPdf(order) {
+    try {
+      setError("");
+      await apiDownload(`/api/admin/orders/${order.id}/receipt.pdf`, {
+        fileName: `boleta-${order.orderNumber || order.id}.pdf`,
+        extension: "pdf",
+      });
+    } catch (err) {
+      setError(err.message || "No se pudo descargar el PDF de la orden");
+    }
   }
 
   function changeSort(sortBy) {
@@ -356,6 +369,16 @@ export default function AdminOrdersPage() {
                           <EyeIcon />
                           <span className="admin-action-label">Ver orden</span>
                         </Link>
+                        <button
+                          type="button"
+                          className="ghost-button admin-icon-action"
+                          aria-label={`Descargar PDF de la orden ${order.orderNumber}`}
+                          title="Descargar PDF"
+                          onClick={() => handleDownloadPdf(order)}
+                        >
+                          <DownloadIcon />
+                          <span className="admin-action-label">Descargar PDF</span>
+                        </button>
                       </div>
                     </td>
                   </tr>

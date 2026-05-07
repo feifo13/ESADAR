@@ -81,6 +81,10 @@ export default function LoginPage() {
         </button>
 
         <p className="muted-copy">
+          <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
+        </p>
+
+        <p className="muted-copy">
           ¿No tienes cuenta? <Link to="/register">Crear usuario</Link>
         </p>
       </form>

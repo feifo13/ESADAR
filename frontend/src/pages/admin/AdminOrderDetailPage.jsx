@@ -4,7 +4,8 @@ import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import SmartImage from '../../components/SmartImage.jsx';
-import { apiFetch } from '../../lib/api.js';
+import { DownloadIcon } from '../../components/ActionIcons.jsx';
+import { apiDownload, apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
 const HISTORY_STATUS_LABELS = {
@@ -82,6 +83,19 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+
+  async function handleDownloadPdf() {
+    try {
+      setError('');
+      await apiDownload(`/api/admin/orders/${id}/receipt.pdf`, {
+        fileName: `boleta-${order?.orderNumber || id}.pdf`,
+        extension: 'pdf',
+      });
+    } catch (err) {
+      setError(err.message || 'No se pudo descargar el PDF de la orden');
+    }
+  }
+
   async function handleRegisterPayment() {
     try {
       setPaymentSubmitting(true);
@@ -119,6 +133,15 @@ export default function AdminOrderDetailPage() {
           </div>
           <div className="stack-gap-xs align-end">
             <OrderStatusBadge status={order.orderStatus} />
+            <button
+              type="button"
+              className="ghost-button admin-icon-action"
+              onClick={handleDownloadPdf}
+              title="Descargar PDF"
+            >
+              <DownloadIcon />
+              <span className="admin-action-label">Descargar PDF</span>
+            </button>
             <Link to="/admin/orders" className="ghost-button linklike">Volver</Link>
           </div>
         </div>

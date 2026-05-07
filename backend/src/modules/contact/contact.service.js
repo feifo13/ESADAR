@@ -247,7 +247,7 @@ export async function replyContactMessage(id, replyMessage, auditContext) {
   });
 }
 
-async function getContactMessageById(id, connection) {
+export async function getContactMessageById(id, connection = pool) {
   const [rows] = await connection.execute(
     `
       SELECT

@@ -7,6 +7,7 @@ import {
 } from './contact.schemas.js';
 import {
   createContactMessage,
+  getContactMessageById,
   listContactMessages,
   replyContactMessage,
   updateContactMessageStatus,
@@ -36,6 +37,12 @@ export async function getAdminContactMessages(req, res) {
     pagination,
   });
   return res.json({ ok: true, ...result });
+}
+
+
+export async function getAdminContactMessage(req, res) {
+  const message = await getContactMessageById(Number(req.params.id));
+  return res.json({ ok: true, message });
 }
 
 export async function updateAdminContactMessageStatus(req, res) {

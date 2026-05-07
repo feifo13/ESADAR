@@ -8,6 +8,7 @@ import {
   createAdminOrderPayment,
   createPublicOrder,
   getAdminOrder,
+  getAdminOrderReceiptPdf,
   getAdminOrders,
   shipAdminOrder,
 } from './orders.controller.js';
@@ -19,6 +20,7 @@ publicRouter.post('/', optionalAuth, asyncHandler(createPublicOrder));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));
+adminRouter.get('/:id/receipt.pdf', asyncHandler(getAdminOrderReceiptPdf));
 adminRouter.get('/:id', asyncHandler(getAdminOrder));
 adminRouter.post('/:id/payments', asyncHandler(createAdminOrderPayment));
 adminRouter.patch('/:id/approve', asyncHandler(approveAdminOrder));

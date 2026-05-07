@@ -14,6 +14,7 @@ import {
   adminOrderListQuerySchema,
 } from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
+import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
 
 function getAuditContext(req) {
   return {
@@ -41,6 +42,19 @@ export async function getAdminOrders(req, res) {
 export async function getAdminOrder(req, res) {
   const order = await getOrderDetail(Number(req.params.id));
   return res.json({ ok: true, order });
+}
+
+
+
+export async function getAdminOrderReceiptPdf(req, res) {
+  const order = await getOrderDetail(Number(req.params.id));
+  const pdfBuffer = await generateOrderReceiptPdf(order);
+  const safeOrderNumber = String(order.orderNumber || req.params.id).replace(/[^a-zA-Z0-9_-]/g, '-');
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', pdfBuffer.length);
+  res.setHeader('Content-Disposition', `attachment; filename="boleta-${safeOrderNumber}.pdf"`);
+  return res.send(pdfBuffer);
 }
 
 export async function approveAdminOrder(req, res) {

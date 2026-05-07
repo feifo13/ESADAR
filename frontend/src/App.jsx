@@ -6,6 +6,8 @@ import ArticlePage from './pages/ArticlePage.jsx';
 import OfferPage from './pages/OfferPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import CheckoutPage from './pages/CheckoutPage.jsx';
 import CheckoutCompletePage from './pages/CheckoutCompletePage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
@@ -39,6 +41,8 @@ export default function App() {
         <Route path="articles/:slugOrId/offer" element={<OfferPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="checkout" element={<Navigate to="/checkout/resumen" replace />} />
         <Route path="checkout/resumen" element={<CheckoutPage />} />
         <Route path="checkout/comprador" element={<CheckoutPage />} />
