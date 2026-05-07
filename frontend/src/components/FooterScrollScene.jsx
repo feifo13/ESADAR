@@ -125,7 +125,7 @@ export default function FooterScrollScene() {
             className="footer-scroll-scene__logo"
           />
           <Link to="/about" className="footer-scroll-scene__copy">
-            Mile y Fede ♥ sentados en un arbol
+            Sobre nosotros
           </Link>
         </motion.div>
       </div>

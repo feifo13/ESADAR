@@ -1,14 +1,14 @@
-import { Outlet, useLocation, useNavigationType } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
-import Header from './Header.jsx';
-import ThemeDock from './ThemeDock.jsx';
-import ScrollChrome from './ScrollChrome.jsx';
-import FooterScrollScene from './FooterScrollScene.jsx';
-import SeoHead from './SeoHead.jsx';
-import ResponsiveTableLabels from './ResponsiveTableLabels.jsx';
-import AppSnackbar from './AppSnackbar.jsx';
-import { MobileMenuProvider } from '../contexts/MobileMenuContext.jsx';
-import esadarWordmark from '../assets/esadar-wordmark.png';
+import { Outlet, useLocation, useNavigationType } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import Header from "./Header.jsx";
+import ThemeDock from "./ThemeDock.jsx";
+import ScrollChrome from "./ScrollChrome.jsx";
+import FooterScrollScene from "./FooterScrollScene.jsx";
+import SeoHead from "./SeoHead.jsx";
+import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
+import AppSnackbar from "./AppSnackbar.jsx";
+import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
+import esadarWordmark from "../assets/esadar-wordmark.png";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
@@ -21,28 +21,32 @@ export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
-  const [introStage, setIntroStage] = useState('hidden');
+  const [introStage, setIntroStage] = useState("hidden");
   const [introKey, setIntroKey] = useState(0);
   const [introDuration, setIntroDuration] = useState(INTRO_INITIAL_VISIBLE_MS);
-  const [introFadeDuration, setIntroFadeDuration] = useState(INTRO_INITIAL_FADE_MS);
+  const [introFadeDuration, setIntroFadeDuration] = useState(
+    INTRO_INITIAL_FADE_MS,
+  );
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
-  const isHome = location.pathname === '/';
-  const isCheckoutView = location.pathname.startsWith('/checkout');
-  const isAdminView = location.pathname.startsWith('/admin');
-  const isAuthView = ['/login', '/register'].includes(location.pathname);
-  const isAccountView = location.pathname.startsWith('/cuenta');
-  const shouldNoIndex = isCheckoutView || isAdminView || isAuthView || isAccountView;
+  const isHome = location.pathname === "/";
+  const isCheckoutView = location.pathname.startsWith("/checkout");
+  const isAdminView = location.pathname.startsWith("/admin");
+  const isAuthView = ["/login", "/register"].includes(location.pathname);
+  const isAccountView = location.pathname.startsWith("/cuenta");
+  const shouldNoIndex =
+    isCheckoutView || isAdminView || isAuthView || isAccountView;
 
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
+    if (typeof window === "undefined") return undefined;
 
-    const restoreTop = navigationType === 'POP'
-      ? scrollPositionsRef.current.get(location.key) || 0
-      : 0;
+    const restoreTop =
+      navigationType === "POP"
+        ? scrollPositionsRef.current.get(location.key) || 0
+        : 0;
 
     const frameId = window.requestAnimationFrame(() => {
-      window.scrollTo({ top: restoreTop, left: 0, behavior: 'auto' });
+      window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
     });
 
     return () => {
@@ -56,8 +60,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
     const wantsReplay = Boolean(location.state?.replayIntro);
     const shouldShowInitial = !didInitialIntro.current;
@@ -66,12 +70,12 @@ export default function RootLayout() {
     didInitialIntro.current = true;
 
     if (!shouldShowIntro) {
-      setIntroStage('hidden');
+      setIntroStage("hidden");
       return undefined;
     }
 
     const replayReason = location.state?.replayIntroReason;
-    const isCartReplay = replayReason === 'cart';
+    const isCartReplay = replayReason === "cart";
 
     const visibleMs = shouldShowInitial
       ? INTRO_INITIAL_VISIBLE_MS
@@ -87,10 +91,16 @@ export default function RootLayout() {
     setIntroDuration(visibleMs);
     setIntroFadeDuration(fadeMs);
     setIntroKey((current) => current + 1);
-    setIntroStage('visible');
+    setIntroStage("visible");
 
-    const fadeTimer = window.setTimeout(() => setIntroStage('fading'), visibleMs);
-    const hideTimer = window.setTimeout(() => setIntroStage('hidden'), visibleMs + fadeMs);
+    const fadeTimer = window.setTimeout(
+      () => setIntroStage("fading"),
+      visibleMs,
+    );
+    const hideTimer = window.setTimeout(
+      () => setIntroStage("hidden"),
+      visibleMs + fadeMs,
+    );
 
     return () => {
       window.clearTimeout(fadeTimer);
@@ -98,16 +108,16 @@ export default function RootLayout() {
     };
   }, [location.key, location.state]);
 
-  const showIntro = introStage !== 'hidden';
+  const showIntro = introStage !== "hidden";
 
   return (
     <div
-      className={`app-shell${showIntro ? ' app-shell--intro-active' : ''}${isCheckoutView ? ' app-shell--checkout-view' : ''}${isAdminView ? ' app-shell--admin-view' : ''}${isAccountView ? ' app-shell--account-view' : ''}`}
+      className={`app-shell${showIntro ? " app-shell--intro-active" : ""}${isCheckoutView ? " app-shell--checkout-view" : ""}${isAdminView ? " app-shell--admin-view" : ""}${isAccountView ? " app-shell--account-view" : ""}`}
     >
       <ResponsiveTableLabels />
       {shouldNoIndex ? (
         <SeoHead
-          title={`ESADAR | ${isAdminView ? 'Backoffice' : isCheckoutView ? 'Checkout' : 'Acceso'}`}
+          title={`ESADAR | ${isAdminView ? "Backoffice" : isCheckoutView ? "Checkout" : "Acceso"}`}
           description="Vista interna o transaccional de ESADAR."
           noindex
         />
@@ -121,17 +131,17 @@ export default function RootLayout() {
           </div>
         </main>
       </MobileMenuProvider>
-      <FooterScrollScene />
+      {!shouldNoIndex ? <FooterScrollScene /> : null}
       <ThemeDock />
       <ScrollChrome />
 
       {showIntro ? (
         <div
           key={introKey}
-          className={`intro-splash${introStage === 'fading' ? ' intro-splash--fade-out' : ''}`}
+          className={`intro-splash${introStage === "fading" ? " intro-splash--fade-out" : ""}`}
           style={{
-            '--intro-logo-duration': `${introDuration}ms`,
-            '--intro-fade-duration': `${introFadeDuration}ms`,
+            "--intro-logo-duration": `${introDuration}ms`,
+            "--intro-fade-duration": `${introFadeDuration}ms`,
           }}
           aria-hidden="true"
         >

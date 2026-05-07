@@ -69,7 +69,7 @@ function CatalogSortControl({ value, onChange, onApplied }) {
   }
 
   return (
-    <div className="mobile-sort-panel" aria-label="Ordenamiento del catalogo">
+    <>
       <label className="field-group" htmlFor="mobile-sort-control">
         <span>Ordenar prendas</span>
         <select
@@ -100,7 +100,7 @@ function CatalogSortControl({ value, onChange, onApplied }) {
           Limpiar orden
         </button>
       </div>
-    </div>
+    </>
   );
 }
 
