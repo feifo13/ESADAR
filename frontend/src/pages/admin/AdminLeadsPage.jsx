@@ -4,12 +4,10 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
-import { EyeIcon } from "../../components/ActionIcons.jsx";
+import { ArchiveIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
-import { articlePath } from "../../lib/routes.js";
 import { buildQueryString } from "../../lib/query.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { notifyFormStatus } from "../../lib/validation.js";
@@ -33,13 +31,6 @@ const SOURCE_LABELS = {
   PRODUCT_INTEREST: "Interes de producto",
 };
 
-const ALERT_STATUS_LABELS = {
-  ACTIVE: "Activa",
-  PAUSED: "Pausada",
-  CONVERTED: "Convertida",
-  CANCELLED: "Cancelada",
-};
-
 const initialFilters = {
   q: "",
   source: "",
@@ -54,17 +45,6 @@ const initialFilters = {
 
 function formatSource(source) {
   return SOURCE_LABELS[source] || source || "Sin origen";
-}
-
-function formatPreferences(preferences = {}) {
-  const groups = [
-    ...(preferences.preferredCategories || []),
-    ...(preferences.preferredBrands || []),
-    ...(preferences.preferredSizes || []),
-    ...(preferences.preferredColors || []),
-  ].filter(Boolean);
-
-  return groups;
 }
 
 function renderContact(lead) {
@@ -84,16 +64,6 @@ export default function AdminLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedLeadId, setSelectedLeadId] = useState(null);
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState("");
-  const [statusForm, setStatusForm] = useState({
-    leadStatus: "NEW",
-    adminNotes: "",
-  });
-  const [savingStatus, setSavingStatus] = useState(false);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
@@ -145,43 +115,6 @@ export default function AdminLeadsPage() {
     };
   }, [query, notifyMobileStatus]);
 
-  useEffect(() => {
-    let ignore = false;
-
-    async function loadLeadDetail() {
-      if (!selectedLeadId) {
-        setSelectedLead(null);
-        setDetailError("");
-        return;
-      }
-
-      try {
-        setDetailLoading(true);
-        setDetailError("");
-        const response = await apiFetch(`/api/admin/leads/${selectedLeadId}`);
-        if (ignore) return;
-        setSelectedLead(response.lead);
-        setStatusForm({
-          leadStatus: response.lead.leadStatus || "NEW",
-          adminNotes: response.lead.adminNotes || "",
-        });
-      } catch (err) {
-        if (!ignore) {
-          const errorMessage = err.message || "No se pudo cargar el detalle del lead";
-          setDetailError(errorMessage);
-          notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
-        }
-      } finally {
-        if (!ignore) setDetailLoading(false);
-      }
-    }
-
-    loadLeadDetail();
-    return () => {
-      ignore = true;
-    };
-  }, [selectedLeadId, notifyMobileStatus]);
-
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
   }
@@ -211,48 +144,33 @@ export default function AdminLeadsPage() {
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
-  async function handleStatusSubmit(event) {
-    event.preventDefault();
-    if (!selectedLeadId) return;
-
+  async function handleArchiveLead(lead) {
     try {
-      setSavingStatus(true);
-      setDetailError("");
+      setError("");
       setMessage("");
-      const response = await apiFetch(
-        `/api/admin/leads/${selectedLeadId}/status`,
-        {
-          method: "PATCH",
-          body: statusForm,
-        },
-      );
-
-      setSelectedLead(response.lead);
-      setStatusForm({
-        leadStatus: response.lead.leadStatus || "NEW",
-        adminNotes: response.lead.adminNotes || "",
+      const response = await apiFetch(`/api/admin/leads/${lead.id}/status`, {
+        method: "PATCH",
+        body: { leadStatus: "ARCHIVED", adminNotes: lead.adminNotes || "" },
       });
       setItems((current) =>
         current.map((item) =>
-          Number(item.id) === Number(response.lead.id)
+          Number(item.id) === Number(lead.id)
             ? {
                 ...item,
-                leadStatus: response.lead.leadStatus,
-                adminNotes: response.lead.adminNotes,
-                updatedAt: response.lead.updatedAt,
+                leadStatus: response.lead?.leadStatus || "ARCHIVED",
+                adminNotes: response.lead?.adminNotes ?? item.adminNotes,
+                updatedAt: response.lead?.updatedAt || item.updatedAt,
               }
             : item,
         ),
       );
-      const successMessage = "El lead fue actualizado correctamente.";
+      const successMessage = "El lead fue archivado.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      const errorMessage = err.message || "No se pudo actualizar el lead";
-      setDetailError(errorMessage);
+      const errorMessage = err.message || "No se pudo archivar el lead";
+      setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-    } finally {
-      setSavingStatus(false);
     }
   }
 
@@ -453,6 +371,18 @@ export default function AdminLeadsPage() {
                             <EyeIcon />
                             <span className="admin-action-label">Ver detalle</span>
                           </Link>
+                          {lead.leadStatus !== "ARCHIVED" ? (
+                            <button
+                              type="button"
+                              className="button button-secondary button-compact admin-icon-action"
+                              aria-label={`Eliminar ${lead.firstName} ${lead.lastName}`}
+                              title="Eliminar"
+                              onClick={() => void handleArchiveLead(lead)}
+                            >
+                              <ArchiveIcon />
+                              <span className="admin-action-label">Eliminar</span>
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -468,144 +398,6 @@ export default function AdminLeadsPage() {
             </div>
           )
         ) : null}
-
-        <SurfaceModal
-          open={detailModalOpen}
-          onClose={() => setDetailModalOpen(false)}
-          title="Detalle del lead"
-          description="Datos de contacto, preferencias, alertas y seguimiento interno."
-          wide
-        >
-          {!selectedLeadId ? (
-            <p className="muted-copy">Selecciona un lead para ver detalles.</p>
-          ) : detailLoading ? (
-            <div className="centered-card">
-              <p className="muted-copy">Cargando detalle...</p>
-            </div>
-          ) : detailError ? null : selectedLead ? (
-            <div className="page-stack">
-              <div className="section-heading section-heading-wrap">
-                <div>
-                  <p className="section-kicker">Lead</p>
-                  <h2>{selectedLead.firstName} {selectedLead.lastName}</h2>
-                </div>
-                <StatusBadge
-                  status={selectedLead.leadStatus}
-                  labels={LEAD_STATUS_LABELS}
-                />
-              </div>
-
-              <div className="admin-detail-meta admin-detail-meta--grid">
-                <p className="summary-line"><span>Origen</span><strong>{formatSource(selectedLead.source)}</strong></p>
-                <p className="summary-line"><span>Email</span><strong>{selectedLead.email || "Sin email"}</strong></p>
-                <p className="summary-line"><span>WhatsApp</span><strong>{selectedLead.phone || "Sin telefono"}</strong></p>
-                <p className="summary-line"><span>Instagram</span><strong>{selectedLead.instagram || "Sin Instagram"}</strong></p>
-                <p className="summary-line"><span>Alta</span><strong>{formatDate(selectedLead.createdAt)}</strong></p>
-                <p className="summary-line"><span>Actualizacion</span><strong>{formatDate(selectedLead.updatedAt)}</strong></p>
-              </div>
-
-              <div className="page-stack stack-gap-sm">
-                <div>
-                  <p className="section-kicker">Preferencias</p>
-                  <div className="preference-chip-list">
-                    {formatPreferences(selectedLead.preferences).length ? (
-                      formatPreferences(selectedLead.preferences).map((item) => (
-                        <span key={`${selectedLead.id}-${item}`} className="preference-chip">
-                          {item}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="muted-copy">Sin preferencias guardadas.</span>
-                    )}
-                  </div>
-                  {selectedLead.preferences?.notes ? (
-                    <p className="muted-copy admin-detail-note">{selectedLead.preferences.notes}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <p className="section-kicker">Alertas</p>
-                  <div className="alert-list">
-                    {(selectedLead.alerts || []).length ? (
-                      selectedLead.alerts.map((alert) => (
-                        <div key={alert.id} className="history-row">
-                          <div className="table-actions table-actions-spread">
-                            <strong>{alert.alertType}</strong>
-                            <StatusBadge status={alert.status} labels={ALERT_STATUS_LABELS} />
-                          </div>
-                          <span>{alert.articleTitle || "Sin articulo asociado"}</span>
-                          {alert.articleSlug ? (
-                            <Link
-                              to={articlePath({ slug: alert.articleSlug, articleId: alert.articleId })}
-                              className="muted-copy"
-                            >
-                              Ver articulo publico
-                            </Link>
-                          ) : null}
-                          <span>{formatDate(alert.createdAt)}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="muted-copy">Sin alertas asociadas.</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="section-kicker">Wishlists</p>
-                  <div className="wishlist-summary">
-                    {(selectedLead.wishlists || []).length ? (
-                      selectedLead.wishlists.map((wishlist) => (
-                        <div key={wishlist.id} className="history-row">
-                          <strong>Wishlist #{wishlist.id}</strong>
-                          <span>{wishlist.itemCount} prendas guardadas</span>
-                          <span>{wishlist.sessionToken || "Sin session token"}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="muted-copy">Sin listas guardadas.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <form className="page-stack" onSubmit={handleStatusSubmit} noValidate>
-                <p className="section-kicker">Seguimiento interno</p>
-
-                <label className="field-group">
-                  <span>Estado</span>
-                  <select
-                    className="input"
-                    value={statusForm.leadStatus}
-                    onChange={(event) =>
-                      setStatusForm((current) => ({ ...current, leadStatus: event.target.value }))
-                    }
-                  >
-                    {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="field-group">
-                  <span>Notas administrativas</span>
-                  <textarea
-                    className="input textarea"
-                    value={statusForm.adminNotes}
-                    onChange={(event) =>
-                      setStatusForm((current) => ({ ...current, adminNotes: event.target.value }))
-                    }
-                    placeholder="Observaciones, proximo paso o contexto comercial."
-                  />
-                </label>
-
-                <button type="submit" className="button button-primary" disabled={savingStatus}>
-                  {savingStatus ? "Guardando..." : "Guardar seguimiento"}
-                </button>
-              </form>
-            </div>
-          ) : null}
-        </SurfaceModal>
 
         <AdminPagination
           page={Number(filters.page || 1)}

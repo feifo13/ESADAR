@@ -14,6 +14,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { useNotification } from "../contexts/NotificationContext.jsx";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
@@ -36,6 +37,7 @@ export default function ArticlePage() {
   const { site } = useSiteSeo();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError, notifyInfo } = useNotification();
   const [article, setArticle] = useState(null);
   const [relatedState, setRelatedState] = useState({
     mode: "empty",
@@ -44,9 +46,6 @@ export default function ArticlePage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
-  const [stockDialog, setStockDialog] = useState(null);
-  const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [alertInlineOpen, setAlertInlineOpen] = useState(false);
   const [alertForm, setAlertForm] = useState(initialAlertForm);
   const [alertSubmitting, setAlertSubmitting] = useState(false);
@@ -146,13 +145,7 @@ export default function ArticlePage() {
   function openStockAlertForm() {
     setAlertError("");
     setAlertSuccess("");
-    if (isMobileViewport()) {
-      setAlertInlineOpen((current) => !current);
-      setAlertModalOpen(false);
-      return;
-    }
-    setAlertInlineOpen(false);
-    setAlertModalOpen(true);
+    setAlertInlineOpen((current) => !current);
   }
 
   function showStockNotice(result) {
@@ -168,16 +161,11 @@ export default function ArticlePage() {
           message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
         };
 
-    if (isMobileViewport()) {
-      setStockDialog(null);
-      notifyMobileStatus({ type: "error", icon: "error", message: nextDialog.message });
-      return;
-    }
-
-    setStockDialog(nextDialog);
+    notifyError(nextDialog.message);
   }
 
   async function handleWishlistToggle() {
+    const wasSaved = savedInWishlist;
     const result = await toggleItem(article, {
       articleId: article.id,
       slug: article.slug,
@@ -197,16 +185,16 @@ export default function ArticlePage() {
       allowOffers: article.allowOffers,
     });
 
-    // if (!result.ok) {
-    //   setFeedback("No pudimos actualizar tus guardados.");
-    //   return;
-    // }
+    if (!result.ok) {
+      notifyError(result.error?.message || "No pudimos actualizar tus guardados.");
+      return;
+    }
 
-    // setFeedback(
-    //   savedInWishlist
-    //     ? "Quitamos la prenda de tus guardados."
-    //     : "La prenda quedo guardada.",
-    // );
+    notifySuccess(
+      wasSaved
+        ? "Quitamos la prenda de tus guardados."
+        : "La prenda quedo guardada.",
+    );
   }
 
   async function handleShare() {
@@ -221,7 +209,7 @@ export default function ArticlePage() {
         await navigator.share(shareData);
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(canonicalUrl);
-        setFeedback("Copiamos el enlace para compartir.");
+        notifyInfo("Copiamos el enlace para compartir.");
       }
 
       await apiFetch("/api/public/article-events", {
@@ -233,7 +221,7 @@ export default function ArticlePage() {
         },
       }).catch(() => undefined);
     } catch {
-      setFeedback("No pudimos compartir el enlace ahora.");
+      notifyError("No pudimos compartir el enlace ahora.");
     }
   }
 
@@ -372,7 +360,6 @@ export default function ArticlePage() {
             className="button button-secondary"
             onClick={() => {
               setAlertInlineOpen(false);
-              setAlertModalOpen(false);
             }}
           >
             Cerrar
@@ -517,11 +504,7 @@ export default function ArticlePage() {
                   });
                   showStockNotice(result);
                   if (result?.ok) {
-                    const successMessage = "Articulo agregado al carrito.";
-                    setFeedback(successMessage);
-                    if (isMobileViewport()) {
-                      notifyFormStatus(notifyMobileStatus, "success", successMessage);
-                    }
+                    notifySuccess("Articulo agregado al carrito.");
                   }
                 }}
               >
@@ -636,47 +619,6 @@ export default function ArticlePage() {
         ) : null}
       </div>
 
-      {stockDialog ? (
-        <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
-          <div
-            className="dialog-card"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="section-kicker">Stock</p>
-            <h3>{stockDialog.title}</h3>
-            <p className="muted-copy dialog-copy">{stockDialog.message}</p>
-            <div className="dialog-actions">
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={() => setStockDialog(null)}
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {alertModalOpen ? (
-        <div
-          className="dialog-backdrop dialog-backdrop--stock-alert"
-          onClick={() => setAlertModalOpen(false)}
-        >
-          <div
-            className="dialog-card dialog-card--wide stock-alert-dialog"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="section-kicker">Seguimiento</p>
-            <h3>
-              {isSoldOut
-                ? "Avisame si vuelve o entra algo similar"
-                : "Avisame si entra algo similar"}
-            </h3>
-            {renderStockAlertForm()}
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }

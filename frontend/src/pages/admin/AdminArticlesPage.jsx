@@ -4,10 +4,9 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
-import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { EditIcon } from "../../components/ActionIcons.jsx";
+import { ArchiveIcon, EditIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
@@ -65,7 +64,7 @@ export default function AdminArticlesPage() {
   const [downloadingTemplate, setDownloadingTemplate] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importPanelOpen, setImportPanelOpen] = useState(false);
 
   const totalPages = Math.max(
     1,
@@ -278,6 +277,31 @@ export default function AdminArticlesPage() {
     }
   }
 
+  async function handleSoftDeleteArticle(article) {
+    try {
+      setError("");
+      setMessage("");
+      const response = await apiFetch(`/api/admin/articles/${article.id}/status`, {
+        method: "PATCH",
+        body: { status: "INACTIVE" },
+      });
+      setItems((current) =>
+        current.map((item) =>
+          Number(item.id) === Number(article.id)
+            ? { ...item, ...(response.article || {}), status: response.article?.status || "INACTIVE" }
+            : item,
+        ),
+      );
+      const successMessage = "El articulo fue enviado a inactivos.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo desactivar el articulo.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+    }
+  }
+
   return (
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
@@ -293,9 +317,9 @@ export default function AdminArticlesPage() {
             <button
               type="button"
               className="button button-secondary"
-              onClick={() => setImportModalOpen(true)}
+              onClick={() => setImportPanelOpen((current) => !current)}
             >
-              Importar CSV/XLSX
+              {importPanelOpen ? "Ocultar importacion" : "Importar CSV/XLSX"}
             </button>
             <button
               type="button"
@@ -484,13 +508,7 @@ export default function AdminArticlesPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        <SurfaceModal
-          open={importModalOpen}
-          onClose={() => setImportModalOpen(false)}
-          title="Importar articulos"
-          description="Carga CSV o XLSX sin ocupar espacio permanente del listado."
-          wide
-        >
+        {importPanelOpen ? (
           <div className="section-card nested-card page-stack">
             <div className="section-heading section-heading-wrap">
               <div>
@@ -501,6 +519,13 @@ export default function AdminArticlesPage() {
                   completa con valores seguros.
                 </p>
               </div>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setImportPanelOpen(false)}
+              >
+                Cerrar
+              </button>
             </div>
 
             <div className="template-download-grid">
@@ -677,7 +702,7 @@ export default function AdminArticlesPage() {
               </div>
             ) : null}
           </div>
-        </SurfaceModal>
+        ) : null}
 
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
@@ -833,6 +858,18 @@ export default function AdminArticlesPage() {
                               <EditIcon />
                               <span className="admin-action-label">Editar</span>
                             </Link>
+                            {article.status !== "INACTIVE" ? (
+                              <button
+                                type="button"
+                                className="button button-secondary button-compact admin-icon-action"
+                                aria-label={`Eliminar ${article.title}`}
+                                title="Eliminar"
+                                onClick={() => void handleSoftDeleteArticle(article)}
+                              >
+                                <ArchiveIcon />
+                                <span className="admin-action-label">Eliminar</span>
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

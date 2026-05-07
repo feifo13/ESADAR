@@ -6,7 +6,7 @@ import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
-import { DownloadIcon, EyeIcon } from "../../components/ActionIcons.jsx";
+import { BanIcon, DownloadIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
@@ -38,7 +38,7 @@ const initialFilters = {
 
 export default function AdminOrdersPage() {
   const { categoryOptions, brandOptions } = useLookups();
-  const { notifyError } = useNotification();
+  const { notifyError, notifySuccess } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [orders, setOrders] = useState([]);
@@ -49,6 +49,7 @@ export default function AdminOrdersPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
@@ -94,7 +95,7 @@ export default function AdminOrdersPage() {
     return () => {
       ignore = true;
     };
-  }, [query]);
+  }, [query, refreshNonce]);
 
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
@@ -129,6 +130,22 @@ export default function AdminOrdersPage() {
       });
     } catch (err) {
       const errorMessage = err.message || "No se pudo descargar el PDF de la orden";
+      setError(errorMessage);
+      notifyError(errorMessage);
+    }
+  }
+
+  async function handleCancelOrder(order) {
+    try {
+      setError("");
+      await apiFetch(`/api/admin/orders/${order.id}/cancel`, {
+        method: "PATCH",
+        body: { reason: "Eliminada desde administracion." },
+      });
+      notifySuccess("La orden fue cancelada.");
+      setRefreshNonce((current) => current + 1);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo cancelar la orden";
       setError(errorMessage);
       notifyError(errorMessage);
     }
@@ -382,6 +399,18 @@ export default function AdminOrdersPage() {
                           <DownloadIcon />
                           <span className="admin-action-label">Descargar PDF</span>
                         </button>
+                        {!["CANCELLED", "SHIPPED", "EXPIRED"].includes(order.orderStatus) ? (
+                          <button
+                            type="button"
+                            className="ghost-button admin-icon-action"
+                            aria-label={`Eliminar orden ${order.orderNumber}`}
+                            title="Eliminar"
+                            onClick={() => void handleCancelOrder(order)}
+                          >
+                            <BanIcon />
+                            <span className="admin-action-label">Eliminar</span>
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

@@ -4,7 +4,6 @@ import SeoHead from "../components/SeoHead.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
-import SurfaceModal from "../components/SurfaceModal.jsx";
 import SortableTh from "../components/SortableTh.jsx";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
@@ -143,10 +142,6 @@ export default function AccountPage() {
   const [profileMessage, setProfileMessage] = useState("");
   const [orders, setOrders] = useState([]);
   const [alerts, setAlerts] = useState([]);
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
-  const [orderDetailLoading, setOrderDetailLoading] = useState(false);
-  const [orderDetailError, setOrderDetailError] = useState("");
   const [form, setForm] = useState(initialForm);
   const [wishlistSort, setWishlistSort] = useState({
     key: "title",
@@ -482,24 +477,6 @@ export default function AccountPage() {
     }
   }
 
-  async function openOrderDetail(orderId) {
-    try {
-      setOrderModalOpen(true);
-      setOrderDetailLoading(true);
-      setOrderDetailError("");
-      const response = await apiFetch(`/api/public/account/orders/${orderId}`);
-      setSelectedOrderDetail(response.order || null);
-    } catch (err) {
-      const errorMessage = err.message || "No pudimos cargar el detalle de la orden.";
-      setOrderDetailError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-      setSelectedOrderDetail(null);
-    } finally {
-      setOrderDetailLoading(false);
-    }
-  }
-
-
   async function downloadOrderReceipt(order) {
     try {
       const orderNumber = order?.orderNumber || order?.id || 'orden';
@@ -512,7 +489,6 @@ export default function AccountPage() {
         err,
         'No pudimos generar la boleta de la orden.',
       );
-      setOrderDetailError(errorMessage);
       notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
     }
   }
@@ -1389,15 +1365,14 @@ export default function AccountPage() {
                           <td>{formatDate(latestStatusDate)}</td>
                           <td>
                             <div className="table-actions">
-                              <button
-                                type="button"
+                              <Link
+                                to={`/cuenta/ordenes/${order.id}`}
                                 className="icon-action-button"
                                 aria-label={`Ver ${order.orderNumber}`}
                                 title="Ver orden"
-                                onClick={() => void openOrderDetail(order.id)}
                               >
                                 <EyeIcon />
-                              </button>
+                              </Link>
                               <button
                                 type="button"
                                 className="icon-action-button"
@@ -1420,158 +1395,6 @@ export default function AccountPage() {
         </section>
       ) : null}
 
-      <SurfaceModal
-        open={orderModalOpen}
-        onClose={() => setOrderModalOpen(false)}
-        title={
-          selectedOrderDetail
-            ? `Orden ${selectedOrderDetail.orderNumber}`
-            : "Detalle de orden"
-        }
-        description=""
-        wide
-        className="account-order-detail-modal"
-      >
-        {orderDetailLoading ? (
-          <p className="muted-copy">Cargando detalle...</p>
-        ) : null}
-        {selectedOrderDetail ? (
-          <div className="page-stack">
-            <div className="inline-action-group">
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => void downloadOrderReceipt(selectedOrderDetail)}
-              >
-                Descargar boleta PDF
-              </button>
-            </div>
-            <div className="admin-detail-meta">
-              <p className="summary-line">
-                <span>Estado actual</span>
-                <strong>
-                  <OrderStatusBadge status={selectedOrderDetail.orderStatus} />
-                </strong>
-              </p>
-              <p className="summary-line">
-                <span>Pago</span>
-                <strong>
-                  <StatusBadge
-                    status={selectedOrderDetail.paymentStatus}
-                    labels={PAYMENT_STATUS_LABELS}
-                  />
-                </strong>
-              </p>
-              <p className="summary-line">
-                <span>Total</span>
-                <strong>{formatCurrency(selectedOrderDetail.total)}</strong>
-              </p>
-              <p className="summary-line">
-                <span>Ultima actualizacion</span>
-                <strong>{formatDate(selectedOrderDetail.updatedAt)}</strong>
-              </p>
-            </div>
-
-            <div className="page-stack-sm">
-              <div>
-                <p className="section-kicker">Prendas</p>
-                <div className="table-shell order-items-table-shell">
-                  <table className="data-table order-items-table">
-                    <thead>
-                      <tr>
-                        <th>Prenda</th>
-                        <th>Marca</th>
-                        <th>Talle</th>
-                        <th>Cant.</th>
-                        <th>Unitario</th>
-                        <th>Total</th>
-                        <th>Accion</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrderDetail.items.map((item) => {
-                        const itemPath =
-                          item.articleSlug || item.articleId
-                            ? articlePath({
-                                slug: item.articleSlug,
-                                id: item.articleId,
-                                articleId: item.articleId,
-                              })
-                            : null;
-
-                        return (
-                          <tr key={item.id}>
-                            <td className="cell-truncate">
-                              <div className="cell-stack cell-stack--compact">
-                                <strong title={item.articleTitle}>
-                                  {item.articleTitle}
-                                </strong>
-                                <span className="muted-copy">
-                                  #{item.articleId || "s/d"}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="cell-truncate">
-                              {item.brandName || "Sin marca"}
-                            </td>
-                            <td className="cell-truncate">
-                              {item.size || "Sin talle"}
-                            </td>
-                            <td>{item.quantity}</td>
-                            <td>{formatCurrency(item.finalUnitPrice)}</td>
-                            <td>
-                              <strong>{formatCurrency(item.lineTotal)}</strong>
-                            </td>
-                            <td>
-                              {itemPath ? (
-                                <Link
-                                  className="icon-action-button"
-                                  to={itemPath}
-                                  aria-label={`Ver ${item.articleTitle}`}
-                                  title="Ver prenda"
-                                >
-                                  <EyeIcon />
-                                </Link>
-                              ) : (
-                                <span className="muted-copy">-</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div>
-                <p className="section-kicker">Historial</p>
-                <div className="history-list">
-                  {selectedOrderDetail.history.length ? (
-                    selectedOrderDetail.history.map((entry) => (
-                      <article key={entry.id} className="history-row">
-                        <div>
-                          <strong>
-                            <OrderStatusBadge status={entry.toStatus} />
-                          </strong>
-                          <p className="muted-copy">
-                            {entry.reason || "Sin comentario adicional"}
-                          </p>
-                        </div>
-                        <span>{formatDate(entry.changedAt)}</span>
-                      </article>
-                    ))
-                  ) : (
-                    <p className="muted-copy">
-                      Todavia no hay cambios de estado registrados.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </SurfaceModal>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import SurfaceModal from './SurfaceModal.jsx';
 
 function useIsMobileViewport(query = '(max-width: 900px)') {
   const [matches, setMatches] = useState(() => (
@@ -69,16 +68,29 @@ export default function ResponsiveFilterPanel({
           {summary ? <div className="responsive-filter-trigger__summary">{summary}</div> : null}
         </div>
 
-        <SurfaceModal
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          title={title}
-          description={description}
-          actions={actions}
-          wide
-        >
-          {children}
-        </SurfaceModal>
+        {mobileOpen ? (
+          <section className="responsive-filter-panel responsive-filter-panel--mobile is-open">
+            <div className="responsive-filter-panel__toolbar">
+              <div className="page-stack-sm">
+                <strong>{title}</strong>
+                {description ? <p className="muted-copy">{description}</p> : null}
+              </div>
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => setMobileOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="responsive-filter-panel__body">
+              {children}
+            </div>
+            <div className="responsive-filter-panel__actions">
+              {actions}
+            </div>
+          </section>
+        ) : null}
       </>
     );
   }

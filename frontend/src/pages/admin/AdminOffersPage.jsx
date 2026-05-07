@@ -386,11 +386,11 @@ export default function AdminOffersPage() {
                             onClick={() =>
                               handleStatusChange(offer.id, "CANCELLED")
                             }
-                            aria-label={`Cancelar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
-                            title="Cancelar"
+                            aria-label={`Eliminar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                            title="Eliminar"
                           >
                             <BanIcon />
-                            <span className="admin-action-label">Cancelar</span>
+                            <span className="admin-action-label">Eliminar</span>
                           </button>
                         </div>
                       ) : (

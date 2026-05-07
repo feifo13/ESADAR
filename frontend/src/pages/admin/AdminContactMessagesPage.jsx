@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
-import SurfaceModal from "../../components/SurfaceModal.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { ArchiveIcon, EyeIcon } from "../../components/ActionIcons.jsx";
@@ -45,9 +44,6 @@ export default function AdminContactMessagesPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  const [replyText, setReplyText] = useState("");
-  const [replyLoading, setReplyLoading] = useState(false);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
@@ -142,65 +138,6 @@ export default function AdminContactMessagesPage() {
       const errorMessage = err.message || "No se pudo actualizar el mensaje";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-    }
-  }
-
-  async function openMessageModal(item) {
-    setSelectedMessage(item);
-    setReplyText("");
-    setError("");
-    setMessage("");
-
-    if (item.status === "NEW") {
-      await updateStatus(item.id, "READ");
-      setSelectedMessage((current) =>
-        current ? { ...current, status: "READ" } : current,
-      );
-    }
-  }
-
-  async function handleReplySubmit() {
-    if (!selectedMessage) return;
-
-    if (!selectedMessage.email) {
-      const errorMessage = "Este contacto no tiene email para responder.";
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-      return;
-    }
-
-    if (!replyText.trim()) {
-      const errorMessage = "Escribe una respuesta antes de enviar.";
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-      return;
-    }
-
-    try {
-      setReplyLoading(true);
-      setError("");
-      setMessage("");
-      const response = await apiFetch(
-        `/api/admin/contact-messages/${selectedMessage.id}/reply`,
-        {
-          method: "POST",
-          body: { replyMessage: replyText },
-        },
-      );
-      setSelectedMessage((current) =>
-        current ? { ...current, ...response.message } : current,
-      );
-      setReplyText("");
-      const successMessage = "La respuesta fue enviada correctamente.";
-      setMessage(successMessage);
-      notifyFormStatus(notifyMobileStatus, "success", successMessage);
-      setRefreshNonce((current) => current + 1);
-    } catch (err) {
-      const errorMessage = err.message || "No se pudo enviar la respuesta";
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
-    } finally {
-      setReplyLoading(false);
     }
   }
 
@@ -396,11 +333,11 @@ export default function AdminContactMessagesPage() {
                             type="button"
                             className="ghost-button admin-icon-action"
                             onClick={() => updateStatus(item.id, "ARCHIVED")}
-                            aria-label={`Archivar mensaje de ${item.firstName} ${item.lastName}`}
-                            title="Archivar"
+                            aria-label={`Eliminar mensaje de ${item.firstName} ${item.lastName}`}
+                            title="Eliminar"
                           >
                             <ArchiveIcon />
-                            <span className="admin-action-label">Archivar</span>
+                            <span className="admin-action-label">Eliminar</span>
                           </button>
                         ) : null}
                       </div>
@@ -436,68 +373,6 @@ export default function AdminContactMessagesPage() {
         />
       </section>
 
-      <SurfaceModal
-        open={Boolean(selectedMessage)}
-        onClose={() => setSelectedMessage(null)}
-        title={selectedMessage ? `${selectedMessage.firstName} ${selectedMessage.lastName}` : "Contacto"}
-        description="Lectura y respuesta del mensaje recibido."
-        wide
-        actions={(
-          <>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => setSelectedMessage(null)}
-            >
-              Cerrar
-            </button>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={() => void handleReplySubmit()}
-              disabled={replyLoading || !replyText.trim() || !selectedMessage?.email}
-            >
-              {replyLoading ? "Enviando..." : "Enviar respuesta"}
-            </button>
-          </>
-        )}
-      >
-        {selectedMessage ? (
-          <div className="page-stack">
-            <div className="admin-detail-meta">
-              <p className="summary-line"><span>Email</span><strong>{selectedMessage.email || "Sin email"}</strong></p>
-              <p className="summary-line"><span>Telefono</span><strong>{selectedMessage.phone || "Sin telefono"}</strong></p>
-              <p className="summary-line"><span>Instagram</span><strong>{selectedMessage.instagram || "Sin Instagram"}</strong></p>
-              <p className="summary-line"><span>Fecha</span><strong>{formatDate(selectedMessage.createdAt)}</strong></p>
-            </div>
-
-            <div className="section-card nested-card page-stack-sm">
-              <p className="section-kicker">Mensaje</p>
-              <p className="dialog-copy">{selectedMessage.message}</p>
-            </div>
-
-            <label className="field-group">
-              <span>Respuesta</span>
-              <textarea
-                className="input textarea"
-                value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                placeholder={
-                  selectedMessage.email
-                    ? "Escribe la respuesta para enviar por email."
-                    : "Este contacto no tiene email para responder."
-                }
-              />
-            </label>
-
-            {!selectedMessage.email ? (
-              <p className="muted-copy">
-                Este mensaje no tiene email asociado, por eso no se puede responder desde la app.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </SurfaceModal>
     </div>
   );
 }

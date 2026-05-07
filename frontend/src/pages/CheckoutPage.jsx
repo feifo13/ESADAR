@@ -4,6 +4,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { useNotification } from "../contexts/NotificationContext.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
@@ -101,6 +102,7 @@ export default function CheckoutPage() {
   const { shippingMethodOptions, paymentMethodOptions, lookupError } =
     useLookups();
   const { notifyMobileStatus } = useMobileMenu();
+  const { notifyError } = useNotification();
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
@@ -114,7 +116,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [stockDialog, setStockDialog] = useState(null);
 
   const currentStepKey = location.pathname.split("/")[2] || "resumen";
   const currentStepIndex = Math.max(
@@ -352,7 +353,7 @@ export default function CheckoutPage() {
     }
   }
 
-  function showStockDialog(result) {
+  function showStockNotice(result) {
     if (!result || result.ok) return;
 
     const nextDialog = result.code === "OUT_OF_STOCK"
@@ -365,17 +366,7 @@ export default function CheckoutPage() {
           message: `Solo puedes comprar ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} de esta prenda.`,
         };
 
-    if (isMobileSummary) {
-      setStockDialog(null);
-      notifyMobileStatus({
-        type: "error",
-        icon: "error",
-        message: nextDialog.message,
-      });
-      return;
-    }
-
-    setStockDialog(nextDialog);
+    notifyError(nextDialog.message);
   }
 
   function renderSummaryStep() {
@@ -401,7 +392,7 @@ export default function CheckoutPage() {
                   onRemove={removeItem}
                   onQuantityChange={(articleId, quantity) => {
                     const result = updateQuantity(articleId, quantity);
-                    showStockDialog(result);
+                    showStockNotice(result);
                   }}
                 />
               ))}
@@ -454,7 +445,7 @@ export default function CheckoutPage() {
                               item.articleId,
                               Number(event.target.value || 1),
                             );
-                            showStockDialog(result);
+                            showStockNotice(result);
                           }}
                         />
                       </td>
@@ -869,27 +860,6 @@ export default function CheckoutPage() {
         </section>
       </div>
 
-      {stockDialog ? (
-        <div className="dialog-backdrop" onClick={() => setStockDialog(null)}>
-          <div
-            className="dialog-card"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <p className="section-kicker">Carrito</p>
-            <h3>{stockDialog.title}</h3>
-            <p className="muted-copy dialog-copy">{stockDialog.message}</p>
-            <div className="dialog-actions">
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={() => setStockDialog(null)}
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }
