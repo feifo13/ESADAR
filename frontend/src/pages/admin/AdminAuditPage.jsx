@@ -3,6 +3,7 @@ import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -27,6 +28,7 @@ function formatActor(entry) {
 }
 
 export default function AdminAuditPage() {
+  const { notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -70,7 +72,11 @@ export default function AdminAuditPage() {
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudo cargar la auditoria");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudo cargar la auditoria";
+          setError(errorMessage);
+          notifyError(errorMessage);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -247,7 +253,6 @@ export default function AdminAuditPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <AdminPagination

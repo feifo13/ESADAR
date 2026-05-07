@@ -70,8 +70,6 @@ export default function LoginPage() {
           />
         </label>
 
-        {error ? <p className="error-copy">{error}</p> : null}
-
         <button
           className="button button-primary"
           type="submit"

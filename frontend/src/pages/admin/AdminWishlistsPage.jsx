@@ -7,6 +7,7 @@ import SmartImage from "../../components/SmartImage.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
@@ -40,6 +41,7 @@ const initialFilters = {
 
 export default function AdminWishlistsPage() {
   const { categoryOptions, brandOptions } = useLookups();
+  const { notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState([]);
@@ -113,8 +115,11 @@ export default function AdminWishlistsPage() {
           setSelectedWishlist(null);
         }
       } catch (err) {
-        if (!ignore)
-          setError(err.message || "No se pudieron cargar los guardados.");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudieron cargar los guardados.";
+          setError(errorMessage);
+          notifyError(errorMessage);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -137,8 +142,11 @@ export default function AdminWishlistsPage() {
         const response = await apiFetch(`/api/admin/wishlists/${selectedId}`);
         if (!ignore) setSelectedWishlist(response.wishlist);
       } catch (err) {
-        if (!ignore)
-          setError(err.message || "No se pudo cargar el detalle del guardado.");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudo cargar el detalle del guardado.";
+          setError(errorMessage);
+          notifyError(errorMessage);
+        }
       } finally {
         if (!ignore) setDetailLoading(false);
       }
@@ -359,7 +367,6 @@ export default function AdminWishlistsPage() {
           </div>
         ) : null}
 
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? (
           <p className="muted-copy">Cargando analitica de guardados...</p>
         ) : null}

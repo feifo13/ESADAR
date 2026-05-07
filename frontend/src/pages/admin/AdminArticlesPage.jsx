@@ -679,8 +679,6 @@ export default function AdminArticlesPage() {
           </div>
         </SurfaceModal>
 
-        {message ? <p className="success-copy">{message}</p> : null}
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <AdminPagination

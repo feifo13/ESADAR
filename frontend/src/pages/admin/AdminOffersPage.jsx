@@ -6,6 +6,7 @@ import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { BanIcon, CheckIcon, XIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -33,6 +34,7 @@ const initialFilters = {
 
 export default function AdminOffersPage() {
   const { categoryOptions, brandOptions } = useLookups();
+  const { notifySuccess, notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [offers, setOffers] = useState([]);
@@ -129,9 +131,12 @@ export default function AdminOffersPage() {
         body: { status: nextStatus },
       });
       setMessage("La oferta fue actualizada correctamente.");
+      notifySuccess("La oferta fue actualizada correctamente.");
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      setError(err.message || "No se pudo actualizar la oferta");
+      const errorMessage = err.message || "No se pudo actualizar la oferta";
+      setError(errorMessage);
+      notifyError(errorMessage);
     }
   }
 
@@ -283,8 +288,6 @@ export default function AdminOffersPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {message ? <p className="success-copy">{message}</p> : null}
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <AdminPagination

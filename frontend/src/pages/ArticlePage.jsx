@@ -366,9 +366,6 @@ export default function ArticlePage() {
           </label>
         </div>
 
-        {alertError ? <p className="error-copy">{alertError}</p> : null}
-        {alertSuccess ? <p className="success-copy">{alertSuccess}</p> : null}
-
         <div className="dialog-actions stock-alert-actions">
           <button
             type="button"
@@ -501,7 +498,6 @@ export default function ArticlePage() {
               <strong className="price-current price-current-large">{formatCurrency(finalPrice)}</strong>
             </div> */}
 
-            {feedback ? <p className="success-copy">{feedback}</p> : null}
             {currentCartItem ? (
               <p className="checkbox-row-accent">
                 Ya tienes {currentCartItem.quantity} unidad

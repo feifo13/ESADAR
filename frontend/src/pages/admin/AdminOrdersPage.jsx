@@ -8,6 +8,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import { DownloadIcon, EyeIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
@@ -37,6 +38,7 @@ const initialFilters = {
 
 export default function AdminOrdersPage() {
   const { categoryOptions, brandOptions } = useLookups();
+  const { notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [orders, setOrders] = useState([]);
@@ -126,7 +128,9 @@ export default function AdminOrdersPage() {
         extension: "pdf",
       });
     } catch (err) {
-      setError(err.message || "No se pudo descargar el PDF de la orden");
+      const errorMessage = err.message || "No se pudo descargar el PDF de la orden";
+      setError(errorMessage);
+      notifyError(errorMessage);
     }
   }
 
@@ -304,7 +308,6 @@ export default function AdminOrdersPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <AdminPagination

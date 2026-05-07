@@ -73,9 +73,6 @@ export default function ForgotPasswordPage() {
           />
         </label>
 
-        {error ? <p className="error-copy">{error}</p> : null}
-        {message ? <p className="success-copy">{message}</p> : null}
-
         <button className="button button-primary" type="submit" disabled={submitting}>
           {submitting ? 'Enviando...' : 'Enviar instrucciones'}
         </button>

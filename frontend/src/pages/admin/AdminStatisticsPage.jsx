@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { buildQueryString } from "../../lib/query.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
@@ -118,6 +119,7 @@ export default function AdminStatisticsPage() {
     shippingMethodOptions,
     paymentMethodOptions,
   } = useLookups();
+  const { notifyError } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [loading, setLoading] = useState(true);
@@ -210,8 +212,11 @@ export default function AdminStatisticsPage() {
         setWishlist(wishlistResponse.wishlist || null);
         setMarketStudy(marketResponse.marketStudy || EMPTY_MARKET_STUDY);
       } catch (err) {
-        if (!ignore)
-          setError(err.message || "No se pudieron cargar las estadisticas.");
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudieron cargar las estadisticas.";
+          setError(errorMessage);
+          notifyError(errorMessage);
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -245,7 +250,9 @@ export default function AdminStatisticsPage() {
         extension: "xlsx",
       });
     } catch (err) {
-      setError(err.message || "No se pudo exportar el reporte.");
+      const errorMessage = err.message || "No se pudo exportar el reporte.";
+      setError(errorMessage);
+      notifyError(errorMessage);
     } finally {
       setExporting("");
     }
@@ -441,7 +448,6 @@ export default function AdminStatisticsPage() {
           </button>
         </div>
 
-        {error ? <p className="error-copy">{error}</p> : null}
       </section>
 
       {loading ? (

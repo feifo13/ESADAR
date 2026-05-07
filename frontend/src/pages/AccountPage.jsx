@@ -490,9 +490,9 @@ export default function AccountPage() {
       const response = await apiFetch(`/api/public/account/orders/${orderId}`);
       setSelectedOrderDetail(response.order || null);
     } catch (err) {
-      setOrderDetailError(
-        err.message || "No pudimos cargar el detalle de la orden.",
-      );
+      const errorMessage = err.message || "No pudimos cargar el detalle de la orden.";
+      setOrderDetailError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       setSelectedOrderDetail(null);
     } finally {
       setOrderDetailLoading(false);
@@ -827,10 +827,6 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {profileError ? <p className="error-copy">{profileError}</p> : null}
-            {profileMessage ? (
-              <p className="success-copy">{profileMessage}</p>
-            ) : null}
             <div className="inline-action-group">
               <button
                 type="submit"
@@ -1092,8 +1088,6 @@ export default function AccountPage() {
           {isAuthenticated && !alerts.length ? (
             <p className="muted-copy">Todavia no tienes alertas activas.</p>
           ) : null}
-          {alertError ? <p className="error-copy">{alertError}</p> : null}
-
           {isAuthenticated && alerts.length ? (
             <>
               <div className="account-mobile-list">
@@ -1441,10 +1435,6 @@ export default function AccountPage() {
         {orderDetailLoading ? (
           <p className="muted-copy">Cargando detalle...</p>
         ) : null}
-        {orderDetailError ? (
-          <p className="error-copy">{orderDetailError}</p>
-        ) : null}
-
         {selectedOrderDetail ? (
           <div className="page-stack">
             <div className="inline-action-group">

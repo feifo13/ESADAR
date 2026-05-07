@@ -5,6 +5,7 @@ import OrderStatusBadge from '../components/OrderStatusBadge.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import SummaryItemCard from '../components/SummaryItemCard.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useNotification } from '../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../lib/api.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 
@@ -25,6 +26,7 @@ const PAYMENT_METHOD_LABELS = {
 export default function AccountOrderDetailPage() {
   const { id } = useParams();
   const { isAuthenticated } = useAuth();
+  const { notifyError } = useNotification();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,7 +68,9 @@ export default function AccountOrderDetailPage() {
         fileName: `boleta-${order.orderNumber || order.id}.pdf`,
       });
     } catch (err) {
-      setReceiptError(err.message || 'No pudimos generar la boleta de la orden.');
+      const errorMessage = err.message || 'No pudimos generar la boleta de la orden.';
+      setReceiptError(errorMessage);
+      notifyError(errorMessage);
     } finally {
       setReceiptLoading(false);
     }
@@ -114,7 +118,6 @@ export default function AccountOrderDetailPage() {
                 <OrderStatusBadge status={order.orderStatus} />
               </div>
             </div>
-            {receiptError ? <p className="error-copy">{receiptError}</p> : null}
             <div className="admin-detail-meta account-order-detail-meta">
               <p className="summary-line"><span>Creada</span><strong>{formatDate(order.createdAt)}</strong></p>
               <p className="summary-line"><span>Pago</span><strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>

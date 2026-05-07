@@ -1204,9 +1204,6 @@ export default function AdminArticleFormPage() {
                         </button>
                       </div>
 
-                      {image.processingError ? (
-                        <p className="error-copy">{image.processingError}</p>
-                      ) : null}
                     </div>
                   </article>
                 ))}
@@ -1362,9 +1359,6 @@ export default function AdminArticleFormPage() {
             </details>
           </section>
         ) : null}
-
-        {error ? <p className="error-copy">{error}</p> : null}
-        {message ? <p className="success-copy">{message}</p> : null}
 
         <div className="article-wizard-footer">
           <div className="inline-note">

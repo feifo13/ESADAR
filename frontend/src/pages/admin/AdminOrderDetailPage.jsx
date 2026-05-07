@@ -5,6 +5,7 @@ import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import SmartImage from '../../components/SmartImage.jsx';
 import { DownloadIcon } from '../../components/ActionIcons.jsx';
+import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 
@@ -28,6 +29,7 @@ const PAYMENT_STATUS_LABELS = {
 
 export default function AdminOrderDetailPage() {
   const { id } = useParams();
+  const { notifySuccess, notifyError } = useNotification();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -57,7 +59,9 @@ export default function AdminOrderDetailPage() {
       setError('');
       setMessage('');
       if (action === 'cancel' && !cancelReason.trim()) {
-        setError('Escribe un motivo de cancelacion.');
+        const errorMessage = 'Escribe un motivo de cancelacion.';
+        setError(errorMessage);
+        notifyError(errorMessage);
         return;
       }
 
@@ -76,10 +80,14 @@ export default function AdminOrderDetailPage() {
 
       const response = await apiFetch(path, options);
       setOrder(response.order);
-      setMessage('La orden fue actualizada correctamente.');
+      const successMessage = 'La orden fue actualizada correctamente.';
+      setMessage(successMessage);
+      notifySuccess(successMessage);
       setCancelReason('');
     } catch (err) {
-      setError(err.message || 'No se pudo actualizar la orden');
+      const errorMessage = err.message || 'No se pudo actualizar la orden';
+      setError(errorMessage);
+      notifyError(errorMessage);
     }
   }
 
@@ -92,7 +100,9 @@ export default function AdminOrderDetailPage() {
         extension: 'pdf',
       });
     } catch (err) {
-      setError(err.message || 'No se pudo descargar el PDF de la orden');
+      const errorMessage = err.message || 'No se pudo descargar el PDF de la orden';
+      setError(errorMessage);
+      notifyError(errorMessage);
     }
   }
 
@@ -106,9 +116,13 @@ export default function AdminOrderDetailPage() {
         body: {},
       });
       setOrder(response.order);
-      setMessage('El pago interno quedo registrado.');
+      const successMessage = 'El pago interno quedo registrado.';
+      setMessage(successMessage);
+      notifySuccess(successMessage);
     } catch (err) {
-      setError(err.message || 'No se pudo registrar el pago');
+      const errorMessage = err.message || 'No se pudo registrar el pago';
+      setError(errorMessage);
+      notifyError(errorMessage);
     } finally {
       setPaymentSubmitting(false);
     }
@@ -222,9 +236,6 @@ export default function AdminOrderDetailPage() {
                 </button>
               ) : null}
             </div>
-
-            {message ? <p className="success-copy">{message}</p> : null}
-            {error ? <p className="error-copy">{error}</p> : null}
 
             <div className="section-card nested-card stack-gap-sm">
               <h3>Acciones</h3>

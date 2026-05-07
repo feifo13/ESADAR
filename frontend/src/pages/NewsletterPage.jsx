@@ -224,9 +224,6 @@ export default function NewsletterPage() {
             </label>
           </div>
 
-          {leadError ? <p className="error-copy">{leadError}</p> : null}
-          {leadSuccess ? <p className="success-copy">{leadSuccess}</p> : null}
-
           <div className="inline-action-group">
             <button
               className="button button-primary"

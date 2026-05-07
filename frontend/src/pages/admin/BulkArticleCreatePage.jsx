@@ -5,6 +5,7 @@ import BulkArticleFormBlock from '../../components/admin/BulkArticleFormBlock.js
 import BulkArticleSubmitSummary from '../../components/admin/BulkArticleSubmitSummary.jsx';
 import { IMAGE_ROLE_DEFINITIONS, createEmptyImageState } from '../../components/admin/BulkArticleImageChecklist.jsx';
 import { useLookups } from '../../contexts/LookupsContext.jsx';
+import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 
 function createEmptyArticle() {
@@ -114,6 +115,7 @@ async function uploadArticleImages(articleId, article) {
 export default function BulkArticleCreatePage() {
   const navigate = useNavigate();
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const { notifyError } = useNotification();
   const [articles, setArticles] = useState([createEmptyArticle()]);
   const [createMissingLookups, setCreateMissingLookups] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -184,7 +186,9 @@ export default function BulkArticleCreatePage() {
         },
       });
     } catch (err) {
-      setError(err.message || 'No se pudieron crear los articulos.');
+      const errorMessage = err.message || 'No se pudieron crear los articulos.';
+      setError(errorMessage);
+      notifyError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -219,7 +223,6 @@ export default function BulkArticleCreatePage() {
           <span>Crear categorias, marcas y talles faltantes</span>
         </label>
 
-        {error ? <p className="error-copy">{error}</p> : null}
       </section>
 
       {articles.map((article, index) => (

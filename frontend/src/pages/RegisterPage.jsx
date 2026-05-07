@@ -108,7 +108,6 @@ export default function RegisterPage() {
           </label>
         </div>
 
-        {error ? <p className="error-copy">{error}</p> : null}
         <button className="button button-primary" type="submit" disabled={submitting}>
           {submitting ? 'Creando…' : 'Crear cuenta'}
         </button>

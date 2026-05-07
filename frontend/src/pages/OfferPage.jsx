@@ -352,8 +352,6 @@ export default function OfferPage() {
               </Link>
             </div>
 
-            {error ? <p className="error-copy">{error}</p> : null}
-            {success ? <p className="success-copy">{success}</p> : null}
             {!isAuthenticated ? (
               <p className="muted-copy">
                 Si prefieres, tambien puedes <Link to="/login">ingresar</Link>{" "}

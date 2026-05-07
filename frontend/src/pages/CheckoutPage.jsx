@@ -845,8 +845,6 @@ export default function CheckoutPage() {
             </button>
 
             <div className="checkout-navigation-status">
-              {error ? <p className="error-copy">{error}</p> : null}
-              {success ? <p className="success-copy">{success}</p> : null}
             </div>
 
             {currentStepKey === "confirmacion" ? (

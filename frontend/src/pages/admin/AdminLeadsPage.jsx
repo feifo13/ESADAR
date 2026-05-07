@@ -166,10 +166,11 @@ export default function AdminLeadsPage() {
           adminNotes: response.lead.adminNotes || "",
         });
       } catch (err) {
-        if (!ignore)
-          setDetailError(
-            err.message || "No se pudo cargar el detalle del lead",
-          );
+        if (!ignore) {
+          const errorMessage = err.message || "No se pudo cargar el detalle del lead";
+          setDetailError(errorMessage);
+          notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
+        }
       } finally {
         if (!ignore) setDetailLoading(false);
       }
@@ -179,7 +180,7 @@ export default function AdminLeadsPage() {
     return () => {
       ignore = true;
     };
-  }, [selectedLeadId]);
+  }, [selectedLeadId, notifyMobileStatus]);
 
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
@@ -389,8 +390,6 @@ export default function AdminLeadsPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {message ? <p className="success-copy">{message}</p> : null}
-        {error ? <p className="error-copy">{error}</p> : null}
         {loading ? <div className="centered-card">Cargando...</div> : null}
 
         <AdminPagination
@@ -483,11 +482,7 @@ export default function AdminLeadsPage() {
             <div className="centered-card">
               <p className="muted-copy">Cargando detalle...</p>
             </div>
-          ) : detailError ? (
-            <div className="centered-card">
-              <p className="error-copy">{detailError}</p>
-            </div>
-          ) : selectedLead ? (
+          ) : detailError ? null : selectedLead ? (
             <div className="page-stack">
               <div className="section-heading section-heading-wrap">
                 <div>

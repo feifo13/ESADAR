@@ -159,22 +159,18 @@ function SortIcon() {
 
 function MenuGlyph() {
   return (
-    <svg viewBox="0 0 44 44" aria-hidden="true" className="menu-glyph">
-      <rect
-        x="5"
-        y="5"
-        width="34"
-        height="34"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.6"
-      />
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="menu-glyph"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="square"
+      strokeLinejoin="round"
+    >
       <path
-        d="M13 16h18M13 22h18M13 28h18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="square"
+        d="M5 7h14M5 12h14M5 17h14"
       />
     </svg>
   );
