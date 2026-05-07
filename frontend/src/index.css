@@ -11998,22 +11998,25 @@ textarea,
 }
 
 .contact-form-actions,
-.admin-contact-reply-actions {
+.admin-detail-form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
 
-.admin-contact-reply-card {
+.admin-detail-form-card {
   gap: 18px;
+  width: 100%;
 }
 
-.admin-contact-reply-card h2 {
+.admin-detail-form-card h2 {
   margin: 0;
+  font-size: clamp(1.18rem, 2vw, 1.45rem);
 }
 
-.admin-contact-reply-textarea {
+.admin-detail-form-textarea {
   min-height: 180px;
+  width: 100%;
 }
 
 @media (max-width: 820px) {
@@ -12031,13 +12034,13 @@ textarea,
   }
 
   .contact-form-actions,
-  .admin-contact-reply-actions {
+  .admin-detail-form-actions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
   .contact-form-actions .button,
-  .admin-contact-reply-actions .button {
+  .admin-detail-form-actions .button {
     width: 100%;
   }
 }

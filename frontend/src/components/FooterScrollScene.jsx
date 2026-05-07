@@ -52,21 +52,14 @@ export default function FooterScrollScene() {
       frameId = 0;
 
       const footerRect = footer.getBoundingClientRect();
-      const sceneRect = sceneRef.current?.getBoundingClientRect();
-      const headerBottom = Math.max(0, header.offsetHeight || 0);
       const viewportHeight = window.innerHeight || 1;
-      const sceneHeight = sceneRect?.height || viewportHeight;
-      const activationDistance = Math.max(
-        viewportHeight * 0.72,
-        footerRect.height + sceneHeight * 0.38,
-      );
-      const rawProgress = (headerBottom - footerRect.top) / activationDistance;
+      const rawProgress = (viewportHeight - footerRect.top) / viewportHeight;
       const progress = clamp01(rawProgress);
       const headerHideProgress = prefersReducedMotion
-        ? progress >= 0.55
+        ? progress >= 0.72
           ? 1
           : 0
-        : clamp01((progress - 0.12) / 0.72);
+        : clamp01((progress - 0.18) / 0.72);
 
       appShell.style.setProperty("--footer-scroll-progress", String(progress));
       appShell.style.setProperty(

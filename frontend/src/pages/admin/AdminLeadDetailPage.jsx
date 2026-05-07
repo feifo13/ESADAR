@@ -72,7 +72,39 @@ export default function AdminLeadDetailPage() {
           <div className="page-stack-sm"><p className="section-kicker">Preferencias</p><div className="preference-chip-list">{formatPreferences(lead.preferences).length ? formatPreferences(lead.preferences).map((item) => <span key={`${lead.id}-${item}`} className="preference-chip">{item}</span>) : <span className="muted-copy">Sin preferencias guardadas.</span>}</div>{lead.preferences?.notes ? <p className="muted-copy admin-detail-note">{lead.preferences.notes}</p> : null}</div>
           <div className="page-stack-sm"><p className="section-kicker">Alertas</p>{(lead.alerts || []).length ? <div className="history-list">{lead.alerts.map((alert) => <article key={alert.id} className="history-row"><div><strong>{alert.alertType}</strong><p className="muted-copy">{alert.articleTitle || 'Sin articulo asociado'} · {formatDate(alert.createdAt)}</p></div><div className="table-actions"><StatusBadge status={alert.status} labels={ALERT_STATUS_LABELS} />{alert.articleSlug ? <Link className="ghost-button" to={articlePath({ slug: alert.articleSlug, articleId: alert.articleId })}>Ver articulo</Link> : null}</div></article>)}</div> : <p className="muted-copy">Sin alertas asociadas.</p>}</div>
           <div className="page-stack-sm"><p className="section-kicker">Wishlists</p>{(lead.wishlists || []).length ? <div className="history-list">{lead.wishlists.map((wishlist) => <article key={wishlist.id} className="history-row"><strong>Wishlist #{wishlist.id}</strong><span>{wishlist.itemCount} prendas guardadas</span></article>)}</div> : <p className="muted-copy">Sin listas guardadas.</p>}</div>
-          <form className="page-stack" onSubmit={handleStatusSubmit} noValidate><p className="section-kicker">Seguimiento interno</p><label className="field-group"><span>Estado</span><select className="input" value={statusForm.leadStatus} onChange={(event) => setStatusForm((current) => ({ ...current, leadStatus: event.target.value }))}>{Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label className="field-group"><span>Notas administrativas</span><textarea className="input textarea" value={statusForm.adminNotes} onChange={(event) => setStatusForm((current) => ({ ...current, adminNotes: event.target.value }))} /></label><button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar seguimiento'}</button></form>
+          <form className="section-card nested-card page-stack-sm admin-detail-form-card" onSubmit={handleStatusSubmit} noValidate>
+            <div className="stack-gap-sm">
+              <p className="section-kicker">Seguimiento interno</p>
+              <h2>Gestionar lead</h2>
+              <p className="muted-copy">
+                Actualiza el estado comercial y deja notas internas para el proximo seguimiento.
+              </p>
+            </div>
+            <label className="field-group">
+              <span>Estado</span>
+              <select
+                className="input"
+                value={statusForm.leadStatus}
+                onChange={(event) => setStatusForm((current) => ({ ...current, leadStatus: event.target.value }))}
+              >
+                {Object.entries(LEAD_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Notas administrativas</span>
+              <textarea
+                className="input textarea admin-detail-form-textarea"
+                value={statusForm.adminNotes}
+                onChange={(event) => setStatusForm((current) => ({ ...current, adminNotes: event.target.value }))}
+                placeholder="Observaciones, proximo paso o contexto comercial."
+              />
+            </label>
+            <div className="admin-detail-form-actions">
+              <button type="submit" className="button button-primary" disabled={saving}>
+                {saving ? 'Guardando...' : 'Guardar seguimiento'}
+              </button>
+            </div>
+          </form>
         </>) : null}
       </section>
     </div>

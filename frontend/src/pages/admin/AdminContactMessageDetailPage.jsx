@@ -183,7 +183,7 @@ export default function AdminContactMessageDetailPage() {
             </div>
 
             <form
-              className="section-card nested-card page-stack-sm admin-contact-reply-card"
+              className="section-card nested-card page-stack-sm admin-detail-form-card"
               onSubmit={handleReplySubmit}
               noValidate
             >
@@ -197,7 +197,7 @@ export default function AdminContactMessageDetailPage() {
               <label className="field-group">
                 <span>Mensaje de respuesta</span>
                 <textarea
-                  className="input textarea admin-contact-reply-textarea"
+                  className="input textarea admin-detail-form-textarea"
                   value={replyText}
                   onChange={(event) => setReplyText(event.target.value)}
                   placeholder={
@@ -212,7 +212,7 @@ export default function AdminContactMessageDetailPage() {
                   Este contacto no tiene email asociado, por eso no se puede responder desde la app.
                 </p>
               ) : null}
-              <div className="admin-contact-reply-actions">
+              <div className="admin-detail-form-actions">
                 <button
                   type="submit"
                   className="button button-primary"
