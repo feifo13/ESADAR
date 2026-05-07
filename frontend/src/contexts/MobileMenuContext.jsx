@@ -8,6 +8,11 @@ const MobileMenuContext = createContext({
   clearCatalogFilters: null,
   clearCatalogSort: null,
   mobileStatusBand: null,
+  notify: () => undefined,
+  notifySuccess: () => undefined,
+  notifyError: () => undefined,
+  notifyInfo: () => undefined,
+  notifyWarning: () => undefined,
   notifyMobileStatus: () => undefined,
   setCatalogFiltersContent: () => undefined,
   setCatalogSortContent: () => undefined,
@@ -35,13 +40,19 @@ export function MobileMenuProvider({ children }) {
       return;
     }
     setMobileStatusBand({
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type: payload.type || 'info',
       icon: payload.icon || payload.type || 'info',
       message: payload.message,
-      duration: Number(payload.duration || 3000),
+      duration: Number(payload.duration || (payload.type === 'error' ? 5200 : 3400)),
     });
   }, []);
+
+  const notify = useCallback((next) => notifyMobileStatus(next), [notifyMobileStatus]);
+  const notifySuccess = useCallback((message, options = {}) => notifyMobileStatus({ ...options, type: 'success', message }), [notifyMobileStatus]);
+  const notifyError = useCallback((message, options = {}) => notifyMobileStatus({ ...options, type: 'error', message }), [notifyMobileStatus]);
+  const notifyInfo = useCallback((message, options = {}) => notifyMobileStatus({ ...options, type: 'info', message }), [notifyMobileStatus]);
+  const notifyWarning = useCallback((message, options = {}) => notifyMobileStatus({ ...options, type: 'warning', message }), [notifyMobileStatus]);
 
   const value = useMemo(
     () => ({
@@ -52,6 +63,11 @@ export function MobileMenuProvider({ children }) {
       clearCatalogFilters: catalogFiltersMeta.onClear,
       clearCatalogSort: catalogSortMeta.onClear,
       mobileStatusBand,
+      notify,
+      notifySuccess,
+      notifyError,
+      notifyInfo,
+      notifyWarning,
       notifyMobileStatus,
       setCatalogFiltersContent,
       setCatalogSortContent,
@@ -64,6 +80,11 @@ export function MobileMenuProvider({ children }) {
       catalogFiltersMeta,
       catalogSortMeta,
       mobileStatusBand,
+      notify,
+      notifySuccess,
+      notifyError,
+      notifyInfo,
+      notifyWarning,
       notifyMobileStatus,
     ],
   );

@@ -4,7 +4,7 @@ import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { apiFetch } from '../../lib/api.js';
 import { formatDate } from '../../lib/format.js';
-import { useMobileMenu } from '../../contexts/MobileMenuContext.jsx';
+import { useNotification } from '../../contexts/NotificationContext.jsx';
 
 const CONTACT_STATUS_LABELS = {
   NEW: 'Nuevo',
@@ -16,7 +16,7 @@ const CONTACT_STATUS_LABELS = {
 export default function AdminContactMessageDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError } = useNotification();
   const [message, setMessage] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -42,10 +42,7 @@ export default function AdminContactMessageDetailPage() {
         if (!ignore) setMessage(loadedMessage);
       } catch (err) {
         if (!ignore) {
-          notifyMobileStatus({
-            type: 'error',
-            message: err.message || 'No se pudo cargar el contacto.',
-          });
+          notifyError(err.message || 'No se pudo cargar el contacto.');
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -56,7 +53,7 @@ export default function AdminContactMessageDetailPage() {
     return () => {
       ignore = true;
     };
-  }, [id, notifyMobileStatus]);
+  }, [id, notifyError]);
 
   async function updateStatus(nextStatus) {
     if (!message) return;
@@ -68,12 +65,9 @@ export default function AdminContactMessageDetailPage() {
         { method: 'PATCH', body: { status: nextStatus } },
       );
       setMessage(response.message || { ...message, status: nextStatus });
-      notifyMobileStatus({ type: 'success', message: 'Estado actualizado.' });
+      notifySuccess('Estado actualizado.');
     } catch (err) {
-      notifyMobileStatus({
-        type: 'error',
-        message: err.message || 'No se pudo actualizar el contacto.',
-      });
+      notifyError(err.message || 'No se pudo actualizar el contacto.');
     } finally {
       setSaving(false);
     }
@@ -84,18 +78,12 @@ export default function AdminContactMessageDetailPage() {
     if (!message) return;
 
     if (!message.email) {
-      notifyMobileStatus({
-        type: 'error',
-        message: 'Este contacto no tiene email para responder.',
-      });
+      notifyError('Este contacto no tiene email para responder.');
       return;
     }
 
     if (!replyText.trim()) {
-      notifyMobileStatus({
-        type: 'error',
-        message: 'Escribe una respuesta antes de enviar.',
-      });
+      notifyError('Escribe una respuesta antes de enviar.');
       return;
     }
 
@@ -107,15 +95,9 @@ export default function AdminContactMessageDetailPage() {
       });
       setMessage(response.message || null);
       setReplyText('');
-      notifyMobileStatus({
-        type: 'success',
-        message: 'Respuesta enviada correctamente.',
-      });
+      notifySuccess('Respuesta enviada correctamente.');
     } catch (err) {
-      notifyMobileStatus({
-        type: 'error',
-        message: err.message || 'No se pudo enviar la respuesta.',
-      });
+      notifyError(err.message || 'No se pudo enviar la respuesta.');
     } finally {
       setSaving(false);
     }

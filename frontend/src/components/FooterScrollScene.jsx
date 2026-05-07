@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import {
   motion,
@@ -123,9 +124,9 @@ export default function FooterScrollScene() {
             alt="ESADAR"
             className="footer-scroll-scene__logo"
           />
-          <p className="footer-scroll-scene__copy">
+          <Link to="/about" className="footer-scroll-scene__copy">
             Mile y Fede ♥ sentados en un arbol
-          </p>
+          </Link>
         </motion.div>
       </div>
     </footer>

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import SeoHead from '../components/SeoHead.jsx';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { apiFetch } from '../lib/api.js';
-import { useMobileMenu } from '../contexts/MobileMenuContext.jsx';
-import { firstValidationMessage, getEmailValidationMessage, getRequiredValidationMessage, notifyFormStatus } from '../lib/validation.js';
+import { useNotification } from '../contexts/NotificationContext.jsx';
+import { firstValidationMessage, getEmailValidationMessage, getRequiredValidationMessage } from '../lib/validation.js';
 import { toAbsoluteUrl } from '../lib/seo.js';
 
 const initialState = {
@@ -18,12 +18,10 @@ const initialState = {
 
 export default function ContactPage() {
   const { site, pagesByRoute } = useSiteSeo();
-  const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError } = useNotification();
   const contactSeo = pagesByRoute['/contact'] || null;
   const [form, setForm] = useState(initialState);
-  const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   function update(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -40,12 +38,10 @@ export default function ContactPage() {
         getRequiredValidationMessage(form.message, 'la consulta'),
       );
       if (validationMessage) {
-        setError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+        notifyError(validationMessage);
         return;
       }
       setSubmitting(true);
-      setError('');
 
       await apiFetch('/api/public/contact-messages', {
         method: 'POST',
@@ -60,13 +56,11 @@ export default function ContactPage() {
         },
       });
 
-      setSent(true);
-      notifyFormStatus(notifyMobileStatus, 'success', 'Consulta enviada correctamente.');
+      notifySuccess('Consulta enviada correctamente.');
       setForm(initialState);
     } catch (err) {
       const errorMessage = err.message || 'No se pudo enviar tu consulta';
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
+      notifyError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -96,23 +90,12 @@ export default function ContactPage() {
           <label className="field-group"><span>Email</span><input className="input" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></label>
           <label className="field-group form-grid-span-two"><span>Consulta</span><textarea className="input textarea" value={form.message} onChange={(event) => update('message', event.target.value)} required /></label>
         </div>
-        {error ? <p className="error-copy">{error}</p> : null}
         <div className="contact-form-actions">
           <button className="button button-primary" type="submit" disabled={submitting}>
             {submitting ? 'Enviando…' : 'Enviar'}
           </button>
         </div>
       </form>
-
-      {sent ? (
-        <div className="modal-backdrop" onClick={() => setSent(false)}>
-          <div className="modal-card" onClick={(event) => event.stopPropagation()}>
-            <h2>Consulta enviada</h2>
-            <p>Gracias por escribir. Te responderemos desde administracion.</p>
-            <button type="button" className="button button-primary" onClick={() => setSent(false)}>Cerrar</button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
