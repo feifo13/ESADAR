@@ -4,7 +4,7 @@ import {
   createOfferSchema,
   updateOfferStatusSchema,
 } from './offers.schemas.js';
-import { changeOfferStatus, createOffer, listOffers } from './offers.service.js';
+import { changeOfferStatus, createOffer, listAcceptedOffersForUser, listOffers, listOffersForUser } from './offers.service.js';
 
 function getAuditContext(req) {
   return {
@@ -20,6 +20,16 @@ export async function createPublicOffer(req, res) {
   const input = createOfferSchema.parse(req.body);
   const offer = await createOffer(input, req.auth || null, getAuditContext(req));
   return res.status(201).json({ ok: true, offer });
+}
+
+export async function getAcceptedOffers(req, res) {
+  const items = await listAcceptedOffersForUser(req.auth?.userId);
+  return res.json({ ok: true, items });
+}
+
+export async function getMyOffers(req, res) {
+  const items = await listOffersForUser(req.auth?.userId);
+  return res.json({ ok: true, items });
 }
 
 export async function getAdminOffers(req, res) {

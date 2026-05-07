@@ -22,7 +22,13 @@ const guestOfferSchema = z.object({
 export const createOfferSchema = z.object({
   articleId: z.coerce.number().int().positive(),
   offeredAmount: z.coerce.number().positive(),
-  message: z.string().trim().min(2).max(2000),
+  message: z.preprocess(
+    (value) => {
+      const text = typeof value === 'string' ? value.trim() : '';
+      return text || 'Oferta enviada desde la web.';
+    },
+    z.string().trim().min(2).max(2000),
+  ),
   guest: guestOfferSchema.optional(),
 });
 

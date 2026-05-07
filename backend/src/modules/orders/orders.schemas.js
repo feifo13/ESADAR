@@ -27,6 +27,7 @@ export const createOrderSchema = z.object({
       z.object({
         articleId: z.coerce.number().int().positive(),
         quantity: z.coerce.number().int().positive().default(1),
+        acceptedOfferId: z.coerce.number().int().positive().nullable().optional(),
       }),
     )
     .min(1),

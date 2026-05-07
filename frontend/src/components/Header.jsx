@@ -353,6 +353,7 @@ export default function Header({ hideBrand = false }) {
     ? [
         { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "account-offers", label: "Ofertas", to: "/cuenta/ofertas" },
         // { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
         { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
       ]

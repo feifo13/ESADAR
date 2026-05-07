@@ -13,69 +13,62 @@ export async function addCartItem(userId, input, auditContext) {
   return withTransaction(async (connection) => {
     const cart = await getOrCreateActiveCartForUser(userId, connection);
     const article = await getArticleForCart(input.articleId, connection);
+    const acceptedOffer = await getAcceptedOfferForCart(userId, input.articleId, cart.id, connection);
 
     const [existingRows] = await connection.execute(
       `
         SELECT
           id,
-          quantity
+          quantity,
+          accepted_offer_id AS acceptedOfferId
         FROM cart_items
         WHERE cart_id = ? AND article_id = ?
-        LIMIT 1
+        ORDER BY accepted_offer_id IS NULL ASC, id ASC
         FOR UPDATE
       `,
       [cart.id, input.articleId],
     );
 
-    const existing = existingRows[0] || null;
-    const nextQuantity = Number(existing?.quantity || 0) + input.quantity;
+    const currentArticleQuantity = existingRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+    const requestedQuantity = Math.max(1, Number(input.quantity || 1));
+    ensureCartStock(article, currentArticleQuantity + requestedQuantity);
 
-    ensureCartStock(article, nextQuantity);
+    let remainingQuantity = requestedQuantity;
+    let usedAcceptedOfferId = null;
 
-    if (existing) {
-      await connection.execute(
-        `
-          UPDATE cart_items
-          SET
-            quantity = ?,
-            unit_price_snapshot = ?,
-            discount_type_snapshot = ?,
-            discount_value_snapshot = ?,
-            final_unit_price_snapshot = ?
-          WHERE id = ?
-        `,
-        [
-          nextQuantity,
-          article.salePrice,
-          article.discountType,
-          article.discountValue,
-          article.discountedPrice,
-          existing.id,
-        ],
-      );
-    } else {
-      await connection.execute(
-        `
-          INSERT INTO cart_items (
-            cart_id,
-            article_id,
-            quantity,
-            unit_price_snapshot,
-            discount_type_snapshot,
-            discount_value_snapshot,
-            final_unit_price_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          cart.id,
-          input.articleId,
-          input.quantity,
-          article.salePrice,
-          article.discountType,
-          article.discountValue,
-          article.discountedPrice,
-        ],
-      );
+    if (acceptedOffer && remainingQuantity > 0) {
+      const existingOfferLine = existingRows.find((row) => Number(row.acceptedOfferId) === Number(acceptedOffer.id));
+      if (!existingOfferLine) {
+        await insertCartLine(connection, {
+          cartId: cart.id,
+          article,
+          articleId: input.articleId,
+          quantity: 1,
+          acceptedOffer,
+        });
+        remainingQuantity -= 1;
+        usedAcceptedOfferId = acceptedOffer.id;
+      }
+    }
+
+    if (remainingQuantity > 0) {
+      const regularLine = existingRows.find((row) => row.acceptedOfferId == null);
+      if (regularLine) {
+        await updateCartLineSnapshot(connection, {
+          itemId: regularLine.id,
+          article,
+          quantity: Number(regularLine.quantity || 0) + remainingQuantity,
+          acceptedOffer: null,
+        });
+      } else {
+        await insertCartLine(connection, {
+          cartId: cart.id,
+          article,
+          articleId: input.articleId,
+          quantity: remainingQuantity,
+          acceptedOffer: null,
+        });
+      }
     }
 
     const nextCart = await getCartById(cart.id, connection);
@@ -91,8 +84,9 @@ export async function addCartItem(userId, input, auditContext) {
         metadataJson: {
           operation: 'add-item',
           articleId: input.articleId,
-          quantity: input.quantity,
-          nextQuantity,
+          quantity: requestedQuantity,
+          acceptedOfferId: usedAcceptedOfferId,
+          splitOfferAndRegular: Boolean(usedAcceptedOfferId && remainingQuantity > 0),
         },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
@@ -110,29 +104,59 @@ export async function updateCartItem(userId, itemId, input, auditContext) {
     const cart = await getOrCreateActiveCartForUser(userId, connection);
     const item = await getOwnedCartItem(cart.id, itemId, connection);
     const article = await getArticleForCart(item.articleId, connection);
+    const requestedQuantity = Math.max(1, Number(input.quantity || 1));
 
-    ensureCartStock(article, input.quantity);
-
-    await connection.execute(
+    const [articleCartRows] = await connection.execute(
       `
-        UPDATE cart_items
-        SET
-          quantity = ?,
-          unit_price_snapshot = ?,
-          discount_type_snapshot = ?,
-          discount_value_snapshot = ?,
-          final_unit_price_snapshot = ?
-        WHERE id = ?
+        SELECT id, quantity, accepted_offer_id AS acceptedOfferId
+        FROM cart_items
+        WHERE cart_id = ? AND article_id = ? AND id <> ?
+        FOR UPDATE
       `,
-      [
-        input.quantity,
-        article.salePrice,
-        article.discountType,
-        article.discountValue,
-        article.discountedPrice,
-        itemId,
-      ],
+      [cart.id, item.articleId, itemId],
     );
+    const otherQuantity = articleCartRows.reduce((sum, row) => sum + Number(row.quantity || 0), 0);
+    ensureCartStock(article, otherQuantity + requestedQuantity);
+
+    if (item.acceptedOfferId) {
+      await updateCartLineSnapshot(connection, {
+        itemId,
+        article,
+        quantity: 1,
+        acceptedOffer: {
+          id: item.acceptedOfferId,
+          offeredAmount: Number(item.acceptedOfferPrice || 0),
+        },
+      });
+
+      const extraRegularQuantity = Math.max(requestedQuantity - 1, 0);
+      if (extraRegularQuantity > 0) {
+        const regularLine = articleCartRows.find((row) => row.acceptedOfferId == null);
+        if (regularLine) {
+          await updateCartLineSnapshot(connection, {
+            itemId: regularLine.id,
+            article,
+            quantity: Number(regularLine.quantity || 0) + extraRegularQuantity,
+            acceptedOffer: null,
+          });
+        } else {
+          await insertCartLine(connection, {
+            cartId: cart.id,
+            article,
+            articleId: item.articleId,
+            quantity: extraRegularQuantity,
+            acceptedOffer: null,
+          });
+        }
+      }
+    } else {
+      await updateCartLineSnapshot(connection, {
+        itemId,
+        article,
+        quantity: requestedQuantity,
+        acceptedOffer: null,
+      });
+    }
 
     const nextCart = await getCartById(cart.id, connection);
 
@@ -148,7 +172,8 @@ export async function updateCartItem(userId, itemId, input, auditContext) {
           operation: 'update-item',
           itemId,
           articleId: item.articleId,
-          quantity: input.quantity,
+          quantity: requestedQuantity,
+          acceptedOfferId: item.acceptedOfferId || null,
         },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
@@ -308,6 +333,9 @@ async function getCartById(cartId, connection) {
         ci.discount_type_snapshot AS discountType,
         ci.discount_value_snapshot AS discountValue,
         ci.final_unit_price_snapshot AS discountedPrice,
+        ci.accepted_offer_id AS acceptedOfferId,
+        ci.accepted_offer_price_snapshot AS acceptedOfferPrice,
+        ci.accepted_offer_quantity_snapshot AS acceptedOfferQuantity,
         a.slug,
         a.title,
         a.quantity_available AS quantityAvailable,
@@ -344,6 +372,12 @@ async function getCartById(cartId, connection) {
     discountValue: Number(row.discountValue),
     discountedPrice: Number(row.discountedPrice),
     quantity: Number(row.quantity),
+    acceptedOffer: row.acceptedOfferId ? {
+      id: row.acceptedOfferId,
+      price: Number(row.acceptedOfferPrice),
+      quantity: Number(row.acceptedOfferQuantity || 1),
+    } : null,
+    lineTotal: calculateAcceptedOfferLineTotal(row),
     maxQuantity: Math.max(Number(row.quantityAvailable || 0), Number(row.quantity || 0)),
     articleStatus: row.articleStatus,
   }));
@@ -353,7 +387,7 @@ async function getCartById(cartId, connection) {
     items,
     summary: {
       count: items.reduce((sum, item) => sum + item.quantity, 0),
-      subtotal: items.reduce((sum, item) => sum + item.discountedPrice * item.quantity, 0),
+      subtotal: items.reduce((sum, item) => sum + Number(item.lineTotal ?? item.discountedPrice * item.quantity), 0),
     },
   };
 }
@@ -402,7 +436,9 @@ async function getOwnedCartItem(cartId, itemId, connection) {
       SELECT
         id,
         article_id AS articleId,
-        quantity
+        quantity,
+        accepted_offer_id AS acceptedOfferId,
+        accepted_offer_price_snapshot AS acceptedOfferPrice
       FROM cart_items
       WHERE id = ? AND cart_id = ?
       LIMIT 1
@@ -422,4 +458,110 @@ function ensureCartStock(article, requestedQuantity) {
   if (requestedQuantity > Number(article.quantityAvailable || 0)) {
     throw badRequest('Article does not have enough stock available for the cart');
   }
+}
+
+
+
+async function insertCartLine(connection, { cartId, article, articleId, quantity, acceptedOffer }) {
+  await connection.execute(
+    `
+      INSERT INTO cart_items (
+        cart_id,
+        article_id,
+        quantity,
+        unit_price_snapshot,
+        discount_type_snapshot,
+        discount_value_snapshot,
+        final_unit_price_snapshot,
+        accepted_offer_id,
+        accepted_offer_price_snapshot,
+        accepted_offer_quantity_snapshot
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      cartId,
+      articleId,
+      quantity,
+      article.salePrice,
+      article.discountType,
+      article.discountValue,
+      article.discountedPrice,
+      acceptedOffer?.id || null,
+      acceptedOffer?.offeredAmount || null,
+      acceptedOffer ? 1 : 0,
+    ],
+  );
+}
+
+async function updateCartLineSnapshot(connection, { itemId, article, quantity, acceptedOffer }) {
+  await connection.execute(
+    `
+      UPDATE cart_items
+      SET
+        quantity = ?,
+        unit_price_snapshot = ?,
+        discount_type_snapshot = ?,
+        discount_value_snapshot = ?,
+        final_unit_price_snapshot = ?,
+        accepted_offer_id = ?,
+        accepted_offer_price_snapshot = ?,
+        accepted_offer_quantity_snapshot = ?
+      WHERE id = ?
+    `,
+    [
+      quantity,
+      article.salePrice,
+      article.discountType,
+      article.discountValue,
+      article.discountedPrice,
+      acceptedOffer?.id || null,
+      acceptedOffer?.offeredAmount || null,
+      acceptedOffer ? 1 : 0,
+      itemId,
+    ],
+  );
+}
+
+async function getAcceptedOfferForCart(userId, articleId, cartId, connection) {
+  if (!userId) return null;
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        o.id,
+        o.offered_price AS offeredAmount
+      FROM offers o
+      INNER JOIN customers c ON c.id = o.customer_id
+      WHERE c.user_id = ?
+        AND o.article_id = ?
+        AND o.status = 'ACCEPTED'
+        AND o.consumed_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM cart_items ci
+          WHERE ci.cart_id = ?
+            AND ci.accepted_offer_id = o.id
+        )
+      ORDER BY o.accepted_at DESC, o.id DESC
+      LIMIT 1
+    `,
+    [userId, articleId, cartId],
+  );
+
+  if (!rows.length) return null;
+  return {
+    id: rows[0].id,
+    offeredAmount: Number(rows[0].offeredAmount),
+  };
+}
+
+function calculateAcceptedOfferLineTotal(row) {
+  const quantity = Number(row.quantity || 0);
+  const basePrice = Number(row.discountedPrice || 0);
+  const offerQuantity = Math.min(quantity, Number(row.acceptedOfferQuantity || 0));
+  const offerPrice = Number(row.acceptedOfferPrice || 0);
+  if (!row.acceptedOfferId || offerQuantity <= 0) {
+    return basePrice * quantity;
+  }
+  return offerPrice * offerQuantity + basePrice * Math.max(quantity - offerQuantity, 0);
 }

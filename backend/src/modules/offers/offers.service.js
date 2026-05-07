@@ -4,6 +4,7 @@ import { badRequest, notFound } from '../../utils/app-error.js';
 import { getPagination } from '../../utils/pagination.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
+import { sendAcceptedOfferEmail } from './offers.mailer.js';
 import {
   ensureCustomerForUser,
   findCustomerByUserId,
@@ -157,6 +158,16 @@ export async function listOffers({ filters, pagination }) {
         a.title AS articleTitle,
         a.slug AS articleSlug,
         a.internal_code AS articleInternalCode,
+        a.sale_price AS articleSalePrice,
+        a.discounted_price AS articleDiscountedPrice,
+        a.quantity_available AS articleQuantityAvailable,
+        (
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS articleImage,
         cat.name AS categoryName,
         b.name AS brandName,
         o.customer_id AS customerId,
@@ -170,6 +181,8 @@ export async function listOffers({ filters, pagination }) {
         o.accepted_at AS acceptedAt,
         o.rejected_at AS rejectedAt,
         o.cancelled_at AS cancelledAt,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId,
         COALESCE(c.first_name, pc.first_name) AS contactFirstName,
         COALESCE(c.last_name, pc.last_name) AS contactLastName,
         COALESCE(c.email, pc.email) AS contactEmail,
@@ -210,6 +223,114 @@ export async function listOffers({ filters, pagination }) {
       total: countRows[0].total,
     },
   };
+}
+
+export async function listAcceptedOffersForUser(userId) {
+  if (!userId) return [];
+
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        o.id,
+        o.article_id AS articleId,
+        a.title AS articleTitle,
+        a.slug AS articleSlug,
+        a.sale_price AS articleSalePrice,
+        a.discounted_price AS articleDiscountedPrice,
+        a.quantity_available AS articleQuantityAvailable,
+        (
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS articleImage,
+        o.customer_id AS customerId,
+        o.potential_customer_id AS potentialCustomerId,
+        o.offered_price AS offeredAmount,
+        o.currency_code AS currencyCode,
+        o.status,
+        o.notes AS message,
+        o.created_at AS createdAt,
+        o.updated_at AS updatedAt,
+        o.accepted_at AS acceptedAt,
+        o.rejected_at AS rejectedAt,
+        o.cancelled_at AS cancelledAt,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId,
+        c.first_name AS contactFirstName,
+        c.last_name AS contactLastName,
+        c.email AS contactEmail,
+        c.phone AS contactPhone,
+        c.instagram AS contactInstagram
+      FROM offers o
+      INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN customers c ON c.id = o.customer_id
+      WHERE c.user_id = ?
+        AND o.status = 'ACCEPTED'
+        AND o.consumed_at IS NULL
+      ORDER BY o.accepted_at DESC, o.id DESC
+    `,
+    [userId],
+  );
+
+  return rows.map(normalizeOfferRow);
+}
+
+
+export async function listOffersForUser(userId) {
+  if (!userId) return [];
+
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        o.id,
+        o.article_id AS articleId,
+        a.title AS articleTitle,
+        a.slug AS articleSlug,
+        a.internal_code AS articleInternalCode,
+        a.sale_price AS articleSalePrice,
+        a.discounted_price AS articleDiscountedPrice,
+        a.quantity_available AS articleQuantityAvailable,
+        (
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS articleImage,
+        cat.name AS categoryName,
+        b.name AS brandName,
+        o.customer_id AS customerId,
+        o.potential_customer_id AS potentialCustomerId,
+        o.offered_price AS offeredAmount,
+        o.currency_code AS currencyCode,
+        o.status,
+        o.notes AS message,
+        o.created_at AS createdAt,
+        o.updated_at AS updatedAt,
+        o.accepted_at AS acceptedAt,
+        o.rejected_at AS rejectedAt,
+        o.cancelled_at AS cancelledAt,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId,
+        c.first_name AS contactFirstName,
+        c.last_name AS contactLastName,
+        c.email AS contactEmail,
+        c.phone AS contactPhone,
+        c.instagram AS contactInstagram
+      FROM offers o
+      INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN categories cat ON cat.id = a.category_id
+      LEFT JOIN brands b ON b.id = a.brand_id
+      INNER JOIN customers c ON c.id = o.customer_id
+      WHERE c.user_id = ?
+      ORDER BY o.created_at DESC, o.id DESC
+    `,
+    [userId],
+  );
+
+  return rows.map(normalizeOfferRow);
 }
 
 export async function changeOfferStatus(id, input, auditContext) {
@@ -275,6 +396,12 @@ export async function changeOfferStatus(id, input, auditContext) {
       },
       connection,
     );
+
+    if (input.status === 'ACCEPTED') {
+      sendAcceptedOfferEmail(after).catch((error) => {
+        console.warn('[offers] accepted offer email failed', error?.message || error);
+      });
+    }
 
     return after;
   });
@@ -355,6 +482,16 @@ async function getOfferById(id, connection) {
         o.article_id AS articleId,
         a.title AS articleTitle,
         a.slug AS articleSlug,
+        a.sale_price AS articleSalePrice,
+        a.discounted_price AS articleDiscountedPrice,
+        a.quantity_available AS articleQuantityAvailable,
+        (
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
+          FROM article_images ai
+          WHERE ai.article_id = a.id
+          ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+          LIMIT 1
+        ) AS articleImage,
         o.customer_id AS customerId,
         o.potential_customer_id AS potentialCustomerId,
         o.offered_price AS offeredAmount,
@@ -366,6 +503,8 @@ async function getOfferById(id, connection) {
         o.accepted_at AS acceptedAt,
         o.rejected_at AS rejectedAt,
         o.cancelled_at AS cancelledAt,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId,
         COALESCE(c.first_name, pc.first_name) AS contactFirstName,
         COALESCE(c.last_name, pc.last_name) AS contactLastName,
         COALESCE(c.email, pc.email) AS contactEmail,
@@ -418,6 +557,10 @@ function normalizeOfferRow(row) {
       internalCode: row.articleInternalCode,
       categoryName: row.categoryName,
       brandName: row.brandName,
+      salePrice: row.articleSalePrice != null ? Number(row.articleSalePrice) : null,
+      discountedPrice: row.articleDiscountedPrice != null ? Number(row.articleDiscountedPrice) : null,
+      quantityAvailable: row.articleQuantityAvailable != null ? Number(row.articleQuantityAvailable) : null,
+      image: row.articleImage || '',
     },
     customerId: row.customerId,
     potentialCustomerId: row.potentialCustomerId,
@@ -430,6 +573,8 @@ function normalizeOfferRow(row) {
     acceptedAt: row.acceptedAt,
     rejectedAt: row.rejectedAt,
     cancelledAt: row.cancelledAt,
+    consumedAt: row.consumedAt,
+    consumedOrderId: row.consumedOrderId,
     contact: {
       firstName: row.contactFirstName,
       lastName: row.contactLastName,

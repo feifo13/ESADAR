@@ -470,7 +470,8 @@ export async function listAccountOrders(userId) {
         o.total_snapshot AS total,
         o.created_at AS createdAt,
         COALESCE(sm.description, o.shipping_method_description_snapshot) AS shippingMethodName,
-        COUNT(oi.id) AS itemsCount
+        COUNT(oi.id) AS itemsCount,
+        SUM(CASE WHEN oi.accepted_offer_id IS NOT NULL THEN 1 ELSE 0 END) AS offerCount
       FROM orders o
       LEFT JOIN shipping_methods sm ON sm.id = o.shipping_method_id
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -492,6 +493,8 @@ export async function listAccountOrders(userId) {
     createdAt: row.createdAt,
     shippingMethodName: row.shippingMethodName || null,
     itemsCount: Number(row.itemsCount || 0),
+    offerCount: Number(row.offerCount || 0),
+    hasOffers: Number(row.offerCount || 0) > 0,
   }));
 }
 
@@ -537,6 +540,8 @@ export async function getAccountOrderDetail(userId, orderId) {
     cancellationReason: order.cancellationReason || null,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    offerCount: Number(order.offerCount || 0),
+    hasOffers: Number(order.offerCount || 0) > 0,
     customer: order.customer
       ? {
           firstName: order.customer.firstName || null,
@@ -555,8 +560,10 @@ export async function getAccountOrderDetail(userId, orderId) {
       brandName: item.brandName || null,
       size: item.size || null,
       image: item.image || null,
+      salePrice: Number(item.salePrice || 0),
       finalUnitPrice: Number(item.finalUnitPrice || 0),
       lineTotal: Number(item.lineTotal || 0),
+      acceptedOffer: item.acceptedOffer || null,
     })),
     history: (order.history || []).map((entry) => ({
       id: Number(entry.id),

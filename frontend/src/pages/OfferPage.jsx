@@ -10,7 +10,13 @@ import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import { articlePath } from "../lib/routes.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
-import { firstValidationMessage, getEmailValidationMessage, getPositiveNumberValidationMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  getPositiveNumberValidationMessage,
+  getRequiredValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 
 const initialGuest = {
   firstName: "",
@@ -85,8 +91,12 @@ export default function OfferPage() {
 
     try {
       const validationMessage = firstValidationMessage(
-        !isAuthenticated ? getRequiredValidationMessage(guest.firstName, "el nombre") : "",
-        !isAuthenticated ? getRequiredValidationMessage(guest.lastName, "el apellido") : "",
+        !isAuthenticated
+          ? getRequiredValidationMessage(guest.firstName, "el nombre")
+          : "",
+        !isAuthenticated
+          ? getRequiredValidationMessage(guest.lastName, "el apellido")
+          : "",
         !isAuthenticated ? getEmailValidationMessage(guest.email) : "",
         getPositiveNumberValidationMessage(offer, "una oferta"),
       );
@@ -103,7 +113,7 @@ export default function OfferPage() {
       const payload = {
         articleId: article.id,
         offeredAmount: Number(offer),
-        message,
+        message: message?.trim() || "Oferta enviada desde la web.",
       };
 
       if (!isAuthenticated) {

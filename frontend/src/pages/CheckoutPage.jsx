@@ -80,6 +80,16 @@ function useMediaQuery(query) {
   return matches;
 }
 
+
+function getCheckoutLineKey(item) {
+  return String(item.cartLineKey ?? item.id ?? item.articleId);
+}
+
+function getOfferSavings(item) {
+  if (!item?.acceptedOffer) return 0;
+  return Math.max(0, Number(item.salePrice || 0) - Number(item.acceptedOffer.price || 0));
+}
+
 function TrashIcon() {
   return (
     <svg
@@ -324,6 +334,7 @@ export default function CheckoutPage() {
         items: items.map((item) => ({
           articleId: item.articleId,
           quantity: item.quantity,
+          acceptedOfferId: item.acceptedOffer?.id || null,
         })),
       };
 
@@ -406,7 +417,7 @@ export default function CheckoutPage() {
             >
               {items.map((item) => (
                 <SummaryItemCard
-                  key={item.articleId}
+                  key={getCheckoutLineKey(item)}
                   item={item}
                   onRemove={removeItem}
                   onQuantityChange={(articleId, quantity) => {
@@ -433,7 +444,7 @@ export default function CheckoutPage() {
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.articleId}>
+                    <tr key={getCheckoutLineKey(item)} className={item.acceptedOffer ? "checkout-offer-row" : undefined}>
                       <td>
                         <SmartImage
                           src={item.image}
@@ -461,24 +472,35 @@ export default function CheckoutPage() {
                           aria-label={`Cantidad de ${item.title}`}
                           onChange={(event) => {
                             const result = updateQuantity(
-                              item.articleId,
+                              getCheckoutLineKey(item),
                               Number(event.target.value || 1),
                             );
                             showStockNotice(result);
                           }}
                         />
                       </td>
-                      <td>{formatCurrency(item.discountedPrice)}</td>
+                      <td>
+                        {item.acceptedOffer ? (
+                          <span className="checkout-offer-price">
+                            <span className="pill pill-offer">Oferta aceptada</span>
+                            <span className="price-old">{formatCurrency(item.salePrice)}</span>
+                            <strong>{formatCurrency(item.acceptedOffer.price)}</strong>
+                            <small className="muted-copy">Aplica a 1 unidad · ahorro {formatCurrency(getOfferSavings(item))}</small>
+                          </span>
+                        ) : (
+                          formatCurrency(item.discountedPrice)
+                        )}
+                      </td>
                       <td>
                         <strong>
-                          {formatCurrency(item.discountedPrice * item.quantity)}
+                          {formatCurrency(item.lineTotal ?? item.discountedPrice * item.quantity)}
                         </strong>
                       </td>
                       <td>
                         <button
                           type="button"
                           className="icon-action-button"
-                          onClick={() => removeItem(item.articleId)}
+                          onClick={() => removeItem(getCheckoutLineKey(item))}
                           aria-label={`Quitar ${item.title}`}
                           title="Quitar"
                         >

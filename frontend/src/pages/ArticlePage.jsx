@@ -11,6 +11,7 @@ import {
 } from "../lib/format.js";
 import { articleOfferPath } from "../lib/routes.js";
 import { useCart } from "../contexts/CartContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
@@ -34,6 +35,7 @@ const initialAlertForm = {
 export default function ArticlePage() {
   const { slugOrId } = useParams();
   const { addItem, getItem } = useCart();
+  const { isAuthenticated } = useAuth();
   const { site } = useSiteSeo();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   const { notifyMobileStatus } = useMobileMenu();
@@ -51,6 +53,7 @@ export default function ArticlePage() {
   const [alertSubmitting, setAlertSubmitting] = useState(false);
   const [alertError, setAlertError] = useState("");
   const [alertSuccess, setAlertSuccess] = useState("");
+  const [acceptedOffer, setAcceptedOffer] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -66,6 +69,7 @@ export default function ArticlePage() {
         const response = await apiFetch(`/api/public/articles/${slugOrId}`);
         if (ignore) return;
         setArticle(response.article);
+        setAcceptedOffer(null);
 
         const relatedResponse = await apiFetch(
           `/api/public/articles/${slugOrId}/related?limit=4`,
@@ -102,6 +106,32 @@ export default function ArticlePage() {
     };
   }, [slugOrId]);
 
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadAcceptedOffer() {
+      if (!isAuthenticated || !article?.id) {
+        setAcceptedOffer(null);
+        return;
+      }
+
+      try {
+        const response = await apiFetch("/api/public/offers/accepted");
+        if (ignore) return;
+        const match = (response.items || []).find((item) => Number(item.article?.id) === Number(article.id));
+        setAcceptedOffer(match || null);
+      } catch {
+        if (!ignore) setAcceptedOffer(null);
+      }
+    }
+
+    loadAcceptedOffer();
+    return () => {
+      ignore = true;
+    };
+  }, [article?.id, isAuthenticated]);
+
   if (loading) {
     return (
       <div className="container section-card centered-card">
@@ -124,6 +154,16 @@ export default function ArticlePage() {
     Number(article.quantityAvailable || 0) <= 0 ||
     article.status === "SOLD_OUT";
   const currentCartItem = getItem(article.id);
+  const articleForCart = acceptedOffer
+    ? {
+        ...article,
+        acceptedOffer: {
+          id: acceptedOffer.id,
+          price: Number(acceptedOffer.offeredAmount),
+          quantity: 1,
+        },
+      }
+    : article;
   const savedInWishlist = isSaved(article.id);
   const wishlistPending = pendingIds.includes(Number(article.id));
   const canonicalUrl =
@@ -485,6 +525,13 @@ export default function ArticlePage() {
               <strong className="price-current price-current-large">{formatCurrency(finalPrice)}</strong>
             </div> */}
 
+            {acceptedOffer ? (
+              <p className="checkbox-row-accent">
+                Tienes una oferta aceptada para esta prenda: {formatCurrency(acceptedOffer.offeredAmount)}.
+                Se aplicará a 1 unidad en el carrito.
+              </p>
+            ) : null}
+
             {currentCartItem ? (
               <p className="checkbox-row-accent">
                 Ya tienes {currentCartItem.quantity} unidad
@@ -499,7 +546,7 @@ export default function ArticlePage() {
                 className="button button-primary"
                 disabled={isSoldOut}
                 onClick={(event) => {
-                  const result = addItem(article, 1, {
+                  const result = addItem(articleForCart, 1, {
                     sourceRect: event.currentTarget.getBoundingClientRect(),
                   });
                   showStockNotice(result);

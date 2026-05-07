@@ -146,6 +146,7 @@ export default function AdminOrderDetailPage() {
             <h1>{order.orderNumber}</h1>
           </div>
           <div className="stack-gap-xs align-end">
+            {order.hasOffers ? <span className="pill pill-offer">{order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}</span> : null}
             <OrderStatusBadge status={order.orderStatus} />
             <button
               type="button"
@@ -178,6 +179,11 @@ export default function AdminOrderDetailPage() {
                     <div>
                       <h4>{item.articleTitle}</h4>
                       <p className="muted-copy">{item.brandName || 'Sin marca'} - {item.size || 'Sin talle'}</p>
+                      {item.acceptedOffer ? (
+                        <p className="muted-copy">
+                          <span className="pill pill-offer">Oferta aceptada</span> original {formatCurrency(item.salePrice)} · oferta {formatCurrency(item.acceptedOffer.price)} · aplica a {item.acceptedOffer.quantity || 1} unidad
+                        </p>
+                      ) : null}
                     </div>
                     <strong>{formatCurrency(item.lineTotal)}</strong>
                   </article>
@@ -204,6 +210,7 @@ export default function AdminOrderDetailPage() {
               <h3>Resumen</h3>
               <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(order.subtotal)}</strong></p>
               <p className="summary-line"><span>Descuento</span><strong>{formatCurrency(order.discountTotal)}</strong></p>
+              {order.hasOffers ? <p className="summary-line"><span>Ofertas</span><strong>{order.offerCount || 1}</strong></p> : null}
               <p className="summary-line"><span>Envio</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
               <p className="summary-line total"><span>Total</span><strong>{formatCurrency(order.total)}</strong></p>
               <p className="muted-copy">Creada: {formatDate(order.createdAt)}</p>

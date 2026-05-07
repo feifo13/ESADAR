@@ -26,7 +26,7 @@ export async function createOrder(input, actor, auditContext) {
       ? await getShippingMethod(input.shippingMethodId, connection)
       : null;
 
-    const requestedArticleIds = input.items.map((item) => item.articleId);
+    const requestedArticleIds = [...new Set(input.items.map((item) => item.articleId))];
     const placeholders = requestedArticleIds.map(() => '?').join(',');
     const [articleRows] = await connection.execute(
       `
@@ -64,6 +64,26 @@ export async function createOrder(input, actor, auditContext) {
     );
 
     const articlesById = new Map(articleRows.map((row) => [row.id, row]));
+    const requestedQuantityByArticle = new Map();
+    for (const item of input.items) {
+      requestedQuantityByArticle.set(
+        item.articleId,
+        Number(requestedQuantityByArticle.get(item.articleId) || 0) + Number(item.quantity || 0),
+      );
+    }
+
+    for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
+      const article = articlesById.get(articleId);
+      if (!article) {
+        throw notFound(`Article ${articleId} not found`);
+      }
+      if (article.status !== 'ACTIVE') {
+        throw badRequest(`Article ${article.id} is not available for purchase`);
+      }
+      if (Number(article.quantityAvailable) < quantity) {
+        throw badRequest(`Article ${article.id} does not have enough stock available`);
+      }
+    }
 
     const orderItems = [];
     let subtotal = 0;
@@ -75,38 +95,68 @@ export async function createOrder(input, actor, auditContext) {
         throw notFound(`Article ${item.articleId} not found`);
       }
 
-      if (article.status !== 'ACTIVE') {
-        throw badRequest(`Article ${article.id} is not available for purchase`);
-      }
-
-      if (Number(article.quantityAvailable) < item.quantity) {
-        throw badRequest(`Article ${article.id} does not have enough stock available`);
-      }
-
       const salePrice = Number(article.salePrice);
       const finalUnitPrice = Number(article.discountedPrice);
       const perUnitDiscount = salePrice - finalUnitPrice;
-      const lineTotal = finalUnitPrice * item.quantity;
+      const acceptedOffer = item.acceptedOfferId && owner.userId
+        ? await getAcceptedOfferForOrder(owner.userId, article.id, item.acceptedOfferId, connection)
+        : null;
 
-      subtotal += salePrice * item.quantity;
-      discountTotal += perUnitDiscount * item.quantity;
+      const offerQuantity = acceptedOffer ? Math.min(1, Number(item.quantity || 1)) : 0;
+      const regularQuantity = Math.max(Number(item.quantity || 0) - offerQuantity, 0);
 
-      orderItems.push({
-        articleId: article.id,
-        quantity: item.quantity,
-        articleTitleSnapshot: article.title,
-        articleSlugSnapshot: article.slug,
-        categoryNameSnapshot: article.categoryName,
-        brandNameSnapshot: article.brandName || null,
-        sizeSnapshot: article.sizeSnapshot || null,
-        measurementsSnapshot: article.measurementsText || null,
-        imageSnapshot: article.imageSnapshot || null,
-        salePriceSnapshot: salePrice,
-        discountTypeSnapshot: article.discountType,
-        discountValueSnapshot: Number(article.discountValue),
-        finalUnitPriceSnapshot: finalUnitPrice,
-        lineTotalSnapshot: lineTotal,
-      });
+      if (acceptedOffer && offerQuantity > 0) {
+        const acceptedOfferPrice = Number(acceptedOffer.offeredAmount);
+        const lineTotal = acceptedOfferPrice * offerQuantity;
+        subtotal += salePrice * offerQuantity;
+        discountTotal += (salePrice - acceptedOfferPrice) * offerQuantity;
+
+        orderItems.push({
+          articleId: article.id,
+          quantity: offerQuantity,
+          articleTitleSnapshot: article.title,
+          articleSlugSnapshot: article.slug,
+          categoryNameSnapshot: article.categoryName,
+          brandNameSnapshot: article.brandName || null,
+          sizeSnapshot: article.sizeSnapshot || null,
+          measurementsSnapshot: article.measurementsText || null,
+          imageSnapshot: article.imageSnapshot || null,
+          salePriceSnapshot: salePrice,
+          discountTypeSnapshot: article.discountType,
+          discountValueSnapshot: Number(article.discountValue),
+          finalUnitPriceSnapshot: finalUnitPrice,
+          lineTotalSnapshot: lineTotal,
+          acceptedOfferId: acceptedOffer.id,
+          acceptedOfferPriceSnapshot: acceptedOfferPrice,
+          acceptedOfferQuantitySnapshot: 1,
+        });
+      }
+
+      if (regularQuantity > 0) {
+        const lineTotal = finalUnitPrice * regularQuantity;
+        subtotal += salePrice * regularQuantity;
+        discountTotal += perUnitDiscount * regularQuantity;
+
+        orderItems.push({
+          articleId: article.id,
+          quantity: regularQuantity,
+          articleTitleSnapshot: article.title,
+          articleSlugSnapshot: article.slug,
+          categoryNameSnapshot: article.categoryName,
+          brandNameSnapshot: article.brandName || null,
+          sizeSnapshot: article.sizeSnapshot || null,
+          measurementsSnapshot: article.measurementsText || null,
+          imageSnapshot: article.imageSnapshot || null,
+          salePriceSnapshot: salePrice,
+          discountTypeSnapshot: article.discountType,
+          discountValueSnapshot: Number(article.discountValue),
+          finalUnitPriceSnapshot: finalUnitPrice,
+          lineTotalSnapshot: lineTotal,
+          acceptedOfferId: null,
+          acceptedOfferPriceSnapshot: null,
+          acceptedOfferQuantitySnapshot: 0,
+        });
+      }
     }
 
     const shippingCost = shipping ? Number(shipping.baseCost) : 0;
@@ -173,8 +223,11 @@ export async function createOrder(input, actor, auditContext) {
             discount_type_snapshot,
             discount_value_snapshot,
             final_unit_price_snapshot,
-            line_total_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            line_total_snapshot,
+            accepted_offer_id,
+            accepted_offer_price_snapshot,
+            accepted_offer_quantity_snapshot
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           orderId,
@@ -192,8 +245,26 @@ export async function createOrder(input, actor, auditContext) {
           item.discountValueSnapshot,
           item.finalUnitPriceSnapshot,
           item.lineTotalSnapshot,
+          item.acceptedOfferId,
+          item.acceptedOfferPriceSnapshot,
+          item.acceptedOfferQuantitySnapshot,
         ],
       );
+
+      if (item.acceptedOfferId) {
+        const [offerUpdateResult] = await connection.execute(
+          `
+            UPDATE offers
+            SET consumed_at = NOW(), consumed_order_id = ?, updated_by = ?
+            WHERE id = ? AND status = 'ACCEPTED' AND consumed_at IS NULL
+          `,
+          [orderId, auditContext.actorUserId, item.acceptedOfferId],
+        );
+
+        if (!offerUpdateResult.affectedRows) {
+          throw badRequest('La oferta aceptada ya fue usada o no esta disponible.');
+        }
+      }
 
       await connection.execute(
         `
@@ -372,7 +443,13 @@ export async function listOrders({ filters, pagination }) {
           WHERE oi.order_id = o.id
           ORDER BY oi.id ASC
           LIMIT 1
-        ) AS previewTitle
+        ) AS previewTitle,
+        (
+          SELECT COUNT(*)
+          FROM order_items oi_offer
+          WHERE oi_offer.order_id = o.id
+            AND oi_offer.accepted_offer_id IS NOT NULL
+        ) AS offerCount
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
@@ -775,7 +852,13 @@ async function getOrderById(id, connection) {
         COALESCE(c.address, pc.address) AS customerAddress,
         c.id AS customerId,
         pc.id AS potentialCustomerId,
-        o.user_id AS userId
+        o.user_id AS userId,
+        (
+          SELECT COUNT(*)
+          FROM order_items oi_offer
+          WHERE oi_offer.order_id = o.id
+            AND oi_offer.accepted_offer_id IS NOT NULL
+        ) AS offerCount
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
@@ -808,7 +891,10 @@ async function getOrderById(id, connection) {
         discount_type_snapshot AS discountType,
         discount_value_snapshot AS discountValue,
         final_unit_price_snapshot AS finalUnitPrice,
-        line_total_snapshot AS lineTotal
+        line_total_snapshot AS lineTotal,
+        accepted_offer_id AS acceptedOfferId,
+        accepted_offer_price_snapshot AS acceptedOfferPrice,
+        accepted_offer_quantity_snapshot AS acceptedOfferQuantity
       FROM order_items
       WHERE order_id = ?
       ORDER BY id ASC
@@ -859,6 +945,11 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
+    acceptedOffer: row.acceptedOfferId ? {
+      id: row.acceptedOfferId,
+      price: Number(row.acceptedOfferPrice),
+      quantity: Number(row.acceptedOfferQuantity || 1),
+    } : null,
   }));
   order.history = historyRows;
   order.payments = paymentRows.map((row) => ({
@@ -894,6 +985,8 @@ function normalizeOrderListRow(row) {
     itemCount: Number(row.itemCount),
     previewImage: row.previewImage,
     previewTitle: row.previewTitle,
+    offerCount: Number(row.offerCount || 0),
+    hasOffers: Number(row.offerCount || 0) > 0,
     customer: {
       firstName: row.customerFirstName,
       lastName: row.customerLastName,
@@ -923,6 +1016,8 @@ function normalizeOrderDetailRow(row) {
     internalNotes: row.internalNotes,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    offerCount: Number(row.offerCount || 0),
+    hasOffers: Number(row.offerCount || 0) > 0,
     customer: {
       customerId: row.customerId,
       potentialCustomerId: row.potentialCustomerId,
@@ -936,5 +1031,35 @@ function normalizeOrderDetailRow(row) {
     items: [],
     history: [],
     payments: [],
+  };
+}
+
+
+async function getAcceptedOfferForOrder(userId, articleId, acceptedOfferId, connection) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        o.id,
+        o.offered_price AS offeredAmount
+      FROM offers o
+      INNER JOIN customers c ON c.id = o.customer_id
+      WHERE c.user_id = ?
+        AND o.article_id = ?
+        AND o.id = ?
+        AND o.status = 'ACCEPTED'
+        AND o.consumed_at IS NULL
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [userId, articleId, acceptedOfferId],
+  );
+
+  if (!rows.length) {
+    throw badRequest('La oferta aceptada ya fue usada o no esta disponible.');
+  }
+
+  return {
+    id: rows[0].id,
+    offeredAmount: Number(rows[0].offeredAmount),
   };
 }

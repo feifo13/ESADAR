@@ -7,9 +7,9 @@ import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { formatCurrency, getDiscountedPrice } from "../lib/format.js";
 
 function useMediaQuery(query) {
-  const [matches, setMatches] = useState(() => (
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false
-  ));
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -28,13 +28,16 @@ export default function FeaturedMotionCards({ title, items = [] }) {
   const shouldReduceMotion = useReducedMotion();
   const isDesktop = useMediaQuery("(min-width: 961px)");
   const { isSaved, toggleItem, pendingIds } = useWishlist();
-  const featuredItems = isDesktop ? items.slice(0, 3) : items.slice(0, 4);
+  // const featuredItems = isDesktop ? items.slice(0, 3) : items.slice(0, 4);
+  const featuredItems = items;
 
   if (!featuredItems.length) return null;
 
   function renderFeaturedItem(article, index) {
     const price = getDiscountedPrice(article);
-    const soldOut = Number(article.quantityAvailable || 0) <= 0 || article.status === "SOLD_OUT";
+    const soldOut =
+      Number(article.quantityAvailable || 0) <= 0 ||
+      article.status === "SOLD_OUT";
     const saved = isSaved(article.id);
     const pending = pendingIds.includes(Number(article.id));
 
@@ -52,8 +55,13 @@ export default function FeaturedMotionCards({ title, items = [] }) {
       material: article.material,
       quantityAvailable: article.quantityAvailable,
       brandName: article.brandName,
-      sizeLabel: article.sizeText || article.size?.code || article.sizeCode || "",
-      image: article.primaryImage || article.primaryImageThumb || article.primaryImageDetail || "",
+      sizeLabel:
+        article.sizeText || article.size?.code || article.sizeCode || "",
+      image:
+        article.primaryImage ||
+        article.primaryImageThumb ||
+        article.primaryImageDetail ||
+        "",
       allowOffers: article.allowOffers,
     };
 
@@ -64,13 +72,25 @@ export default function FeaturedMotionCards({ title, items = [] }) {
         initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
         whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.25 }}
-        transition={{ type: "spring", stiffness: 180, damping: 24, delay: index * 0.04 }}
+        transition={{
+          type: "spring",
+          stiffness: 180,
+          damping: 24,
+          delay: index * 0.04,
+        }}
         whileHover={shouldReduceMotion ? undefined : { y: -8, scale: 1.01 }}
       >
-        <Link to={`/articles/${article.slug || article.id}`} className="featured-motion-card__link">
+        <Link
+          to={`/articles/${article.slug || article.id}`}
+          className="featured-motion-card__link"
+        >
           <div className="featured-motion-card__media">
             <SmartImage
-              src={article.primaryImageDetail || article.primaryImageThumb || article.primaryImage}
+              src={
+                article.primaryImageDetail ||
+                article.primaryImageThumb ||
+                article.primaryImage
+              }
               alt={article.primaryImageAlt || article.title}
               fallbackLabel={article.title}
               className="featured-motion-card__image"
@@ -85,10 +105,14 @@ export default function FeaturedMotionCards({ title, items = [] }) {
             </p>
             <h3>{article.title}</h3>
             <div className="featured-motion-card__meta">
-              <span>{article.conditionLabel || "Second hand seleccionada"}</span>
+              <span>
+                {article.conditionLabel || "Second hand seleccionada"}
+              </span>
               <strong>{formatCurrency(price)}</strong>
             </div>
-            {soldOut ? <span className="featured-motion-card__status">Agotado</span> : null}
+            {soldOut ? (
+              <span className="featured-motion-card__status">Agotado</span>
+            ) : null}
           </div>
         </Link>
 
@@ -134,8 +158,10 @@ export default function FeaturedMotionCards({ title, items = [] }) {
         </div>
       </div>
 
-      <div className="featured-motion-grid">
-        {featuredItems.map((article, index) => renderFeaturedItem(article, index))}
+      <div className="rail-scroller">
+        {featuredItems.map((article, index) =>
+          renderFeaturedItem(article, index),
+        )}
       </div>
     </section>
   );

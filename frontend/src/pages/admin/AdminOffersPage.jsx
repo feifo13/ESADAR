@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
@@ -348,10 +349,17 @@ export default function AdminOffersPage() {
                     </td>
                     <td>{formatCurrency(offer.offeredAmount)}</td>
                     <td>
-                      <StatusBadge
-                        status={offer.status}
-                        labels={OFFER_STATUS_LABELS}
-                      />
+                      <div className="cell-stack cell-stack--compact">
+                        <StatusBadge
+                          status={offer.status}
+                          labels={OFFER_STATUS_LABELS}
+                        />
+                        {offer.consumedAt ? (
+                          <Link className="pill pill-offer" to={`/admin/orders/${offer.consumedOrderId}`}>
+                            Usada en orden #{offer.consumedOrderId}
+                          </Link>
+                        ) : null}
+                      </div>
                     </td>
                     <td>
                       {offer.status === "PENDING" ? (

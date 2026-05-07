@@ -13,6 +13,7 @@ import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleFilters from "../components/ArticleFilters.jsx";
 import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";
@@ -124,11 +125,13 @@ export default function HomePage() {
   const { categoryOptions, brandOptions, sizeOptions, lookupError } =
     useLookups();
   const { site, pagesByRoute } = useSiteSeo();
+  const { isAuthenticated } = useAuth();
 
   const [filters, setFilters] = useState(initialFilters);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [featuredItems, setFeaturedItems] = useState([]);
   const [items, setItems] = useState([]);
+  const [acceptedOffersByArticle, setAcceptedOffersByArticle] = useState({});
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 20,
@@ -373,6 +376,40 @@ export default function HomePage() {
   useEffect(() => {
     let ignore = false;
 
+    async function loadAcceptedOffers() {
+      if (!isAuthenticated) {
+        setAcceptedOffersByArticle({});
+        return;
+      }
+      try {
+        const response = await apiFetch("/api/public/offers/accepted");
+        if (ignore) return;
+        const nextMap = {};
+        (response.items || []).forEach((offer) => {
+          if (offer.article?.id) {
+            nextMap[Number(offer.article.id)] = {
+              id: offer.id,
+              price: Number(offer.offeredAmount || 0),
+              offeredAmount: Number(offer.offeredAmount || 0),
+              quantity: 1,
+            };
+          }
+        });
+        setAcceptedOffersByArticle(nextMap);
+      } catch {
+        if (!ignore) setAcceptedOffersByArticle({});
+      }
+    }
+
+    loadAcceptedOffers();
+    return () => {
+      ignore = true;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    let ignore = false;
+
     async function loadArticles() {
       try {
         setError("");
@@ -382,7 +419,11 @@ export default function HomePage() {
         const response = await apiFetch(`/api/public/articles?${queryString}`);
         if (ignore) return;
 
-        const nextItems = response.items || [];
+        const nextItems = (response.items || []).map((item) => (
+          acceptedOffersByArticle[Number(item.id)]
+            ? { ...item, acceptedOffer: acceptedOffersByArticle[Number(item.id)] }
+            : item
+        ));
         const nextPagination = response.pagination || {
           page: 1,
           pageSize: 20,

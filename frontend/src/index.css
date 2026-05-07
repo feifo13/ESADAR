@@ -12406,3 +12406,21 @@ textarea,
     animation: none !important;
   }
 }
+
+/* Accepted offers flow */
+.summary-item-card--accepted-offer,
+.checkout-offer-row {
+  outline: 2px solid var(--pill-offer-bg, #ffec7a);
+  background: color-mix(in srgb, var(--pill-offer-bg, #ffec7a) 18%, var(--surface, #fff));
+}
+
+.checkout-offer-price {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+}
+
+.account-offers-list .summary-item-card__price-compare {
+  text-decoration: line-through;
+}

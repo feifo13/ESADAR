@@ -49,6 +49,14 @@ const ORDER_STATUS_LABELS = {
   EXPIRED: "Vencida",
 };
 
+const OFFER_STATUS_LABELS = {
+  PENDING: "Pendiente",
+  ACCEPTED: "Aceptada",
+  REJECTED: "Rechazada",
+  CANCELLED: "Cancelada",
+  EXPIRED: "Vencida",
+};
+
 const ALERT_TYPE_LABELS = {
   BACK_IN_STOCK: "Avisarme si vuelve",
   SIMILAR_ITEMS: "Avisarme si entra algo similar",
@@ -59,6 +67,7 @@ const ALERT_TYPE_LABELS = {
 const TAB_ITEMS = [
   { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
   { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
+  { key: "ofertas", label: "Mis ofertas", path: "/cuenta/ofertas" },
   // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
   { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
 ];
@@ -88,6 +97,7 @@ function LocalTablePagination() {
 
 function getActiveTab(pathname) {
   if (pathname.includes("/guardados")) return "guardados";
+  if (pathname.includes("/ofertas")) return "ofertas";
   if (pathname.includes("/alertas")) return "alertas";
   if (pathname.includes("/ordenes")) return "ordenes";
   return "perfil";
@@ -142,6 +152,7 @@ export default function AccountPage() {
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
   const [orders, setOrders] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [wishlistSort, setWishlistSort] = useState({
@@ -166,10 +177,11 @@ export default function AccountPage() {
       try {
         setProfileLoading(true);
         setProfileError("");
-        const [profileResponse, ordersResponse, alertsResponse] =
+        const [profileResponse, ordersResponse, offersResponse, alertsResponse] =
           await Promise.all([
             apiFetch("/api/public/account/profile"),
             apiFetch("/api/public/account/orders"),
+            apiFetch("/api/public/offers/mine"),
             apiFetch("/api/public/account/alerts"),
           ]);
 
@@ -210,6 +222,7 @@ export default function AccountPage() {
           preferenceNotes: profileResponse.profile?.preferenceNotes || "",
         });
         setOrders(ordersResponse.items || []);
+        setOffers(offersResponse.items || []);
         setAlerts(alertsResponse.items || []);
       } catch (err) {
         if (!ignore) {
@@ -347,6 +360,9 @@ export default function AccountPage() {
         discountedPrice: item.discountedPrice,
         quantityAvailable: item.quantityAvailable,
         status: item.status || item.articleStatus,
+        acceptedOffer: item.status === "ACCEPTED" && !item.consumedAt
+          ? { id: item.id, price: Number(item.offeredAmount || 0), quantity: 1 }
+          : item.acceptedOffer || null,
       },
       1,
       {
@@ -1232,6 +1248,86 @@ export default function AccountPage() {
         </section>
       ) : null}
 
+      {activeTab === "ofertas" ? (
+        <section className="section-card page-stack">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Ofertas</p>
+              <h2>Mis ofertas</h2>
+            </div>
+          </div>
+
+          {!isAuthenticated ? (
+            <p className="muted-copy">Inicia sesion para revisar tus ofertas.</p>
+          ) : null}
+
+          {isAuthenticated && !offers.length ? (
+            <p className="muted-copy">Todavia no tienes ofertas registradas.</p>
+          ) : null}
+
+          {isAuthenticated && offers.length ? (
+            <div className="summary-item-card-list account-offers-list">
+              {offers.map((offer) => {
+                const article = offer.article || {};
+                const isAcceptedAvailable = offer.status === "ACCEPTED" && !offer.consumedAt;
+                const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
+                const offeredAmount = Number(offer.offeredAmount || 0);
+                const savings = Math.max(0, originalPrice - offeredAmount);
+                return (
+                  <SummaryItemCard
+                    key={`offer-${offer.id}`}
+                    image={article.image}
+                    imageAlt={article.title}
+                    imageTo={article.slug ? articlePath(article) : undefined}
+                    badge={<StatusBadge status={offer.status} labels={OFFER_STATUS_LABELS} />}
+                    title={article.title || `Oferta #${offer.id}`}
+                    titleTo={article.slug ? articlePath(article) : undefined}
+                    subtitle={`${article.brandName || "Sin marca"} · Oferta por 1 unidad`}
+                    meta={[
+                      `Creada: ${formatDate(offer.createdAt)}`,
+                      offer.acceptedAt ? `Respondida: ${formatDate(offer.acceptedAt)}` : null,
+                      offer.consumedAt ? `Usada en orden #${offer.consumedOrderId}` : null,
+                      isAcceptedAvailable ? `Ahorro: ${formatCurrency(savings)}` : null,
+                    ].filter(Boolean)}
+                    price={formatCurrency(offeredAmount)}
+                    comparePrice={originalPrice ? formatCurrency(originalPrice) : null}
+                    actions={[
+                      article.slug ? (
+                        <Link className="icon-action-button" to={articlePath(article)} title="Ver articulo" aria-label="Ver articulo">
+                          <EyeIcon />
+                        </Link>
+                      ) : null,
+                      isAcceptedAvailable ? (
+                        <button
+                          type="button"
+                          className="icon-action-button"
+                          title="Agregar oferta al carrito"
+                          aria-label="Agregar oferta al carrito"
+                          disabled={Number(article.quantityAvailable || 0) <= 0}
+                          onClick={(event) => addArticleToCart({
+                            ...offer,
+                            articleId: article.id,
+                            slug: article.slug,
+                            title: article.title,
+                            image: article.image,
+                            salePrice: article.salePrice,
+                            discountedPrice: article.discountedPrice,
+                            quantityAvailable: article.quantityAvailable,
+                            brandName: article.brandName,
+                          }, event)}
+                        >
+                          <CartIcon />
+                        </button>
+                      ) : null,
+                    ].filter(Boolean)}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {activeTab === "ordenes" ? (
         <section className="section-card page-stack">
           <div className="section-heading">
@@ -1278,6 +1374,7 @@ export default function AccountPage() {
                         order.itemsCount === 1 ? "" : "s"
                       }`}
                       meta={[
+                        order.hasOffers ? `${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}` : null,
                         `Fecha: ${formatDate(order.createdAt)}`,
                         `Pago: ${
                           PAYMENT_METHOD_LABELS[order.paymentMethod] ||
@@ -1376,6 +1473,7 @@ export default function AccountPage() {
                                 {order.shippingMethodName
                                   ? ` · ${order.shippingMethodName}`
                                   : ""}
+                                {order.hasOffers ? ` · ${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}` : ""}
                               </span>
                             </div>
                           </td>
@@ -1384,7 +1482,10 @@ export default function AccountPage() {
                             <strong>{formatCurrency(order.total)}</strong>
                           </td>
                           <td>
-                            <OrderStatusBadge status={order.orderStatus} />
+                            <div className="cell-stack cell-stack--compact">
+                              <OrderStatusBadge status={order.orderStatus} />
+                              {order.hasOffers ? <span className="pill pill-offer">Con oferta</span> : null}
+                            </div>
                           </td>
                           <td>{formatDate(latestStatusDate)}</td>
                           <td>

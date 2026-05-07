@@ -364,12 +364,18 @@ export default function AdminOrdersPage() {
                       <div className="cell-stack">
                         <strong>{order.orderNumber}</strong>
                         <span className="muted-copy">#{order.id}</span>
+                        {order.hasOffers ? <span className="pill pill-offer">{order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}</span> : null}
                       </div>
                     </td>
                     <td>{order.customer.firstName} {order.customer.lastName}</td>
                     <td>{order.customer.email || "Sin email"}</td>
                     <td>{formatDate(order.createdAt)}</td>
-                    <td><OrderStatusBadge status={order.orderStatus} /></td>
+                    <td>
+                      <div className="cell-stack cell-stack--compact">
+                        <OrderStatusBadge status={order.orderStatus} />
+                        {order.hasOffers ? <span className="pill pill-offer">Con oferta</span> : null}
+                      </div>
+                    </td>
                     <td>
                       <div className="cell-stack cell-stack--compact">
                         <span>{order.paymentMethod || "-"}</span>

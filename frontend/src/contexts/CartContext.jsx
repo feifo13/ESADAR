@@ -6,6 +6,15 @@ import { getPublicSessionToken } from '../lib/publicSession.js';
 import { useAuth } from './AuthContext.jsx';
 
 const CartContext = createContext(null);
+
+function calculateLineTotal(item) {
+  const quantity = Number(item.quantity || 0);
+  const basePrice = Number(item.discountedPrice || 0);
+  const offer = item.acceptedOffer || null;
+  const offerQuantity = offer ? Math.min(quantity, Number(offer.quantity || 1)) : 0;
+  const offerPrice = offer ? Number(offer.price || 0) : 0;
+  return offer ? offerPrice * offerQuantity + basePrice * Math.max(quantity - offerQuantity, 0) : basePrice * quantity;
+}
 const STORAGE_KEY = 'miami-closet-cart';
 const OWNER_STORAGE_KEY = 'miami-closet-cart-owner';
 
@@ -17,6 +26,92 @@ function clampQuantity(quantity, maxQuantity) {
   return safeQuantity;
 }
 
+
+function getLineKey(item) {
+  return String(item?.cartLineKey ?? item?.id ?? `${item?.articleId || 'item'}:${item?.acceptedOffer?.id || 'regular'}`);
+}
+
+function findLineByKey(items, lineKey) {
+  const wanted = String(lineKey);
+  return items.find((item) => getLineKey(item) === wanted || String(item.articleId) === wanted) || null;
+}
+
+function splitLocalAdd(items, article, quantity, maxQuantity) {
+  const requestedQuantity = Math.max(1, Number(quantity || 1));
+  const articleId = article.id;
+  const existingArticleQuantity = items
+    .filter((item) => Number(item.articleId) === Number(articleId))
+    .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const allowedToAdd = Math.max(0, Number(maxQuantity || 0) - existingArticleQuantity);
+  const addQuantity = Math.min(requestedQuantity, allowedToAdd);
+  const reachedLimit = addQuantity < requestedQuantity;
+
+  if (addQuantity <= 0) {
+    return { items, added: 0, reachedLimit: true, quantity: existingArticleQuantity };
+  }
+
+  let remaining = addQuantity;
+  let nextItems = [...items];
+  const acceptedOffer = article.acceptedOffer || null;
+
+  if (acceptedOffer) {
+    const offerExists = nextItems.some(
+      (item) => Number(item.articleId) === Number(articleId) && Number(item.acceptedOffer?.id) === Number(acceptedOffer.id),
+    );
+
+    if (!offerExists && remaining > 0) {
+      const offerLine = createLocalCartItem(article, 1, maxQuantity, acceptedOffer);
+      nextItems = [...nextItems, offerLine];
+      remaining -= 1;
+    }
+  }
+
+  if (remaining > 0) {
+    const regularIndex = nextItems.findIndex(
+      (item) => Number(item.articleId) === Number(articleId) && !item.acceptedOffer,
+    );
+
+    if (regularIndex >= 0) {
+      nextItems = nextItems.map((item, index) => {
+        if (index !== regularIndex) return item;
+        const nextQuantity = Number(item.quantity || 0) + remaining;
+        return { ...item, quantity: nextQuantity, maxQuantity, lineTotal: calculateLineTotal({ ...item, quantity: nextQuantity, maxQuantity }) };
+      });
+    } else {
+      nextItems = [...nextItems, createLocalCartItem(article, remaining, maxQuantity, null)];
+    }
+  }
+
+  return {
+    items: nextItems,
+    added: addQuantity,
+    reachedLimit,
+    quantity: existingArticleQuantity + addQuantity,
+  };
+}
+
+function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = null) {
+  const item = {
+    id: null,
+    cartLineKey: `${article.id}:${acceptedOffer?.id || 'regular'}:${Date.now()}:${Math.random().toString(16).slice(2)}`,
+    articleId: article.id,
+    slug: article.slug,
+    title: article.title,
+    brandName: article.brandName,
+    sizeLabel: article.sizeText || article.sizeCode || '',
+    image: article.primaryImage || article.images?.[0]?.filePath || article.images?.[0]?.file_path || '',
+    salePrice: Number(article.salePrice || 0),
+    discountType: article.discountType || 'NONE',
+    discountValue: Number(article.discountValue || 0),
+    discountedPrice: getDiscountedPrice(article),
+    acceptedOffer: acceptedOffer || null,
+    quantity,
+    maxQuantity,
+  };
+  item.lineTotal = calculateLineTotal(item);
+  return item;
+}
+
 function readStoredItems() {
   const stored = storage.get(STORAGE_KEY, []);
   return Array.isArray(stored) ? stored : [];
@@ -25,6 +120,7 @@ function readStoredItems() {
 function normalizeRemoteItems(items = []) {
   return items.map((item) => ({
     id: item.id,
+    cartLineKey: String(item.id ?? `${item.articleId}:${item.acceptedOffer?.id || 'regular'}`),
     articleId: item.articleId,
     slug: item.slug,
     title: item.title,
@@ -37,6 +133,8 @@ function normalizeRemoteItems(items = []) {
     discountedPrice: Number(item.discountedPrice || 0),
     quantity: Number(item.quantity || 1),
     maxQuantity: Number(item.maxQuantity || item.quantity || 1),
+    acceptedOffer: item.acceptedOffer || null,
+    lineTotal: Number(item.lineTotal ?? calculateLineTotal(item)),
   }));
 }
 
@@ -101,16 +199,15 @@ export function CartProvider({ children }) {
       items,
       addItem(article, quantity = 1, options = {}) {
         const maxQuantity = Math.max(0, Number(article.quantityAvailable ?? article.maxQuantity ?? 0));
-        const existing = items.find((item) => item.articleId === article.id);
-        const existingQuantity = Number(existing?.quantity || 0);
+        const existingArticleQuantity = items
+          .filter((item) => Number(item.articleId) === Number(article.id))
+          .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
         if (maxQuantity <= 0) {
-          return { ok: false, code: 'OUT_OF_STOCK', maxQuantity: 0, quantity: existingQuantity };
+          return { ok: false, code: 'OUT_OF_STOCK', maxQuantity: 0, quantity: existingArticleQuantity };
         }
 
-        const desiredQuantity = existingQuantity + Math.max(1, Number(quantity || 1));
-        const nextQuantity = clampQuantity(desiredQuantity, maxQuantity);
-        const reachedLimit = nextQuantity < desiredQuantity;
+        const splitResult = splitLocalAdd(items, article, quantity, maxQuantity);
 
         setCartFx({
           tick: Date.now(),
@@ -119,35 +216,7 @@ export function CartProvider({ children }) {
           sourceRect: options.sourceRect || null,
         });
 
-        let nextItems;
-
-        if (existing) {
-          nextItems = items.map((item) => (
-            item.articleId === article.id
-              ? { ...item, quantity: nextQuantity, maxQuantity }
-              : item
-          ));
-        } else {
-          const newItem = {
-            id: existing?.id || null,
-            articleId: article.id,
-            slug: article.slug,
-            title: article.title,
-            brandName: article.brandName,
-            sizeLabel: article.sizeText || article.sizeCode || '',
-            image: article.primaryImage || article.images?.[0]?.filePath || article.images?.[0]?.file_path || '',
-            salePrice: Number(article.salePrice || 0),
-            discountType: article.discountType || 'NONE',
-            discountValue: Number(article.discountValue || 0),
-            discountedPrice: getDiscountedPrice(article),
-            quantity: nextQuantity,
-            maxQuantity,
-          };
-
-          nextItems = [...items, newItem];
-        }
-
-        persist(nextItems, isAuthenticated ? user?.id || cartOwnerId : null);
+        persist(splitResult.items, isAuthenticated ? user?.id || cartOwnerId : null);
 
         if (isAuthenticated) {
           void enqueueSync(async () => {
@@ -173,20 +242,23 @@ export function CartProvider({ children }) {
         }).catch(() => undefined);
 
         return {
-          ok: !reachedLimit,
-          code: reachedLimit ? 'LIMITED' : existing ? 'UPDATED' : 'ADDED',
+          ok: !splitResult.reachedLimit,
+          code: splitResult.reachedLimit ? 'LIMITED' : splitResult.added > 0 ? 'ADDED' : 'UPDATED',
           maxQuantity,
-          quantity: nextQuantity,
+          quantity: splitResult.quantity,
         };
       },
-      removeItem(articleId) {
-        const nextItems = items.filter((item) => item.articleId !== articleId);
+      removeItem(lineKey) {
+        const target = findLineByKey(items, lineKey);
+        if (!target) return;
+
+        const nextItems = items.filter((item) => getLineKey(item) !== getLineKey(target));
         persist(nextItems, isAuthenticated ? user?.id || cartOwnerId : null);
 
         if (isAuthenticated) {
           void enqueueSync(async () => {
             const snapshot = await apiFetch('/api/cart');
-            const remoteItem = (snapshot.cart?.items || []).find((item) => item.articleId === articleId);
+            const remoteItem = (snapshot.cart?.items || []).find((item) => getLineKey(item) === getLineKey(target) || Number(item.id) === Number(target.id));
 
             if (!remoteItem) {
               persist(normalizeRemoteItems(snapshot.cart?.items || []), user.id);
@@ -201,33 +273,60 @@ export function CartProvider({ children }) {
           });
         }
       },
-      updateQuantity(articleId, quantity) {
-        const existing = items.find((item) => item.articleId === articleId);
+      updateQuantity(lineKey, quantity) {
+        const existing = findLineByKey(items, lineKey);
         if (!existing) {
           return { ok: false, code: 'NOT_FOUND', quantity: 0, maxQuantity: 0 };
         }
 
+        const articleQuantityWithoutLine = items
+          .filter((item) => Number(item.articleId) === Number(existing.articleId) && getLineKey(item) !== getLineKey(existing))
+          .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
         const maxQuantity = Math.max(1, Number(existing.maxQuantity || existing.quantity || 1));
         const desiredQuantity = Math.max(1, Number(quantity || 1));
-        const nextQuantity = clampQuantity(desiredQuantity, maxQuantity);
+        const allowedForLine = Math.max(1, maxQuantity - articleQuantityWithoutLine);
+        const nextQuantity = clampQuantity(desiredQuantity, allowedForLine);
         const limited = nextQuantity < desiredQuantity;
 
-        persist(
-          items.map((item) => (
-            item.articleId === articleId ? { ...item, quantity: nextQuantity, maxQuantity } : item
-          )),
-          isAuthenticated ? user?.id || cartOwnerId : null,
-        );
+        let nextItems = items.map((item) => (
+          getLineKey(item) === getLineKey(existing)
+            ? { ...item, quantity: existing.acceptedOffer ? 1 : nextQuantity, maxQuantity, lineTotal: calculateLineTotal({ ...item, quantity: existing.acceptedOffer ? 1 : nextQuantity, maxQuantity }) }
+            : item
+        ));
+
+        if (existing.acceptedOffer && nextQuantity > 1) {
+          const extraQuantity = nextQuantity - 1;
+          const regularIndex = nextItems.findIndex((item) => Number(item.articleId) === Number(existing.articleId) && !item.acceptedOffer);
+          if (regularIndex >= 0) {
+            nextItems = nextItems.map((item, index) => {
+              if (index !== regularIndex) return item;
+              const regularQuantity = Number(item.quantity || 0) + extraQuantity;
+              return { ...item, quantity: regularQuantity, maxQuantity, lineTotal: calculateLineTotal({ ...item, quantity: regularQuantity, maxQuantity }) };
+            });
+          } else {
+            nextItems = [...nextItems, {
+              ...existing,
+              id: null,
+              cartLineKey: `${existing.articleId}:regular:${Date.now()}:${Math.random().toString(16).slice(2)}`,
+              acceptedOffer: null,
+              quantity: extraQuantity,
+              discountedPrice: Number(existing.discountedPrice || existing.salePrice || 0),
+              lineTotal: Number(existing.discountedPrice || existing.salePrice || 0) * extraQuantity,
+            }];
+          }
+        }
+
+        persist(nextItems, isAuthenticated ? user?.id || cartOwnerId : null);
 
         if (isAuthenticated) {
           void enqueueSync(async () => {
             const snapshot = await apiFetch('/api/cart');
-            const remoteItem = (snapshot.cart?.items || []).find((item) => item.articleId === articleId);
+            const remoteItem = (snapshot.cart?.items || []).find((item) => Number(item.id) === Number(existing.id));
 
             if (!remoteItem) {
               const added = await apiFetch('/api/cart/items', {
                 method: 'POST',
-                body: { articleId, quantity: nextQuantity },
+                body: { articleId: existing.articleId, quantity: nextQuantity },
               });
               persist(normalizeRemoteItems(added.cart?.items || []), user.id);
               return;
@@ -265,11 +364,14 @@ export function CartProvider({ children }) {
         return items.some((item) => item.articleId === articleId);
       },
       getItem(articleId) {
-        return items.find((item) => item.articleId === articleId) || null;
+        return items.find((item) => Number(item.articleId) === Number(articleId)) || null;
+      },
+      getItems(articleId) {
+        return items.filter((item) => Number(item.articleId) === Number(articleId));
       },
       cartCount: items.reduce((sum, item) => sum + item.quantity, 0),
       cartFx,
-      subtotal: items.reduce((sum, item) => sum + Number(item.discountedPrice || 0) * item.quantity, 0),
+      subtotal: items.reduce((sum, item) => sum + Number(item.lineTotal ?? calculateLineTotal(item)), 0),
     }),
     [cartFx, cartOwnerId, isAuthenticated, items, user?.id],
   );

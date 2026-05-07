@@ -115,6 +115,7 @@ export default function AccountOrderDetailPage() {
                 >
                   {receiptLoading ? 'Generando...' : 'Descargar boleta PDF'}
                 </button>
+                {order.hasOffers ? <span className="pill pill-offer">Con oferta</span> : null}
                 <OrderStatusBadge status={order.orderStatus} />
               </div>
             </div>
@@ -148,8 +149,9 @@ export default function AccountOrderDetailPage() {
                     sizeLabel: item.size,
                     quantity: item.quantity,
                     maxQuantity: item.quantity,
-                    salePrice: item.finalUnitPrice,
+                    salePrice: item.salePrice || item.finalUnitPrice,
                     discountedPrice: item.finalUnitPrice,
+                    acceptedOffer: item.acceptedOffer,
                   }}
                 />
               ))}

@@ -43,15 +43,21 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
   const maxQuantity = Math.max(quantity, Number(item.maxQuantity || quantity));
   const unitPrice = Number(item.discountedPrice || 0);
   const originalPrice = Number(item.salePrice || 0);
-  const hasDiscount = originalPrice > unitPrice;
+  const lineTotal = Number(item.lineTotal ?? unitPrice * quantity);
+  const hasAcceptedOffer = Boolean(item.acceptedOffer);
+  const lineKey = String(item.cartLineKey ?? item.id ?? item.articleId);
+  const offerPrice = hasAcceptedOffer ? Number(item.acceptedOffer.price || unitPrice) : unitPrice;
+  const offerSavings = hasAcceptedOffer ? Math.max(0, originalPrice - offerPrice) : 0;
+  const displayUnitPrice = hasAcceptedOffer ? offerPrice : unitPrice;
+  const hasDiscount = originalPrice > displayUnitPrice;
   const articlePath = `/articles/${encodeURIComponent(String(item.slug || item.articleId))}`;
 
   function handleQuantityInput(event) {
-    onQuantityChange(item.articleId, Number(event.target.value || 1));
+    onQuantityChange(lineKey, Number(event.target.value || 1));
   }
 
   return (
-    <article className="summary-item-card">
+    <article className={hasAcceptedOffer ? "summary-item-card summary-item-card--accepted-offer" : "summary-item-card"}>
       <Link
         to={articlePath}
         className="summary-item-card__media"
@@ -66,7 +72,7 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
       </Link>
 
       <div className="summary-item-card__body">
-        {/* <span className="summary-item-card__badge">En carrito</span> */}
+        {hasAcceptedOffer ? <span className="summary-item-card__badge pill pill-offer">Oferta aceptada</span> : null}
         <Link to={articlePath} className="summary-item-card__title">
           {item.title}
         </Link>
@@ -79,12 +85,16 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
           {hasDiscount ? (
             <span className="price-old">{formatCurrency(originalPrice)}</span>
           ) : null}
-          <strong> {formatCurrency(unitPrice)}</strong>
+          <strong> {formatCurrency(displayUnitPrice)}</strong>
+          {hasAcceptedOffer ? <span className="summary-item-card__meta"> oferta x1 · ahorro {formatCurrency(offerSavings)}</span> : null}
         </div>
 
         <p className="summary-item-card__price-row">
-          Total: <strong>{formatCurrency(unitPrice * quantity)}</strong>
+          Total: <strong>{formatCurrency(lineTotal)}</strong>
         </p>
+        {hasAcceptedOffer ? (
+          <p className="summary-item-card__meta">La oferta aplica a 1 unidad. Unidades extra van en otra línea.</p>
+        ) : null}
       </div>
 
       {readOnly ? (
@@ -100,7 +110,7 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
           <button
             type="button"
             className="summary-item-card__qty-button"
-            onClick={() => onRemove(item.articleId)}
+            onClick={() => onRemove(lineKey)}
             aria-label={`Quitar ${item.title}`}
             title="Quitar"
           >
@@ -118,7 +128,7 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
           <button
             type="button"
             className="summary-item-card__qty-button"
-            onClick={() => onQuantityChange(item.articleId, quantity + 1)}
+            onClick={() => onQuantityChange(lineKey, quantity + 1)}
             aria-label={`Agregar una unidad de ${item.title}`}
             title="Agregar una unidad"
           >

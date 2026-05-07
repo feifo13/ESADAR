@@ -212,7 +212,9 @@ export default function ArticleCard({
           {article.isFeatured ? (
             <span className="pill pill-featured">Destacado</span>
           ) : null}
-          {article.allowOffers ? (
+          {article.acceptedOffer ? (
+            <span className="pill pill-offer">Oferta aceptada</span>
+          ) : article.allowOffers ? (
             <span className="pill pill-offer">¡Ofertá!</span>
           ) : null}
           {discounted ? (
@@ -233,12 +235,13 @@ export default function ArticleCard({
         </div>
 
         <div className="article-card-pricebox">
-          <span className="price-current">{formatCurrency(price)}</span>
-          {discounted ? (
+          <span className="price-current">{article.acceptedOffer ? formatCurrency(article.acceptedOffer.price || article.acceptedOffer.offeredAmount) : formatCurrency(price)}</span>
+          {article.acceptedOffer || discounted ? (
             <span className="price-old">
               {formatCurrency(article.salePrice)}
             </span>
           ) : null}
+          {article.acceptedOffer ? <span className="muted-copy">Oferta aceptada x1</span> : null}
         </div>
 
         <div className="article-card-actions article-card-actions--catalog">
