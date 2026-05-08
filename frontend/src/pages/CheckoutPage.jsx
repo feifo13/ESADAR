@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
+import PreviousNextControls from "../components/PreviousNextControls.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
@@ -891,17 +892,14 @@ export default function CheckoutPage() {
 
           {renderCurrentStep()}
 
-          <div className="checkout-navigation">
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={handleBack}
-              disabled={currentStepIndex === 0 || submitting}
-            >
-              Anterior
-            </button>
-
-            {currentStepKey === "confirmacion" ? (
+          <PreviousNextControls
+            className="checkout-navigation"
+            previousClassName="button button-secondary"
+            nextClassName="button button-primary"
+            previousDisabled={currentStepIndex === 0 || submitting}
+            onPrevious={handleBack}
+            onNext={handleNext}
+            nextSlot={currentStepKey === "confirmacion" ? (
               <button
                 type="button"
                 className="button button-primary"
@@ -910,16 +908,8 @@ export default function CheckoutPage() {
               >
                 {submitting ? "Creando orden…" : "Confirmar orden"}
               </button>
-            ) : (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={handleNext}
-              >
-                Siguiente
-              </button>
-            )}
-          </div>
+            ) : undefined}
+          />
         </section>
       </div>
     </>

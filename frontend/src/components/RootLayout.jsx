@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import Header from "./Header.jsx";
+import AppBreadcrumbs from "./AppBreadcrumbs.jsx";
 import ThemeDock from "./ThemeDock.jsx";
 import ScrollChrome from "./ScrollChrome.jsx";
 import FooterScrollScene from "./FooterScrollScene.jsx";
@@ -126,6 +127,7 @@ export default function RootLayout() {
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
         <main className="page-shell">
+          <AppBreadcrumbs />
           <div className="page-transition-shell">
             <Outlet context={{ setHeroLogoVisible }} />
           </div>

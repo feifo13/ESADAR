@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import PreviousNextControls from './PreviousNextControls.jsx';
 import SmartImage from './SmartImage.jsx';
 
 export default function ImageGallery({ images = [], title }) {
@@ -80,10 +81,11 @@ export default function ImageGallery({ images = [], title }) {
           Zoom
         </button>
         {normalized.length > 1 ? (
-          <div className="gallery-arrows">
-            <button type="button" onClick={() => move(-1)}>Anterior</button>
-            <button type="button" onClick={() => move(1)}>Siguiente</button>
-          </div>
+          <PreviousNextControls
+            className="gallery-arrows"
+            onPrevious={() => move(-1)}
+            onNext={() => move(1)}
+          />
         ) : null}
       </div>
 
@@ -127,10 +129,11 @@ export default function ImageGallery({ images = [], title }) {
               fetchPriority="high"
             />
             {normalized.length > 1 ? (
-              <div className="gallery-zoom-nav">
-                <button type="button" onClick={() => move(-1)}>Anterior</button>
-                <button type="button" onClick={() => move(1)}>Siguiente</button>
-              </div>
+              <PreviousNextControls
+                className="gallery-zoom-nav"
+                onPrevious={() => move(-1)}
+                onNext={() => move(1)}
+              />
             ) : null}
           </div>
         </div>

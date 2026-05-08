@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import ArticleImageZoom from './ArticleImageZoom.jsx';
+import PreviousNextControls from './PreviousNextControls.jsx';
 import SmartImage from './SmartImage.jsx';
 
 export default function ArticleImageGallery({ images = [], title, fallbackImage = null }) {
@@ -151,10 +152,11 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
               fetchPriority="high"
             />
             {normalized.length > 1 ? (
-              <div className="gallery-zoom-nav">
-                <button type="button" onClick={() => setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length)}>Anterior</button>
-                <button type="button" onClick={() => setActiveIndex((current) => (current + 1) % normalized.length)}>Siguiente</button>
-              </div>
+              <PreviousNextControls
+                className="gallery-zoom-nav"
+                onPrevious={() => setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length)}
+                onNext={() => setActiveIndex((current) => (current + 1) % normalized.length)}
+              />
             ) : null}
           </div>
         </div>

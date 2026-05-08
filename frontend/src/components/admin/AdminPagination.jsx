@@ -1,3 +1,5 @@
+import PreviousNextControls from "../PreviousNextControls.jsx";
+
 export default function AdminPagination({
   page,
   totalPages,
@@ -13,24 +15,15 @@ export default function AdminPagination({
         Pagina {page} de {totalPages} - {totalItems} registros
       </span>
 
-      <div className="table-actions pagination-actions">
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={onPrevious}
-          disabled={page === 1 || loading}
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={onNext}
-          disabled={page >= totalPages || loading}
-        >
-          Siguiente
-        </button>
-      </div>
+      <PreviousNextControls
+        className="table-actions pagination-actions"
+        previousClassName="button button-secondary"
+        nextClassName="button button-secondary"
+        previousDisabled={page === 1 || loading}
+        nextDisabled={page >= totalPages || loading}
+        onPrevious={onPrevious}
+        onNext={onNext}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
+import PreviousNextControls from "../../components/PreviousNextControls.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import BulkArticleImageChecklist, {
   createEmptyImageState,
@@ -1448,28 +1449,16 @@ export default function AdminArticleFormPage() {
               : null}
           </div>
 
-          <div className="inline-action-group wizard-navigation-actions">
-            {activeStep > 0 ? (
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() =>
-                  setActiveStep((current) => Math.max(0, current - 1))
-                }
-              >
-                Anterior
-              </button>
-            ) : null}
-
-            {activeStep < FORM_STEPS.length - 1 ? (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={() => goToStep(activeStep + 1)}
-              >
-                Siguiente
-              </button>
-            ) : (
+          <PreviousNextControls
+            className="inline-action-group wizard-navigation-actions"
+            previousClassName="button button-secondary"
+            nextClassName="button button-primary"
+            previousHidden={activeStep <= 0}
+            onPrevious={() =>
+              setActiveStep((current) => Math.max(0, current - 1))
+            }
+            onNext={() => goToStep(activeStep + 1)}
+            nextSlot={activeStep < FORM_STEPS.length - 1 ? undefined : (
               <button
                 type="submit"
                 className="button button-primary"
@@ -1482,7 +1471,7 @@ export default function AdminArticleFormPage() {
                     : "Crear articulo"}
               </button>
             )}
-          </div>
+          />
         </div>
       </form>
 
