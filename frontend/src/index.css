@@ -1199,9 +1199,10 @@ img[data-fallback="true"] {
 
 .checkout-navigation {
   display: grid;
-  grid-template-columns: 140px 1fr 180px;
+  /* grid-template-columns: 140px 1fr 180px; */
   gap: 16px;
   align-items: center;
+  grid-auto-flow: column;
 }
 
 .checkout-navigation-status {
