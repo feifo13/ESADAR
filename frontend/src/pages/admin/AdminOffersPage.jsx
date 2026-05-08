@@ -119,7 +119,8 @@ export default function AdminOffersPage() {
   }
 
   function changeSort(sortBy) {
-    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    const sortDir =
+      filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
@@ -315,104 +316,158 @@ export default function AdminOffersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
-                  <SortableTh sortKey="articleTitle" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Articulo</SortableTh>
-                  <SortableTh sortKey="contactName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Contacto</SortableTh>
-                  <SortableTh sortKey="offeredAmount" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Monto</SortableTh>
-                  <SortableTh sortKey="status" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
+                  <SortableTh
+                    sortKey="createdAt"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Fecha
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="articleTitle"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Articulo
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="contactName"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Contacto
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="offeredAmount"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Monto
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="status"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Estado
+                  </SortableTh>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {offers.map((offer) => {
-                  const displayStatus = offer.consumedAt || offer.status === "USED" ? "USED" : offer.status;
+                  const displayStatus =
+                    offer.consumedAt || offer.status === "USED"
+                      ? "USED"
+                      : offer.status;
                   return (
-                  <tr key={offer.id}>
-                    <td>{formatDate(offer.createdAt)}</td>
-                    <td>
-                      <div className="cell-stack">
-                        <strong>{offer.article.title}</strong>
-                        <span className="muted-copy">
-                          {offer.article.internalCode || `#${offer.article.id}`}
-                        </span>
-                        <span className="muted-copy">
-                          {offer.article.categoryName || "Sin categoria"} -{" "}
-                          {offer.article.brandName || "Sin marca"}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cell-stack">
-                        <strong>
-                          {offer.contact.firstName} {offer.contact.lastName}
-                        </strong>
-                        <span className="muted-copy">
-                          {offer.contact.email || "Sin email"}
-                        </span>
-                        <span className="muted-copy">
-                          {offer.contact.phone || "Sin telefono"}
-                        </span>
-                      </div>
-                    </td>
-                    <td>{formatCurrency(offer.offeredAmount)}</td>
-                    <td>
-                      <div className="cell-stack cell-stack--compact">
-                        <StatusBadge
-                          status={displayStatus}
-                          labels={OFFER_STATUS_LABELS}
-                        />
-                        {offer.consumedAt ? (
-                          <Link className="pill pill-offer" to={`/admin/orders/${offer.consumedOrderId}`}>
-                            Usada en orden #{offer.consumedOrderId}
-                          </Link>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td>
-                      {offer.status === "PENDING" ? (
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="ghost-button admin-icon-action"
-                            onClick={() =>
-                              handleStatusChange(offer.id, "ACCEPTED")
-                            }
-                            aria-label={`Aceptar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
-                            title="Aceptar"
-                          >
-                            <CheckIcon />
-                            <span className="admin-action-label">Aceptar</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-button admin-icon-action"
-                            onClick={() =>
-                              handleStatusChange(offer.id, "REJECTED")
-                            }
-                            aria-label={`Rechazar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
-                            title="Rechazar"
-                          >
-                            <XIcon />
-                            <span className="admin-action-label">Rechazar</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="ghost-button admin-icon-action"
-                            onClick={() =>
-                              handleStatusChange(offer.id, "CANCELLED")
-                            }
-                            aria-label={`Eliminar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
-                            title="Eliminar"
-                          >
-                            <BanIcon />
-                            <span className="admin-action-label">Eliminar</span>
-                          </button>
+                    <tr key={offer.id}>
+                      <td>{formatDate(offer.createdAt)}</td>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>{offer.article.title}</strong>
+                          <span className="muted-copy">
+                            {offer.article.internalCode ||
+                              `#${offer.article.id}`}
+                          </span>
+                          <span className="muted-copy">
+                            {offer.article.categoryName || "Sin categoria"} -{" "}
+                            {offer.article.brandName || "Sin marca"}
+                          </span>
                         </div>
-                      ) : (
-                        <span className="muted-copy">Sin acciones</span>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <strong>
+                            {offer.contact.firstName} {offer.contact.lastName}
+                          </strong>
+                          <span className="muted-copy">
+                            {offer.contact.email || "Sin email"}
+                          </span>
+                          <span className="muted-copy">
+                            {offer.contact.phone || "Sin telefono"}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack">
+                          <span className="muted-copy">
+                            Oferta: {formatCurrency(offer.offeredAmount)}
+                          </span>
+                          <strong>
+                            <span className="muted-copy">
+                              Precio: {formatCurrency(offer.article.salePrice)}
+                            </span>
+                          </strong>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cell-stack cell-stack--compact">
+                          <StatusBadge
+                            status={displayStatus}
+                            labels={OFFER_STATUS_LABELS}
+                          />
+                          {offer.consumedAt ? (
+                            <Link
+                              className="pill pill-offer"
+                              to={`/admin/orders/${offer.consumedOrderId}`}
+                            >
+                              Usada en orden #{offer.consumedOrderId}
+                            </Link>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td>
+                        {offer.status === "PENDING" ? (
+                          <div className="table-actions">
+                            <button
+                              type="button"
+                              className="ghost-button admin-icon-action"
+                              onClick={() =>
+                                handleStatusChange(offer.id, "ACCEPTED")
+                              }
+                              aria-label={`Aceptar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                              title="Aceptar"
+                            >
+                              <CheckIcon />
+                              <span className="admin-action-label">
+                                Aceptar
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-button admin-icon-action"
+                              onClick={() =>
+                                handleStatusChange(offer.id, "REJECTED")
+                              }
+                              aria-label={`Rechazar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                              title="Rechazar"
+                            >
+                              <XIcon />
+                              <span className="admin-action-label">
+                                Rechazar
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-button admin-icon-action"
+                              onClick={() =>
+                                handleStatusChange(offer.id, "CANCELLED")
+                              }
+                              aria-label={`Eliminar oferta de ${offer.contact.firstName} ${offer.contact.lastName}`}
+                              title="Eliminar"
+                            >
+                              <BanIcon />
+                              <span className="admin-action-label">
+                                Eliminar
+                              </span>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="muted-copy">Sin acciones</span>
+                        )}
+                      </td>
+                    </tr>
                   );
                 })}
 

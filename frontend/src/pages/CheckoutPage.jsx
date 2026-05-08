@@ -80,14 +80,16 @@ function useMediaQuery(query) {
   return matches;
 }
 
-
 function getCheckoutLineKey(item) {
   return String(item.cartLineKey ?? item.id ?? item.articleId);
 }
 
 function getOfferSavings(item) {
   if (!item?.acceptedOffer) return 0;
-  return Math.max(0, Number(item.salePrice || 0) - Number(item.acceptedOffer.price || 0));
+  return Math.max(
+    0,
+    Number(item.salePrice || 0) - Number(item.acceptedOffer.price || 0),
+  );
 }
 
 function TrashIcon() {
@@ -406,7 +408,7 @@ export default function CheckoutPage() {
           <div className="section-heading compact-heading">
             <div>
               <p className="section-kicker">Resumen</p>
-              {/* <h2>Prendas en la orden</h2> */}
+              {/* <h2>Resumen</h2> */}
             </div>
           </div>
 
@@ -444,7 +446,12 @@ export default function CheckoutPage() {
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={getCheckoutLineKey(item)} className={item.acceptedOffer ? "checkout-offer-row" : undefined}>
+                    <tr
+                      key={getCheckoutLineKey(item)}
+                      className={
+                        item.acceptedOffer ? "checkout-offer-row" : undefined
+                      }
+                    >
                       <td>
                         <SmartImage
                           src={item.image}
@@ -482,21 +489,35 @@ export default function CheckoutPage() {
                       <td>
                         {item.acceptedOffer ? (
                           <span className="checkout-offer-price">
-                            <span className="pill pill-offer">Oferta aceptada</span>
-                            <span className="price-old">{formatCurrency(item.salePrice)}</span>
-                            <strong>{formatCurrency(item.acceptedOffer.price)}</strong>
-                            <small className="muted-copy">Aplica a 1 unidad · ahorro {formatCurrency(getOfferSavings(item))}</small>
+                            <span className="pill pill-offer">
+                              Oferta aceptada
+                            </span>
+                            <span className="price-old">
+                              {formatCurrency(item.salePrice)}
+                            </span>
+                            <strong>
+                              {formatCurrency(item.acceptedOffer.price)}
+                            </strong>
+                            <small className="muted-copy">
+                              Aplica a 1 unidad · ahorro{" "}
+                              {formatCurrency(getOfferSavings(item))}
+                            </small>
                           </span>
                         ) : (
                           <span className="checkout-regular-price">
-                            <span className="muted-copy">Precio normal</span>
-                            <strong>{formatCurrency(item.discountedPrice)}</strong>
+                            {/* <span className="muted-copy">Precio normal</span> */}
+                            <strong>
+                              {formatCurrency(item.discountedPrice)}
+                            </strong>
                           </span>
                         )}
                       </td>
                       <td>
                         <strong>
-                          {formatCurrency(item.lineTotal ?? item.discountedPrice * item.quantity)}
+                          {formatCurrency(
+                            item.lineTotal ??
+                              item.discountedPrice * item.quantity,
+                          )}
                         </strong>
                       </td>
                       <td>
@@ -828,6 +849,7 @@ export default function CheckoutPage() {
               <p className="section-kicker">
                 Proceso de compra: {currentStepIndex + 1} de {steps.length}
               </p>
+              <h2>Proceso de compra</h2>
             </div>
           </div>
 
