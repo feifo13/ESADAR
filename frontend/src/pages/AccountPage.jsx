@@ -98,7 +98,8 @@ function LocalTablePagination() {
 
 function getActiveTab(pathname) {
   if (pathname.includes("/guardados")) return "guardados";
-  if (pathname.includes("/ofertas") || pathname.includes("/offers")) return "ofertas";
+  if (pathname.includes("/ofertas") || pathname.includes("/offers"))
+    return "ofertas";
   if (pathname.includes("/alertas")) return "alertas";
   if (pathname.includes("/ordenes")) return "ordenes";
   return "perfil";
@@ -187,13 +188,17 @@ export default function AccountPage() {
       try {
         setProfileLoading(true);
         setProfileError("");
-        const [profileResponse, ordersResponse, offersResponse, alertsResponse] =
-          await Promise.all([
-            apiFetch("/api/public/account/profile"),
-            apiFetch("/api/public/account/orders"),
-            apiFetch("/api/public/offers/mine"),
-            apiFetch("/api/public/account/alerts"),
-          ]);
+        const [
+          profileResponse,
+          ordersResponse,
+          offersResponse,
+          alertsResponse,
+        ] = await Promise.all([
+          apiFetch("/api/public/account/profile"),
+          apiFetch("/api/public/account/orders"),
+          apiFetch("/api/public/offers/mine"),
+          apiFetch("/api/public/account/alerts"),
+        ]);
 
         if (ignore) return;
 
@@ -348,9 +353,10 @@ export default function AccountPage() {
   function showStockNotice(result) {
     if (!result || result.ok) return;
 
-    const message = result.code === "OUT_OF_STOCK"
-      ? "Esta prenda no tiene stock disponible ahora."
-      : `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`;
+    const message =
+      result.code === "OUT_OF_STOCK"
+        ? "Esta prenda no tiene stock disponible ahora."
+        : `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`;
 
     notifyError(message);
   }
@@ -370,9 +376,14 @@ export default function AccountPage() {
         discountedPrice: item.discountedPrice,
         quantityAvailable: item.quantityAvailable,
         status: item.status || item.articleStatus,
-        acceptedOffer: item.status === "ACCEPTED" && !item.consumedAt
-          ? { id: item.id, price: Number(item.offeredAmount || 0), quantity: 1 }
-          : item.acceptedOffer || null,
+        acceptedOffer:
+          item.status === "ACCEPTED" && !item.consumedAt
+            ? {
+                id: item.id,
+                price: Number(item.offeredAmount || 0),
+                quantity: 1,
+              }
+            : item.acceptedOffer || null,
       },
       1,
       {
@@ -390,7 +401,9 @@ export default function AccountPage() {
     const result = await toggleItem(item, getWishlistItemPayload(item));
 
     if (!result.ok) {
-      notifyError(result.error?.message || "No pudimos actualizar tus guardados.");
+      notifyError(
+        result.error?.message || "No pudimos actualizar tus guardados.",
+      );
       return;
     }
 
@@ -532,17 +545,17 @@ export default function AccountPage() {
 
   async function downloadOrderReceipt(order) {
     try {
-      const orderNumber = order?.orderNumber || order?.id || 'orden';
+      const orderNumber = order?.orderNumber || order?.id || "orden";
       await apiDownload(`/api/public/account/orders/${order.id}/receipt.pdf`, {
-        extension: 'pdf',
+        extension: "pdf",
         fileName: `boleta-${orderNumber}.pdf`,
       });
     } catch (err) {
       const errorMessage = getFriendlyErrorMessage(
         err,
-        'No pudimos generar la boleta de la orden.',
+        "No pudimos generar la boleta de la orden.",
       );
-      notifyFormStatus(notifyMobileStatus, 'error', errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     }
   }
 
@@ -1268,7 +1281,9 @@ export default function AccountPage() {
           </div>
 
           {!isAuthenticated ? (
-            <p className="muted-copy">Inicia sesion para revisar tus ofertas.</p>
+            <p className="muted-copy">
+              Inicia sesion para revisar tus ofertas.
+            </p>
           ) : null}
 
           {isAuthenticated && profileLoading ? (
@@ -1279,16 +1294,23 @@ export default function AccountPage() {
             <p className="error-copy">{profileError}</p>
           ) : null}
 
-          {isAuthenticated && !profileLoading && !profileError && !offers.length ? (
+          {isAuthenticated &&
+          !profileLoading &&
+          !profileError &&
+          !offers.length ? (
             <p className="muted-copy">Todavia no tienes ofertas registradas.</p>
           ) : null}
 
-          {isAuthenticated && !profileLoading && !profileError && offers.length ? (
+          {isAuthenticated &&
+          !profileLoading &&
+          !profileError &&
+          offers.length ? (
             <>
               <div className="table-shell account-offers-table-shell">
                 <table className="data-table account-offers-table">
                   <thead>
                     <tr>
+                      <th>Imagen</th>
                       <th>Fecha</th>
                       <th>Artículo</th>
                       <th>Precio original</th>
@@ -1300,10 +1322,13 @@ export default function AccountPage() {
                   </thead>
                   <tbody>
                     {offers.map((offer) => {
+                      console.log(offer);
                       const article = offer.article || {};
                       const displayStatus = getOfferDisplayStatus(offer);
                       const isAcceptedAvailable = displayStatus === "ACCEPTED";
-                      const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
+                      const originalPrice = Number(
+                        article.salePrice || article.discountedPrice || 0,
+                      );
                       const offeredAmount = Number(offer.offeredAmount || 0);
                       const articleLink = articlePath(article);
                       return (
@@ -1311,27 +1336,58 @@ export default function AccountPage() {
                           key={`offer-row-${offer.id}`}
                           className={[
                             "account-offer-row",
-                            isAcceptedAvailable ? "account-offer-row--accepted" : "",
-                            displayStatus === "USED" ? "account-offer-row--used" : "",
-                          ].filter(Boolean).join(" ")}
+                            isAcceptedAvailable
+                              ? "account-offer-row--accepted"
+                              : "",
+                            displayStatus === "USED"
+                              ? "account-offer-row--used"
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
                         >
+                          <td>
+                            <SmartImage
+                              src={offer.article.image}
+                              alt={offer.article.title}
+                              fallbackLabel={offer.article.title}
+                              className="table-thumb-image"
+                            />
+                          </td>
                           <td>{formatDate(offer.createdAt)}</td>
                           <td>
                             <div className="cell-stack account-offer-article-cell">
-                              <Link to={articleLink} className="table-strong-link">
+                              <Link
+                                to={articleLink}
+                                className="table-strong-link"
+                              >
                                 {article.title || `Oferta #${offer.id}`}
                               </Link>
                               <span className="muted-copy">
-                                {article.brandName || "Sin marca"} - Aplica a 1 unidad
+                                {article.brandName || "Sin marca"} - Aplica a 1
+                                unidad
                               </span>
                               {isAcceptedAvailable ? (
-                                <span className="pill pill-offer">Lista para comprar</span>
+                                <span className="pill pill-offer">
+                                  Lista para comprar
+                                </span>
                               ) : null}
                             </div>
                           </td>
-                          <td>{originalPrice ? formatCurrency(originalPrice) : "Sin precio"}</td>
-                          <td><strong>{formatCurrency(offeredAmount)}</strong></td>
-                          <td><StatusBadge status={displayStatus} labels={OFFER_STATUS_LABELS} /></td>
+                          <td>
+                            {originalPrice
+                              ? formatCurrency(originalPrice)
+                              : "Sin precio"}
+                          </td>
+                          <td>
+                            <strong>{formatCurrency(offeredAmount)}</strong>
+                          </td>
+                          <td>
+                            <StatusBadge
+                              status={displayStatus}
+                              labels={OFFER_STATUS_LABELS}
+                            />
+                          </td>
                           <td>
                             {offer.consumedAt
                               ? `Usada${offer.consumedOrderId ? ` en orden #${offer.consumedOrderId}` : ""}`
@@ -1340,7 +1396,10 @@ export default function AccountPage() {
                                 : "Sin respuesta"}
                           </td>
                           <td>
-                            <Link className="button button-secondary button-compact account-offer-link" to={articleLink}>
+                            <Link
+                              className="button button-secondary button-compact account-offer-link"
+                              to={articleLink}
+                            >
                               <EyeIcon />
                               <span>Ver artículo</span>
                             </Link>
@@ -1353,46 +1412,75 @@ export default function AccountPage() {
               </div>
 
               <div className="summary-item-card-list account-offers-list account-offers-list--mobile">
-              {offers.map((offer) => {
-                const article = offer.article || {};
-                const displayStatus = getOfferDisplayStatus(offer);
-                const isAcceptedAvailable = displayStatus === "ACCEPTED";
-                const originalPrice = Number(article.salePrice || article.discountedPrice || 0);
-                const offeredAmount = Number(offer.offeredAmount || 0);
-                const savings = Math.max(0, originalPrice - offeredAmount);
-                const articleLink = articlePath(article);
-                return (
-                  <SummaryItemCard
-                    key={`offer-${offer.id}`}
-                    className={[
-                      isAcceptedAvailable ? "summary-item-card--accepted-offer" : "",
-                      displayStatus === "USED" ? "account-offer-card--used" : "",
-                    ].filter(Boolean).join(" ")}
-                    image={article.image}
-                    imageAlt={article.title}
-                    imageTo={articleLink}
-                    badge={<StatusBadge status={displayStatus} labels={OFFER_STATUS_LABELS} />}
-                    title={article.title || `Oferta #${offer.id}`}
-                    titleTo={articleLink}
-                    subtitle={`${article.brandName || "Sin marca"} - Oferta por 1 unidad`}
-                    meta={[
-                      `Creada: ${formatDate(offer.createdAt)}`,
-                      getOfferResponseDate(offer) ? `Respondida: ${formatDate(getOfferResponseDate(offer))}` : null,
-                      offer.consumedAt ? `Usada${offer.consumedOrderId ? ` en orden #${offer.consumedOrderId}` : ""}` : null,
-                      isAcceptedAvailable ? `Ahorro: ${formatCurrency(savings)}` : null,
-                    ].filter(Boolean)}
-                    price={formatCurrency(offeredAmount)}
-                    comparePrice={originalPrice ? formatCurrency(originalPrice) : null}
-                    footer={isAcceptedAvailable ? "Aceptada: entra al artículo para comprar. Aplica a 1 unidad." : null}
-                    actions={[
-                      <Link key="view-article" className="button button-secondary button-compact account-offer-link" to={articleLink}>
-                        <EyeIcon />
-                        <span>Ver artículo</span>
-                      </Link>,
-                    ]}
-                  />
-                );
-              })}
+                {offers.map((offer) => {
+                  const article = offer.article || {};
+                  const displayStatus = getOfferDisplayStatus(offer);
+                  const isAcceptedAvailable = displayStatus === "ACCEPTED";
+                  const originalPrice = Number(
+                    article.salePrice || article.discountedPrice || 0,
+                  );
+                  const offeredAmount = Number(offer.offeredAmount || 0);
+                  const savings = Math.max(0, originalPrice - offeredAmount);
+                  const articleLink = articlePath(article);
+                  return (
+                    <SummaryItemCard
+                      key={`offer-${offer.id}`}
+                      className={[
+                        isAcceptedAvailable
+                          ? "summary-item-card--accepted-offer"
+                          : "",
+                        displayStatus === "USED"
+                          ? "account-offer-card--used"
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      image={article.image}
+                      imageAlt={article.title}
+                      imageTo={articleLink}
+                      badge={
+                        <StatusBadge
+                          status={displayStatus}
+                          labels={OFFER_STATUS_LABELS}
+                        />
+                      }
+                      title={article.title || `Oferta #${offer.id}`}
+                      titleTo={articleLink}
+                      subtitle={`${article.brandName || "Sin marca"} - Oferta por 1 unidad`}
+                      meta={[
+                        `Creada: ${formatDate(offer.createdAt)}`,
+                        getOfferResponseDate(offer)
+                          ? `Respondida: ${formatDate(getOfferResponseDate(offer))}`
+                          : null,
+                        offer.consumedAt
+                          ? `Usada${offer.consumedOrderId ? ` en orden #${offer.consumedOrderId}` : ""}`
+                          : null,
+                        isAcceptedAvailable
+                          ? `Ahorro: ${formatCurrency(savings)}`
+                          : null,
+                      ].filter(Boolean)}
+                      price={formatCurrency(offeredAmount)}
+                      comparePrice={
+                        originalPrice ? formatCurrency(originalPrice) : null
+                      }
+                      footer={
+                        isAcceptedAvailable
+                          ? "Aceptada: entra al artículo para comprar. Aplica a 1 unidad."
+                          : null
+                      }
+                      actions={[
+                        <Link
+                          key="view-article"
+                          className="button button-secondary button-compact account-offer-link"
+                          to={articleLink}
+                        >
+                          <EyeIcon />
+                          <span>Ver artículo</span>
+                        </Link>,
+                      ]}
+                    />
+                  );
+                })}
               </div>
             </>
           ) : null}
@@ -1445,7 +1533,9 @@ export default function AccountPage() {
                         order.itemsCount === 1 ? "" : "s"
                       }`}
                       meta={[
-                        order.hasOffers ? `${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}` : null,
+                        order.hasOffers
+                          ? `${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}`
+                          : null,
                         `Fecha: ${formatDate(order.createdAt)}`,
                         `Pago: ${
                           PAYMENT_METHOD_LABELS[order.paymentMethod] ||
@@ -1544,7 +1634,9 @@ export default function AccountPage() {
                                 {order.shippingMethodName
                                   ? ` · ${order.shippingMethodName}`
                                   : ""}
-                                {order.hasOffers ? ` · ${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}` : ""}
+                                {order.hasOffers
+                                  ? ` · ${order.offerCount || 1} oferta${Number(order.offerCount || 1) === 1 ? "" : "s"}`
+                                  : ""}
                               </span>
                             </div>
                           </td>
@@ -1555,7 +1647,11 @@ export default function AccountPage() {
                           <td>
                             <div className="cell-stack cell-stack--compact">
                               <OrderStatusBadge status={order.orderStatus} />
-                              {order.hasOffers ? <span className="pill pill-offer">Con oferta</span> : null}
+                              {order.hasOffers ? (
+                                <span className="pill pill-offer">
+                                  Con oferta
+                                </span>
+                              ) : null}
                             </div>
                           </td>
                           <td>{formatDate(latestStatusDate)}</td>
@@ -1590,7 +1686,6 @@ export default function AccountPage() {
           ) : null}
         </section>
       ) : null}
-
     </div>
   );
 }

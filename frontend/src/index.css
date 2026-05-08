@@ -12248,12 +12248,11 @@ textarea,
   .mobile-sort-panel {
     padding: 14px;
     border: 1px solid color-mix(in srgb, var(--orange) 42%, var(--border));
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--orange) 20%, var(--surface)) 0%,
-        color-mix(in srgb, var(--orange) 8%, var(--surface)) 100%
-      ) !important;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--orange) 20%, var(--surface)) 0%,
+      color-mix(in srgb, var(--orange) 8%, var(--surface)) 100%
+    ) !important;
   }
 
   .responsive-filter-panel__toolbar,
@@ -12415,7 +12414,11 @@ textarea,
 .summary-item-card--accepted-offer,
 .checkout-offer-row {
   outline: 2px solid var(--pill-offer-bg, #ffec7a);
-  background: color-mix(in srgb, var(--pill-offer-bg, #ffec7a) 18%, var(--surface, #fff));
+  background: color-mix(
+    in srgb,
+    var(--pill-offer-bg, #ffec7a) 18%,
+    var(--surface, #fff)
+  );
 }
 
 .checkout-offer-price,
@@ -12439,7 +12442,11 @@ textarea,
 }
 
 .account-offer-row--accepted td {
-  background: color-mix(in srgb, var(--pill-offer-bg, #ffec7a) 12%, var(--surface, #fff));
+  background: color-mix(
+    in srgb,
+    var(--pill-offer-bg, #ffec7a) 12%,
+    var(--surface, #fff)
+  );
 }
 
 .account-offer-row--used td {
@@ -12537,7 +12544,8 @@ textarea,
 @media (min-width: 781px) {
   .admin-contact-detail-page > .section-card,
   .admin-lead-detail-page > .section-card {
-    width: min(1120px, 100%);
+    /* width: min(1120px, 100%); */
+    width: 100%;
     margin-inline: auto;
   }
 
@@ -12555,7 +12563,7 @@ textarea,
 
   .admin-contact-detail-page .admin-detail-form-card,
   .admin-lead-detail-page .admin-detail-form-card {
-    width: min(960px, 100%);
+    /* width: min(960px, 100%); */
     margin-inline: auto;
   }
 

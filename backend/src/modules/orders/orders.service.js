@@ -1,14 +1,18 @@
-import { pool } from '../../db/pool.js';
-import { withTransaction } from '../../db/transaction.js';
-import { badRequest, notFound } from '../../utils/app-error.js';
-import { generateOrderNumber } from '../../utils/order-number.js';
-import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
-import { logAudit } from '../audit/audit.service.js';
-import { convertActiveCartForUser } from '../cart/cart.service.js';
+import { pool } from "../../db/pool.js";
+import { withTransaction } from "../../db/transaction.js";
+import { badRequest, notFound } from "../../utils/app-error.js";
+import { generateOrderNumber } from "../../utils/order-number.js";
+import {
+  appendDateRangeFilters,
+  buildLikeValue,
+  resolveSortClause,
+} from "../../utils/listing.js";
+import { logAudit } from "../audit/audit.service.js";
+import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
-} from '../customers/customer-helpers.js';
+} from "../customers/customer-helpers.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -16,7 +20,8 @@ const ORDER_SORTS = {
   total: (direction) => `o.total_snapshot ${direction}, o.id DESC`,
   orderStatus: (direction) => `o.order_status ${direction}, o.id DESC`,
   paymentStatus: (direction) => `o.payment_status ${direction}, o.id DESC`,
-  customerName: (direction) => `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
+  customerName: (direction) =>
+    `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
 };
 
 export async function createOrder(input, actor, auditContext) {
@@ -26,8 +31,10 @@ export async function createOrder(input, actor, auditContext) {
       ? await getShippingMethod(input.shippingMethodId, connection)
       : null;
 
-    const requestedArticleIds = [...new Set(input.items.map((item) => item.articleId))];
-    const placeholders = requestedArticleIds.map(() => '?').join(',');
+    const requestedArticleIds = [
+      ...new Set(input.items.map((item) => item.articleId)),
+    ];
+    const placeholders = requestedArticleIds.map(() => "?").join(",");
     const [articleRows] = await connection.execute(
       `
         SELECT
@@ -68,7 +75,8 @@ export async function createOrder(input, actor, auditContext) {
     for (const item of input.items) {
       requestedQuantityByArticle.set(
         item.articleId,
-        Number(requestedQuantityByArticle.get(item.articleId) || 0) + Number(item.quantity || 0),
+        Number(requestedQuantityByArticle.get(item.articleId) || 0) +
+          Number(item.quantity || 0),
       );
     }
 
@@ -77,11 +85,15 @@ export async function createOrder(input, actor, auditContext) {
       if (!article) {
         throw notFound(`Articulo ${articleId} no encontrado.`);
       }
-      if (article.status !== 'ACTIVE') {
-        throw badRequest(`La prenda ${article.id} no esta disponible para comprar.`);
+      if (article.status !== "ACTIVE") {
+        throw badRequest(
+          `La prenda ${article.id} no esta disponible para comprar.`,
+        );
       }
       if (Number(article.quantityAvailable) < quantity) {
-        throw badRequest(`No hay stock suficiente para la prenda ${article.id}.`);
+        throw badRequest(
+          `No hay stock suficiente para la prenda ${article.id}.`,
+        );
       }
     }
 
@@ -98,17 +110,30 @@ export async function createOrder(input, actor, auditContext) {
       const salePrice = Number(article.salePrice);
       const finalUnitPrice = Number(article.discountedPrice);
       const perUnitDiscount = salePrice - finalUnitPrice;
-      const acceptedOffer = item.acceptedOfferId && owner.userId
-        ? await getAcceptedOfferForOrder(owner.userId, article.id, item.acceptedOfferId, connection)
-        : null;
+      const acceptedOffer =
+        item.acceptedOfferId && owner.userId
+          ? await getAcceptedOfferForOrder(
+              owner.userId,
+              article.id,
+              item.acceptedOfferId,
+              connection,
+            )
+          : null;
 
-      const offerQuantity = acceptedOffer ? Math.min(1, Number(item.quantity || 1)) : 0;
-      const regularQuantity = Math.max(Number(item.quantity || 0) - offerQuantity, 0);
+      const offerQuantity = acceptedOffer
+        ? Math.min(1, Number(item.quantity || 1))
+        : 0;
+      const regularQuantity = Math.max(
+        Number(item.quantity || 0) - offerQuantity,
+        0,
+      );
 
       if (acceptedOffer && offerQuantity > 0) {
         const acceptedOfferPrice = Number(acceptedOffer.offeredAmount);
         if (acceptedOfferPrice > salePrice) {
-          throw badRequest('La oferta aceptada supera el precio publicado actual.');
+          throw badRequest(
+            "La oferta aceptada supera el precio publicado actual.",
+          );
         }
         const lineTotal = acceptedOfferPrice * offerQuantity;
         subtotal += salePrice * offerQuantity;
@@ -265,7 +290,9 @@ export async function createOrder(input, actor, auditContext) {
         );
 
         if (!offerUpdateResult.affectedRows) {
-          throw badRequest('La oferta aceptada ya fue usada o no esta disponible.');
+          throw badRequest(
+            "La oferta aceptada ya fue usada o no esta disponible.",
+          );
         }
 
         await connection.execute(
@@ -296,7 +323,13 @@ export async function createOrder(input, actor, auditContext) {
             updated_by = ?
           WHERE id = ?
         `,
-        [item.quantity, item.quantity, item.quantity, auditContext.actorUserId, item.articleId],
+        [
+          item.quantity,
+          item.quantity,
+          item.quantity,
+          auditContext.actorUserId,
+          item.articleId,
+        ],
       );
     }
 
@@ -309,7 +342,7 @@ export async function createOrder(input, actor, auditContext) {
           reason,
           changed_by,
           source
-        ) VALUES (?, NULL, 'RESERVED', 'Order created and stock reserved', ?, ?)
+        ) VALUES (?, NULL, 'RESERVED', 'Orden creada, stock reservado', ?, ?)
       `,
       [orderId, auditContext.actorUserId, auditContext.source],
     );
@@ -324,8 +357,8 @@ export async function createOrder(input, actor, auditContext) {
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'ORDER_CREATED',
-        entityType: 'orders',
+        actionCode: "ORDER_CREATED",
+        entityType: "orders",
         entityId: orderId,
         afterJson: order,
         source: auditContext.source,
@@ -356,12 +389,12 @@ export async function listOrders({ filters, pagination }) {
   const clauses = [];
 
   if (status) {
-    clauses.push('o.order_status = ?');
+    clauses.push("o.order_status = ?");
     params.push(status);
   }
 
   if (paymentStatus) {
-    clauses.push('o.payment_status = ?');
+    clauses.push("o.payment_status = ?");
     params.push(paymentStatus);
   }
 
@@ -412,14 +445,14 @@ export async function listOrders({ filters, pagination }) {
     params.push(like, like, like, like, like, like, like);
   }
 
-  appendDateRangeFilters('o.created_at', { dateFrom, dateTo }, clauses, params);
+  appendDateRangeFilters("o.created_at", { dateFrom, dateTo }, clauses, params);
 
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   const orderBy = resolveSortClause({
     sortBy,
     sortDir,
     sortMap: ORDER_SORTS,
-    fallbackKey: 'createdAt',
+    fallbackKey: "createdAt",
   });
 
   const [rows] = await pool.query(
@@ -505,8 +538,10 @@ export async function getOrderDetail(id) {
 export async function approveOrder(id, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
-    if (!['RESERVED', 'PENDING'].includes(before.orderStatus)) {
-      throw badRequest('Solo se pueden aprobar ordenes reservadas o pendientes.');
+    if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
+      throw badRequest(
+        "Solo se pueden aprobar ordenes reservadas o pendientes.",
+      );
     }
 
     await connection.execute(
@@ -522,7 +557,7 @@ export async function approveOrder(id, auditContext) {
     );
 
     const [items] = await connection.execute(
-      'SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?',
+      "SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?",
       [id],
     );
 
@@ -541,7 +576,13 @@ export async function approveOrder(id, auditContext) {
             updated_by = ?
           WHERE id = ?
         `,
-        [item.quantity, item.quantity, item.quantity, auditContext.actorUserId, item.articleId],
+        [
+          item.quantity,
+          item.quantity,
+          item.quantity,
+          auditContext.actorUserId,
+          item.articleId,
+        ],
       );
     }
 
@@ -554,7 +595,7 @@ export async function approveOrder(id, auditContext) {
           reason,
           changed_by,
           source
-        ) VALUES (?, ?, 'APPROVED', 'Approved from backoffice', ?, ?)
+        ) VALUES (?, ?, 'APPROVED', 'Aprovada por administración', ?, ?)
       `,
       [id, before.orderStatus, auditContext.actorUserId, auditContext.source],
     );
@@ -565,8 +606,8 @@ export async function approveOrder(id, auditContext) {
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'ORDER_APPROVED',
-        entityType: 'orders',
+        actionCode: "ORDER_APPROVED",
+        entityType: "orders",
         entityId: id,
         beforeJson: before,
         afterJson: after,
@@ -584,12 +625,14 @@ export async function approveOrder(id, auditContext) {
 export async function cancelOrder(id, reason, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
-    if (!['RESERVED', 'PENDING'].includes(before.orderStatus)) {
-      throw badRequest('Solo se pueden cancelar ordenes reservadas o pendientes.');
+    if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
+      throw badRequest(
+        "Solo se pueden cancelar ordenes reservadas o pendientes.",
+      );
     }
 
     const [items] = await connection.execute(
-      'SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?',
+      "SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?",
       [id],
     );
 
@@ -607,7 +650,13 @@ export async function cancelOrder(id, reason, auditContext) {
             updated_by = ?
           WHERE id = ?
         `,
-        [item.quantity, item.quantity, item.quantity, auditContext.actorUserId, item.articleId],
+        [
+          item.quantity,
+          item.quantity,
+          item.quantity,
+          auditContext.actorUserId,
+          item.articleId,
+        ],
       );
     }
 
@@ -635,7 +684,13 @@ export async function cancelOrder(id, reason, auditContext) {
           source
         ) VALUES (?, ?, 'CANCELLED', ?, ?, ?)
       `,
-      [id, before.orderStatus, reason, auditContext.actorUserId, auditContext.source],
+      [
+        id,
+        before.orderStatus,
+        reason,
+        auditContext.actorUserId,
+        auditContext.source,
+      ],
     );
 
     const after = await getOrderById(id, connection);
@@ -644,8 +699,8 @@ export async function cancelOrder(id, reason, auditContext) {
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'ORDER_CANCELLED',
-        entityType: 'orders',
+        actionCode: "ORDER_CANCELLED",
+        entityType: "orders",
         entityId: id,
         beforeJson: before,
         afterJson: after,
@@ -664,8 +719,10 @@ export async function cancelOrder(id, reason, auditContext) {
 export async function shipOrder(id, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
-    if (before.orderStatus !== 'APPROVED') {
-      throw badRequest('Solo se pueden marcar como enviadas las ordenes aprobadas.');
+    if (before.orderStatus !== "APPROVED") {
+      throw badRequest(
+        "Solo se pueden marcar como enviadas las ordenes aprobadas.",
+      );
     }
 
     await connection.execute(
@@ -700,8 +757,8 @@ export async function shipOrder(id, auditContext) {
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'ORDER_SHIPPED',
-        entityType: 'orders',
+        actionCode: "ORDER_SHIPPED",
+        entityType: "orders",
         entityId: id,
         beforeJson: before,
         afterJson: after,
@@ -721,7 +778,7 @@ export async function createOrderPayment(id, input, auditContext) {
     const before = await getOrderById(id, connection);
 
     if (before.payments.length) {
-      throw badRequest('Esta orden ya tiene un pago registrado.');
+      throw badRequest("Esta orden ya tiene un pago registrado.");
     }
 
     const amount = Number(input.amount ?? before.total);
@@ -741,16 +798,16 @@ export async function createOrderPayment(id, input, auditContext) {
           raw_response_json,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, 'UYU', ?, ${input.status === 'APPROVED' ? 'NOW()' : 'NULL'}, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, 'UYU', ?, ${input.status === "APPROVED" ? "NOW()" : "NULL"}, ?, ?, ?)
       `,
       [
         id,
         before.paymentMethod,
-        input.providerName || 'Internal admin record',
+        input.providerName || "Internal admin record",
         input.providerReference || null,
         amount,
         input.status,
-        JSON.stringify({ origin: 'admin_manual' }),
+        JSON.stringify({ origin: "admin_manual" }),
         auditContext.actorUserId,
         auditContext.actorUserId,
       ],
@@ -768,14 +825,16 @@ export async function createOrderPayment(id, input, auditContext) {
     );
 
     const after = await getOrderById(id, connection);
-    const payment = after.payments.find((entry) => entry.id === insertResult.insertId) || null;
+    const payment =
+      after.payments.find((entry) => entry.id === insertResult.insertId) ||
+      null;
 
     await logAudit(
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'PAYMENT_REGISTERED',
-        entityType: 'payments',
+        actionCode: "PAYMENT_REGISTERED",
+        entityType: "payments",
         entityId: insertResult.insertId,
         afterJson: payment,
         metadataJson: {
@@ -805,12 +864,14 @@ async function resolveOrderOwner(input, actor, connection) {
   }
 
   if (!input.guest) {
-    throw badRequest('Necesitamos los datos del comprador para confirmar la orden.');
+    throw badRequest(
+      "Necesitamos los datos del comprador para confirmar la orden.",
+    );
   }
 
   const potentialCustomer = await createPotentialCustomerFromInput(
     input.guest,
-    { source: 'CHECKOUT' },
+    { source: "CHECKOUT" },
     connection,
   );
 
@@ -833,7 +894,7 @@ async function getShippingMethod(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Metodo de envio no encontrado.');
+    throw notFound("Metodo de envio no encontrado.");
   }
 
   return rows[0];
@@ -886,7 +947,7 @@ async function getOrderById(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Orden no encontrada.');
+    throw notFound("Orden no encontrada.");
   }
 
   const order = normalizeOrderDetailRow(rows[0]);
@@ -962,11 +1023,13 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
-    acceptedOffer: row.acceptedOfferId ? {
-      id: row.acceptedOfferId,
-      price: Number(row.acceptedOfferPrice),
-      quantity: Number(row.acceptedOfferQuantity || 1),
-    } : null,
+    acceptedOffer: row.acceptedOfferId
+      ? {
+          id: row.acceptedOfferId,
+          price: Number(row.acceptedOfferPrice),
+          quantity: Number(row.acceptedOfferQuantity || 1),
+        }
+      : null,
   }));
   order.history = historyRows;
   order.payments = paymentRows.map((row) => ({
@@ -977,10 +1040,11 @@ async function getOrderById(id, connection) {
 }
 
 function mapOrderPaymentStatus(paymentStatus) {
-  if (paymentStatus === 'APPROVED') return 'PAID';
-  if (paymentStatus === 'REFUNDED') return 'REFUNDED';
-  if (paymentStatus === 'FAILED' || paymentStatus === 'REJECTED') return 'FAILED';
-  return 'PENDING';
+  if (paymentStatus === "APPROVED") return "PAID";
+  if (paymentStatus === "REFUNDED") return "REFUNDED";
+  if (paymentStatus === "FAILED" || paymentStatus === "REJECTED")
+    return "FAILED";
+  return "PENDING";
 }
 
 function normalizeOrderListRow(row) {
@@ -1051,8 +1115,12 @@ function normalizeOrderDetailRow(row) {
   };
 }
 
-
-async function getAcceptedOfferForOrder(userId, articleId, acceptedOfferId, connection) {
+async function getAcceptedOfferForOrder(
+  userId,
+  articleId,
+  acceptedOfferId,
+  connection,
+) {
   const [rows] = await connection.execute(
     `
       SELECT
@@ -1072,7 +1140,7 @@ async function getAcceptedOfferForOrder(userId, articleId, acceptedOfferId, conn
   );
 
   if (!rows.length) {
-    throw badRequest('La oferta aceptada ya fue usada o no esta disponible.');
+    throw badRequest("La oferta aceptada ya fue usada o no esta disponible.");
   }
 
   return {
