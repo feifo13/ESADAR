@@ -5,6 +5,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
+import SmartImage from "../../components/SmartImage.jsx";
 import { BanIcon, CheckIcon, XIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
@@ -316,6 +317,7 @@ export default function AdminOffersPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>Imagen</th>
                   <SortableTh
                     sortKey="createdAt"
                     sort={{ key: filters.sortBy, direction: filters.sortDir }}
@@ -362,6 +364,14 @@ export default function AdminOffersPage() {
                       : offer.status;
                   return (
                     <tr key={offer.id}>
+                      <td>
+                        <SmartImage
+                          src={offer.article.image}
+                          alt={offer.article.title}
+                          fallbackLabel={offer.article.title}
+                          className="table-thumb-image"
+                        />
+                      </td>
                       <td>{formatDate(offer.createdAt)}</td>
                       <td>
                         <div className="cell-stack">

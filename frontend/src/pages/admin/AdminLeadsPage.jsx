@@ -97,12 +97,15 @@ export default function AdminLeadsPage() {
         setPagination(
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
-
       } catch (err) {
         if (!ignore) {
           const errorMessage = err.message || "No se pudieron cargar los leads";
           setError(errorMessage);
-          notifyMobileStatus({ type: "error", icon: "error", message: errorMessage });
+          notifyMobileStatus({
+            type: "error",
+            icon: "error",
+            message: errorMessage,
+          });
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -139,7 +142,8 @@ export default function AdminLeadsPage() {
   }
 
   function changeSort(sortBy) {
-    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    const sortDir =
+      filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
@@ -330,11 +334,35 @@ export default function AdminLeadsPage() {
               <table className="data-table admin-leads-table">
                 <thead>
                   <tr>
-                    <SortableTh sortKey="name" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Nombre</SortableTh>
+                    <SortableTh
+                      sortKey="name"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Nombre
+                    </SortableTh>
                     <th>Contacto</th>
-                    <SortableTh sortKey="source" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Origen</SortableTh>
-                    <SortableTh sortKey="leadStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
-                    <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Alta</SortableTh>
+                    <SortableTh
+                      sortKey="source"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Origen
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="leadStatus"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Estado
+                    </SortableTh>
+                    <SortableTh
+                      sortKey="createdAt"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Alta
+                    </SortableTh>
                     <th>Alertas</th>
                     <th>Guardados</th>
                     <th>Acciones</th>
@@ -345,7 +373,9 @@ export default function AdminLeadsPage() {
                     <tr key={lead.id}>
                       <td>
                         <div className="cell-stack">
-                          <strong>{lead.firstName} {lead.lastName}</strong>
+                          <strong>
+                            {lead.firstName} {lead.lastName}
+                          </strong>
                           <span className="muted-copy">#{lead.id}</span>
                         </div>
                       </td>
@@ -369,7 +399,7 @@ export default function AdminLeadsPage() {
                             title="Ver detalle"
                           >
                             <EyeIcon />
-                            <span className="admin-action-label">Ver detalle</span>
+                            {/* <span className="admin-action-label">Ver detalle</span> */}
                           </Link>
                           {lead.leadStatus !== "ARCHIVED" ? (
                             <button
@@ -380,7 +410,9 @@ export default function AdminLeadsPage() {
                               onClick={() => void handleArchiveLead(lead)}
                             >
                               <ArchiveIcon />
-                              <span className="admin-action-label">Eliminar</span>
+                              {/* <span className="admin-action-label">
+                                Eliminar
+                              </span> */}
                             </button>
                           ) : null}
                         </div>

@@ -6,7 +6,12 @@ import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
-import { BanIcon, DownloadIcon, EyeIcon } from "../../components/ActionIcons.jsx";
+import {
+  BanIcon,
+  DownloadIcon,
+  EyeIcon,
+  ArchiveIcon,
+} from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
@@ -120,7 +125,6 @@ export default function AdminOrdersPage() {
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
   }
 
-
   async function handleDownloadPdf(order) {
     try {
       setError("");
@@ -129,7 +133,8 @@ export default function AdminOrdersPage() {
         extension: "pdf",
       });
     } catch (err) {
-      const errorMessage = err.message || "No se pudo descargar el PDF de la orden";
+      const errorMessage =
+        err.message || "No se pudo descargar el PDF de la orden";
       setError(errorMessage);
       notifyError(errorMessage);
     }
@@ -152,7 +157,8 @@ export default function AdminOrdersPage() {
   }
 
   function changeSort(sortBy) {
-    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    const sortDir =
+      filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
@@ -346,14 +352,50 @@ export default function AdminOrdersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <SortableTh sortKey="orderNumber" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>ID</SortableTh>
-                  <SortableTh sortKey="customerName" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Cliente</SortableTh>
+                  <SortableTh
+                    sortKey="orderNumber"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    ID
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="customerName"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Cliente
+                  </SortableTh>
                   <th>Email</th>
-                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
-                  <SortableTh sortKey="orderStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
-                  <SortableTh sortKey="paymentStatus" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Pago</SortableTh>
+                  <SortableTh
+                    sortKey="createdAt"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Fecha
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="orderStatus"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Estado
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="paymentStatus"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Pago
+                  </SortableTh>
                   <th>Metodo de envio</th>
-                  <SortableTh sortKey="total" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Total</SortableTh>
+                  <SortableTh
+                    sortKey="total"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Total
+                  </SortableTh>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -364,26 +406,44 @@ export default function AdminOrdersPage() {
                       <div className="cell-stack">
                         <strong>{order.orderNumber}</strong>
                         <span className="muted-copy">#{order.id}</span>
-                        {order.hasOffers ? <span className="pill pill-offer">{order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}</span> : null}
+                        {order.hasOffers ? (
+                          <span className="pill pill-offer">
+                            {order.offerCount || 1} oferta
+                            {Number(order.offerCount || 1) === 1 ? "" : "s"}
+                          </span>
+                        ) : null}
                       </div>
                     </td>
-                    <td>{order.customer.firstName} {order.customer.lastName}</td>
+                    <td>
+                      {order.customer.firstName} {order.customer.lastName}
+                    </td>
                     <td>{order.customer.email || "Sin email"}</td>
                     <td>{formatDate(order.createdAt)}</td>
                     <td>
                       <div className="cell-stack cell-stack--compact">
                         <OrderStatusBadge status={order.orderStatus} />
-                        {order.hasOffers ? <span className="pill pill-offer">Con oferta</span> : null}
+                        {order.hasOffers ? (
+                          <span className="pill pill-offer">Con oferta</span>
+                        ) : null}
                       </div>
                     </td>
                     <td>
                       <div className="cell-stack cell-stack--compact">
                         <span>{order.paymentMethod || "-"}</span>
-                        <StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} />
+                        <StatusBadge
+                          status={order.paymentStatus}
+                          labels={PAYMENT_STATUS_LABELS}
+                        />
                       </div>
                     </td>
-                    <td>{order.shippingMethodDescription || order.shippingMethodName || "-"}</td>
-                    <td><strong>{formatCurrency(order.total)}</strong></td>
+                    <td>
+                      {order.shippingMethodDescription ||
+                        order.shippingMethodName ||
+                        "-"}
+                    </td>
+                    <td>
+                      <strong>{formatCurrency(order.total)}</strong>
+                    </td>
                     <td>
                       <div className="table-actions">
                         <Link
@@ -393,7 +453,7 @@ export default function AdminOrdersPage() {
                           title="Ver orden"
                         >
                           <EyeIcon />
-                          <span className="admin-action-label">Ver orden</span>
+                          {/* <span className="admin-action-label">Ver orden</span> */}
                         </Link>
                         <button
                           type="button"
@@ -403,9 +463,13 @@ export default function AdminOrdersPage() {
                           onClick={() => handleDownloadPdf(order)}
                         >
                           <DownloadIcon />
-                          <span className="admin-action-label">Descargar PDF</span>
+                          {/* <span className="admin-action-label">
+                            Descargar PDF
+                          </span> */}
                         </button>
-                        {!["CANCELLED", "SHIPPED", "EXPIRED"].includes(order.orderStatus) ? (
+                        {!["CANCELLED", "SHIPPED", "EXPIRED"].includes(
+                          order.orderStatus,
+                        ) ? (
                           <button
                             type="button"
                             className="ghost-button admin-icon-action"
@@ -413,8 +477,8 @@ export default function AdminOrdersPage() {
                             title="Eliminar"
                             onClick={() => void handleCancelOrder(order)}
                           >
-                            <BanIcon />
-                            <span className="admin-action-label">Eliminar</span>
+                            <ArchiveIcon />
+                            {/* <span className="admin-action-label">Eliminar</span> */}
                           </button>
                         ) : null}
                       </div>

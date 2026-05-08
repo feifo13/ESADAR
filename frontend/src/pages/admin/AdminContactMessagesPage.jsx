@@ -72,7 +72,8 @@ export default function AdminContactMessagesPage() {
         );
       } catch (err) {
         if (!ignore) {
-          const errorMessage = err.message || "No se pudieron cargar los mensajes";
+          const errorMessage =
+            err.message || "No se pudieron cargar los mensajes";
           setError(errorMessage);
           notifyFormStatus(notifyMobileStatus, "error", errorMessage);
         }
@@ -111,7 +112,8 @@ export default function AdminContactMessagesPage() {
   }
 
   function changeSort(sortBy) {
-    const sortDir = filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
+    const sortDir =
+      filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
@@ -120,19 +122,30 @@ export default function AdminContactMessagesPage() {
     try {
       setError("");
       setMessage("");
-      const response = await apiFetch(`/api/admin/contact-messages/${messageId}/status`, {
-        method: "PATCH",
-        body: { status: nextStatus },
-      });
+      const response = await apiFetch(
+        `/api/admin/contact-messages/${messageId}/status`,
+        {
+          method: "PATCH",
+          body: { status: nextStatus },
+        },
+      );
       setItems((current) =>
         current.map((item) =>
           Number(item.id) === Number(messageId)
-            ? { ...item, ...(response.message || {}), status: response.message?.status || nextStatus }
+            ? {
+                ...item,
+                ...(response.message || {}),
+                status: response.message?.status || nextStatus,
+              }
             : item,
         ),
       );
       setMessage("El estado del mensaje fue actualizado.");
-      notifyFormStatus(notifyMobileStatus, "success", "El estado del mensaje fue actualizado.");
+      notifyFormStatus(
+        notifyMobileStatus,
+        "success",
+        "El estado del mensaje fue actualizado.",
+      );
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       const errorMessage = err.message || "No se pudo actualizar el mensaje";
@@ -275,11 +288,35 @@ export default function AdminContactMessagesPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <SortableTh sortKey="createdAt" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Fecha</SortableTh>
-                  <SortableTh sortKey="name" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Nombre</SortableTh>
-                  <SortableTh sortKey="email" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Contacto</SortableTh>
+                  <SortableTh
+                    sortKey="createdAt"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Fecha
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="name"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Nombre
+                  </SortableTh>
+                  <SortableTh
+                    sortKey="email"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Contacto
+                  </SortableTh>
                   <th>Mensaje</th>
-                  <SortableTh sortKey="status" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>Estado</SortableTh>
+                  <SortableTh
+                    sortKey="status"
+                    sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                    onSort={changeSort}
+                  >
+                    Estado
+                  </SortableTh>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -326,7 +363,7 @@ export default function AdminContactMessagesPage() {
                           title="Ver detalle"
                         >
                           <EyeIcon />
-                          <span className="admin-action-label">Ver detalle</span>
+                          {/* <span className="admin-action-label">Ver detalle</span> */}
                         </Link>
                         {item.status !== "ARCHIVED" ? (
                           <button
@@ -337,7 +374,7 @@ export default function AdminContactMessagesPage() {
                             title="Eliminar"
                           >
                             <ArchiveIcon />
-                            <span className="admin-action-label">Eliminar</span>
+                            {/* <span className="admin-action-label">Eliminar</span> */}
                           </button>
                         ) : null}
                       </div>
@@ -372,7 +409,6 @@ export default function AdminContactMessagesPage() {
           }
         />
       </section>
-
     </div>
   );
 }

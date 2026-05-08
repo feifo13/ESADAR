@@ -56,7 +56,9 @@ function QuickToggle({ checked, label, onText, offText, onClick }) {
       <span className="quick-toggle-switch__track" aria-hidden="true">
         <span className="quick-toggle-switch__thumb" />
       </span>
-      <span className="quick-toggle-switch__state">{checked ? onText : offText}</span>
+      <span className="quick-toggle-switch__state">
+        {checked ? onText : offText}
+      </span>
     </button>
   );
 }
@@ -305,14 +307,21 @@ export default function AdminArticlesPage() {
     try {
       setError("");
       setMessage("");
-      const response = await apiFetch(`/api/admin/articles/${article.id}/status`, {
-        method: "PATCH",
-        body: { status: "INACTIVE" },
-      });
+      const response = await apiFetch(
+        `/api/admin/articles/${article.id}/status`,
+        {
+          method: "PATCH",
+          body: { status: "INACTIVE" },
+        },
+      );
       setItems((current) =>
         current.map((item) =>
           Number(item.id) === Number(article.id)
-            ? { ...item, ...(response.article || {}), status: response.article?.status || "INACTIVE" }
+            ? {
+                ...item,
+                ...(response.article || {}),
+                status: response.article?.status || "INACTIVE",
+              }
             : item,
         ),
       );
@@ -329,7 +338,9 @@ export default function AdminArticlesPage() {
   async function handleQuickToggle(article, field) {
     const config = {
       status: {
-        payload: { status: article.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" },
+        payload: {
+          status: article.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+        },
         success:
           article.status === "ACTIVE"
             ? "Artículo desactivado correctamente."
@@ -357,10 +368,13 @@ export default function AdminArticlesPage() {
     try {
       setError("");
       setMessage("");
-      const response = await apiFetch(`/api/admin/articles/${article.id}/quick-flags`, {
-        method: "PATCH",
-        body: config.payload,
-      });
+      const response = await apiFetch(
+        `/api/admin/articles/${article.id}/quick-flags`,
+        {
+          method: "PATCH",
+          body: config.payload,
+        },
+      );
 
       setItems((current) =>
         current.map((item) =>
@@ -470,7 +484,9 @@ export default function AdminArticlesPage() {
               <select
                 className="input"
                 value={draftFilters.featured}
-                onChange={(event) => updateDraft("featured", event.target.value)}
+                onChange={(event) =>
+                  updateDraft("featured", event.target.value)
+                }
               >
                 <option value="">Todos</option>
                 <option value="true">Destacados</option>
@@ -483,7 +499,9 @@ export default function AdminArticlesPage() {
               <select
                 className="input"
                 value={draftFilters.offerable}
-                onChange={(event) => updateDraft("offerable", event.target.value)}
+                onChange={(event) =>
+                  updateDraft("offerable", event.target.value)
+                }
               >
                 <option value="">Todos</option>
                 <option value="true">Acepta ofertas</option>
@@ -954,21 +972,27 @@ export default function AdminArticlesPage() {
                               label="Activo"
                               onText="Sí"
                               offText="No"
-                              onClick={() => void handleQuickToggle(article, "status")}
+                              onClick={() =>
+                                void handleQuickToggle(article, "status")
+                              }
                             />
                             <QuickToggle
                               checked={Boolean(article.isFeatured)}
                               label="Destacado"
                               onText="Sí"
                               offText="No"
-                              onClick={() => void handleQuickToggle(article, "isFeatured")}
+                              onClick={() =>
+                                void handleQuickToggle(article, "isFeatured")
+                              }
                             />
                             <QuickToggle
                               checked={Boolean(article.allowOffers)}
                               label="Acepta ofertas"
                               onText="Sí"
                               offText="No"
-                              onClick={() => void handleQuickToggle(article, "allowOffers")}
+                              onClick={() =>
+                                void handleQuickToggle(article, "allowOffers")
+                              }
                             />
                           </div>
                         </td>
@@ -984,7 +1008,7 @@ export default function AdminArticlesPage() {
                               title="Editar"
                             >
                               <EditIcon />
-                              <span className="admin-action-label">Editar</span>
+                              {/* <span className="admin-action-label">Editar</span> */}
                             </Link>
                             {article.status !== "INACTIVE" ? (
                               <button
@@ -992,10 +1016,14 @@ export default function AdminArticlesPage() {
                                 className="button button-secondary button-compact admin-icon-action"
                                 aria-label={`Eliminar ${article.title}`}
                                 title="Eliminar"
-                                onClick={() => void handleSoftDeleteArticle(article)}
+                                onClick={() =>
+                                  void handleSoftDeleteArticle(article)
+                                }
                               >
                                 <ArchiveIcon />
-                                <span className="admin-action-label">Eliminar</span>
+                                {/* <span className="admin-action-label">
+                                  Eliminar
+                                </span> */}
                               </button>
                             ) : null}
                           </div>

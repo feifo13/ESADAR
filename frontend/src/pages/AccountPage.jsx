@@ -1400,7 +1400,7 @@ export default function AccountPage() {
                               to={articleLink}
                             >
                               <EyeIcon />
-                              <span>Ver artículo</span>
+                              {/* <span>Ver artículo</span> */}
                             </Link>
                           </td>
                         </tr>
@@ -1555,15 +1555,15 @@ export default function AccountPage() {
                         >
                           <EyeIcon />
                         </Link>,
-                        <button
-                          type="button"
-                          className="icon-action-button"
-                          aria-label={`Descargar boleta ${order.orderNumber}`}
-                          title="Descargar boleta"
-                          onClick={() => void downloadOrderReceipt(order)}
-                        >
-                          PDF
-                        </button>,
+                        // <button
+                        //   type="button"
+                        //   className="icon-action-button"
+                        //   aria-label={`Descargar boleta ${order.orderNumber}`}
+                        //   title="Descargar boleta"
+                        //   onClick={() => void downloadOrderReceipt(order)}
+                        // >
+                        //   PDF
+                        // </button>,
                       ]}
                     />
                   );
@@ -1664,7 +1664,7 @@ export default function AccountPage() {
                               >
                                 <EyeIcon />
                               </Link>
-                              <button
+                              {/* <button
                                 type="button"
                                 className="icon-action-button"
                                 aria-label={`Descargar boleta ${order.orderNumber}`}
@@ -1672,7 +1672,7 @@ export default function AccountPage() {
                                 onClick={() => void downloadOrderReceipt(order)}
                               >
                                 PDF
-                              </button>
+                              </button> */}
                             </div>
                           </td>
                         </tr>
