@@ -89,10 +89,9 @@ const articleUpdateBaseSchema = z.object({
   intakeDate: articleBaseShape.intakeDate,
   quantityTotal: articleBaseShape.quantityTotal.optional(),
   quantityAvailable: articleBaseShape.quantityAvailable,
-  quantityReserved: articleBaseShape.quantityReserved.optional(),
-  quantitySold: articleBaseShape.quantitySold.optional(),
   status: articleBaseShape.status.optional(),
   originNotes: articleBaseShape.originNotes,
+  stockAdjustmentReason: z.string().trim().max(255).optional().nullable(),
 });
 
 export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, ctx) => {
@@ -107,6 +106,14 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
     });
   }
 
+  if (value.status === 'ACTIVE' && quantityAvailable <= 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['status'],
+      message: 'No se puede activar un articulo sin stock disponible.',
+    });
+  }
+
   if (value.allowOffers && value.discountType !== 'NONE' && value.discountValue > 0) {
     ctx.addIssue({
       code: 'custom',
@@ -117,31 +124,11 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
 });
 
 export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, ctx) => {
-  const quantityTotal = value.quantityTotal;
-  const quantityAvailable = value.quantityAvailable;
-  const quantityReserved = value.quantityReserved;
-  const quantitySold = value.quantitySold;
-
-  const hasAnyQuantity = [quantityTotal, quantityAvailable, quantityReserved, quantitySold].some(
-    (item) => item != null,
-  );
-
-  if (hasAnyQuantity && [quantityTotal, quantityAvailable, quantityReserved, quantitySold].some((item) => item == null)) {
+  if (value.status === 'ACTIVE' && value.quantityAvailable != null && value.quantityAvailable <= 0) {
     ctx.addIssue({
       code: 'custom',
-      path: ['quantityTotal'],
-      message: 'When updating stock numbers, send quantityTotal, quantityAvailable, quantityReserved and quantitySold together',
-    });
-  }
-
-  if (
-    hasAnyQuantity &&
-    quantityTotalIsInvalid(quantityTotal, quantityAvailable, quantityReserved, quantitySold)
-  ) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['quantityTotal'],
-      message: 'quantityTotal must be >= quantityAvailable + quantityReserved + quantitySold',
+      path: ['status'],
+      message: 'No se puede activar un articulo sin stock disponible.',
     });
   }
 
@@ -156,6 +143,11 @@ export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, c
 
 export const articleStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+});
+
+export const articleStockAdjustmentSchema = z.object({
+  quantityAvailable: z.coerce.number().int().min(0),
+  reason: z.string().trim().min(2).max(255),
 });
 
 export const articleQuickFlagsSchema = z

@@ -17,6 +17,7 @@ import AccountPage from './pages/AccountPage.jsx';
 import AccountOrderDetailPage from './pages/AccountOrderDetailPage.jsx';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
 import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
+import AdminArticleStockPage from './pages/admin/AdminArticleStockPage.jsx';
 import BulkArticleCreatePage from './pages/admin/BulkArticleCreatePage.jsx';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage.jsx';
@@ -92,6 +93,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminArticleFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/articles/:id/stock"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminArticleStockPage />
             </ProtectedRoute>
           }
         />

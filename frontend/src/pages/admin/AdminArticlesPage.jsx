@@ -6,7 +6,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { ArchiveIcon, EditIcon } from "../../components/ActionIcons.jsx";
+import { ArchiveIcon, EditIcon, StockIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
@@ -364,6 +364,17 @@ export default function AdminArticlesPage() {
     }[field];
 
     if (!config) return;
+
+    if (
+      field === "status" &&
+      config.payload.status === "ACTIVE" &&
+      Number(article.quantityAvailable || 0) <= 0
+    ) {
+      const errorMessage = "No se puede activar un articulo sin stock disponible.";
+      setError(errorMessage);
+      notifyError(errorMessage);
+      return;
+    }
 
     try {
       setError("");
@@ -1001,6 +1012,14 @@ export default function AdminArticlesPage() {
                         </td>
                         <td>
                           <div className="table-actions">
+                            <Link
+                              to={`/admin/articles/${article.id}/stock`}
+                              className="button button-secondary button-compact admin-icon-action"
+                              aria-label={`Ajustar stock de ${article.title}`}
+                              title="Ajustar stock"
+                            >
+                              <StockIcon />
+                            </Link>
                             <Link
                               to={`/admin/articles/${article.id}/edit`}
                               className="button button-secondary button-compact admin-icon-action"

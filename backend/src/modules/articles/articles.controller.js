@@ -2,6 +2,7 @@ import { getPagination } from "../../utils/pagination.js";
 import { badRequest } from '../../utils/app-error.js';
 import {
   addArticleImages,
+  adjustArticleStock,
   changeArticleStatus,
   createArticle,
   deleteArticleImage,
@@ -25,6 +26,7 @@ import {
   articleImportTemplateQuerySchema,
   articleQuickFlagsSchema,
   articleStatusSchema,
+  articleStockAdjustmentSchema,
   articleUpdateSchema,
   adminBulkArticleCreateSchema,
 } from "./articles.schemas.js";
@@ -161,6 +163,16 @@ export async function createAdminBulkArticles(req, res) {
 export async function updateAdminArticle(req, res) {
   const input = articleUpdateSchema.parse(req.body);
   const article = await updateArticle(
+    Number(req.params.id),
+    input,
+    getAuditContext(req),
+  );
+  return res.json({ ok: true, article });
+}
+
+export async function createAdminArticleStockAdjustment(req, res) {
+  const input = articleStockAdjustmentSchema.parse(req.body);
+  const article = await adjustArticleStock(
     Number(req.params.id),
     input,
     getAuditContext(req),

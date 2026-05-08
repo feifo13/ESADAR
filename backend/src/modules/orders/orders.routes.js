@@ -7,6 +7,7 @@ import {
   cancelAdminOrder,
   createAdminOrderPayment,
   createPublicOrder,
+  expireAdminOrderReservations,
   getAdminOrder,
   getAdminOrderReceiptPdf,
   getAdminOrders,
@@ -20,6 +21,7 @@ publicRouter.post('/', optionalAuth, asyncHandler(createPublicOrder));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));
+adminRouter.post('/expire-reservations', asyncHandler(expireAdminOrderReservations));
 adminRouter.get('/:id/receipt.pdf', asyncHandler(getAdminOrderReceiptPdf));
 adminRouter.get('/:id', asyncHandler(getAdminOrder));
 adminRouter.post('/:id/payments', asyncHandler(createAdminOrderPayment));

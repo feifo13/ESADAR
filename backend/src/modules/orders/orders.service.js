@@ -8,6 +8,11 @@ import {
   resolveSortClause,
 } from "../../utils/listing.js";
 import { logAudit } from "../audit/audit.service.js";
+import {
+  markReservedStockAsSold,
+  releaseArticleStockFromOrder,
+  reserveArticleStockForOrder,
+} from "../articles/article-stock.service.js";
 import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   sendApprovedOrderEmail,
@@ -27,6 +32,36 @@ const ORDER_SORTS = {
   customerName: (direction) =>
     `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
 };
+
+function buildOrderItemCostSnapshot(article, quantity, lineTotal) {
+  const itemQuantity = Number(quantity || 0);
+  const purchasePriceItemSnapshot = Number(article.purchasePriceItem || 0) * itemQuantity;
+  const purchasePriceShippingSnapshot = Number(article.purchasePriceShipping || 0) * itemQuantity;
+  const purchasePriceCourierSnapshot = Number(article.purchasePriceCourier || 0) * itemQuantity;
+  const purchasePriceTotalSnapshot = Number(article.purchasePriceTotal || 0) * itemQuantity;
+
+  return {
+    purchasePriceItemSnapshot,
+    purchasePriceShippingSnapshot,
+    purchasePriceCourierSnapshot,
+    purchasePriceTotalSnapshot,
+    profitSnapshot: Number(lineTotal || 0) - purchasePriceTotalSnapshot,
+  };
+}
+
+function aggregateOrderItemQuantities(items = []) {
+  const quantitiesByArticle = new Map();
+
+  for (const item of items) {
+    if (!item.articleId) continue;
+    quantitiesByArticle.set(
+      Number(item.articleId),
+      Number(quantitiesByArticle.get(Number(item.articleId)) || 0) + Number(item.quantity || 0),
+    );
+  }
+
+  return quantitiesByArticle;
+}
 
 export async function createOrder(input, actor, auditContext) {
   const order = await withTransaction(async (connection) => {
@@ -50,6 +85,10 @@ export async function createOrder(input, actor, auditContext) {
           a.discount_type AS discountType,
           a.discount_value AS discountValue,
           a.discounted_price AS discountedPrice,
+          a.purchase_price_item AS purchasePriceItem,
+          a.purchase_price_shipping AS purchasePriceShipping,
+          a.purchase_price_courier AS purchasePriceCourier,
+          a.purchase_price_total AS purchasePriceTotal,
           a.quantity_available AS quantityAvailable,
           a.quantity_reserved AS quantityReserved,
           a.quantity_sold AS quantitySold,
@@ -140,6 +179,7 @@ export async function createOrder(input, actor, auditContext) {
           );
         }
         const lineTotal = acceptedOfferPrice * offerQuantity;
+        const costSnapshot = buildOrderItemCostSnapshot(article, offerQuantity, lineTotal);
         subtotal += salePrice * offerQuantity;
         discountTotal += (salePrice - acceptedOfferPrice) * offerQuantity;
 
@@ -158,6 +198,7 @@ export async function createOrder(input, actor, auditContext) {
           discountValueSnapshot: Number(article.discountValue),
           finalUnitPriceSnapshot: finalUnitPrice,
           lineTotalSnapshot: lineTotal,
+          ...costSnapshot,
           acceptedOfferId: acceptedOffer.id,
           acceptedOfferPriceSnapshot: acceptedOfferPrice,
           acceptedOfferQuantitySnapshot: 1,
@@ -166,6 +207,7 @@ export async function createOrder(input, actor, auditContext) {
 
       if (regularQuantity > 0) {
         const lineTotal = finalUnitPrice * regularQuantity;
+        const costSnapshot = buildOrderItemCostSnapshot(article, regularQuantity, lineTotal);
         subtotal += salePrice * regularQuantity;
         discountTotal += perUnitDiscount * regularQuantity;
 
@@ -184,6 +226,7 @@ export async function createOrder(input, actor, auditContext) {
           discountValueSnapshot: Number(article.discountValue),
           finalUnitPriceSnapshot: finalUnitPrice,
           lineTotalSnapshot: lineTotal,
+          ...costSnapshot,
           acceptedOfferId: null,
           acceptedOfferPriceSnapshot: null,
           acceptedOfferQuantitySnapshot: 0,
@@ -256,10 +299,15 @@ export async function createOrder(input, actor, auditContext) {
             discount_value_snapshot,
             final_unit_price_snapshot,
             line_total_snapshot,
+            purchase_price_item_snapshot,
+            purchase_price_shipping_snapshot,
+            purchase_price_courier_snapshot,
+            purchase_price_total_snapshot,
+            profit_snapshot,
             accepted_offer_id,
             accepted_offer_price_snapshot,
             accepted_offer_quantity_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           orderId,
@@ -277,6 +325,11 @@ export async function createOrder(input, actor, auditContext) {
           item.discountValueSnapshot,
           item.finalUnitPriceSnapshot,
           item.lineTotalSnapshot,
+          item.purchasePriceItemSnapshot,
+          item.purchasePriceShippingSnapshot,
+          item.purchasePriceCourierSnapshot,
+          item.purchasePriceTotalSnapshot,
+          item.profitSnapshot,
           item.acceptedOfferId,
           item.acceptedOfferPriceSnapshot,
           item.acceptedOfferQuantitySnapshot,
@@ -313,28 +366,16 @@ export async function createOrder(input, actor, auditContext) {
           [item.acceptedOfferId, auditContext.actorUserId, auditContext.source],
         );
       }
+    }
 
-      await connection.execute(
-        `
-          UPDATE articles
-          SET
-            quantity_available = quantity_available - ?,
-            quantity_reserved = quantity_reserved + ?,
-            status = CASE
-              WHEN quantity_available - ? <= 0 THEN 'RESERVED'
-              ELSE status
-            END,
-            updated_by = ?
-          WHERE id = ?
-        `,
-        [
-          item.quantity,
-          item.quantity,
-          item.quantity,
-          auditContext.actorUserId,
-          item.articleId,
-        ],
-      );
+    for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
+      await reserveArticleStockForOrder(connection, {
+        articleId,
+        quantity,
+        orderId,
+        auditContext,
+        reason: 'Orden creada, stock reservado',
+      });
     }
 
     await connection.execute(
@@ -574,29 +615,14 @@ export async function approveOrder(id, auditContext) {
       [id],
     );
 
-    for (const item of items) {
-      await connection.execute(
-        `
-          UPDATE articles
-          SET
-            quantity_reserved = GREATEST(quantity_reserved - ?, 0),
-            quantity_sold = quantity_sold + ?,
-            status = CASE
-              WHEN quantity_available = 0 AND GREATEST(quantity_reserved - ?, 0) = 0 THEN 'SOLD_OUT'
-              WHEN quantity_available > 0 THEN 'ACTIVE'
-              ELSE status
-            END,
-            updated_by = ?
-          WHERE id = ?
-        `,
-        [
-          item.quantity,
-          item.quantity,
-          item.quantity,
-          auditContext.actorUserId,
-          item.articleId,
-        ],
-      );
+    for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+      await markReservedStockAsSold(connection, {
+        articleId,
+        quantity,
+        orderId: id,
+        auditContext,
+        reason: 'Aprobada por administracion',
+      });
     }
 
     await connection.execute(
@@ -655,28 +681,15 @@ export async function cancelOrder(id, reason, auditContext) {
       [id],
     );
 
-    for (const item of items) {
-      await connection.execute(
-        `
-          UPDATE articles
-          SET
-            quantity_available = quantity_available + LEAST(quantity_reserved, ?),
-            quantity_reserved = quantity_reserved - LEAST(quantity_reserved, ?),
-            status = CASE
-              WHEN quantity_available + LEAST(quantity_reserved, ?) > 0 THEN 'ACTIVE'
-              ELSE status
-            END,
-            updated_by = ?
-          WHERE id = ?
-        `,
-        [
-          item.quantity,
-          item.quantity,
-          item.quantity,
-          auditContext.actorUserId,
-          item.articleId,
-        ],
-      );
+    for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+      await releaseArticleStockFromOrder(connection, {
+        articleId,
+        quantity,
+        orderId: id,
+        auditContext,
+        reason: reason || 'Orden cancelada',
+        movementType: 'CANCEL_ORDER',
+      });
     }
 
     await connection.execute(
@@ -989,6 +1002,11 @@ async function getOrderById(id, connection) {
         discount_value_snapshot AS discountValue,
         final_unit_price_snapshot AS finalUnitPrice,
         line_total_snapshot AS lineTotal,
+        purchase_price_item_snapshot AS purchasePriceItemSnapshot,
+        purchase_price_shipping_snapshot AS purchasePriceShippingSnapshot,
+        purchase_price_courier_snapshot AS purchasePriceCourierSnapshot,
+        purchase_price_total_snapshot AS purchasePriceTotalSnapshot,
+        profit_snapshot AS profitSnapshot,
         accepted_offer_id AS acceptedOfferId,
         accepted_offer_price_snapshot AS acceptedOfferPrice,
         accepted_offer_quantity_snapshot AS acceptedOfferQuantity
@@ -1042,6 +1060,11 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
+    purchasePriceItemSnapshot: row.purchasePriceItemSnapshot != null ? Number(row.purchasePriceItemSnapshot) : null,
+    purchasePriceShippingSnapshot: row.purchasePriceShippingSnapshot != null ? Number(row.purchasePriceShippingSnapshot) : null,
+    purchasePriceCourierSnapshot: row.purchasePriceCourierSnapshot != null ? Number(row.purchasePriceCourierSnapshot) : null,
+    purchasePriceTotalSnapshot: row.purchasePriceTotalSnapshot != null ? Number(row.purchasePriceTotalSnapshot) : null,
+    profitSnapshot: row.profitSnapshot != null ? Number(row.profitSnapshot) : null,
     acceptedOffer: row.acceptedOfferId
       ? {
           id: row.acceptedOfferId,

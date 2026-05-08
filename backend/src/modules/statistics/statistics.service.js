@@ -7,6 +7,10 @@ import {
   getAdminWishlistTopUsers,
 } from '../wishlists/wishlists.service.js';
 
+const ORDER_ITEM_COST_TOTAL_EXPR = 'COALESCE(oi.purchase_price_total_snapshot, COALESCE(a.purchase_price_total, 0) * oi.quantity)';
+const ORDER_ITEM_PROFIT_EXPR = `COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR})`;
+const ORDER_ITEM_INCOMPLETE_COST_EXPR = `CASE WHEN ${ORDER_ITEM_COST_TOTAL_EXPR} <= 0 THEN 1 ELSE 0 END`;
+
 function normalizePositiveInt(value, fallback) {
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : fallback;
@@ -172,8 +176,8 @@ async function getSalesItemTotals(filters = {}) {
       SELECT
         COALESCE(SUM(oi.quantity), 0) AS itemsSold,
         COALESCE(SUM(oi.line_total_snapshot), 0) AS itemsRevenue,
-        COALESCE(SUM(oi.line_total_snapshot - (COALESCE(a.purchase_price_total, 0) * oi.quantity)), 0) AS estimatedProfit,
-        COALESCE(SUM(CASE WHEN COALESCE(a.purchase_price_total, 0) <= 0 THEN 1 ELSE 0 END), 0) AS incompleteCostRows
+        COALESCE(SUM(${ORDER_ITEM_PROFIT_EXPR}), 0) AS estimatedProfit,
+        COALESCE(SUM(${ORDER_ITEM_INCOMPLETE_COST_EXPR}), 0) AS incompleteCostRows
       FROM orders o
       INNER JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN articles a ON a.id = oi.article_id
@@ -201,8 +205,8 @@ export async function getStatisticsTopArticles(filters = {}, limit = 10) {
         MAX(COALESCE(a.size_text, s.code, oi.size_snapshot)) AS sizeLabel,
         SUM(oi.quantity) AS quantitySold,
         SUM(oi.line_total_snapshot) AS revenue,
-        SUM(oi.line_total_snapshot - (COALESCE(a.purchase_price_total, 0) * oi.quantity)) AS estimatedProfit,
-        SUM(CASE WHEN COALESCE(a.purchase_price_total, 0) <= 0 THEN 1 ELSE 0 END) AS incompleteCostRows,
+        SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit,
+        SUM(${ORDER_ITEM_INCOMPLETE_COST_EXPR}) AS incompleteCostRows,
         MAX((
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
@@ -255,7 +259,7 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
         COUNT(DISTINCT o.id) AS ordersCount,
         COALESCE(SUM(oi.quantity), 0) AS itemsCount,
         COALESCE(SUM(oi.line_total_snapshot), 0) AS totalSpent,
-        COALESCE(SUM(oi.line_total_snapshot - (COALESCE(a.purchase_price_total, 0) * oi.quantity)), 0) AS estimatedProfit
+        COALESCE(SUM(${ORDER_ITEM_PROFIT_EXPR}), 0) AS estimatedProfit
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
@@ -292,7 +296,7 @@ export async function getStatisticsTopCategories(filters = {}, limit = 10) {
         COALESCE(cat.name, oi.category_name_snapshot, 'Sin categoria') AS categoryName,
         SUM(oi.quantity) AS quantitySold,
         SUM(oi.line_total_snapshot) AS revenue,
-        SUM(oi.line_total_snapshot - (COALESCE(a.purchase_price_total, 0) * oi.quantity)) AS estimatedProfit
+        SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit
       FROM orders o
       INNER JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN articles a ON a.id = oi.article_id
@@ -335,7 +339,7 @@ export async function getStatisticsSalesOverTime(filters = {}) {
         COUNT(DISTINCT o.id) AS ordersCount,
         SUM(oi.quantity) AS itemsSold,
         SUM(oi.line_total_snapshot) AS revenue,
-        SUM(oi.line_total_snapshot - (COALESCE(a.purchase_price_total, 0) * oi.quantity)) AS estimatedProfit
+        SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit
       FROM orders o
       INNER JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN articles a ON a.id = oi.article_id

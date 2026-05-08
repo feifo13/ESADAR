@@ -325,6 +325,28 @@ CREATE TABLE articles (
   CONSTRAINT fk_articles_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE article_stock_movements (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  article_id BIGINT UNSIGNED NOT NULL,
+  movement_type ENUM('INITIAL','MANUAL_ADJUSTMENT','RESERVE','RELEASE_RESERVATION','SALE','CANCEL_ORDER','RETURN','LOSS') NOT NULL,
+  quantity_delta INT NOT NULL,
+  from_available INT UNSIGNED NULL,
+  to_available INT UNSIGNED NULL,
+  from_reserved INT UNSIGNED NULL,
+  to_reserved INT UNSIGNED NULL,
+  from_sold INT UNSIGNED NULL,
+  to_sold INT UNSIGNED NULL,
+  reason VARCHAR(255) NULL,
+  order_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY idx_article_stock_movements_article_id (article_id),
+  KEY idx_article_stock_movements_order_id (order_id),
+  KEY idx_article_stock_movements_type (movement_type),
+  KEY idx_article_stock_movements_created_at (created_at)
+) ENGINE=InnoDB;
+
 CREATE TABLE article_images (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   article_id BIGINT UNSIGNED NOT NULL,
@@ -506,6 +528,11 @@ CREATE TABLE order_items (
   discount_value_snapshot DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   final_unit_price_snapshot DECIMAL(12,2) NOT NULL,
   line_total_snapshot DECIMAL(12,2) NOT NULL,
+  purchase_price_item_snapshot DECIMAL(12,2) NULL,
+  purchase_price_shipping_snapshot DECIMAL(12,2) NULL,
+  purchase_price_courier_snapshot DECIMAL(12,2) NULL,
+  purchase_price_total_snapshot DECIMAL(12,2) NULL,
+  profit_snapshot DECIMAL(12,2) NULL,
   accepted_offer_id BIGINT UNSIGNED NULL,
   accepted_offer_price_snapshot DECIMAL(12,2) NULL,
   accepted_offer_quantity_snapshot INT UNSIGNED NOT NULL DEFAULT 0,
@@ -518,6 +545,10 @@ CREATE TABLE order_items (
   CONSTRAINT chk_order_items_sale_price_snapshot CHECK (sale_price_snapshot >= 0),
   CONSTRAINT chk_order_items_final_unit_price_snapshot CHECK (final_unit_price_snapshot >= 0),
   CONSTRAINT chk_order_items_line_total_snapshot CHECK (line_total_snapshot >= 0),
+  CONSTRAINT chk_order_items_purchase_price_item_snapshot CHECK (purchase_price_item_snapshot IS NULL OR purchase_price_item_snapshot >= 0),
+  CONSTRAINT chk_order_items_purchase_price_shipping_snapshot CHECK (purchase_price_shipping_snapshot IS NULL OR purchase_price_shipping_snapshot >= 0),
+  CONSTRAINT chk_order_items_purchase_price_courier_snapshot CHECK (purchase_price_courier_snapshot IS NULL OR purchase_price_courier_snapshot >= 0),
+  CONSTRAINT chk_order_items_purchase_price_total_snapshot CHECK (purchase_price_total_snapshot IS NULL OR purchase_price_total_snapshot >= 0),
   CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_order_items_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;

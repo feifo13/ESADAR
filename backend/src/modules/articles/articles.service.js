@@ -10,6 +10,12 @@ import {
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { slugify, uniqueSlug } from '../../utils/slug.js';
 import { logAudit } from '../audit/audit.service.js';
+import {
+  applyManualStockAdjustment,
+  logArticleStatusAutoUpdate,
+  recalculateArticleStockStatus,
+  recordArticleStockMovement,
+} from './article-stock.service.js';
 import { buildImportedImageRecord, deleteArticleImageFiles, processUploadedArticleImage } from './article-image-processing.js';
 import { enrichArticleSeo } from './articles.seo.js';
 
@@ -252,6 +258,18 @@ function getTodayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function resolveWritableArticleStatus(stock) {
+  if (stock.status === 'INACTIVE') {
+    return 'INACTIVE';
+  }
+
+  if (stock.status === 'ACTIVE' && Number(stock.quantityAvailable || 0) <= 0) {
+    throw badRequest('No se puede activar un articulo sin stock disponible.');
+  }
+
+  return recalculateArticleStockStatus(stock, { preserveInactive: false });
+}
+
 export async function generateUniqueInternalCode(connection = pool) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const code = `ART-${randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase()}`;
@@ -425,18 +443,37 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     ? String(input.internalCode).trim()
     : await generateUniqueInternalCode(connection);
   const slug = await ensureUniqueSlug(connection, input.slug || title, currentId);
-  const quantityTotal = Number(input.quantityTotal ?? 1);
+  let quantityTotal = Number(input.quantityTotal ?? 1);
   const quantityReserved = Number(input.quantityReserved ?? 0);
   const quantitySold = Number(input.quantitySold ?? 0);
   const quantityAvailable = Number(input.quantityAvailable ?? quantityTotal - quantityReserved - quantitySold);
+  const minimumQuantityTotal = quantityAvailable + quantityReserved + quantitySold;
 
-  if (quantityTotal < quantityAvailable + quantityReserved + quantitySold) {
-    throw badRequest('Invalid quantity balance');
+  if (
+    [quantityTotal, quantityAvailable, quantityReserved, quantitySold].some(
+      (value) => !Number.isFinite(value) || !Number.isInteger(value) || value < 0,
+    )
+  ) {
+    throw badRequest('Las cantidades de stock no pueden ser negativas.');
+  }
+
+  if (quantityTotal < minimumQuantityTotal) {
+    if (!isUpdate) {
+      throw badRequest('El stock total debe cubrir disponible, reservado y vendido.');
+    }
+    quantityTotal = minimumQuantityTotal;
   }
 
   if (Boolean(input.allowOffers) && input.discountType !== 'NONE' && Number(input.discountValue || 0) > 0) {
     throw badRequest('Articles with discount cannot allow offers');
   }
+
+  const status = resolveWritableArticleStatus({
+    quantityAvailable,
+    quantityReserved,
+    quantitySold,
+    status: input.status || 'ACTIVE',
+  });
 
   return {
     internalCode,
@@ -471,7 +508,7 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     quantityAvailable,
     quantityReserved,
     quantitySold,
-    status: input.status || 'ACTIVE',
+    status,
     originNotes: input.originNotes || null,
     isUpdate,
   };
@@ -906,6 +943,20 @@ export async function createArticle(input, auditContext) {
     const articleId = result.insertId;
     const created = await getAdminArticleByIdWithConnection(articleId, connection);
 
+    await recordArticleStockMovement(connection, {
+      articleId,
+      movementType: 'INITIAL',
+      quantityDelta: created.quantityAvailable,
+      fromAvailable: null,
+      toAvailable: created.quantityAvailable,
+      fromReserved: null,
+      toReserved: created.quantityReserved,
+      fromSold: null,
+      toSold: created.quantitySold,
+      reason: 'Stock inicial',
+      createdBy: auditContext.actorUserId || null,
+    });
+
     await logAudit(
       {
         actorUserId: auditContext.actorUserId,
@@ -928,7 +979,19 @@ export async function createArticle(input, auditContext) {
 export async function updateArticle(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
-    const payload = await normalizeArticleWritePayload({ ...before, ...input }, connection, auditContext, true, id);
+    const payload = await normalizeArticleWritePayload(
+      {
+        ...before,
+        ...input,
+        quantityReserved: before.quantityReserved,
+        quantitySold: before.quantitySold,
+      },
+      connection,
+      auditContext,
+      true,
+      id,
+    );
+    const stockAvailableChanged = Number(payload.quantityAvailable) !== Number(before.quantityAvailable);
 
     await connection.execute(
       `
@@ -964,8 +1027,6 @@ export async function updateArticle(id, input, auditContext) {
           intake_date = ?,
           quantity_total = ?,
           quantity_available = ?,
-          quantity_reserved = ?,
-          quantity_sold = ?,
           status = ?,
           origin_notes = ?,
           updated_by = ?
@@ -1002,8 +1063,6 @@ export async function updateArticle(id, input, auditContext) {
         payload.intakeDate,
         payload.quantityTotal,
         payload.quantityAvailable,
-        payload.quantityReserved,
-        payload.quantitySold,
         payload.status,
         payload.originNotes,
         auditContext.actorUserId,
@@ -1012,6 +1071,58 @@ export async function updateArticle(id, input, auditContext) {
     );
 
     const after = await getAdminArticleByIdWithConnection(id, connection);
+
+    if (stockAvailableChanged) {
+      const reason = input.stockAdjustmentReason || 'Ajuste manual desde edicion de articulo';
+
+      await recordArticleStockMovement(connection, {
+        articleId: id,
+        movementType: 'MANUAL_ADJUSTMENT',
+        quantityDelta: Number(after.quantityAvailable) - Number(before.quantityAvailable),
+        fromAvailable: before.quantityAvailable,
+        toAvailable: after.quantityAvailable,
+        fromReserved: before.quantityReserved,
+        toReserved: after.quantityReserved,
+        fromSold: before.quantitySold,
+        toSold: after.quantitySold,
+        reason,
+        createdBy: auditContext.actorUserId || null,
+      });
+
+      await logAudit(
+        {
+          actorUserId: auditContext.actorUserId,
+          actorLabel: auditContext.actorLabel,
+          actionCode: 'ARTICLE_STOCK_ADJUSTED',
+          entityType: 'articles',
+          entityId: id,
+          beforeJson: {
+            quantityAvailable: before.quantityAvailable,
+            quantityReserved: before.quantityReserved,
+            quantitySold: before.quantitySold,
+            status: before.status,
+          },
+          afterJson: {
+            quantityAvailable: after.quantityAvailable,
+            quantityReserved: after.quantityReserved,
+            quantitySold: after.quantitySold,
+            status: after.status,
+          },
+          metadataJson: { reason, source: 'ARTICLE_EDIT' },
+          source: auditContext.source,
+          ipAddress: auditContext.ipAddress,
+          userAgent: auditContext.userAgent,
+        },
+        connection,
+      );
+    }
+
+    await logArticleStatusAutoUpdate(connection, {
+      before,
+      after,
+      auditContext,
+      reason: stockAvailableChanged ? 'Ajuste manual desde edicion de articulo' : 'Edicion de articulo',
+    });
 
     await logAudit(
       {
@@ -1033,9 +1144,63 @@ export async function updateArticle(id, input, auditContext) {
   });
 }
 
+export async function adjustArticleStock(id, input, auditContext) {
+  return withTransaction(async (connection) => {
+    const beforeArticle = await getAdminArticleByIdWithConnection(id, connection);
+
+    await applyManualStockAdjustment(
+      connection,
+      id,
+      {
+        quantityAvailable: input.quantityAvailable,
+        reason: input.reason || 'Ajuste manual desde edicion de articulo',
+      },
+      auditContext,
+    );
+
+    const afterArticle = await getAdminArticleByIdWithConnection(id, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'ARTICLE_STOCK_ADJUSTED',
+        entityType: 'articles',
+        entityId: id,
+        beforeJson: {
+          quantityAvailable: beforeArticle.quantityAvailable,
+          quantityReserved: beforeArticle.quantityReserved,
+          quantitySold: beforeArticle.quantitySold,
+          status: beforeArticle.status,
+        },
+        afterJson: {
+          quantityAvailable: afterArticle.quantityAvailable,
+          quantityReserved: afterArticle.quantityReserved,
+          quantitySold: afterArticle.quantitySold,
+          status: afterArticle.status,
+        },
+        metadataJson: {
+          reason: input.reason || 'Ajuste manual desde edicion de articulo',
+          source: 'STOCK_ADJUSTMENT_ENDPOINT',
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return afterArticle;
+  });
+}
+
 export async function changeArticleStatus(id, status, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
+
+    if (status === 'ACTIVE' && Number(before.quantityAvailable || 0) <= 0) {
+      throw badRequest('No se puede activar un articulo sin stock disponible.');
+    }
 
     await connection.execute(
       'UPDATE articles SET status = ?, updated_by = ? WHERE id = ?',
@@ -1071,6 +1236,10 @@ export async function updateArticleQuickFlags(id, input, auditContext) {
     const nextStatus = input.status ?? before.status;
     const nextIsFeatured = input.isFeatured ?? before.isFeatured;
     const nextAllowOffers = input.allowOffers ?? before.allowOffers;
+
+    if (nextStatus === 'ACTIVE' && Number(before.quantityAvailable || 0) <= 0) {
+      throw badRequest('No se puede activar un articulo sin stock disponible.');
+    }
 
     if (
       nextAllowOffers &&

@@ -3,6 +3,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createAdminBulkArticles,
   createAdminArticle,
+  createAdminArticleStockAdjustment,
   deleteAdminArticleImage,
   downloadAdminArticleImportTemplate,
   exportAdminArticles,
@@ -49,6 +50,7 @@ adminRouter.post(
 adminRouter.get('/:id', asyncHandler(getAdminArticle));
 adminRouter.post('/', asyncHandler(createAdminArticle));
 adminRouter.put('/:id', asyncHandler(updateAdminArticle));
+adminRouter.post('/:id/stock-adjustments', asyncHandler(createAdminArticleStockAdjustment));
 adminRouter.patch('/:id/quick-flags', asyncHandler(updateAdminArticleQuickFlags));
 adminRouter.patch('/:id/status', asyncHandler(updateAdminArticleStatus));
 adminRouter.post(

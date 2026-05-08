@@ -46,6 +46,11 @@ export const createOrderPaymentSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'FAILED', 'REFUNDED']).default('APPROVED'),
 });
 
+export const expireReservationsSchema = z.object({
+  limit: z.coerce.number().int().positive().max(500).optional(),
+  now: z.string().datetime().optional(),
+});
+
 export const adminOrderListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   status: optionalEnum(['PENDING', 'RESERVED', 'APPROVED', 'SHIPPED', 'CANCELLED', 'EXPIRED']),

@@ -7,11 +7,13 @@ import {
   listOrders,
   shipOrder,
 } from './orders.service.js';
+import { expireReservedOrders } from './orders.expiration.service.js';
 import {
   createOrderPaymentSchema,
   createOrderSchema,
   cancelOrderSchema,
   adminOrderListQuerySchema,
+  expireReservationsSchema,
 } from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
@@ -66,6 +68,16 @@ export async function cancelAdminOrder(req, res) {
   const input = cancelOrderSchema.parse(req.body);
   const order = await cancelOrder(Number(req.params.id), input.reason, getAuditContext(req));
   return res.json({ ok: true, order });
+}
+
+export async function expireAdminOrderReservations(req, res) {
+  const input = expireReservationsSchema.parse(req.body || {});
+  const result = await expireReservedOrders({
+    now: input.now ? new Date(input.now) : new Date(),
+    limit: input.limit || 100,
+    auditContext: getAuditContext(req),
+  });
+  return res.json({ ok: true, ...result });
 }
 
 export async function shipAdminOrder(req, res) {

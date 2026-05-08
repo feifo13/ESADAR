@@ -62,6 +62,16 @@ export function ArchiveIcon() {
   );
 }
 
+export function StockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5z" />
+      <path d="M4 7.5v9l8 4.5 8-4.5v-9" />
+      <path d="M12 12v9" />
+    </svg>
+  );
+}
+
 export function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">

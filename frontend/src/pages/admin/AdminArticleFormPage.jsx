@@ -37,6 +37,16 @@ const AGE_GROUP_OPTIONS = [
   { value: "NEWBORN", label: "Newborn" },
 ];
 
+const STOCK_ADJUSTMENT_REASONS = [
+  "Ingreso inicial",
+  "Reposicion",
+  "Correccion de inventario",
+  "Dano / baja",
+  "Perdida",
+  "Devolucion",
+  "Ajuste administrativo",
+];
+
 function sortImages(images = []) {
   return [...images].sort((left, right) => {
     if (Number(left.isPrimary) !== Number(right.isPrimary)) {
@@ -87,6 +97,7 @@ function toFormState(article) {
     quantityAvailable: article?.quantityAvailable ?? 1,
     quantityReserved: article?.quantityReserved ?? 0,
     quantitySold: article?.quantitySold ?? 0,
+    stockAdjustmentReason: "Ajuste administrativo",
     status: article?.status || "ACTIVE",
     originNotes: article?.originNotes || "",
   };
@@ -333,6 +344,22 @@ export default function AdminArticleFormPage() {
       return "El precio de venta es obligatorio para continuar.";
     }
 
+    if (stepIndex === 1 && Number(form.quantityAvailable || 0) < 0) {
+      return "El stock disponible no puede ser negativo.";
+    }
+
+    if (stepIndex === 1 && Number(form.quantityTotal || 0) < 0) {
+      return "El stock total no puede ser negativo.";
+    }
+
+    if (
+      stepIndex === 1 &&
+      form.status === "ACTIVE" &&
+      Number(form.quantityAvailable || 0) <= 0
+    ) {
+      return "No se puede publicar como activo un articulo sin stock disponible.";
+    }
+
     return "";
   }
 
@@ -388,8 +415,9 @@ export default function AdminArticleFormPage() {
         isFeatured: Boolean(form.isFeatured),
         quantityTotal: normalizedQuantityTotal,
         quantityAvailable: normalizedQuantityAvailable,
-        quantityReserved: Number(form.quantityReserved || 0),
-        quantitySold: Number(form.quantitySold || 0),
+        stockAdjustmentReason: isEdit
+          ? normalizeLabel(form.stockAdjustmentReason) || "Ajuste administrativo"
+          : undefined,
         sizeText: normalizeLabel(form.sizeText) || null,
         measurementsText: normalizeLabel(form.measurementsText) || null,
         description: normalizeLabel(form.description) || null,
@@ -868,6 +896,9 @@ export default function AdminArticleFormPage() {
             <div>
               <p className="section-kicker">Paso 2</p>
               <h2>Venta y stock</h2>
+              <p className="muted-copy">
+                Disponible puede ajustarse manualmente, pero Reservado y Vendido se actualizan automaticamente segun ordenes.
+              </p>
             </div>
 
             <div className="form-grid-two">
@@ -907,7 +938,34 @@ export default function AdminArticleFormPage() {
                     update("quantityAvailable", event.target.value)
                   }
                 />
+                {isEdit ? (
+                  <span className="field-helper">
+                    Si cambiás el disponible, se registrará como ajuste manual de inventario.
+                  </span>
+                ) : null}
               </label>
+
+              {isEdit ? (
+                <label className="field-group">
+                  <span>Motivo del ajuste</span>
+                  <select
+                    className="input"
+                    value={form.stockAdjustmentReason}
+                    onChange={(event) =>
+                      update("stockAdjustmentReason", event.target.value)
+                    }
+                  >
+                    {STOCK_ADJUSTMENT_REASONS.map((reason) => (
+                      <option key={reason} value={reason}>
+                        {reason}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="field-helper">
+                    Se usa solo si modificás el stock disponible al guardar.
+                  </span>
+                </label>
+              ) : null}
 
               <label className="field-group">
                 <span>Estado de publicacion</span>
@@ -922,6 +980,20 @@ export default function AdminArticleFormPage() {
                   <option value="SOLD_OUT">Agotada</option>
                 </select>
               </label>
+
+              {form.status === "SOLD_OUT" &&
+              Number(form.quantityAvailable || 0) > 0 ? (
+                <div className="inline-note field-group-span-two">
+                  Al guardar con stock disponible, el articulo volvera a estar activo salvo que lo marques como inactivo.
+                </div>
+              ) : null}
+
+              {form.status === "ACTIVE" &&
+              Number(form.quantityAvailable || 0) <= 0 ? (
+                <div className="error-copy field-group-span-two">
+                  No se puede publicar como activo un articulo sin stock disponible.
+                </div>
+              ) : null}
 
               <label className="field-group">
                 <span>Descuento</span>
@@ -1015,10 +1087,11 @@ export default function AdminArticleFormPage() {
                     type="number"
                     min="0"
                     value={form.quantityReserved}
-                    onChange={(event) =>
-                      update("quantityReserved", event.target.value)
-                    }
+                    readOnly
                   />
+                  <span className="field-helper">
+                    Reservado y vendido se actualizan automaticamente por ordenes.
+                  </span>
                 </label>
                 <label className="field-group">
                   <span>Cantidad vendida</span>
@@ -1027,10 +1100,11 @@ export default function AdminArticleFormPage() {
                     type="number"
                     min="0"
                     value={form.quantitySold}
-                    onChange={(event) =>
-                      update("quantitySold", event.target.value)
-                    }
+                    readOnly
                   />
+                  <span className="field-helper">
+                    Reservado y vendido se actualizan automaticamente por ordenes.
+                  </span>
                 </label>
                 <label className="field-group">
                   <span>Precio compra articulo</span>
@@ -1364,7 +1438,7 @@ export default function AdminArticleFormPage() {
           <div className="inline-note">
             {activeStep === 0 ? "Completa lo basico de la prenda." : null}
             {activeStep === 1
-              ? "Define precio, stock y estado comercial."
+              ? "Define precio, stock disponible y estado comercial."
               : null}
             {activeStep === 2
               ? "Sube imagenes y deja una primaria clara."
@@ -1411,6 +1485,7 @@ export default function AdminArticleFormPage() {
           </div>
         </div>
       </form>
+
     </div>
   );
 }
