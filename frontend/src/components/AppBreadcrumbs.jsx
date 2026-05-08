@@ -71,7 +71,10 @@ function buildBreadcrumbs(pathname) {
     ];
   }
 
-  if (parts[0] === "cuenta" || (parts[0] === "account" && parts[1] === "orders")) {
+  if (
+    parts[0] === "cuenta" ||
+    (parts[0] === "account" && parts[1] === "orders")
+  ) {
     if (parts[0] === "account") {
       return [
         { label: "Mi cuenta", to: "/cuenta/perfil" },
@@ -107,8 +110,10 @@ function buildBreadcrumbs(pathname) {
     if (section === "articles") {
       if (parts[2] === "new") crumbs.push({ label: "Nuevo articulo" });
       if (parts[2] === "bulk-create") crumbs.push({ label: "Carga masiva" });
-      if (parts[3] === "edit") crumbs.push({ label: detailLabel("Editar articulo", parts[2]) });
-      if (parts[3] === "stock") crumbs.push({ label: detailLabel("Ajustar stock", parts[2]) });
+      if (parts[3] === "edit")
+        crumbs.push({ label: detailLabel("Editar articulo", parts[2]) });
+      if (parts[3] === "stock")
+        crumbs.push({ label: detailLabel("Ajustar stock", parts[2]) });
     } else if (section === "orders" && parts[2]) {
       crumbs.push({ label: detailLabel("Orden", parts[2]) });
     } else if (section === "contact-messages" && parts[2]) {
@@ -139,7 +144,10 @@ export default function AppBreadcrumbs() {
           const isLast = index === items.length - 1;
 
           return (
-            <li key={`${item.label}-${index}`} className="app-breadcrumbs__item">
+            <li
+              key={`${item.label}-${index}`}
+              className="app-breadcrumbs__item"
+            >
               {item.to && !isLast ? (
                 <Link to={item.to}>{item.label}</Link>
               ) : (

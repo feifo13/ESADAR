@@ -1057,11 +1057,19 @@ export default function AccountPage() {
                             </strong>
                           </td>
                           <td>
-                            {isAvailable
-                              ? item.allowOffers
-                                ? "Disponible · ofertable"
-                                : "Disponible"
-                              : "Agotado"}
+                            {isAvailable ? (
+                              item.allowOffers ? (
+                                "Disponible · ofertable"
+                              ) : (
+                                <span className="status-badge status-accepted">
+                                  Disponible
+                                </span>
+                              )
+                            ) : (
+                              <span className="status-badge status-cancelled">
+                                Agotado
+                              </span>
+                            )}
                           </td>
                           <td>
                             <div className="table-actions">
@@ -1474,7 +1482,7 @@ export default function AccountPage() {
                           to={articleLink}
                         >
                           <EyeIcon />
-                          <span>Ver artículo</span>
+                          {/* <span>Ver artículo</span> */}
                         </Link>,
                       ]}
                     />
