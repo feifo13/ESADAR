@@ -9,6 +9,7 @@ import {
 } from "../../utils/listing.js";
 import { logAudit } from "../audit/audit.service.js";
 import { convertActiveCartForUser } from "../cart/cart.service.js";
+import { sendApprovedOrderEmail } from "./orders.mailer.js";
 import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
@@ -536,7 +537,7 @@ export async function getOrderDetail(id) {
 }
 
 export async function approveOrder(id, auditContext) {
-  return withTransaction(async (connection) => {
+  const order = await withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
     if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
       throw badRequest(
@@ -595,7 +596,7 @@ export async function approveOrder(id, auditContext) {
           reason,
           changed_by,
           source
-        ) VALUES (?, ?, 'APPROVED', 'Aprovada por administración', ?, ?)
+        ) VALUES (?, ?, 'APPROVED', 'Aprobada por administración', ?, ?)
       `,
       [id, before.orderStatus, auditContext.actorUserId, auditContext.source],
     );
@@ -620,6 +621,12 @@ export async function approveOrder(id, auditContext) {
 
     return after;
   });
+
+  sendApprovedOrderEmail(order).catch((error) => {
+    console.warn('[orders] approved order email failed', error?.message || error);
+  });
+
+  return order;
 }
 
 export async function cancelOrder(id, reason, auditContext) {

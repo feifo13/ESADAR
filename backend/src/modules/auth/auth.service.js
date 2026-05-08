@@ -5,7 +5,7 @@ import { comparePassword, hashPassword } from '../../utils/password.js';
 import { signAccessToken } from '../../utils/jwt.js';
 import { badRequest, notFound, unauthorized } from '../../utils/app-error.js';
 import { logAudit } from '../audit/audit.service.js';
-import { assertPasswordResetMailerReady, sendPasswordResetEmail } from './auth.mailer.js';
+import { assertPasswordResetMailerReady, sendPasswordResetEmail, sendWelcomeUserEmail } from './auth.mailer.js';
 import { env } from '../../config/env.js';
 
 async function getUserByEmail(email, connection = pool) {
@@ -113,7 +113,7 @@ export async function registerUser(input, auditContext) {
     throw badRequest('A user with that email already exists');
   }
 
-  return withTransaction(async (connection) => {
+  const result = await withTransaction(async (connection) => {
     const passwordHash = await hashPassword(input.password);
 
     const [userInsert] = await connection.execute(
@@ -218,6 +218,12 @@ export async function registerUser(input, auditContext) {
     const token = signAccessToken(toAuthPayload(user));
     return { user: sanitizeUser(user), token };
   });
+
+  sendWelcomeUserEmail({ user: result.user }).catch((error) => {
+    console.warn('[auth] welcome email failed', error?.message || error);
+  });
+
+  return result;
 }
 
 export async function loginUser(input, auditContext) {

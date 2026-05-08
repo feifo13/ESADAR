@@ -23,6 +23,8 @@ import statisticsRoutes from './modules/statistics/statistics.routes.js';
 fs.mkdirSync(env.uploadDir, { recursive: true });
 fs.mkdirSync(env.articleUploadDir, { recursive: true });
 fs.mkdirSync(env.bundledUploadDir, { recursive: true });
+const publicAssetsDir = path.resolve(process.cwd(), 'public', 'assets');
+fs.mkdirSync(publicAssetsDir, { recursive: true });
 
 export function createApp() {
   const app = express();
@@ -36,6 +38,7 @@ export function createApp() {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(requestContext);
+  app.use('/assets', express.static(publicAssetsDir));
   app.use('/uploads', express.static(env.uploadDir));
   if (path.resolve(env.bundledUploadDir) !== path.resolve(env.uploadDir)) {
     app.use('/uploads', express.static(env.bundledUploadDir));

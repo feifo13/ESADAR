@@ -75,3 +75,33 @@ Ver `.env.example`.
 - La creación de órdenes reserva stock inmediatamente por 24 horas.
 - El checkout soporta usuario autenticado o comprador invitado.
 - Las ofertas no están implementadas aún en este starter, pero la estructura ya queda preparada para el siguiente paso.
+
+## Emails ESADAR
+
+El backend centraliza los correos de marca en `src/modules/mail/`.
+
+Variables sugeridas para producción:
+
+```env
+PUBLIC_SITE_URL=https://tudominio.com
+EMAIL_LOGO_URL=https://tudominio.com/assets/esadar-logo.png
+```
+
+El logo público queda disponible desde `/assets/esadar-logo.png`. Las imágenes de artículos en correos se envían como URLs absolutas y dependen de que `PUBLIC_SITE_URL` apunte a un dominio accesible desde Gmail.
+
+Pruebas manuales sugeridas:
+
+- Registro de usuario: `POST /api/auth/register` debe enviar bienvenida sin romper el registro si SMTP falla.
+- Recuperar contraseña: `POST /api/auth/forgot-password` debe enviar reset password con el template nuevo y mantener validación obligatoria de SMTP.
+- Oferta aceptada: cambiar una oferta a `ACCEPTED` desde admin debe enviar el mail de oferta aceptada.
+- Orden aprobada: aprobar una orden desde admin debe enviar el mail de orden aprobada sin romper la aprobación si SMTP falla.
+- Respuesta de contacto: responder un mensaje debe enviar el mail y marcarlo como `REPLIED` solo si SMTP funciona.
+
+Branch local recomendado para estos cambios:
+
+```bash
+git switch -c feature/esadar-email-templates
+git status
+git add .
+git commit -m "feat: add branded email templates and dynamic mailers"
+```
