@@ -1,22 +1,22 @@
-import nodemailer from 'nodemailer';
-import { env } from '../../config/env.js';
-import { AppError } from '../../utils/app-error.js';
+import nodemailer from "nodemailer";
+import { env } from "../../config/env.js";
+import { AppError } from "../../utils/app-error.js";
 
 let cachedTransporter = null;
 
 function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 export function assertPasswordResetMailerReady() {
   if (!env.mail.host || !env.mail.fromEmail) {
     throw new AppError(
-      'El sistema de correo no esta configurado para recuperar contraseñas.',
+      "El sistema de correo no esta configurado para recuperar contraseñas.",
       503,
     );
   }
@@ -36,6 +36,10 @@ function getTransporter() {
             pass: env.mail.password,
           }
         : undefined,
+      tls: {
+        rejectUnauthorized: env.mail.tlsRejectUnauthorized,
+        servername: env.mail.host,
+      },
     });
   }
 
@@ -44,21 +48,21 @@ function getTransporter() {
 
 export async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
   const transporter = getTransporter();
-  const safeName = escapeHtml(toName || '');
+  const safeName = escapeHtml(toName || "");
   const safeResetUrl = escapeHtml(resetUrl);
-  const subject = 'Recuperar contraseña de ESADAR';
-  const greeting = `Hola ${toName || ''}`.trim();
+  const subject = "Recuperar contraseña de ESADAR";
+  const greeting = `Hola ${toName || ""}`.trim();
   const plainText = [
     greeting,
-    '',
-    'Recibimos una solicitud para recuperar tu contraseña de ESADAR.',
-    'Usa este link para elegir una nueva contraseña:',
+    "",
+    "Recibimos una solicitud para recuperar tu contraseña de ESADAR.",
+    "Usa este link para elegir una nueva contraseña:",
     resetUrl,
-    '',
-    'El link vence en 1 hora. Si no hiciste esta solicitud, puedes ignorar este mensaje.',
-    '',
-    'Equipo ESADAR',
-  ].join('\n');
+    "",
+    "El link vence en 1 hora. Si no hiciste esta solicitud, puedes ignorar este mensaje.",
+    "",
+    "Equipo ESADAR",
+  ].join("\n");
 
   const html = `
     <div style="font-family:Arial,sans-serif;color:#102b34;line-height:1.6;">

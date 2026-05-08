@@ -1,29 +1,34 @@
-import nodemailer from 'nodemailer';
-import { env } from '../../config/env.js';
-import { AppError } from '../../utils/app-error.js';
+import nodemailer from "nodemailer";
+import { env } from "../../config/env.js";
+import { AppError } from "../../utils/app-error.js";
 
 let cachedTransporter = null;
 
 function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function sanitizeSmtpErrorDetails(error) {
   if (env.isProduction) return null;
 
-  const redactions = [env.mail.user, env.mail.fromEmail, env.mail.replyTo, env.mail.password]
+  const redactions = [
+    env.mail.user,
+    env.mail.fromEmail,
+    env.mail.replyTo,
+    env.mail.password,
+  ]
     .filter(Boolean)
     .map((value) => String(value));
 
   function redact(value) {
-    let text = String(value || '');
+    let text = String(value || "");
     for (const secret of redactions) {
-      if (secret) text = text.split(secret).join('[redacted]');
+      if (secret) text = text.split(secret).join("[redacted]");
     }
     return text.slice(0, 500);
   }
@@ -39,7 +44,7 @@ function sanitizeSmtpErrorDetails(error) {
 function ensureMailConfig() {
   if (!env.mail.host || !env.mail.fromEmail) {
     throw new AppError(
-      'El sistema de correo no esta configurado para responder mensajes.',
+      "El sistema de correo no esta configurado para responder mensajes.",
       503,
     );
   }
@@ -59,35 +64,44 @@ function getTransporter() {
             pass: env.mail.password,
           }
         : undefined,
+      tls: {
+        rejectUnauthorized: env.mail.tlsRejectUnauthorized,
+        servername: env.mail.host,
+      },
     });
   }
 
   return cachedTransporter;
 }
 
-export async function sendContactReplyEmail({ toEmail, toName, message, replyMessage }) {
+export async function sendContactReplyEmail({
+  toEmail,
+  toName,
+  message,
+  replyMessage,
+}) {
   if (!toEmail) {
-    throw new AppError('Este mensaje no tiene email para responder.', 400);
+    throw new AppError("Este mensaje no tiene email para responder.", 400);
   }
 
   const transporter = getTransporter();
-  const safeName = escapeHtml(toName || '');
+  const safeName = escapeHtml(toName || "");
   const safeReplyMessage = escapeHtml(replyMessage);
-  const safeOriginalMessage = escapeHtml(message || '');
-  const subject = `Respuesta de ESADAR para ${toName || 'tu consulta'}`;
+  const safeOriginalMessage = escapeHtml(message || "");
+  const subject = `Respuesta de ESADAR para ${toName || "tu consulta"}`;
   const plainText = [
-    `Hola ${toName || ''}`.trim(),
-    '',
-    'Gracias por escribirnos a ESADAR.',
-    '',
-    'Esta es nuestra respuesta:',
+    `Hola ${toName || ""}`.trim(),
+    "",
+    "Gracias por escribirnos a ESADAR.",
+    "",
+    "Esta es nuestra respuesta:",
     replyMessage,
-    '',
-    'Tu mensaje original:',
-    message || '',
-    '',
-    'Equipo ESADAR',
-  ].join('\n');
+    "",
+    "Tu mensaje original:",
+    message || "",
+    "",
+    "Equipo ESADAR",
+  ].join("\n");
 
   const html = `
     <div style="font-family:Arial,sans-serif;color:#102b34;line-height:1.6;">
@@ -112,7 +126,7 @@ export async function sendContactReplyEmail({ toEmail, toName, message, replyMes
     });
   } catch (error) {
     throw new AppError(
-      'No se pudo enviar el correo SMTP. Revisá la configuración de Gmail/App Password.',
+      "No se pudo enviar el correo SMTP. Revisá la configuración de Gmail/App Password.",
       502,
       sanitizeSmtpErrorDetails(error),
     );
