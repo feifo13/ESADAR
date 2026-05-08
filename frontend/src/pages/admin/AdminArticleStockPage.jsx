@@ -3,9 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
+import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
-import { notifyFormStatus } from "../../lib/validation.js";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -31,7 +30,7 @@ function normalizeLabel(value) {
 export default function AdminArticleStockPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { notifyMobileStatus } = useMobileMenu();
+  const { notifySuccess, notifyError } = useNotification();
   const [article, setArticle] = useState(null);
   const [form, setForm] = useState({
     quantityAvailable: "",
@@ -39,8 +38,6 @@ export default function AdminArticleStockPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let ignore = false;
@@ -48,7 +45,6 @@ export default function AdminArticleStockPage() {
     async function loadArticle() {
       try {
         setLoading(true);
-        setError("");
         const response = await apiFetch(`/api/admin/articles/${id}`);
         if (ignore) return;
         setArticle(response.article);
@@ -59,8 +55,7 @@ export default function AdminArticleStockPage() {
       } catch (err) {
         if (!ignore) {
           const errorMessage = err.message || "No se pudo cargar el articulo";
-          setError(errorMessage);
-          notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+          notifyError(errorMessage);
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -72,7 +67,7 @@ export default function AdminArticleStockPage() {
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id, notifyError]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -80,15 +75,12 @@ export default function AdminArticleStockPage() {
     const quantityAvailable = Number(form.quantityAvailable);
     if (!Number.isInteger(quantityAvailable) || quantityAvailable < 0) {
       const errorMessage = "El nuevo stock disponible debe ser un numero entero mayor o igual a cero.";
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      notifyError(errorMessage);
       return;
     }
 
     try {
       setSaving(true);
-      setError("");
-      setMessage("");
       const response = await apiFetch(
         `/api/admin/articles/${id}/stock-adjustments`,
         {
@@ -105,12 +97,10 @@ export default function AdminArticleStockPage() {
         quantityAvailable: String(response.article?.quantityAvailable ?? quantityAvailable),
       }));
       const successMessage = "Stock ajustado correctamente.";
-      setMessage(successMessage);
-      notifyFormStatus(notifyMobileStatus, "success", successMessage);
+      notifySuccess(successMessage);
     } catch (err) {
       const errorMessage = err.message || "No se pudo ajustar el stock";
-      setError(errorMessage);
-      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      notifyError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -124,8 +114,18 @@ export default function AdminArticleStockPage() {
     );
   }
 
+  const currentAvailable = Number(article?.quantityAvailable || 0);
+  const nextAvailable = Number(form.quantityAvailable);
+  const hasValidNextAvailable =
+    Number.isFinite(nextAvailable) &&
+    Number.isInteger(nextAvailable) &&
+    nextAvailable >= 0;
+  const stockDelta = hasValidNextAvailable ? nextAvailable - currentAvailable : 0;
+  const stockDeltaLabel =
+    stockDelta > 0 ? `+${stockDelta}` : String(stockDelta);
+
   return (
-    <div className="container page-stack admin-page-shell">
+    <div className="container page-stack admin-page-shell admin-stock-page">
       <AdminToolbar />
 
       <section className="section-card page-stack">
@@ -133,6 +133,11 @@ export default function AdminArticleStockPage() {
           <div>
             <p className="section-kicker">Inventario</p>
             <h1>Ajustar stock</h1>
+            {article ? (
+              <p className="muted-copy">
+                {article.title} · {article.internalCode || "Sin codigo"}
+              </p>
+            ) : null}
           </div>
           <div className="toolbar-inline toolbar-inline-end">
             <Link to={`/admin/articles/${id}/edit`} className="ghost-button linklike">
@@ -144,12 +149,12 @@ export default function AdminArticleStockPage() {
           </div>
         </div>
 
-        {error ? <div className="error-copy">{error}</div> : null}
-        {message ? <div className="success-copy">{message}</div> : null}
-
         {article ? (
-          <div className="admin-detail-grid">
-            <form className="section-card nested-card page-stack" onSubmit={handleSubmit}>
+          <div className="admin-detail-grid admin-stock-layout">
+            <form
+              className="section-card nested-card page-stack admin-stock-form-card"
+              onSubmit={handleSubmit}
+            >
               <div>
                 <p className="section-kicker">Stock</p>
                 <h2>Movimiento manual</h2>
@@ -158,7 +163,7 @@ export default function AdminArticleStockPage() {
                 </p>
               </div>
 
-              <div className="admin-kpi-grid">
+              <div className="admin-stock-kpi-grid">
                 <div className="nested-card admin-kpi-card">
                   <span>Total</span>
                   <strong>{article.quantityTotal}</strong>
@@ -177,7 +182,7 @@ export default function AdminArticleStockPage() {
                 </div>
               </div>
 
-              <div className="form-grid-two">
+              <div className="form-grid-two admin-stock-form-grid">
                 <label className="field-group">
                   <span>Nuevo stock disponible</span>
                   <input
@@ -193,6 +198,9 @@ export default function AdminArticleStockPage() {
                     }
                     required
                   />
+                  <span className="field-helper">
+                    Guardar registra un movimiento de stock manual.
+                  </span>
                 </label>
 
                 <label className="field-group">
@@ -216,13 +224,28 @@ export default function AdminArticleStockPage() {
                 </label>
               </div>
 
+              <div className="admin-stock-movement-preview">
+                <span>Movimiento</span>
+                <strong
+                  className={[
+                    "admin-stock-delta",
+                    stockDelta > 0 ? "is-positive" : "",
+                    stockDelta < 0 ? "is-negative" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  {hasValidNextAvailable ? stockDeltaLabel : "Pendiente"}
+                </strong>
+              </div>
+
               {article.status === "INACTIVE" ? (
                 <div className="inline-note">
                   Este articulo esta inactivo. Ajustar stock no lo activa automaticamente.
                 </div>
               ) : null}
 
-              <div className="toolbar-inline toolbar-inline-end">
+              <div className="toolbar-inline toolbar-inline-end admin-stock-actions">
                 <button
                   type="button"
                   className="button button-secondary"
@@ -240,7 +263,7 @@ export default function AdminArticleStockPage() {
               </div>
             </form>
 
-            <aside className="section-card nested-card page-stack-sm admin-detail-panel">
+            <aside className="section-card nested-card page-stack-sm admin-detail-panel admin-stock-summary-card">
               <SmartImage
                 src={
                   article.primaryImageDetail ||
@@ -249,9 +272,9 @@ export default function AdminArticleStockPage() {
                 }
                 alt={article.primaryImageAlt || article.title}
                 fallbackLabel={article.title}
-                className="image-manager-card__media"
+                className="admin-stock-summary-image"
               />
-              <div className="cell-stack">
+              <div className="cell-stack admin-stock-summary-copy">
                 <strong>{article.title}</strong>
                 <span className="muted-copy">
                   Codigo: {article.internalCode || "Sin codigo"}
@@ -260,6 +283,15 @@ export default function AdminArticleStockPage() {
                   status={article.status}
                   labels={ARTICLE_STATUS_LABELS}
                 />
+              </div>
+              <div className="admin-detail-meta">
+                <div className="inline-note">
+                  Disponible actual: <strong>{article.quantityAvailable}</strong>
+                </div>
+                <div className="inline-note">
+                  Reservado: <strong>{article.quantityReserved}</strong> · Vendido:{" "}
+                  <strong>{article.quantitySold}</strong>
+                </div>
               </div>
             </aside>
           </div>

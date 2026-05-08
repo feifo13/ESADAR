@@ -44,22 +44,26 @@ function formatPreviewList(values = []) {
 }
 
 function QuickToggle({ checked, label, onText, offText, onClick }) {
+  const stateText = checked ? onText : offText;
+
   return (
-    <button
-      type="button"
-      className={checked ? "quick-toggle-switch is-on" : "quick-toggle-switch"}
-      role="switch"
-      aria-checked={checked}
-      onClick={onClick}
-    >
-      <span className="quick-toggle-switch__label">{label}</span>
-      <span className="quick-toggle-switch__track" aria-hidden="true">
-        <span className="quick-toggle-switch__thumb" />
-      </span>
-      <span className="quick-toggle-switch__state">
-        {checked ? onText : offText}
-      </span>
-    </button>
+    <div className="quick-toggle-control">
+      <span className="quick-toggle-control__label">{label}</span>
+      <button
+        type="button"
+        className={checked ? "quick-toggle-switch is-on" : "quick-toggle-switch"}
+        role="switch"
+        aria-checked={checked}
+        aria-label={`${label}: ${stateText}`}
+        title={`${label}: ${stateText}`}
+        onClick={onClick}
+      >
+        <span className="quick-toggle-switch__track" aria-hidden="true">
+          <span className="quick-toggle-switch__thumb" />
+        </span>
+        <span className="quick-toggle-switch__state">{stateText}</span>
+      </button>
+    </div>
   );
 }
 
