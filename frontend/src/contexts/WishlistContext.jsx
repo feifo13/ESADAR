@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
 import { getPublicSessionToken } from '../lib/publicSession.js';
 import { useAuth } from './AuthContext.jsx';
@@ -18,24 +18,39 @@ export function WishlistProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pendingIds, setPendingIds] = useState([]);
+  const requestIdRef = useRef(0);
+
+  function getWishlistQuery() {
+    if (isAuthenticated) return '';
+    return `?sessionToken=${encodeURIComponent(getPublicSessionToken())}`;
+  }
 
   async function refresh() {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
     try {
       setLoading(true);
       setError('');
-      const response = await apiFetch(`/api/public/wishlist?sessionToken=${encodeURIComponent(getPublicSessionToken())}`);
+      const response = await apiFetch(`/api/public/wishlist${getWishlistQuery()}`);
+      if (requestId !== requestIdRef.current) return [];
       setItems(normalizeItems(response.wishlist?.items || []));
       return response.wishlist?.items || [];
     } catch (err) {
+      if (requestId !== requestIdRef.current) return [];
       setError(err.message || 'No pudimos cargar los guardados.');
       setItems([]);
       return [];
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }
 
   useEffect(() => {
+    requestIdRef.current += 1;
+    setItems([]);
+    setPendingIds([]);
+    setError('');
     void refresh();
   }, [isAuthenticated, user?.id]);
 
@@ -62,7 +77,7 @@ export function WishlistProvider({ children }) {
         method: 'POST',
         body: {
           articleId: numericId,
-          sessionToken: getPublicSessionToken(),
+          sessionToken: isAuthenticated ? null : getPublicSessionToken(),
         },
       });
       setItems(normalizeItems(response.wishlist?.items || []));
@@ -84,8 +99,11 @@ export function WishlistProvider({ children }) {
     setItems((current) => current.filter((item) => Number(item.articleId) !== numericId));
 
     try {
+      const query = isAuthenticated
+        ? ''
+        : `?sessionToken=${encodeURIComponent(getPublicSessionToken())}`;
       const response = await apiFetch(
-        `/api/public/wishlist/items/${numericId}?sessionToken=${encodeURIComponent(getPublicSessionToken())}`,
+        `/api/public/wishlist/items/${numericId}${query}`,
         { method: 'DELETE' },
       );
       setItems(normalizeItems(response.wishlist?.items || []));

@@ -133,7 +133,9 @@ async function getWishlistOwner({ sessionToken, actor, contact, generateSessionT
     return {
       customerId: customer.id,
       potentialCustomerId: null,
-      sessionToken: sessionToken || null,
+      // Los guardados autenticados pertenecen solo al usuario.
+      // No mezclamos por sessionToken para evitar mostrar/migrar guardados de otra cuenta.
+      sessionToken: null,
     };
   }
 

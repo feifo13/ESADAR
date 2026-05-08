@@ -158,7 +158,7 @@ export default function FeaturedMotionCards({ title, items = [] }) {
         </div>
       </div>
 
-      <div className="rail-scroller">
+      <div className="featured-motion-grid featured-motion-grid--all">
         {featuredItems.map((article, index) =>
           renderFeaturedItem(article, index),
         )}

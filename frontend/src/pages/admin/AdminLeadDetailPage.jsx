@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { apiFetch } from '../../lib/api.js';
@@ -15,11 +15,11 @@ const formatPreferences = (preferences = {}) => ([...(preferences.preferredCateg
 
 export default function AdminLeadDetailPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { notifyMobileStatus } = useMobileMenu();
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [statusForm, setStatusForm] = useState({ leadStatus: 'NEW', adminNotes: '' });
 
   useEffect(() => {
@@ -27,12 +27,18 @@ export default function AdminLeadDetailPage() {
     async function loadLead() {
       try {
         setLoading(true);
+        setError('');
         const response = await apiFetch(`/api/admin/leads/${id}`);
         if (ignore) return;
         setLead(response.lead || null);
         setStatusForm({ leadStatus: response.lead?.leadStatus || 'NEW', adminNotes: response.lead?.adminNotes || '' });
       } catch (err) {
-        if (!ignore) notifyMobileStatus({ type: 'error', icon: 'error', message: err.message || 'No se pudo cargar el lead.' });
+        if (!ignore) {
+          const message = err.message || 'No se pudo cargar el lead.';
+          setError(message);
+          setLead(null);
+          notifyMobileStatus({ type: 'error', icon: 'error', message });
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -60,10 +66,11 @@ export default function AdminLeadDetailPage() {
   return (
     <div className="container page-stack admin-page-shell admin-detail-page admin-lead-detail-page">
       <AdminToolbar />
-      <button type="button" className="ghost-button linklike account-order-detail-back" onClick={() => navigate(-1)}>Volver</button>
+      <Link className="ghost-button linklike account-order-detail-back" to="/admin/leads">Volver a leads</Link>
       <section className="section-card page-stack">
         {loading ? <p className="muted-copy">Cargando lead...</p> : null}
-        {!loading && !lead ? <p className="muted-copy">Lead no encontrado.</p> : null}
+        {!loading && error ? <p className="error-inline">{error}</p> : null}
+        {!loading && !error && !lead ? <p className="muted-copy">Lead no encontrado.</p> : null}
         {lead ? (<>
           <div className="section-heading section-heading-wrap"><div><p className="section-kicker">Lead</p><h1>{lead.firstName} {lead.lastName}</h1></div><StatusBadge status={lead.leadStatus} labels={LEAD_STATUS_LABELS} /></div>
           <div className="admin-detail-meta admin-detail-meta--grid">

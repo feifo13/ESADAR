@@ -12620,3 +12620,47 @@ textarea,
     grid-template-columns: minmax(0, 1fr) auto minmax(24px, auto);
   }
 }
+
+/* === ESADAR patch: destacados desktop/tablet con scroll lateral === */
+@media (min-width: 721px) {
+  .featured-motion-grid--all {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(360px, 460px);
+    grid-template-columns: none;
+    gap: clamp(18px, 2.2vw, 28px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+  }
+
+  .featured-motion-grid--all::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .featured-motion-grid--all::-webkit-scrollbar-track {
+    background: rgba(16, 43, 52, 0.08);
+  }
+
+  .featured-motion-grid--all::-webkit-scrollbar-thumb {
+    background: rgba(16, 43, 52, 0.28);
+  }
+
+  .featured-motion-grid--all .featured-motion-card {
+    min-height: clamp(520px, 44vw, 680px);
+    scroll-snap-align: start;
+  }
+
+  .featured-motion-grid--all .featured-motion-card__copy {
+    min-height: clamp(520px, 44vw, 680px);
+    padding: clamp(24px, 3vw, 36px);
+  }
+
+  .featured-motion-grid--all .featured-motion-card__copy h3 {
+    font-size: clamp(1.55rem, 2.6vw, 2.35rem);
+  }
+}

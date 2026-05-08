@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useOutletContext } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { apiFetch } from "../lib/api.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
@@ -360,7 +365,7 @@ export default function HomePage() {
     async function loadFeatured() {
       try {
         const response = await apiFetch(
-          "/api/public/articles?featured=true&sort=intake_desc&page=1",
+          "/api/public/articles?featured=true&sort=intake_desc&page=1&pageSize=100",
         );
         if (!ignore) setFeaturedItems(response.items || []);
       } catch {
@@ -420,11 +425,14 @@ export default function HomePage() {
         const response = await apiFetch(`/api/public/articles?${queryString}`);
         if (ignore) return;
 
-        const nextItems = (response.items || []).map((item) => (
+        const nextItems = (response.items || []).map((item) =>
           acceptedOffersByArticle[Number(item.id)]
-            ? { ...item, acceptedOffer: acceptedOffersByArticle[Number(item.id)] }
-            : item
-        ));
+            ? {
+                ...item,
+                acceptedOffer: acceptedOffersByArticle[Number(item.id)],
+              }
+            : item,
+        );
         const nextPagination = response.pagination || {
           page: 1,
           pageSize: 20,
@@ -475,8 +483,17 @@ export default function HomePage() {
   function applyFilters(nextFilters) {
     resetPaginationState();
     setFilters(nextFilters);
-    if (location.pathname === "/articles" && location.search && !nextFilters.search) {
-      navigate("/articles", { replace: true });
+
+    if (location.pathname === "/articles") {
+      const params = new URLSearchParams();
+      if (nextFilters.search) params.set("search", nextFilters.search);
+      const nextSearch = params.toString();
+      const nextUrl = nextSearch ? `/articles?${nextSearch}` : "/articles";
+      const currentUrl = `${location.pathname}${location.search}`;
+
+      if (currentUrl !== nextUrl) {
+        navigate(nextUrl, { replace: true });
+      }
     }
   }
 
@@ -510,7 +527,6 @@ export default function HomePage() {
   function resetNonSortFilters() {
     applyFilters({
       ...initialFilters,
-      search: filters.search,
       sort: filters.sort,
     });
     notifyMobileStatus({
@@ -681,7 +697,7 @@ export default function HomePage() {
       <section ref={featuredSectionRef}>
         <FeaturedMotionCards
           title="Destacados y descuentos"
-          items={featuredItems.slice(0, 8)}
+          items={featuredItems}
         />
       </section>
 
@@ -856,22 +872,6 @@ export default function HomePage() {
 
       <section className="container section-card lead-capture-card lead-capture-card--cta">
         <div className="lead-capture-copy">
-          <p className="section-kicker">Contacto</p>
-          <h2>¿Tenes una consulta o viste algo que te interesa?</h2>
-          <p className="muted-copy">
-            Escribinos por prendas, talles, ingresos nuevos o formas de entrega.
-          </p>
-        </div>
-        <Link
-          className="button button-primary lead-capture-cta-button"
-          to="/contact"
-        >
-          Contacto
-        </Link>
-      </section>
-
-      <section className="container section-card lead-capture-card lead-capture-card--cta">
-        <div className="lead-capture-copy">
           <p className="section-kicker">¡Ey!</p>
           <h2>¿Queres enterarte cuando entra ropa nueva?</h2>
           <p className="muted-copy">
@@ -884,6 +884,22 @@ export default function HomePage() {
           to="/avisos"
         >
           Quiero enterarme
+        </Link>
+      </section>
+
+      <section className="container section-card lead-capture-card lead-capture-card--cta">
+        <div className="lead-capture-copy">
+          <p className="section-kicker">Contacto</p>
+          <h2>¿Tenes una consulta o viste algo que te interesa?</h2>
+          <p className="muted-copy">
+            Escribinos por prendas, talles, ingresos nuevos o formas de entrega.
+          </p>
+        </div>
+        <Link
+          className="button button-primary lead-capture-cta-button"
+          to="/contact"
+        >
+          Contacto
         </Link>
       </section>
     </div>

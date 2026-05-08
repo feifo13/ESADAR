@@ -1,6 +1,6 @@
 import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
-import { getEmailLogoUrl } from "../mail.assets.js";
+import { getEmailLogoSrc, getEmailBrandGradientSrc } from "../mail.assets.js";
 
 export function renderEmailShell({
   subject,
@@ -16,7 +16,8 @@ export function renderEmailShell({
   const safePreheader = escapeHtml(preheader || "");
   const safeEyebrow = escapeHtml(eyebrow || "");
   const safeTitle = escapeHtml(title || "");
-  const logoUrl = escapeHtml(getEmailLogoUrl());
+  const logoUrl = escapeHtml(getEmailLogoSrc());
+  const brandGradientUrl = escapeHtml(getEmailBrandGradientSrc());
   const siteUrl = escapeHtml(env.publicSiteUrl || env.appOrigin || "");
 
   return `<!doctype html>
@@ -57,9 +58,15 @@ export function renderEmailShell({
               <td style="background:#ffffff; border:1px solid rgba(16,43,52,0.12); box-shadow:0 16px 40px rgba(0,34,68,0.08); overflow:hidden;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td style="height:6px; line-height:6px; font-size:6px; background:#008e97;" width="34%">&nbsp;</td>
-                    <td style="height:6px; line-height:6px; font-size:6px; background:#002244;" width="33%">&nbsp;</td>
-                    <td style="height:6px; line-height:6px; font-size:6px; background:#fc4c02;" width="33%">&nbsp;</td>
+                    <td style="background:#002244; font-size:0; line-height:0;">
+                      <img
+                        src="${brandGradientUrl}"
+                        width="640"
+                        height="8"
+                        alt=""
+                        style="display:block; width:100%; max-width:640px; height:8px; border:0; outline:none; text-decoration:none;"
+                      />
+                    </td>
                   </tr>
                 </table>
 

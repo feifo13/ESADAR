@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { env } from "../../config/env.js";
 import { AppError } from "../../utils/app-error.js";
+import { getDefaultEmailAttachments } from "./mail.assets.js";
 
 let cachedTransporter = null;
 
@@ -78,6 +79,7 @@ export async function sendBrandedEmail({
   requiredMessage,
   smtpErrorMessage,
   smtpErrorStatus = 502,
+  attachments = [],
 }) {
   const transporter = getMailTransporter({ requiredMessage });
   if (!transporter) return { skipped: true };
@@ -90,6 +92,7 @@ export async function sendBrandedEmail({
       subject,
       text,
       html,
+      attachments: [...getDefaultEmailAttachments(), ...attachments],
     });
 
     return { skipped: false, result };

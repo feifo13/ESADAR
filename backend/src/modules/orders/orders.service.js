@@ -9,7 +9,10 @@ import {
 } from "../../utils/listing.js";
 import { logAudit } from "../audit/audit.service.js";
 import { convertActiveCartForUser } from "../cart/cart.service.js";
-import { sendApprovedOrderEmail } from "./orders.mailer.js";
+import {
+  sendApprovedOrderEmail,
+  sendReceivedOrderPendingPaymentEmail,
+} from "./orders.mailer.js";
 import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
@@ -26,7 +29,7 @@ const ORDER_SORTS = {
 };
 
 export async function createOrder(input, actor, auditContext) {
-  return withTransaction(async (connection) => {
+  const order = await withTransaction(async (connection) => {
     const owner = await resolveOrderOwner(input, actor, connection);
     const shipping = input.shippingMethodId
       ? await getShippingMethod(input.shippingMethodId, connection)
@@ -371,6 +374,15 @@ export async function createOrder(input, actor, auditContext) {
 
     return order;
   });
+
+  sendReceivedOrderPendingPaymentEmail(order).catch((error) => {
+    console.warn(
+      "[orders] received order pending payment email failed",
+      error?.message || error,
+    );
+  });
+
+  return order;
 }
 
 export async function listOrders({ filters, pagination }) {

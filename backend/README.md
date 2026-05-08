@@ -105,3 +105,26 @@ git status
 git add .
 git commit -m "feat: add branded email templates and dynamic mailers"
 ```
+
+## ESADAR emails en local: logo y gradiente inline
+
+Para que Gmail muestre el logo y la banda `email-brand-gradient.png` aunque el backend esté corriendo en local, los mails de marca usan imágenes inline CID por defecto. Esto evita depender de URLs `localhost`, que Gmail no puede resolver desde fuera de tu PC.
+
+Assets usados por los templates:
+
+```text
+backend/public/assets/esadar-logo.png
+backend/public/assets/email-brand-gradient.png
+```
+
+El backend también sigue sirviéndolos en `/assets` para producción o pruebas con dominio público/ngrok.
+
+Variables opcionales:
+
+```env
+# Por defecto se usa CID inline. Para forzar URLs públicas externas:
+EMAIL_ASSETS_MODE=external
+PUBLIC_SITE_URL=https://tudominio.com
+EMAIL_LOGO_URL=https://tudominio.com/assets/esadar-logo.png
+EMAIL_BRAND_GRADIENT_URL=https://tudominio.com/assets/email-brand-gradient.png
+```
