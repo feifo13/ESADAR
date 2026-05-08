@@ -1322,7 +1322,6 @@ export default function AccountPage() {
                   </thead>
                   <tbody>
                     {offers.map((offer) => {
-                      console.log(offer);
                       const article = offer.article || {};
                       const displayStatus = getOfferDisplayStatus(offer);
                       const isAcceptedAvailable = displayStatus === "ACCEPTED";
