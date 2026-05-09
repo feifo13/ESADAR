@@ -5,6 +5,7 @@ import StatusBadge from '../../components/StatusBadge.jsx';
 import { apiFetch } from '../../lib/api.js';
 import { formatDate } from '../../lib/format.js';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
+import { focusValidationTarget } from '../../lib/validation.js';
 
 const CONTACT_STATUS_LABELS = {
   NEW: 'Nuevo',
@@ -83,6 +84,7 @@ export default function AdminContactMessageDetailPage() {
     }
 
     if (!replyText.trim()) {
+      focusValidationTarget('contact-reply-message', event.currentTarget);
       notifyError('Escribe una respuesta antes de enviar.');
       return;
     }
@@ -180,6 +182,8 @@ export default function AdminContactMessageDetailPage() {
                 <span>Mensaje de respuesta</span>
                 <textarea
                   className="input textarea admin-detail-form-textarea"
+                  name="contact-reply-message"
+                  data-validation-field="contact-reply-message"
                   value={replyText}
                   onChange={(event) => setReplyText(event.target.value)}
                   placeholder={

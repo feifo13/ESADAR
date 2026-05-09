@@ -51,11 +51,10 @@ export default function NewsletterPage() {
         ),
         getRequiredSelectValidationMessage(leadForm.preferredBrand, "la marca"),
         getRequiredSelectValidationMessage(leadForm.preferredSize, "el talle"),
-        getRequiredValidationMessage(leadForm.preferredColor, "el color"),
       );
       if (validationMessage) {
         setLeadError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage, { focusInvalidRoot: event.currentTarget });
         return;
       }
       setLeadSubmitting(true);
@@ -134,6 +133,7 @@ export default function NewsletterPage() {
               <span>Nombre</span>
               <input
                 className="input"
+                name="firstName"
                 value={leadForm.firstName}
                 onChange={(event) =>
                   updateLeadField("firstName", event.target.value)
@@ -146,6 +146,7 @@ export default function NewsletterPage() {
               <input
                 className="input"
                 type="email"
+                name="email"
                 value={leadForm.email}
                 onChange={(event) =>
                   updateLeadField("email", event.target.value)
@@ -157,6 +158,7 @@ export default function NewsletterPage() {
               <span>WhatsApp</span>
               <input
                 className="input"
+                name="phone"
                 value={leadForm.phone}
                 onChange={(event) =>
                   updateLeadField("phone", event.target.value)
@@ -168,6 +170,7 @@ export default function NewsletterPage() {
               <span>Instagram</span>
               <input
                 className="input"
+                name="instagram"
                 value={leadForm.instagram}
                 onChange={(event) =>
                   updateLeadField("instagram", event.target.value)
@@ -178,6 +181,7 @@ export default function NewsletterPage() {
               <span>Categoria</span>
               <select
                 className="input"
+                name="preferredCategory"
                 value={leadForm.preferredCategory}
                 onChange={(event) =>
                   updateLeadField("preferredCategory", event.target.value)
@@ -196,6 +200,7 @@ export default function NewsletterPage() {
               <span>Marca</span>
               <select
                 className="input"
+                name="preferredBrand"
                 value={leadForm.preferredBrand}
                 onChange={(event) =>
                   updateLeadField("preferredBrand", event.target.value)
@@ -214,6 +219,7 @@ export default function NewsletterPage() {
               <span>Talle</span>
               <select
                 className="input"
+                name="preferredSize"
                 value={leadForm.preferredSize}
                 onChange={(event) =>
                   updateLeadField("preferredSize", event.target.value)

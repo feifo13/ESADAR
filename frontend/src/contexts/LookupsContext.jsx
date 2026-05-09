@@ -10,11 +10,29 @@ import { apiFetch } from '../lib/api.js';
 
 const LookupsContext = createContext(null);
 
+const HIDDEN_PUBLIC_SHIPPING_METHOD_LABELS = new Set([
+  'retiro en punto acordado',
+]);
+
+function normalizeLookupLabel(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function isPublicShippingMethodVisible(option) {
+  return !HIDDEN_PUBLIC_SHIPPING_METHOD_LABELS.has(
+    normalizeLookupLabel(option?.label || option?.description),
+  );
+}
+
 const fallbackValue = {
   categoryOptions: CATEGORY_OPTIONS,
   brandOptions: BRAND_OPTIONS,
   sizeOptions: SIZE_OPTIONS,
-  shippingMethodOptions: SHIPPING_METHOD_OPTIONS,
+  shippingMethodOptions: SHIPPING_METHOD_OPTIONS.filter(isPublicShippingMethodVisible),
   paymentMethodOptions: PAYMENT_METHOD_OPTIONS,
   loaded: false,
   lookupError: '',
@@ -46,12 +64,14 @@ function mapSizeOptions(items) {
 }
 
 function mapShippingMethodOptions(items) {
-  return items.map((item) => ({
-    id: item.id,
-    label: item.description,
-    cost: Number(item.baseCost || 0),
-    instructions: item.instructions || '',
-  }));
+  return items
+    .map((item) => ({
+      id: item.id,
+      label: item.description,
+      cost: Number(item.baseCost || 0),
+      instructions: item.instructions || '',
+    }))
+    .filter(isPublicShippingMethodVisible);
 }
 
 function mapPaymentMethodOptions(items) {

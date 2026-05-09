@@ -5,6 +5,7 @@ import SmartImage from "./SmartImage.jsx";
 import ScrollRailControls from "./ScrollRailControls.jsx";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
+import { useNotification } from "../contexts/NotificationContext.jsx";
 import { formatCurrency, getDiscountedPrice } from "../lib/format.js";
 
 function useMediaQuery(query) {
@@ -30,10 +31,28 @@ export default function FeaturedMotionCards({ title, items = [] }) {
   const isDesktop = useMediaQuery("(min-width: 961px)");
   const featuredRailRef = useRef(null);
   const { isSaved, toggleItem, pendingIds } = useWishlist();
+  const { notifySuccess, notifyError } = useNotification();
   // const featuredItems = isDesktop ? items.slice(0, 3) : items.slice(0, 4);
   const featuredItems = items;
 
   if (!featuredItems.length) return null;
+
+  async function handleWishlistToggle(article, optimisticWishlistItem, wasSaved) {
+    const result = await toggleItem(article, optimisticWishlistItem);
+
+    if (!result.ok) {
+      notifyError(
+        result.error?.message || "No pudimos actualizar tus guardados.",
+      );
+      return;
+    }
+
+    notifySuccess(
+      wasSaved
+        ? "Quitamos la prenda de tus guardados."
+        : "La prenda quedo guardada.",
+    );
+  }
 
   function renderFeaturedItem(article, index) {
     const price = getDiscountedPrice(article);
@@ -124,7 +143,9 @@ export default function FeaturedMotionCards({ title, items = [] }) {
           className="featured-motion-card__favorite wishlist-heart-button--bare"
           labelActive="Quitar de guardados"
           labelInactive="Guardar articulo"
-          onToggle={() => void toggleItem(article, optimisticWishlistItem)}
+          onToggle={() =>
+            void handleWishlistToggle(article, optimisticWishlistItem, saved)
+          }
         />
       </motion.div>
     );

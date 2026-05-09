@@ -25,7 +25,7 @@ export default function LoginPage() {
       );
       if (validationMessage) {
         setError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage, { focusInvalidRoot: event.currentTarget });
         return;
       }
       setSubmitting(true);
@@ -53,6 +53,7 @@ export default function LoginPage() {
           <input
             className="input"
             type="email"
+            name="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -64,6 +65,8 @@ export default function LoginPage() {
           <input
             className="input"
             type="password"
+            name="password"
+            minLength="6"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required

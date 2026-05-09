@@ -62,6 +62,8 @@ export default function BulkArticleFormBlock({
                 <span>Titulo *</span>
                 <input
                   className="input"
+                  name={`bulk-title-${article.id}`}
+                  data-validation-field={`bulk-title-${article.id}`}
                   value={article.title}
                   onChange={(event) => onChange("title", event.target.value)}
                 />
@@ -70,6 +72,8 @@ export default function BulkArticleFormBlock({
                 <span>Precio de venta *</span>
                 <input
                   className="input"
+                  name={`bulk-sale-price-${article.id}`}
+                  data-validation-field={`bulk-sale-price-${article.id}`}
                   type="number"
                   min="0"
                   step="0.01"
@@ -83,6 +87,8 @@ export default function BulkArticleFormBlock({
                 <span>Cantidad</span>
                 <input
                   className="input"
+                  name={`bulk-quantity-${article.id}`}
+                  data-validation-field={`bulk-quantity-${article.id}`}
                   type="number"
                   min="1"
                   step="1"

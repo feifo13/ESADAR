@@ -236,16 +236,22 @@ export default function CheckoutPage() {
     navigate,
   ]);
 
+  function getGuestBuyerValidationIssue() {
+    const checks = [
+      { target: "checkout-guest-first-name", message: getRequiredValidationMessage(guest.firstName, "el nombre del comprador") },
+      { target: "checkout-guest-last-name", message: getRequiredValidationMessage(guest.lastName, "el apellido del comprador") },
+      { target: "checkout-guest-birth-date", message: getRequiredValidationMessage(guest.birthDate, "la fecha de nacimiento") },
+      { target: "checkout-guest-phone", message: getRequiredValidationMessage(guest.phone, "el teléfono") },
+      { target: "checkout-guest-address", message: getRequiredValidationMessage(guest.address, "la dirección") },
+      { target: "checkout-guest-email", message: getRequiredValidationMessage(guest.email, "el email") },
+      { target: "checkout-guest-email", message: getEmailValidationMessage(guest.email) },
+    ];
+
+    return checks.find((check) => Boolean(check.message)) || null;
+  }
+
   function getGuestBuyerValidationMessage() {
-    return firstValidationMessage(
-      getRequiredValidationMessage(guest.firstName, "el nombre del comprador"),
-      getRequiredValidationMessage(guest.lastName, "el apellido del comprador"),
-      getRequiredValidationMessage(guest.birthDate, "la fecha de nacimiento"),
-      getRequiredValidationMessage(guest.phone, "el teléfono"),
-      getRequiredValidationMessage(guest.address, "la dirección"),
-      getRequiredValidationMessage(guest.email, "el email"),
-      getEmailValidationMessage(guest.email),
-    );
+    return getGuestBuyerValidationIssue()?.message || "";
   }
 
   function goToStep(index) {
@@ -253,13 +259,13 @@ export default function CheckoutPage() {
     navigate(`/checkout/${steps[index].key}`);
   }
 
-  function showCheckoutMessage(type, message) {
+  function showCheckoutMessage(type, message, options = {}) {
     if (type === "error") {
       setError(message);
     } else {
       setSuccess(message);
     }
-    notifyFormStatus(notifyMobileStatus, type, message);
+    notifyFormStatus(notifyMobileStatus, type, message, options);
   }
 
   function validateCurrentStep() {
@@ -271,9 +277,9 @@ export default function CheckoutPage() {
     }
 
     if (currentStepKey === "comprador" && !isAuthenticated) {
-      const validationMessage = getGuestBuyerValidationMessage();
-      if (validationMessage) {
-        showCheckoutMessage("error", validationMessage);
+      const validationIssue = getGuestBuyerValidationIssue();
+      if (validationIssue) {
+        showCheckoutMessage("error", validationIssue.message, { target: validationIssue.target });
         return false;
       }
     }
@@ -318,9 +324,9 @@ export default function CheckoutPage() {
     }
 
     if (!isAuthenticated) {
-      const validationMessage = getGuestBuyerValidationMessage();
-      if (validationMessage) {
-        showCheckoutMessage("error", validationMessage);
+      const validationIssue = getGuestBuyerValidationIssue();
+      if (validationIssue) {
+        showCheckoutMessage("error", validationIssue.message, { target: validationIssue.target });
         return;
       }
     }
@@ -596,6 +602,8 @@ export default function CheckoutPage() {
             <span>Nombre</span>
             <input
               className="input"
+              name="firstName"
+              data-validation-field="checkout-guest-first-name"
               value={guest.firstName}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -610,6 +618,8 @@ export default function CheckoutPage() {
             <span>Apellido</span>
             <input
               className="input"
+              name="lastName"
+              data-validation-field="checkout-guest-last-name"
               value={guest.lastName}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -625,6 +635,8 @@ export default function CheckoutPage() {
             <input
               className="input"
               type="date"
+              name="birthDate"
+              data-validation-field="checkout-guest-birth-date"
               value={guest.birthDate}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -639,6 +651,8 @@ export default function CheckoutPage() {
             <span>Teléfono</span>
             <input
               className="input"
+              name="phone"
+              data-validation-field="checkout-guest-phone"
               value={guest.phone}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -653,6 +667,8 @@ export default function CheckoutPage() {
             <span>Dirección</span>
             <input
               className="input"
+              name="address"
+              data-validation-field="checkout-guest-address"
               value={guest.address}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -667,6 +683,7 @@ export default function CheckoutPage() {
             <span>Instagram</span>
             <input
               className="input"
+              name="instagram"
               value={guest.instagram}
               onChange={(event) =>
                 setGuest((current) => ({
@@ -681,6 +698,8 @@ export default function CheckoutPage() {
             <input
               className="input"
               type="email"
+              name="email"
+              data-validation-field="checkout-guest-email"
               value={guest.email}
               onChange={(event) =>
                 setGuest((current) => ({

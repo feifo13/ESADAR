@@ -501,36 +501,45 @@ export default function AccountPage() {
     });
   }
 
+  function getProfileValidationIssue() {
+    const checks = [
+      { target: "account-first-name", message: getRequiredValidationMessage(form.firstName, "el nombre") },
+      { target: "account-first-name", message: getMinLengthValidationMessage(form.firstName, 2, "el nombre") },
+      { target: "account-last-name", message: getRequiredValidationMessage(form.lastName, "el apellido") },
+      { target: "account-last-name", message: getMinLengthValidationMessage(form.lastName, 2, "el apellido") },
+      { target: "account-email", message: getRequiredValidationMessage(form.email, "el email") },
+      { target: "account-email", message: getEmailValidationMessage(form.email) },
+      { target: "account-phone", message: getRequiredValidationMessage(form.phone, "el teléfono") },
+      { target: "account-birth-date", message: getRequiredValidationMessage(form.birthDate, "la fecha de nacimiento") },
+      {
+        target: "account-address-line",
+        message: getRequiredValidationMessage(form.defaultAddress.addressLine, "la dirección de envío"),
+      },
+      { target: "account-city", message: getRequiredValidationMessage(form.defaultAddress.city, "la ciudad") },
+      {
+        target: "account-state",
+        message: getRequiredValidationMessage(form.defaultAddress.state, "el departamento"),
+      },
+      {
+        target: "account-postal-code",
+        message: getRequiredValidationMessage(form.defaultAddress.postalCode, "el código postal"),
+      },
+    ];
+
+    return checks.find((check) => Boolean(check.message)) || null;
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
     try {
-      const validationMessage = firstValidationMessage(
-        getRequiredValidationMessage(form.firstName, "el nombre"),
-        getMinLengthValidationMessage(form.firstName, 2, "el nombre"),
-        getRequiredValidationMessage(form.lastName, "el apellido"),
-        getMinLengthValidationMessage(form.lastName, 2, "el apellido"),
-        getRequiredValidationMessage(form.email, "el email"),
-        getEmailValidationMessage(form.email),
-        getRequiredValidationMessage(form.phone, "el teléfono"),
-        getRequiredValidationMessage(form.birthDate, "la fecha de nacimiento"),
-        getRequiredValidationMessage(
-          form.defaultAddress.addressLine,
-          "la dirección de envío",
-        ),
-        getRequiredValidationMessage(form.defaultAddress.city, "la ciudad"),
-        getRequiredValidationMessage(
-          form.defaultAddress.state,
-          "el departamento",
-        ),
-        getRequiredValidationMessage(
-          form.defaultAddress.postalCode,
-          "el código postal",
-        ),
-      );
-      if (validationMessage) {
-        setProfileError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+      const validationIssue = getProfileValidationIssue();
+      if (validationIssue) {
+        setProfileError(validationIssue.message);
+        notifyFormStatus(notifyMobileStatus, "error", validationIssue.message, {
+          root: event.currentTarget,
+          target: validationIssue.target,
+        });
         return;
       }
 
@@ -664,6 +673,8 @@ export default function AccountPage() {
                 <span>Nombre</span>
                 <input
                   className="input"
+                  name="firstName"
+                  data-validation-field="account-first-name"
                   value={form.firstName}
                   onChange={(event) =>
                     updateField("firstName", event.target.value)
@@ -675,6 +686,8 @@ export default function AccountPage() {
                 <span>Apellido</span>
                 <input
                   className="input"
+                  name="lastName"
+                  data-validation-field="account-last-name"
                   value={form.lastName}
                   onChange={(event) =>
                     updateField("lastName", event.target.value)
@@ -687,6 +700,8 @@ export default function AccountPage() {
                 <input
                   className="input"
                   type="email"
+                  name="email"
+                  data-validation-field="account-email"
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   required
@@ -696,6 +711,8 @@ export default function AccountPage() {
                 <span>Telefono / WhatsApp</span>
                 <input
                   className="input"
+                  name="phone"
+                  data-validation-field="account-phone"
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   required
@@ -705,6 +722,7 @@ export default function AccountPage() {
                 <span>Instagram</span>
                 <input
                   className="input"
+                  name="instagram"
                   value={form.instagram}
                   onChange={(event) =>
                     updateField("instagram", event.target.value)
@@ -716,6 +734,8 @@ export default function AccountPage() {
                 <input
                   className="input"
                   type="date"
+                  name="birthDate"
+                  data-validation-field="account-birth-date"
                   value={form.birthDate}
                   onChange={(event) =>
                     updateField("birthDate", event.target.value)
@@ -727,6 +747,8 @@ export default function AccountPage() {
                 <span>Direccion de envio</span>
                 <input
                   className="input"
+                  name="addressLine"
+                  data-validation-field="account-address-line"
                   value={form.defaultAddress.addressLine}
                   onChange={(event) =>
                     updateAddressField("addressLine", event.target.value)
@@ -738,6 +760,8 @@ export default function AccountPage() {
                 <span>Ciudad</span>
                 <input
                   className="input"
+                  name="city"
+                  data-validation-field="account-city"
                   value={form.defaultAddress.city}
                   onChange={(event) =>
                     updateAddressField("city", event.target.value)
@@ -749,6 +773,8 @@ export default function AccountPage() {
                 <span>Departamento</span>
                 <input
                   className="input"
+                  name="state"
+                  data-validation-field="account-state"
                   value={form.defaultAddress.state}
                   onChange={(event) =>
                     updateAddressField("state", event.target.value)
@@ -760,6 +786,8 @@ export default function AccountPage() {
                 <span>Codigo postal</span>
                 <input
                   className="input"
+                  name="postalCode"
+                  data-validation-field="account-postal-code"
                   value={form.defaultAddress.postalCode}
                   onChange={(event) =>
                     updateAddressField("postalCode", event.target.value)
@@ -986,16 +1014,17 @@ export default function AccountPage() {
                         >
                           <EyeIcon />
                         </Link>,
-                        <button
-                          type="button"
-                          className="icon-action-button"
-                          aria-label={`Agregar ${item.title} al carrito`}
-                          title="Agregar al carrito"
-                          disabled={!isAvailable}
-                          onClick={(event) => addArticleToCart(item, event)}
-                        >
-                          <CartIcon />
-                        </button>,
+                        isAvailable ? (
+                          <button
+                            type="button"
+                            className="icon-action-button"
+                            aria-label={`Agregar ${item.title} al carrito`}
+                            title="Agregar al carrito"
+                            onClick={(event) => addArticleToCart(item, event)}
+                          >
+                            <CartIcon />
+                          </button>
+                        ) : null,
                       ]}
                     />
                   );
@@ -1113,18 +1142,19 @@ export default function AccountPage() {
                               >
                                 <EyeIcon />
                               </Link>
-                              <button
-                                type="button"
-                                className="icon-action-button"
-                                aria-label={`Agregar ${item.title} al carrito`}
-                                title="Agregar al carrito"
-                                disabled={!isAvailable}
-                                onClick={(event) =>
-                                  addArticleToCart(item, event)
-                                }
-                              >
-                                <CartIcon />
-                              </button>
+                              {isAvailable ? (
+                                <button
+                                  type="button"
+                                  className="icon-action-button"
+                                  aria-label={`Agregar ${item.title} al carrito`}
+                                  title="Agregar al carrito"
+                                  onClick={(event) =>
+                                    addArticleToCart(item, event)
+                                  }
+                                >
+                                  <CartIcon />
+                                </button>
+                              ) : null}
                             </div>
                           </td>
                         </tr>

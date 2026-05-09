@@ -12,7 +12,7 @@ import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import { articlePath } from "../lib/routes.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import {
-  firstValidationMessage,
+  focusValidationTarget,
   getAtLeastOneContactValidationMessage,
   getEmailValidationMessage,
   getPositiveNumberValidationMessage,
@@ -93,29 +93,32 @@ export default function OfferPage() {
     if (!article) return;
 
     try {
-      const validationMessage = firstValidationMessage(
-        !isAuthenticated
-          ? getRequiredValidationMessage(guest.firstName, "el nombre")
-          : "",
-        !isAuthenticated
-          ? getRequiredValidationMessage(guest.lastName, "el apellido")
-          : "",
-        !isAuthenticated
-          ? getAtLeastOneContactValidationMessage(
-              {
-                email: guest.email,
-                phone: guest.phone,
-                instagram: guest.instagram,
-              },
-              "un email, telefono o Instagram",
-            )
-          : "",
-        !isAuthenticated ? getEmailValidationMessage(guest.email) : "",
-        getPositiveNumberValidationMessage(offer, "una oferta"),
-      );
-      if (validationMessage) {
-        setError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+      const contactValidationMessage = !isAuthenticated
+        ? getAtLeastOneContactValidationMessage(
+            {
+              email: guest.email,
+              phone: guest.phone,
+              instagram: guest.instagram,
+            },
+            "un email, telefono o Instagram",
+          )
+        : "";
+
+      const validationChecks = [
+        { target: "offer-first-name", message: !isAuthenticated ? getRequiredValidationMessage(guest.firstName, "el nombre") : "" },
+        { target: "offer-last-name", message: !isAuthenticated ? getRequiredValidationMessage(guest.lastName, "el apellido") : "" },
+        {
+          target: guest.email ? "offer-email" : guest.phone ? "offer-phone" : "offer-email",
+          message: contactValidationMessage,
+        },
+        { target: "offer-email", message: !isAuthenticated ? getEmailValidationMessage(guest.email) : "" },
+        { target: "offer-amount", message: getPositiveNumberValidationMessage(offer, "una oferta") },
+      ];
+      const validationIssue = validationChecks.find((check) => Boolean(check.message));
+      if (validationIssue) {
+        setError(validationIssue.message);
+        notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
+        focusValidationTarget(validationIssue.target);
         return;
       }
 
@@ -281,6 +284,8 @@ export default function OfferPage() {
                   <span>Nombre</span>
                   <input
                     className="input"
+                    name="firstName"
+                    data-validation-field="offer-first-name"
                     value={guest.firstName}
                     onChange={(event) =>
                       updateGuest("firstName", event.target.value)
@@ -292,6 +297,8 @@ export default function OfferPage() {
                   <span>Apellido</span>
                   <input
                     className="input"
+                    name="lastName"
+                    data-validation-field="offer-last-name"
                     value={guest.lastName}
                     onChange={(event) =>
                       updateGuest("lastName", event.target.value)
@@ -304,6 +311,8 @@ export default function OfferPage() {
                   <input
                     className="input"
                     type="email"
+                    name="email"
+                    data-validation-field="offer-email"
                     value={guest.email}
                     onChange={(event) =>
                       updateGuest("email", event.target.value)
@@ -314,6 +323,8 @@ export default function OfferPage() {
                   <span>Telefono</span>
                   <input
                     className="input"
+                    name="phone"
+                    data-validation-field="offer-phone"
                     value={guest.phone}
                     onChange={(event) =>
                       updateGuest("phone", event.target.value)
@@ -324,6 +335,8 @@ export default function OfferPage() {
                   <span>Instagram</span>
                   <input
                     className="input"
+                    name="instagram"
+                    data-validation-field="offer-instagram"
                     value={guest.instagram}
                     onChange={(event) =>
                       updateGuest("instagram", event.target.value)
@@ -339,6 +352,8 @@ export default function OfferPage() {
                 type="number"
                 min="1"
                 className="input"
+                name="offer"
+                data-validation-field="offer-amount"
                 value={offer}
                 onChange={(event) => setOffer(event.target.value)}
                 placeholder="Ej: 1200"

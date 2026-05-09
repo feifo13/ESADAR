@@ -7,6 +7,7 @@ import { IMAGE_ROLE_DEFINITIONS, createEmptyImageState } from '../../components/
 import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiFetch } from '../../lib/api.js';
+import { focusFieldAfterRender } from '../../lib/validation.js';
 
 function createEmptyArticle() {
   return {
@@ -151,7 +152,54 @@ export default function BulkArticleCreatePage() {
     setArticles((current) => (current.length === 1 ? current : current.filter((article) => article.id !== articleId)));
   }
 
+  function validateArticlesForSubmit() {
+    for (const [index, article] of articles.entries()) {
+      const rowLabel = `Articulo ${index + 1}`;
+
+      if (!String(article.title || '').trim()) {
+        return {
+          articleId: article.id,
+          target: `bulk-title-${article.id}`,
+          message: `${rowLabel}: completa el titulo.`,
+        };
+      }
+
+      const salePrice = Number(article.salePrice);
+      if (String(article.salePrice || '').trim() === '' || !Number.isFinite(salePrice) || salePrice <= 0) {
+        return {
+          articleId: article.id,
+          target: `bulk-sale-price-${article.id}`,
+          message: `${rowLabel}: ingresa un precio de venta mayor a 0.`,
+        };
+      }
+
+      const quantityTotal = Number(article.quantityTotal);
+      if (String(article.quantityTotal || '').trim() === '' || !Number.isInteger(quantityTotal) || quantityTotal < 1) {
+        return {
+          articleId: article.id,
+          target: `bulk-quantity-${article.id}`,
+          message: `${rowLabel}: ingresa una cantidad mayor o igual a 1.`,
+        };
+      }
+    }
+
+    return null;
+  }
+
   async function handleSubmitAll() {
+    const validationIssue = validateArticlesForSubmit();
+    if (validationIssue) {
+      setArticles((current) => current.map((article) => (
+        article.id === validationIssue.articleId
+          ? { ...article, expanded: true }
+          : article
+      )));
+      setError(validationIssue.message);
+      notifyError(validationIssue.message);
+      focusFieldAfterRender(validationIssue.target);
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');

@@ -10,7 +10,7 @@ import BulkArticleImageChecklist, {
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
-import { notifyFormStatus } from "../../lib/validation.js";
+import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
 
 const FORM_STEPS = [
   { key: "main", label: "Paso 1", title: "Datos principales" },
@@ -335,22 +335,38 @@ export default function AdminArticleFormPage() {
 
   function validateStep(stepIndex) {
     if (stepIndex === 0 && !normalizeLabel(form.title)) {
-      return "El nombre es obligatorio para continuar.";
+      return {
+        message: "El nombre es obligatorio para continuar.",
+        target: "article-title",
+        stepIndex,
+      };
     }
 
     if (
       stepIndex === 1 &&
       (form.salePrice === "" || Number(form.salePrice) < 0)
     ) {
-      return "El precio de venta es obligatorio para continuar.";
+      return {
+        message: "El precio de venta es obligatorio para continuar.",
+        target: "article-sale-price",
+        stepIndex,
+      };
     }
 
     if (stepIndex === 1 && Number(form.quantityAvailable || 0) < 0) {
-      return "El stock disponible no puede ser negativo.";
+      return {
+        message: "El stock disponible no puede ser negativo.",
+        target: "article-quantity-available",
+        stepIndex,
+      };
     }
 
     if (stepIndex === 1 && Number(form.quantityTotal || 0) < 0) {
-      return "El stock total no puede ser negativo.";
+      return {
+        message: "El stock total no puede ser negativo.",
+        target: "article-quantity-total",
+        stepIndex,
+      };
     }
 
     if (
@@ -358,17 +374,23 @@ export default function AdminArticleFormPage() {
       form.status === "ACTIVE" &&
       Number(form.quantityAvailable || 0) <= 0
     ) {
-      return "No se puede publicar como activo un articulo sin stock disponible.";
+      return {
+        message: "No se puede publicar como activo un articulo sin stock disponible.",
+        target: "article-quantity-available",
+        stepIndex,
+      };
     }
 
-    return "";
+    return null;
   }
 
   function goToStep(stepIndex) {
-    const validationMessage = validateStep(activeStep);
-    if (stepIndex > activeStep && validationMessage) {
-      setError(validationMessage);
-      notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+    const validationIssue = validateStep(activeStep);
+    if (stepIndex > activeStep && validationIssue) {
+      setError(validationIssue.message);
+      notifyFormStatus(notifyMobileStatus, "error", validationIssue.message, {
+        target: validationIssue.target,
+      });
       return;
     }
 
@@ -379,10 +401,12 @@ export default function AdminArticleFormPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const validationMessage = validateStep(0) || validateStep(1);
-    if (validationMessage) {
-      setError(validationMessage);
-      notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+    const validationIssue = validateStep(0) || validateStep(1);
+    if (validationIssue) {
+      setError(validationIssue.message);
+      setActiveStep(validationIssue.stepIndex);
+      notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
+      focusFieldAfterRender(validationIssue.target, event.currentTarget);
       return;
     }
 
@@ -741,6 +765,8 @@ export default function AdminArticleFormPage() {
                 <span>Nombre</span>
                 <input
                   className="input"
+                  name="article-title"
+                  data-validation-field="article-title"
                   value={form.title}
                   onChange={(event) => update("title", event.target.value)}
                   required
@@ -907,6 +933,8 @@ export default function AdminArticleFormPage() {
                 <span>Precio de venta</span>
                 <input
                   className="input"
+                  name="article-sale-price"
+                  data-validation-field="article-sale-price"
                   type="number"
                   min="0"
                   value={form.salePrice}
@@ -919,6 +947,8 @@ export default function AdminArticleFormPage() {
                 <span>Stock total</span>
                 <input
                   className="input"
+                  name="article-quantity-total"
+                  data-validation-field="article-quantity-total"
                   type="number"
                   min="0"
                   value={form.quantityTotal}
@@ -932,6 +962,8 @@ export default function AdminArticleFormPage() {
                 <span>Stock disponible</span>
                 <input
                   className="input"
+                  name="article-quantity-available"
+                  data-validation-field="article-quantity-available"
                   type="number"
                   min="0"
                   value={form.quantityAvailable}

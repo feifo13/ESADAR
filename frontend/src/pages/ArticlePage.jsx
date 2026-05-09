@@ -30,7 +30,7 @@ import {
 } from "../lib/seo.js";
 import { getPublicSessionToken } from "../lib/publicSession.js";
 import {
-  firstValidationMessage,
+  focusValidationTarget,
   getEmailValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
@@ -337,16 +337,18 @@ export default function ArticlePage() {
     event.preventDefault();
 
     try {
-      const validationMessage = firstValidationMessage(
-        String(alertForm.firstName || "").trim() ? "" : "Completa nombre.",
-        String(alertForm.email || "").trim() ? "" : "Completa email.",
-        String(alertForm.phone || "").trim() ? "" : "Completa WhatsApp.",
-        getEmailValidationMessage(alertForm.email),
-      );
-      if (validationMessage) {
-        setAlertError(validationMessage);
+      const validationChecks = [
+        { target: "stock-alert-first-name", message: String(alertForm.firstName || "").trim() ? "" : "Completa nombre." },
+        { target: "stock-alert-email", message: String(alertForm.email || "").trim() ? "" : "Completa email." },
+        { target: "stock-alert-phone", message: String(alertForm.phone || "").trim() ? "" : "Completa WhatsApp." },
+        { target: "stock-alert-email", message: getEmailValidationMessage(alertForm.email) },
+      ];
+      const validationIssue = validationChecks.find((check) => Boolean(check.message));
+      if (validationIssue) {
+        setAlertError(validationIssue.message);
+        focusValidationTarget(validationIssue.target, event.currentTarget);
         if (isMobileViewport()) {
-          notifyFormStatus(notifyMobileStatus, "error", validationMessage);
+          notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
         }
         return;
       }
@@ -413,6 +415,8 @@ export default function ArticlePage() {
             <input
               ref={inline ? stockAlertFirstFieldRef : undefined}
               className="input"
+              name="firstName"
+              data-validation-field="stock-alert-first-name"
               value={alertForm.firstName}
               required
               onChange={(event) =>
@@ -428,6 +432,8 @@ export default function ArticlePage() {
             <input
               className="input"
               type="email"
+              name="email"
+              data-validation-field="stock-alert-email"
               value={alertForm.email}
               required
               onChange={(event) =>
@@ -442,6 +448,8 @@ export default function ArticlePage() {
             <span>WhatsApp</span>
             <input
               className="input"
+              name="phone"
+              data-validation-field="stock-alert-phone"
               value={alertForm.phone}
               required
               onChange={(event) =>
@@ -456,6 +464,7 @@ export default function ArticlePage() {
             <span>Instagram</span>
             <input
               className="input"
+              name="instagram"
               value={alertForm.instagram}
               onChange={(event) =>
                 setAlertForm((current) => ({

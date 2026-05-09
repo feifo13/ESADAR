@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
     if (validationMessage) {
       setError(validationMessage);
       setMessage('');
-      notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+      notifyFormStatus(notifyMobileStatus, 'error', validationMessage, { focusInvalidRoot: event.currentTarget });
       return;
     }
 
@@ -66,6 +66,7 @@ export default function ForgotPasswordPage() {
           <input
             className="input"
             type="email"
+            name="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"

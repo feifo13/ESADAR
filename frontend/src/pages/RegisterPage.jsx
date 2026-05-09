@@ -45,7 +45,7 @@ export default function RegisterPage() {
       );
       if (validationMessage) {
         setError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+        notifyFormStatus(notifyMobileStatus, 'error', validationMessage, { focusInvalidRoot: event.currentTarget });
         return;
       }
       setSubmitting(true);
@@ -76,35 +76,35 @@ export default function RegisterPage() {
         <div className="form-grid-two">
           <label className="field-group">
             <span>Nombre</span>
-            <input className="input" value={form.firstName} onChange={(event) => update('firstName', event.target.value)} required />
+            <input className="input" name="firstName" value={form.firstName} onChange={(event) => update('firstName', event.target.value)} minLength="2" required />
           </label>
           <label className="field-group">
             <span>Apellido</span>
-            <input className="input" value={form.lastName} onChange={(event) => update('lastName', event.target.value)} required />
+            <input className="input" name="lastName" value={form.lastName} onChange={(event) => update('lastName', event.target.value)} minLength="2" required />
           </label>
           <label className="field-group">
             <span>Fecha de nacimiento</span>
-            <input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} required />
+            <input className="input" type="date" name="birthDate" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} required />
           </label>
           <label className="field-group">
             <span>Teléfono</span>
-            <input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} required />
+            <input className="input" name="phone" value={form.phone} onChange={(event) => update('phone', event.target.value)} required />
           </label>
           <label className="field-group form-grid-span-two">
             <span>Dirección</span>
-            <input className="input" value={form.address} onChange={(event) => update('address', event.target.value)} required />
+            <input className="input" name="address" value={form.address} onChange={(event) => update('address', event.target.value)} required />
           </label>
           <label className="field-group">
             <span>Instagram</span>
-            <input className="input" value={form.instagram} onChange={(event) => update('instagram', event.target.value)} />
+            <input className="input" name="instagram" value={form.instagram} onChange={(event) => update('instagram', event.target.value)} />
           </label>
           <label className="field-group">
             <span>Email</span>
-            <input className="input" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} required />
+            <input className="input" type="email" name="email" value={form.email} onChange={(event) => update('email', event.target.value)} required />
           </label>
           <label className="field-group form-grid-span-two">
             <span>Password</span>
-            <input className="input" type="password" value={form.password} onChange={(event) => update('password', event.target.value)} required />
+            <input className="input" type="password" name="password" value={form.password} onChange={(event) => update('password', event.target.value)} minLength="6" required />
           </label>
         </div>
 

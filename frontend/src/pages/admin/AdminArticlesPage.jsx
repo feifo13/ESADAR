@@ -13,7 +13,7 @@ import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
-import { notifyFormStatus } from "../../lib/validation.js";
+import { focusValidationTarget, notifyFormStatus } from "../../lib/validation.js";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -237,6 +237,7 @@ export default function AdminArticlesPage() {
         "Selecciona un archivo CSV o XLSX antes de previsualizar.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      focusValidationTarget("articles-import-file");
       return;
     }
 
@@ -272,6 +273,7 @@ export default function AdminArticlesPage() {
         "Selecciona un archivo CSV o XLSX antes de importar.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+      focusValidationTarget("articles-import-file");
       return;
     }
 
@@ -713,6 +715,8 @@ export default function AdminArticlesPage() {
                 <input
                   key={fileInputKey}
                   className="input"
+                  name="articles-import-file"
+                  data-validation-field="articles-import-file"
                   type="file"
                   accept=".csv,.xlsx,.xls"
                   onChange={(event) => {

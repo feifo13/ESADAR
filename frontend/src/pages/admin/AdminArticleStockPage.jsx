@@ -5,6 +5,7 @@ import SmartImage from "../../components/SmartImage.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import { focusValidationTarget } from "../../lib/validation.js";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -75,6 +76,7 @@ export default function AdminArticleStockPage() {
     const quantityAvailable = Number(form.quantityAvailable);
     if (!Number.isInteger(quantityAvailable) || quantityAvailable < 0) {
       const errorMessage = "El nuevo stock disponible debe ser un numero entero mayor o igual a cero.";
+      focusValidationTarget("stock-quantity-available", event.currentTarget);
       notifyError(errorMessage);
       return;
     }
@@ -187,6 +189,8 @@ export default function AdminArticleStockPage() {
                   <span>Nuevo stock disponible</span>
                   <input
                     className="input"
+                    name="stock-quantity-available"
+                    data-validation-field="stock-quantity-available"
                     type="number"
                     min="0"
                     value={form.quantityAvailable}

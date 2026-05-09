@@ -95,9 +95,11 @@ export default function ArticleCard({
       return;
     }
 
-    if (!wasSaved) {
-      notifySuccess("La prenda quedo guardada.");
-    }
+    notifySuccess(
+      wasSaved
+        ? "Quitamos la prenda de tus guardados."
+        : "La prenda quedo guardada.",
+    );
   }
 
   function getCartErrorMessage(result) {

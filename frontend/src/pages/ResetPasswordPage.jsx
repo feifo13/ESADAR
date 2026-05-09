@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
     if (validationMessage) {
       setError(validationMessage);
       setMessage('');
-      notifyFormStatus(notifyMobileStatus, 'error', validationMessage);
+      notifyFormStatus(notifyMobileStatus, 'error', validationMessage, { focusInvalidRoot: event.currentTarget });
       return;
     }
 
@@ -74,6 +74,8 @@ export default function ResetPasswordPage() {
           <input
             className="input"
             type="password"
+            name="password"
+            minLength="6"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
@@ -86,6 +88,7 @@ export default function ResetPasswordPage() {
           <input
             className="input"
             type="password"
+            name="confirmPassword"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             autoComplete="new-password"
