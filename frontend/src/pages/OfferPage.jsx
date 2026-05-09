@@ -40,8 +40,11 @@ function isAcceptedOfferEligibility(eligibility) {
 }
 
 function getBlockedOfferMessage(eligibility) {
-  if (isAcceptedOfferEligibility(eligibility)) return ACCEPTED_OFFER_NOTICE_MESSAGE;
-  return eligibility?.message || "No puedes crear otra oferta para esta prenda.";
+  if (isAcceptedOfferEligibility(eligibility))
+    return ACCEPTED_OFFER_NOTICE_MESSAGE;
+  return (
+    eligibility?.message || "No puedes crear otra oferta para esta prenda."
+  );
 }
 
 export default function OfferPage() {
@@ -111,7 +114,9 @@ export default function OfferPage() {
       }
 
       try {
-        const response = await apiFetch(`/api/public/offers/article/${article.id}/eligibility`);
+        const response = await apiFetch(
+          `/api/public/offers/article/${article.id}/eligibility`,
+        );
         if (!ignore) setOfferEligibility(response.eligibility || null);
       } catch {
         if (!ignore) setOfferEligibility(null);
@@ -151,16 +156,40 @@ export default function OfferPage() {
         : "";
 
       const validationChecks = [
-        { target: "offer-first-name", message: !isAuthenticated ? getRequiredValidationMessage(guest.firstName, "el nombre") : "" },
-        { target: "offer-last-name", message: !isAuthenticated ? getRequiredValidationMessage(guest.lastName, "el apellido") : "" },
         {
-          target: guest.email ? "offer-email" : guest.phone ? "offer-phone" : "offer-email",
+          target: "offer-first-name",
+          message: !isAuthenticated
+            ? getRequiredValidationMessage(guest.firstName, "el nombre")
+            : "",
+        },
+        {
+          target: "offer-last-name",
+          message: !isAuthenticated
+            ? getRequiredValidationMessage(guest.lastName, "el apellido")
+            : "",
+        },
+        {
+          target: guest.email
+            ? "offer-email"
+            : guest.phone
+              ? "offer-phone"
+              : "offer-email",
           message: contactValidationMessage,
         },
-        { target: "offer-email", message: !isAuthenticated ? getEmailValidationMessage(guest.email) : "" },
-        { target: "offer-amount", message: getPositiveNumberValidationMessage(offer, "una oferta") },
+        {
+          target: "offer-email",
+          message: !isAuthenticated
+            ? getEmailValidationMessage(guest.email)
+            : "",
+        },
+        {
+          target: "offer-amount",
+          message: getPositiveNumberValidationMessage(offer, "una oferta"),
+        },
       ];
-      const validationIssue = validationChecks.find((check) => Boolean(check.message));
+      const validationIssue = validationChecks.find((check) =>
+        Boolean(check.message),
+      );
       if (validationIssue) {
         setError(validationIssue.message);
         notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
@@ -197,9 +226,13 @@ export default function OfferPage() {
         setOfferEligibility({
           canOffer: false,
           reasonCode: "ACTIVE_PENDING_OFFER",
-          message: "Ya tenes una oferta pendiente para esta prenda. Espera la respuesta antes de enviar otra.",
+          message:
+            "Ya tenes una oferta pendiente para esta prenda. Espera la respuesta antes de enviar otra.",
           attemptCount: Number(offerEligibility?.attemptCount || 0) + 1,
-          remainingAttempts: Math.max(0, 3 - (Number(offerEligibility?.attemptCount || 0) + 1)),
+          remainingAttempts: Math.max(
+            0,
+            3 - (Number(offerEligibility?.attemptCount || 0) + 1),
+          ),
           maxAttempts: 3,
           activeOffer: {
             id: response.offer.id,
@@ -210,7 +243,8 @@ export default function OfferPage() {
         });
       }
 
-      const successMessage = "Tu oferta quedo registrada. Te avisaremos cuando la respondamos.";
+      const successMessage =
+        "Tu oferta quedo registrada. Te avisaremos cuando la respondamos.";
       setSuccess(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setOffer("");
@@ -243,6 +277,9 @@ export default function OfferPage() {
 
   const isAcceptedOfferBlocked = isAcceptedOfferEligibility(offerEligibility);
   const blockedOfferMessage = getBlockedOfferMessage(offerEligibility);
+  const canSubmitOffer =
+    Boolean(article.allowOffers) &&
+    !(offerEligibility && !offerEligibility.canOffer);
 
   return (
     <div className="container article-page-shell page-stack offer-page">
@@ -289,7 +326,7 @@ export default function OfferPage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Segunda mano seleccionada"}
+                      {article.conditionLabel || "Seleccion de Esadar"}
                     </span>
                   </strong>
                 </div>
@@ -324,151 +361,136 @@ export default function OfferPage() {
               </div>
             </div>
 
-            {/* <div className="detail-pricing detail-pricing--hero offer-pricing-hero">
-              <span className="article-mobile-cta__label">Precio publicado</span>
-              <strong className="price-current price-current-large">{formatCurrency(article.salePrice)}</strong>
-            </div> */}
-
-            {/* {article.description ? (
-              <p className="muted-copy">{article.description}</p>
-            ) : null} */}
-
-            {isAuthenticated ? (
-              <div className="section-card nested-card">
-                <p className="section-kicker">Cuenta autenticada</p>
-                <strong>
-                  {user.firstName} {user.lastName}
-                </strong>
-                <p className="muted-copy">
-                  {user.email || "Sin email"}{" "}
-                  {user.phone ? `· ${user.phone}` : ""}
-                </p>
-              </div>
-            ) : (
-              <div className="form-grid-two">
-                <label className="field-group">
-                  <span>Nombre</span>
-                  <input
-                    className="input"
-                    name="firstName"
-                    data-validation-field="offer-first-name"
-                    value={guest.firstName}
-                    onChange={(event) =>
-                      updateGuest("firstName", event.target.value)
-                    }
-                    required
-                  />
-                </label>
-                <label className="field-group">
-                  <span>Apellido</span>
-                  <input
-                    className="input"
-                    name="lastName"
-                    data-validation-field="offer-last-name"
-                    value={guest.lastName}
-                    onChange={(event) =>
-                      updateGuest("lastName", event.target.value)
-                    }
-                    required
-                  />
-                </label>
-                <label className="field-group">
-                  <span>Email</span>
-                  <input
-                    className="input"
-                    type="email"
-                    name="email"
-                    data-validation-field="offer-email"
-                    value={guest.email}
-                    onChange={(event) =>
-                      updateGuest("email", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="field-group">
-                  <span>Telefono</span>
-                  <input
-                    className="input"
-                    name="phone"
-                    data-validation-field="offer-phone"
-                    value={guest.phone}
-                    onChange={(event) =>
-                      updateGuest("phone", event.target.value)
-                    }
-                  />
-                </label>
-                <label className="field-group form-grid-span-two">
-                  <span>Instagram</span>
-                  <input
-                    className="input"
-                    name="instagram"
-                    data-validation-field="offer-instagram"
-                    value={guest.instagram}
-                    onChange={(event) =>
-                      updateGuest("instagram", event.target.value)
-                    }
-                  />
-                </label>
-              </div>
-            )}
+            {canSubmitOffer ? (
+              isAuthenticated ? (
+                <div className="section-card nested-card">
+                  <p className="section-kicker">Cuenta autenticada</p>
+                  <strong>
+                    {user.firstName} {user.lastName}
+                  </strong>
+                  <p className="muted-copy">
+                    {user.email || "Sin email"}{" "}
+                    {user.phone ? `· ${user.phone}` : ""}
+                  </p>
+                </div>
+              ) : (
+                <div className="form-grid-two">
+                  <label className="field-group">
+                    <span>Nombre</span>
+                    <input
+                      className="input"
+                      name="firstName"
+                      data-validation-field="offer-first-name"
+                      value={guest.firstName}
+                      onChange={(event) =>
+                        updateGuest("firstName", event.target.value)
+                      }
+                      required
+                    />
+                  </label>
+                  <label className="field-group">
+                    <span>Apellido</span>
+                    <input
+                      className="input"
+                      name="lastName"
+                      data-validation-field="offer-last-name"
+                      value={guest.lastName}
+                      onChange={(event) =>
+                        updateGuest("lastName", event.target.value)
+                      }
+                      required
+                    />
+                  </label>
+                  <label className="field-group">
+                    <span>Email</span>
+                    <input
+                      className="input"
+                      type="email"
+                      name="email"
+                      data-validation-field="offer-email"
+                      value={guest.email}
+                      onChange={(event) =>
+                        updateGuest("email", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="field-group">
+                    <span>Telefono</span>
+                    <input
+                      className="input"
+                      name="phone"
+                      data-validation-field="offer-phone"
+                      value={guest.phone}
+                      onChange={(event) =>
+                        updateGuest("phone", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="field-group form-grid-span-two">
+                    <span>Instagram</span>
+                    <input
+                      className="input"
+                      name="instagram"
+                      data-validation-field="offer-instagram"
+                      value={guest.instagram}
+                      onChange={(event) =>
+                        updateGuest("instagram", event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
+              )
+            ) : null}
 
             {offerEligibility && !offerEligibility.canOffer ? (
               <div className="section-card nested-card offer-eligibility-notice">
                 <p className="section-kicker">Oferta registrada</p>
                 <strong>{blockedOfferMessage}</strong>
-                {!isAcceptedOfferBlocked && offerEligibility.attemptCount != null ? (
+                {!isAcceptedOfferBlocked &&
+                offerEligibility.attemptCount != null ? (
                   <p className="muted-copy">
-                    Intentos realizados: {offerEligibility.attemptCount} de {offerEligibility.maxAttempts || 3}.
+                    Intentos realizados: {offerEligibility.attemptCount} de{" "}
+                    {offerEligibility.maxAttempts || 3}.
                   </p>
                 ) : null}
               </div>
             ) : offerEligibility ? (
               <p className="muted-copy">
-                Puedes ofertar hasta {offerEligibility.maxAttempts || 3} veces sobre esta prenda.
-                {" "}Te quedan {offerEligibility.remainingAttempts} intento
+                Puedes ofertar hasta {offerEligibility.maxAttempts || 3} veces
+                sobre esta prenda. Te quedan{" "}
+                {offerEligibility.remainingAttempts} intento
                 {offerEligibility.remainingAttempts === 1 ? "" : "s"}.
               </p>
             ) : null}
 
-            <label className="field-group">
-              <span>Tu oferta</span>
-              <input
-                type="number"
-                min="1"
-                className="input"
-                name="offer"
-                data-validation-field="offer-amount"
-                value={offer}
-                onChange={(event) => setOffer(event.target.value)}
-                placeholder="Ej: 1200"
-                required
-              />
-            </label>
-
-            {/* <label className="field-group">
-              <span>Mensaje</span>
-              <textarea
-                className="input textarea"
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Cuentanos si quieres coordinar por algun canal o dejar un comentario."
-                required
-              />
-            </label> */}
+            {canSubmitOffer ? (
+              <label className="field-group">
+                <span>Tu oferta</span>
+                <input
+                  type="number"
+                  min="1"
+                  className="input"
+                  name="offer"
+                  data-validation-field="offer-amount"
+                  value={offer}
+                  onChange={(event) => setOffer(event.target.value)}
+                  placeholder="Ej: 1200"
+                  required
+                />
+              </label>
+            ) : null}
 
             <div className="detail-actions detail-actions--stacked">
-              <button
-                type="button"
-                className="button button-primary button-compact"
-                onClick={handleSubmit}
-                disabled={
-                  submitting ||
-                  !article.allowOffers ||
-                  Boolean(offerEligibility && !offerEligibility.canOffer)
-                }
-              >
-                {submitting ? "Enviando oferta…" : "Ofertar"}
-              </button>
+              {canSubmitOffer ? (
+                <button
+                  type="button"
+                  className="button button-primary button-compact"
+                  onClick={handleSubmit}
+                  disabled={submitting || !canSubmitOffer}
+                >
+                  {submitting ? "Enviando oferta…" : "Ofertar"}
+                </button>
+              ) : null}
 
               <Link
                 to={articlePath(article)}
@@ -497,7 +519,10 @@ export default function OfferPage() {
           <ScrollRailControls targetRef={relatedTrackRef} />
         </div>
 
-        <div ref={relatedTrackRef} className="article-grid article-horizontal-card-track">
+        <div
+          ref={relatedTrackRef}
+          className="article-grid article-horizontal-card-track"
+        >
           {related.map((item) => (
             <ArticleCard
               key={item.id}

@@ -338,17 +338,41 @@ export default function ArticlePage() {
 
     try {
       const validationChecks = [
-        { target: "stock-alert-first-name", message: String(alertForm.firstName || "").trim() ? "" : "Completa nombre." },
-        { target: "stock-alert-email", message: String(alertForm.email || "").trim() ? "" : "Completa email." },
-        { target: "stock-alert-phone", message: String(alertForm.phone || "").trim() ? "" : "Completa WhatsApp." },
-        { target: "stock-alert-email", message: getEmailValidationMessage(alertForm.email) },
+        {
+          target: "stock-alert-first-name",
+          message: String(alertForm.firstName || "").trim()
+            ? ""
+            : "Completa nombre.",
+        },
+        {
+          target: "stock-alert-email",
+          message: String(alertForm.email || "").trim()
+            ? ""
+            : "Completa email.",
+        },
+        {
+          target: "stock-alert-phone",
+          message: String(alertForm.phone || "").trim()
+            ? ""
+            : "Completa WhatsApp.",
+        },
+        {
+          target: "stock-alert-email",
+          message: getEmailValidationMessage(alertForm.email),
+        },
       ];
-      const validationIssue = validationChecks.find((check) => Boolean(check.message));
+      const validationIssue = validationChecks.find((check) =>
+        Boolean(check.message),
+      );
       if (validationIssue) {
         setAlertError(validationIssue.message);
         focusValidationTarget(validationIssue.target, event.currentTarget);
         if (isMobileViewport()) {
-          notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
+          notifyFormStatus(
+            notifyMobileStatus,
+            "error",
+            validationIssue.message,
+          );
         }
         return;
       }
@@ -568,7 +592,7 @@ export default function ArticlePage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Segunda mano seleccionada"}
+                      {article.conditionLabel || "Seleccion de Esadar"}
                     </span>
                   </strong>
                 </div>
@@ -654,7 +678,7 @@ export default function ArticlePage() {
               {article.allowOffers && !isSoldOut ? (
                 <Link
                   to={articleOfferPath(article)}
-                  className="button button-secondary"
+                  className="button footer-scroll-scene__copy footer-scroll-scene__copy--about"
                   onClick={() => {
                     void apiFetch("/api/public/article-events", {
                       method: "POST",

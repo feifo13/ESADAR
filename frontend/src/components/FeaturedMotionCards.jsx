@@ -37,7 +37,11 @@ export default function FeaturedMotionCards({ title, items = [] }) {
 
   if (!featuredItems.length) return null;
 
-  async function handleWishlistToggle(article, optimisticWishlistItem, wasSaved) {
+  async function handleWishlistToggle(
+    article,
+    optimisticWishlistItem,
+    wasSaved,
+  ) {
     const result = await toggleItem(article, optimisticWishlistItem);
 
     if (!result.ok) {
@@ -126,9 +130,7 @@ export default function FeaturedMotionCards({ title, items = [] }) {
             </p>
             <h3>{article.title}</h3>
             <div className="featured-motion-card__meta">
-              <span>
-                {article.conditionLabel || "Segunda mano seleccionada"}
-              </span>
+              <span>{article.conditionLabel || "Seleccion de Esadar"}</span>
               <strong>{formatCurrency(price)}</strong>
             </div>
             {soldOut ? (
@@ -182,7 +184,10 @@ export default function FeaturedMotionCards({ title, items = [] }) {
         <ScrollRailControls targetRef={featuredRailRef} />
       </div>
 
-      <div ref={featuredRailRef} className="featured-motion-grid featured-motion-grid--all">
+      <div
+        ref={featuredRailRef}
+        className="featured-motion-grid featured-motion-grid--all"
+      >
         {featuredItems.map((article, index) =>
           renderFeaturedItem(article, index),
         )}
