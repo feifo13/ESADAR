@@ -42,17 +42,22 @@ export default function RootLayout() {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    const restoreTop =
-      navigationType === "POP"
+    const shouldPreserveScroll = Boolean(location.state?.preserveScroll);
+    const restoreTop = shouldPreserveScroll
+      ? window.scrollY || document.documentElement.scrollTop || 0
+      : navigationType === "POP"
         ? scrollPositionsRef.current.get(location.key) || 0
         : 0;
 
-    const frameId = window.requestAnimationFrame(() => {
-      window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
-    });
+    let frameId = 0;
+    if (!shouldPreserveScroll) {
+      frameId = window.requestAnimationFrame(() => {
+        window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
+      });
+    }
 
     return () => {
-      window.cancelAnimationFrame(frameId);
+      if (frameId) window.cancelAnimationFrame(frameId);
       const appShell = document.querySelector(".app-shell");
       const footerRevealActive = appShell?.classList.contains(
         "app-shell--footer-scroll-active",
@@ -64,7 +69,7 @@ export default function RootLayout() {
           : window.scrollY || document.documentElement.scrollTop || 0,
       );
     };
-  }, [location.key, navigationType]);
+  }, [location.key, location.state, navigationType]);
 
   useEffect(() => {
     const reduceMotion =

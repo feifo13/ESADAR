@@ -53,17 +53,16 @@ export default function ArticleFilters({
   );
   const { categoryOptions, catalogBrandOptions, sizeOptions } = useLookups();
   const brandOptions = catalogBrandOptions || [];
-  const hasClearableFilters =
-    Boolean(
-      draftFilters.search ||
-        draftFilters.categoryId ||
-        draftFilters.brandId ||
-        draftFilters.sizeId ||
-        draftFilters.discounted ||
-        draftFilters.offerable ||
-        draftFilters.featured,
-    ) ||
-    (showSort && draftFilters.sort !== defaultFilters.sort);
+  const hasClearableFilters = Boolean(
+    draftFilters.search ||
+      draftFilters.categoryId ||
+      draftFilters.brandId ||
+      draftFilters.sizeId ||
+      draftFilters.discounted ||
+      draftFilters.offerable ||
+      draftFilters.featured,
+  );
+  const hasClearableSort = showSort && filters.sort !== defaultFilters.sort;
 
   useEffect(() => {
     setDraftFilters((current) =>
@@ -75,8 +74,26 @@ export default function ArticleFilters({
     setDraftFilters((current) => ({ ...current, [name]: nextValue }));
   }
 
+  function applySort(nextSort = draftFilters.sort) {
+    const normalizedSort = nextSort || defaultFilters.sort;
+    const nextFilters = { ...filters, sort: normalizedSort };
+    setDraftFilters((current) => ({ ...current, sort: normalizedSort }));
+    onChange(nextFilters);
+    onApplied?.(nextFilters);
+  }
+
+  function applyFilters() {
+    const nextFilters = {
+      ...draftFilters,
+      sort: filters.sort || defaultFilters.sort,
+    };
+    setDraftFilters(nextFilters);
+    onChange(nextFilters);
+    onApplied?.(nextFilters);
+  }
+
   function clearFilters() {
-    const nextFilters = { ...defaultFilters };
+    const nextFilters = { ...defaultFilters, sort: filters.sort || defaultFilters.sort };
     setDraftFilters(nextFilters);
     onChange(nextFilters);
     onApplied?.(nextFilters);
@@ -100,6 +117,24 @@ export default function ArticleFilters({
               <option value="price_asc">Precio menor a mayor</option>
               <option value="price_desc">Precio mayor a menor</option>
             </select>
+          </div>
+          <div className="filters-sidebar-actions filters-sidebar-actions--sort">
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => applySort()}
+            >
+              Aplicar orden
+            </button>
+            {hasClearableSort ? (
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => applySort(defaultFilters.sort)}
+              >
+                Limpiar orden
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -207,10 +242,7 @@ export default function ArticleFilters({
         <button
           type="button"
           className="button button-primary"
-          onClick={() => {
-            onChange(draftFilters);
-            onApplied?.(draftFilters);
-          }}
+          onClick={applyFilters}
         >
           Aplicar filtros
         </button>

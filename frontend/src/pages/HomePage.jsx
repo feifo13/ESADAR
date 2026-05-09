@@ -79,6 +79,28 @@ function readCatalogFiltersFromSearch(search) {
   return normalizeCatalogFilters(nextFilters);
 }
 
+
+function hasCatalogSearchIntent(search) {
+  const params = new URLSearchParams(search);
+
+  return CATALOG_STRING_FILTERS.some((key) => {
+    const value = params.get(key);
+    if (!value) return false;
+    if (key === "sort") return value !== initialFilters.sort;
+    return true;
+  }) || CATALOG_BOOLEAN_FILTERS.some((key) => params.get(key) === "true");
+}
+
+function shouldScrollToCatalogForLocation(location) {
+  const state = location.state || {};
+  return Boolean(
+    state.scrollToCatalog ||
+      state.source === "header-search" ||
+      state.source === "catalog-action" ||
+      hasCatalogSearchIntent(location.search),
+  );
+}
+
 function buildCatalogSearch(filters) {
   const params = new URLSearchParams();
   const normalizedFilters = normalizeCatalogFilters(filters);
@@ -114,6 +136,18 @@ const SORT_LABELS = {
   price_asc: "Precio ↑",
   price_desc: "Precio ↓",
 };
+
+const CATALOG_PROGRAMMATIC_SCROLL_SUPPRESS_MS = 1600;
+
+function suppressFooterRevealForCatalogScroll(duration = CATALOG_PROGRAMMATIC_SCROLL_SUPPRESS_MS) {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent("esadar:suppress-footer-reveal", {
+      detail: { duration, untilManual: true },
+    }),
+  );
+}
 
 function getLabel(options, id, fallback) {
   return (
@@ -176,6 +210,7 @@ export default function HomePage() {
   const catalogSectionRef = useRef(null);
   const loadMoreRef = useRef(null);
   const lastAutoLoadPageRef = useRef(1);
+  const pendingCatalogScrollRef = useRef(false);
 
   const { setHeroLogoVisible } = useOutletContext();
   const {
@@ -369,9 +404,16 @@ export default function HomePage() {
   const showCatalogInitialLoading =
     loading && !items.length && !showCatalogLoadingSplash;
 
-  function scrollCatalogToStart({ behavior = "smooth" } = {}) {
+  function scrollCatalogToStart({
+    behavior = "smooth",
+    suppressFooterReveal = true,
+  } = {}) {
     const section = catalogSectionRef.current;
     if (!section || typeof window === "undefined") return;
+
+    if (suppressFooterReveal) {
+      suppressFooterRevealForCatalogScroll();
+    }
 
     const header = document.querySelector(".site-header");
     const headerHeight = Number(header?.offsetHeight || 0);
@@ -389,7 +431,20 @@ export default function HomePage() {
   }
 
   function scheduleCatalogScroll(options = {}) {
-    window.requestAnimationFrame(() => scrollCatalogToStart(options));
+    const { suppressFooterReveal = true } = options;
+
+    if (suppressFooterReveal) {
+      suppressFooterRevealForCatalogScroll();
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() =>
+        scrollCatalogToStart({
+          ...options,
+          suppressFooterReveal: false,
+        }),
+      );
+    });
   }
 
   useEffect(() => {
@@ -432,14 +487,42 @@ export default function HomePage() {
   }, [setHeroLogoVisible]);
 
   useEffect(() => {
-    if (location.pathname !== "/articles") return;
+    const isCatalogView =
+      location.pathname === "/" || location.pathname === "/articles";
 
+    if (!isCatalogView || typeof window === "undefined") return undefined;
+
+    const shouldScrollToCatalog = shouldScrollToCatalogForLocation(location);
+
+    if (!shouldScrollToCatalog) {
+      pendingCatalogScrollRef.current = false;
+      let secondTopFrame = 0;
+      const topFrame = window.requestAnimationFrame(() => {
+        secondTopFrame = window.requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        });
+      });
+
+      return () => {
+        window.cancelAnimationFrame(topFrame);
+        if (secondTopFrame) window.cancelAnimationFrame(secondTopFrame);
+      };
+    }
+
+    pendingCatalogScrollRef.current = true;
+    suppressFooterRevealForCatalogScroll();
+    let secondScrollFrame = 0;
     const scrollFrame = window.requestAnimationFrame(() => {
-      scrollCatalogToStart({ behavior: "auto" });
+      secondScrollFrame = window.requestAnimationFrame(() => {
+        scrollCatalogToStart({ behavior: "auto", suppressFooterReveal: false });
+      });
     });
 
-    return () => window.cancelAnimationFrame(scrollFrame);
-  }, [location.pathname]);
+    return () => {
+      window.cancelAnimationFrame(scrollFrame);
+      if (secondScrollFrame) window.cancelAnimationFrame(secondScrollFrame);
+    };
+  }, [location.key, location.pathname, location.search, location.state]);
 
   useEffect(() => {
     if (location.pathname !== "/articles") return;
@@ -570,6 +653,22 @@ export default function HomePage() {
     };
   }, [catalogReloadNonce, page, queryString]);
 
+  useEffect(() => {
+    if (location.pathname !== "/articles") return;
+    if (!pendingCatalogScrollRef.current) return;
+    if (loading || catalogTransitioning) return;
+
+    pendingCatalogScrollRef.current = false;
+    scheduleCatalogScroll({ behavior: "auto" });
+  }, [
+    catalogTransitioning,
+    items.length,
+    loading,
+    location.pathname,
+    location.search,
+    pagination.total,
+  ]);
+
   function resetPaginationState({ clearItems = true } = {}) {
     lastAutoLoadPageRef.current = 1;
     setArticlesExhausted(false);
@@ -579,7 +678,7 @@ export default function HomePage() {
     setCatalogReloadNonce((current) => current + 1);
   }
 
-  function syncCatalogUrl(normalizedFilters) {
+  function syncCatalogUrl(normalizedFilters, { catalogAction = false } = {}) {
     if (location.pathname !== "/articles") return;
 
     const nextSearch = buildCatalogSearch(normalizedFilters);
@@ -587,7 +686,12 @@ export default function HomePage() {
     const currentUrl = `${location.pathname}${location.search}`;
 
     if (currentUrl !== nextUrl) {
-      navigate(nextUrl, { replace: true });
+      navigate(nextUrl, {
+        replace: true,
+        state: catalogAction
+          ? { scrollToCatalog: true, source: "catalog-action" }
+          : null,
+      });
     }
   }
 
@@ -597,7 +701,7 @@ export default function HomePage() {
     const shouldReloadEmptyCatalog =
       !filtersChanged && !loading && !items.length;
 
-    syncCatalogUrl(normalizedFilters);
+    syncCatalogUrl(normalizedFilters, { catalogAction: true });
 
     if (!filtersChanged && !shouldReloadEmptyCatalog) {
       return false;
@@ -644,13 +748,13 @@ export default function HomePage() {
   }
 
   function resetCatalogFilters() {
-    applyFilters({ ...initialFilters }, { scroll: false });
+    applyFilters({ ...initialFilters, sort: filters.sort }, { scroll: false });
     setMobileFiltersOpen(false);
     scheduleCatalogScroll();
     notifyMobileStatus({
       type: "filters",
       icon: "filters",
-      message: "Filtros restablecidos",
+      message: "Filtros restablecidos sin cambiar el orden",
     });
   }
 
@@ -666,7 +770,7 @@ export default function HomePage() {
   }
 
   function resetFilters() {
-    applyFilters({ ...initialFilters }, { scroll: false });
+    applyFilters({ ...initialFilters, sort: filters.sort }, { scroll: false });
     scheduleCatalogScroll();
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -122,6 +122,8 @@ export default function CheckoutPage() {
     useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifyError } = useNotification();
+  const checkoutShellRef = useRef(null);
+  const checkoutStepContentRef = useRef(null);
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
@@ -254,9 +256,45 @@ export default function CheckoutPage() {
     return getGuestBuyerValidationIssue()?.message || "";
   }
 
+  function scrollCheckoutStepTop({ behavior = "smooth" } = {}) {
+    if (typeof window === "undefined") return;
+
+    // En checkout el enmarque correcto es el shell completo del proceso:
+    // titulo, pasos, contenido activo y controles. Usar solo el contenido del
+    // paso corta el contexto visual y hace que el wizard parezca irse al top.
+    const target = checkoutShellRef.current || checkoutStepContentRef.current;
+    if (!target) return;
+
+    const header = document.querySelector(".site-header");
+    const headerHeight = Number(header?.offsetHeight || 0);
+    const offset = headerHeight > 0 ? headerHeight + 14 : 82;
+    const targetTop = Math.max(
+      0,
+      target.getBoundingClientRect().top + window.scrollY - offset,
+    );
+
+    window.scrollTo({ top: targetTop, behavior });
+    checkoutStepContentRef.current?.focus?.({ preventScroll: true });
+  }
+
+  function scheduleCheckoutStepScroll(options = {}) {
+    if (typeof window === "undefined") return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          window.setTimeout(() => scrollCheckoutStepTop(options), 0);
+        });
+      });
+    });
+  }
+
   function goToStep(index) {
     if (index > maxAllowedStepIndex) return;
-    navigate(`/checkout/${steps[index].key}`);
+    navigate(`/checkout/${steps[index].key}`, {
+      state: { preserveScroll: true, source: "checkout-wizard" },
+    });
+    if (index !== currentStepIndex) scheduleCheckoutStepScroll();
   }
 
   function showCheckoutMessage(type, message, options = {}) {
@@ -306,12 +344,18 @@ export default function CheckoutPage() {
   function handleNext() {
     if (!validateCurrentStep()) return;
     const nextIndex = Math.min(currentStepIndex + 1, steps.length - 1);
-    navigate(`/checkout/${steps[nextIndex].key}`);
+    navigate(`/checkout/${steps[nextIndex].key}`, {
+      state: { preserveScroll: true, source: "checkout-wizard" },
+    });
+    if (nextIndex !== currentStepIndex) scheduleCheckoutStepScroll();
   }
 
   function handleBack() {
     const previousIndex = Math.max(currentStepIndex - 1, 0);
-    navigate(`/checkout/${steps[previousIndex].key}`);
+    navigate(`/checkout/${steps[previousIndex].key}`, {
+      state: { preserveScroll: true, source: "checkout-wizard" },
+    });
+    if (previousIndex !== currentStepIndex) scheduleCheckoutStepScroll();
   }
 
   async function handleConfirmOrder() {
@@ -375,6 +419,15 @@ export default function CheckoutPage() {
           COMPLETE_STORAGE_KEY,
           JSON.stringify({ orderNumber }),
         );
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("esadar:suppress-footer-reveal", {
+            detail: { duration: 1600, untilManual: true },
+          }),
+        );
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       }
 
       navigate("/checkout/completa", {
@@ -863,7 +916,7 @@ export default function CheckoutPage() {
   return (
     <>
       <div className="container page-stack checkout-page-stack">
-        <section className="section-card checkout-shell">
+        <section ref={checkoutShellRef} className="section-card checkout-shell">
           <div className="checkout-shell-header">
             <div>
               <p className="section-kicker">
@@ -909,7 +962,13 @@ export default function CheckoutPage() {
             </div>
           </div> */}
 
-          {renderCurrentStep()}
+          <div
+            ref={checkoutStepContentRef}
+            className="checkout-step-content-anchor"
+            tabIndex={-1}
+          >
+            {renderCurrentStep()}
+          </div>
 
           <PreviousNextControls
             className="checkout-navigation"

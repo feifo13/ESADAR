@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import PreviousNextControls from "../../components/PreviousNextControls.jsx";
@@ -223,6 +223,8 @@ export default function AdminArticleFormPage() {
   const isEdit = Boolean(id);
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
+  const articleFormRef = useRef(null);
+  const articleStepContentRef = useRef(null);
   const [form, setForm] = useState(toFormState(null));
   const [imageChecklist, setImageChecklist] = useState(() =>
     createEmptyImageState(),
@@ -448,6 +450,29 @@ export default function AdminArticleFormPage() {
     return null;
   }
 
+  function scrollArticleWizardTop({ behavior = "smooth" } = {}) {
+    if (typeof window === "undefined") return;
+    const target = articleStepContentRef.current || articleFormRef.current;
+    if (!target) return;
+
+    const header = document.querySelector(".site-header");
+    const headerHeight = Number(header?.offsetHeight || 0);
+    const offset = headerHeight > 0 ? headerHeight + 18 : 86;
+    const targetTop = Math.max(
+      0,
+      target.getBoundingClientRect().top + window.scrollY - offset,
+    );
+
+    window.scrollTo({ top: targetTop, behavior });
+    target.focus?.({ preventScroll: true });
+  }
+
+  function scheduleArticleWizardScroll(options = {}) {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollArticleWizardTop(options));
+    });
+  }
+
   function goToStep(stepIndex) {
     const validationIssue = validateStep(activeStep);
     if (stepIndex > activeStep && validationIssue) {
@@ -460,6 +485,7 @@ export default function AdminArticleFormPage() {
 
     setError("");
     setActiveStep(stepIndex);
+    if (stepIndex !== activeStep) scheduleArticleWizardScroll();
   }
 
   async function handleSubmit(event) {
@@ -790,6 +816,7 @@ export default function AdminArticleFormPage() {
       <AdminToolbar />
 
       <form
+        ref={articleFormRef}
         className="section-card page-stack"
         onSubmit={handleSubmit}
         noValidate
@@ -835,6 +862,11 @@ export default function AdminArticleFormPage() {
           })}
         </div> */}
 
+        <div
+          ref={articleStepContentRef}
+          className="article-wizard-step-content-anchor"
+          tabIndex={-1}
+        >
         {activeStep === 0 ? (
           <section className="section-card nested-card page-stack">
             <div>
@@ -1642,6 +1674,7 @@ export default function AdminArticleFormPage() {
             </details>
           </section>
         ) : null}
+        </div>
 
         <div className="article-wizard-footer">
           <div className="inline-note">
@@ -1662,9 +1695,10 @@ export default function AdminArticleFormPage() {
             previousClassName="button button-secondary"
             nextClassName="button button-primary"
             previousHidden={activeStep <= 0}
-            onPrevious={() =>
-              setActiveStep((current) => Math.max(0, current - 1))
-            }
+            onPrevious={() => {
+              setActiveStep((current) => Math.max(0, current - 1));
+              scheduleArticleWizardScroll();
+            }}
             onNext={() => goToStep(activeStep + 1)}
             nextSlot={activeStep < FORM_STEPS.length - 1 ? undefined : (
               <button

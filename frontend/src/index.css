@@ -13564,3 +13564,120 @@ select.input,
 .filters-sidebar-checks .checkbox-row input[type="checkbox"] {
   margin-right: calc(var(--filter-control-indicator-center) - 9px) !important;
 }
+
+/* === ESADAR patch: independent catalog sort/filter, centered mobile indicators and desktop action cursors === */
+.filters-sidebar-actions--sort {
+  margin-top: 0;
+  padding-bottom: 2px;
+}
+
+.filters-sidebar-section--sort + .filters-sidebar-head--filters {
+  margin-top: 4px;
+}
+
+.mobile-catalog-indicators {
+  top: 50% !important;
+  transform: translateY(-50%);
+  align-items: center !important;
+}
+
+.mobile-catalog-indicator {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1;
+}
+
+.mobile-catalog-indicator svg {
+  display: block;
+  flex: 0 0 auto;
+  margin: auto;
+}
+
+.mobile-catalog-indicator span {
+  line-height: 1;
+}
+
+.mobile-motion-menu__accordion-trigger {
+  align-items: center !important;
+}
+
+.mobile-motion-menu__count-badge,
+.mobile-motion-menu__accordion-indicator {
+  display: inline-grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  line-height: 1 !important;
+}
+
+@media (min-width: 781px) {
+  button:not(:disabled),
+  [role="button"],
+  a.button,
+  a.ghost-button,
+  .button:not(:disabled),
+  .ghost-button:not(:disabled),
+  .header-icon-button:not(:disabled),
+  .cart-button:not(:disabled),
+  .wishlist-heart-button:not(:disabled),
+  .gallery-arrows button:not(:disabled),
+  .gallery-zoom-button:not(:disabled),
+  .gallery-zoom-nav button:not(:disabled),
+  .sortable-th-button:not(:disabled),
+  .theme-dock-mini-button:not(:disabled),
+  .theme-swatch:not(:disabled),
+  .view-toggle button:not(:disabled),
+  .admin-tab:not(:disabled),
+  .active-filter-chip:not(:disabled),
+  .quick-filter-chip:not(:disabled),
+  .linklike {
+    cursor: pointer !important;
+  }
+
+  button:disabled,
+  .button:disabled,
+  .ghost-button:disabled,
+  .header-icon-button:disabled,
+  .wishlist-heart-button:disabled,
+  .gallery-arrows button:disabled,
+  .gallery-zoom-button:disabled,
+  .gallery-zoom-nav button:disabled,
+  .sortable-th-button:disabled {
+    cursor: not-allowed !important;
+  }
+}
+
+/* === ESADAR scroll framing refinements === */
+.checkout-step-content-anchor:focus,
+.article-wizard-step-content-anchor:focus {
+  outline: none;
+}
+
+/* === ESADAR footer reveal suppression: avoid flashes on programmatic catalog scrolls === */
+.app-shell--footer-reveal-suppressed .site-header {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.app-shell--footer-reveal-suppressed .page-shell {
+  box-shadow: none !important;
+}
+
+.app-shell--footer-reveal-suppressed .footer-scroll-scene {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: none !important;
+}
+
+/* === ESADAR checkout wizard framing spacer ===
+   Allows the checkout process card to be framed below the sticky header on
+   short steps without the browser clamping the programmatic scroll too early. */
+.app-shell--checkout-view .checkout-page-stack {
+  padding-bottom: max(320px, 34vh);
+}
+
+@media (max-width: 780px) {
+  .app-shell--checkout-view .checkout-page-stack {
+    padding-bottom: max(220px, 28vh);
+  }
+}

@@ -10,6 +10,8 @@ function clamp01(value) {
 
 export default function FooterScrollScene() {
   const sceneRef = useRef(null);
+  const suppressRevealUntilRef = useRef(0);
+  const suppressRevealUntilManualRef = useRef(false);
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
 
@@ -24,6 +26,7 @@ export default function FooterScrollScene() {
     appShell.classList.remove(
       "app-shell--footer-scroll-active",
       "app-shell--footer-scroll-deep",
+      "app-shell--footer-reveal-suppressed",
     );
   }, [location.key]);
 
@@ -35,11 +38,39 @@ export default function FooterScrollScene() {
     if (!appShell || !footer) return undefined;
 
     let frameId = 0;
+    let suppressTimerId = 0;
 
     appShell.classList.add("app-shell--has-footer-reveal");
 
+    function setFooterRevealSuppressed(isSuppressed) {
+      appShell.classList.toggle(
+        "app-shell--footer-reveal-suppressed",
+        Boolean(isSuppressed),
+      );
+    }
+
+    function resetFooterReveal() {
+      appShell.style.setProperty("--footer-scroll-progress", "0");
+      appShell.style.setProperty("--header-footer-hide-progress", "0");
+      appShell.classList.remove(
+        "app-shell--footer-scroll-active",
+        "app-shell--footer-scroll-deep",
+      );
+    }
+
     function update() {
       frameId = 0;
+
+      if (
+        suppressRevealUntilManualRef.current ||
+        Date.now() < suppressRevealUntilRef.current
+      ) {
+        setFooterRevealSuppressed(true);
+        resetFooterReveal();
+        return;
+      }
+
+      setFooterRevealSuppressed(false);
 
       const viewportHeight = window.innerHeight || 1;
       const scrollTop =
@@ -81,14 +112,67 @@ export default function FooterScrollScene() {
       frameId = window.requestAnimationFrame(update);
     }
 
+    function handleSuppressFooterReveal(event) {
+      const duration = Number(event.detail?.duration || 0);
+      const suppressMs = Number.isFinite(duration) && duration > 0 ? duration : 1200;
+      const untilManual = Boolean(event.detail?.untilManual);
+
+      suppressRevealUntilRef.current = Math.max(
+        suppressRevealUntilRef.current,
+        Date.now() + suppressMs,
+      );
+      if (untilManual) {
+        suppressRevealUntilManualRef.current = true;
+      }
+
+      setFooterRevealSuppressed(true);
+      resetFooterReveal();
+      scheduleUpdate();
+
+      if (suppressTimerId) window.clearTimeout(suppressTimerId);
+      suppressTimerId = window.setTimeout(scheduleUpdate, suppressMs + 32);
+    }
+
+    function handleManualScrollIntent(event) {
+      if (!suppressRevealUntilManualRef.current) return;
+
+      if (event.type === "keydown") {
+        const scrollKeys = new Set([
+          "ArrowDown",
+          "ArrowUp",
+          "PageDown",
+          "PageUp",
+          "Home",
+          "End",
+          " ",
+          "Spacebar",
+        ]);
+        if (!scrollKeys.has(event.key)) return;
+      }
+
+      suppressRevealUntilManualRef.current = false;
+      suppressRevealUntilRef.current = 0;
+      setFooterRevealSuppressed(false);
+      scheduleUpdate();
+    }
+
     scheduleUpdate();
     const settleTimer = window.setTimeout(scheduleUpdate, 80);
+    window.addEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
+    window.addEventListener("wheel", handleManualScrollIntent, { passive: true });
+    window.addEventListener("touchmove", handleManualScrollIntent, { passive: true });
+    window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
+      if (suppressTimerId) window.clearTimeout(suppressTimerId);
       window.clearTimeout(settleTimer);
+      window.removeEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
+      window.removeEventListener("wheel", handleManualScrollIntent);
+      window.removeEventListener("touchmove", handleManualScrollIntent);
+      window.removeEventListener("keydown", handleManualScrollIntent);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
       appShell.style.removeProperty("--footer-scroll-progress");
@@ -97,6 +181,7 @@ export default function FooterScrollScene() {
         "app-shell--has-footer-reveal",
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
+        "app-shell--footer-reveal-suppressed",
       );
     };
   }, [prefersReducedMotion, location.key]);

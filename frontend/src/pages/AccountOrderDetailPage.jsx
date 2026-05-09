@@ -9,6 +9,15 @@ import { useNotification } from '../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../lib/api.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
 
+const ORDER_STATUS_LABELS = {
+  RESERVED: 'Reservada',
+  PENDING: 'Pendiente',
+  APPROVED: 'Aprobada',
+  SHIPPED: 'Enviada',
+  CANCELLED: 'Cancelada',
+  EXPIRED: 'Vencida',
+};
+
 const PAYMENT_STATUS_LABELS = {
   PENDING: 'Pendiente',
   APPROVED: 'Aprobado',
@@ -168,7 +177,7 @@ export default function AccountOrderDetailPage() {
                 order.history.map((entry) => (
                   <article key={entry.id} className="history-row">
                     <div>
-                      <StatusBadge status={entry.toStatus} />
+                      <StatusBadge status={entry.toStatus} labels={ORDER_STATUS_LABELS} />
                       <p className="muted-copy">{entry.reason || 'Sin comentario adicional'}</p>
                     </div>
                     <span>{formatDate(entry.changedAt)}</span>

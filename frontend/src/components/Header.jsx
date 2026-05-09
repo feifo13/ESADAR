@@ -264,7 +264,9 @@ export default function Header({ hideBrand = false }) {
     const path = search
       ? `/articles?search=${encodeURIComponent(search)}`
       : "/articles";
-    navigate(path);
+    navigate(path, {
+      state: { scrollToCatalog: true, source: "header-search" },
+    });
     setMobileMenuOpen(false);
   }
 
