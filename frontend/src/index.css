@@ -13272,3 +13272,45 @@ textarea,
     display: inline-flex !important;
   }
 }
+
+
+/* === ESADAR patch: desktop checkout side summaries bottom alignment ===
+   Scope: only checkout summary/confirmation desktop-tablet layouts. */
+@media (min-width: 981px) {
+  .checkout-step-grid,
+  .checkout-confirmation-grid {
+    align-items: stretch;
+  }
+
+  .checkout-step-grid > .checkout-side-summary,
+  .checkout-confirmation-grid > .checkout-confirm-summary {
+    align-self: stretch;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 100%;
+  }
+
+  .checkout-step-grid > .checkout-side-summary > .section-kicker,
+  .checkout-step-grid > .checkout-side-summary > .checkout-summary-plain,
+  .checkout-confirmation-grid > .checkout-confirm-summary > .summary-line,
+  .checkout-confirmation-grid > .checkout-confirm-summary > .muted-copy {
+    flex: 0 0 auto;
+  }
+
+  .checkout-step-grid > .checkout-side-summary > .checkout-summary-plain {
+    width: 100%;
+  }
+}
+
+/* === ESADAR patch: checkout side summary top border alignment ===
+   Scope: only checkout summary/confirmation desktop-tablet layouts.
+   The summary cards must start at the same top edge as the left checkout cards;
+   only their inner content is pushed downward. */
+@media (min-width: 981px) {
+  .checkout-step-grid > .checkout-side-summary.nested-card,
+  .checkout-confirmation-grid > .checkout-confirm-summary.nested-card {
+    margin-top: 0 !important;
+    margin-block-start: 0 !important;
+  }
+}
