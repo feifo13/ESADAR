@@ -209,6 +209,15 @@ export function CartProvider({ children }) {
 
         const splitResult = splitLocalAdd(items, article, quantity, maxQuantity);
 
+        if (splitResult.added <= 0) {
+          return {
+            ok: false,
+            code: 'LIMITED',
+            maxQuantity,
+            quantity: splitResult.quantity,
+          };
+        }
+
         setCartFx({
           tick: Date.now(),
           articleId: article.id,

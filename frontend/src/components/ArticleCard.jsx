@@ -100,6 +100,32 @@ export default function ArticleCard({
     }
   }
 
+  function getCartErrorMessage(result) {
+    if (result?.code === "OUT_OF_STOCK") return "Esta prenda está agotada.";
+    if (result?.code === "LIMITED") {
+      return "No hay stock suficiente para esa prenda.";
+    }
+    return result?.message || "No pudimos agregar la prenda al carrito.";
+  }
+
+  function handleAddToCart(event) {
+    if (isSoldOut) {
+      notifyError("Esta prenda está agotada.");
+      return;
+    }
+
+    const result = addItem(article, 1, {
+      sourceRect: event.currentTarget.getBoundingClientRect(),
+    });
+
+    if (!result?.ok) {
+      notifyError(getCartErrorMessage(result));
+      return;
+    }
+
+    notifySuccess("Articulo agregado al carrito.");
+  }
+
   if (variant === "editorial" && view === "grid") {
     return (
       <motion.article
@@ -267,11 +293,7 @@ export default function ArticleCard({
             <button
               type="button"
               className="button button-primary button-compact"
-              onClick={(event) => {
-                addItem(article, 1, {
-                  sourceRect: event.currentTarget.getBoundingClientRect(),
-                });
-              }}
+              onClick={handleAddToCart}
             >
               Agregar al carrito
             </button>

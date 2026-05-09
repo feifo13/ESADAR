@@ -842,8 +842,8 @@ INSERT INTO sizes (code, description, sort_order) VALUES
 ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(sort_order);
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
-  ('/', 'ESADAR | Ropa second hand seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Curaduria second hand', 'Conoce la seleccion second hand de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),

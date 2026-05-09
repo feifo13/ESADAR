@@ -1,48 +1,52 @@
-import { env } from '../../config/env.js';
-import { pool } from '../../db/pool.js';
-import { withTransaction } from '../../db/transaction.js';
-import { notFound } from '../../utils/app-error.js';
-import { joinPublicSiteUrl, toAbsoluteSiteUrl } from '../../utils/assets.js';
-import { logAudit } from '../audit/audit.service.js';
-import { getPublicArticleBySlugOrId } from '../articles/articles.service.js';
+import { env } from "../../config/env.js";
+import { pool } from "../../db/pool.js";
+import { withTransaction } from "../../db/transaction.js";
+import { notFound } from "../../utils/app-error.js";
+import { joinPublicSiteUrl, toAbsoluteSiteUrl } from "../../utils/assets.js";
+import { logAudit } from "../audit/audit.service.js";
+import { getPublicArticleBySlugOrId } from "../articles/articles.service.js";
 
 function escapeXml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 function buildGoogleAvailability(article) {
-  return Number(article.quantityAvailable || 0) > 0 && article.status === 'ACTIVE'
-    ? 'in stock'
-    : 'out of stock';
+  return Number(article.quantityAvailable || 0) > 0 &&
+    article.status === "ACTIVE"
+    ? "in stock"
+    : "out of stock";
 }
 
 function buildSiteFallbackPages() {
   return [
     {
-      route: '/',
-      title: `${env.storeName} | Ropa second hand seleccionada`,
-      description: 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.',
+      route: "/",
+      title: `${env.storeName} | Ropa seleccionada`,
+      description:
+        "Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.",
       canonicalUrl: null,
       ogImage: null,
       isIndexable: true,
     },
     {
-      route: '/about',
-      title: `Sobre ${env.storeName} | Curaduría second hand`,
-      description: 'Conocé la selección second hand de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.',
+      route: "/about",
+      title: `Sobre ${env.storeName} | Curaduría`,
+      description:
+        "Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.",
       canonicalUrl: null,
       ogImage: null,
       isIndexable: true,
     },
     {
-      route: '/contact',
+      route: "/contact",
       title: `Contacto | ${env.storeName}`,
-      description: 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.',
+      description:
+        "Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.",
       canonicalUrl: null,
       ogImage: null,
       isIndexable: true,
@@ -76,7 +80,9 @@ export async function listSeoPages() {
 
 export async function getPublicSiteSeo() {
   const pages = await listSeoPages();
-  const pageMap = new Map(buildSiteFallbackPages().map((page) => [page.route, page]));
+  const pageMap = new Map(
+    buildSiteFallbackPages().map((page) => [page.route, page]),
+  );
 
   for (const page of pages) {
     pageMap.set(page.route, page);
@@ -100,7 +106,9 @@ export async function getPublicArticleSeo(slugOrId) {
     title: article.seoTitle,
     description: article.seoDescription,
     canonicalUrl: article.canonicalUrl,
-    image: toAbsoluteSiteUrl(article.primaryImageDetail || article.primaryImage),
+    image: toAbsoluteSiteUrl(
+      article.primaryImageDetail || article.primaryImage,
+    ),
     images: (article.images || [])
       .map((image) => toAbsoluteSiteUrl(image.detailFilePath || image.filePath))
       .filter(Boolean),
@@ -110,15 +118,15 @@ export async function getPublicArticleSeo(slugOrId) {
 
 export async function buildRobotsTxt() {
   return [
-    'User-agent: *',
-    'Allow: /',
-    'Disallow: /admin',
-    'Disallow: /login',
-    'Disallow: /checkout',
-    'Disallow: /api/admin',
-    `Sitemap: ${joinPublicSiteUrl('/sitemap.xml')}`,
-    '',
-  ].join('\n');
+    "User-agent: *",
+    "Allow: /",
+    "Disallow: /admin",
+    "Disallow: /login",
+    "Disallow: /checkout",
+    "Disallow: /api/admin",
+    `Sitemap: ${joinPublicSiteUrl("/sitemap.xml")}`,
+    "",
+  ].join("\n");
 }
 
 async function listIndexableArticles() {
@@ -140,8 +148,10 @@ async function listIndexableArticles() {
 export async function buildSitemapXml() {
   const pages = await getPublicSiteSeo();
   const articles = await listIndexableArticles();
-  const staticUrls = ['/', '/about', '/contact'];
-  const pageOverrides = new Map((pages.pages || []).map((page) => [page.route, page]));
+  const staticUrls = ["/", "/about", "/contact"];
+  const pageOverrides = new Map(
+    (pages.pages || []).map((page) => [page.route, page]),
+  );
 
   const urlEntries = [
     ...staticUrls.map((route) => {
@@ -152,16 +162,18 @@ export async function buildSitemapXml() {
     <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>
   </url>`;
     }),
-    ...articles.map((article) => `
+    ...articles.map(
+      (article) => `
   <url>
     <loc>${escapeXml(joinPublicSiteUrl(`/articles/${article.slug || article.id}`))}</loc>
     <lastmod>${escapeXml(new Date(article.updatedAt || Date.now()).toISOString())}</lastmod>
-  </url>`),
+  </url>`,
+    ),
   ];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urlEntries.join('\n')}
+${urlEntries.join("\n")}
 </urlset>`;
 }
 
@@ -198,7 +210,7 @@ async function listFeedArticles() {
   }
 
   const articleIds = rows.map((row) => Number(row.id));
-  const placeholders = articleIds.map(() => '?').join(',');
+  const placeholders = articleIds.map(() => "?").join(",");
   const [imageRows] = await pool.query(
     `
       SELECT
@@ -225,9 +237,13 @@ async function listFeedArticles() {
 
   return rows.map((row) => ({
     ...row,
-    images: (imageMap.get(Number(row.id)) || []).map((image) => (
-      toAbsoluteSiteUrl(image.detailFilePath || image.filePath || image.originalFilePath)
-    )).filter(Boolean),
+    images: (imageMap.get(Number(row.id)) || [])
+      .map((image) =>
+        toAbsoluteSiteUrl(
+          image.detailFilePath || image.filePath || image.originalFilePath,
+        ),
+      )
+      .filter(Boolean),
   }));
 }
 
@@ -235,10 +251,13 @@ export async function buildGoogleProductsFeedXml() {
   const articles = await listFeedArticles();
   const items = articles.map((article) => {
     const title = article.seoTitle || article.title;
-    const description = article.seoDescription || article.description || env.storeDescription;
-    const price = Number(article.discountedPrice || article.salePrice || 0).toFixed(2);
+    const description =
+      article.seoDescription || article.description || env.storeDescription;
+    const price = Number(
+      article.discountedPrice || article.salePrice || 0,
+    ).toFixed(2);
     const images = article.images || [];
-    const primaryImage = images[0] || '';
+    const primaryImage = images[0] || "";
     const extraImages = images.slice(1);
 
     return `
@@ -248,16 +267,16 @@ export async function buildGoogleProductsFeedXml() {
       <description>${escapeXml(description)}</description>
       <link>${escapeXml(joinPublicSiteUrl(`/articles/${article.slug || article.id}`))}</link>
       <g:image_link>${escapeXml(primaryImage)}</g:image_link>
-      ${extraImages.map((image) => `<g:additional_image_link>${escapeXml(image)}</g:additional_image_link>`).join('\n      ')}
+      ${extraImages.map((image) => `<g:additional_image_link>${escapeXml(image)}</g:additional_image_link>`).join("\n      ")}
       <g:availability>${escapeXml(buildGoogleAvailability(article))}</g:availability>
       <g:price>${escapeXml(`${price} UYU`)}</g:price>
       <g:brand>${escapeXml(article.brandName || env.storeName)}</g:brand>
       <g:condition>used</g:condition>
-      ${article.googleProductCategory ? `<g:google_product_category>${escapeXml(article.googleProductCategory)}</g:google_product_category>` : ''}
-      ${article.color ? `<g:color>${escapeXml(article.color)}</g:color>` : ''}
-      ${article.material ? `<g:material>${escapeXml(article.material)}</g:material>` : ''}
-      ${article.gender ? `<g:gender>${escapeXml(article.gender)}</g:gender>` : ''}
-      ${article.ageGroup ? `<g:age_group>${escapeXml(article.ageGroup)}</g:age_group>` : ''}
+      ${article.googleProductCategory ? `<g:google_product_category>${escapeXml(article.googleProductCategory)}</g:google_product_category>` : ""}
+      ${article.color ? `<g:color>${escapeXml(article.color)}</g:color>` : ""}
+      ${article.material ? `<g:material>${escapeXml(article.material)}</g:material>` : ""}
+      ${article.gender ? `<g:gender>${escapeXml(article.gender)}</g:gender>` : ""}
+      ${article.ageGroup ? `<g:age_group>${escapeXml(article.ageGroup)}</g:age_group>` : ""}
     </item>`;
   });
 
@@ -267,7 +286,7 @@ export async function buildGoogleProductsFeedXml() {
     <title>${escapeXml(env.storeName)}</title>
     <link>${escapeXml(env.publicSiteUrl)}</link>
     <description>${escapeXml(env.storeDescription)}</description>
-${items.join('\n')}
+${items.join("\n")}
   </channel>
 </rss>`;
 }
@@ -292,7 +311,7 @@ export async function updateSeoPage(id, input, auditContext) {
     );
 
     if (!beforeRows.length) {
-      throw notFound('SEO page not found');
+      throw notFound("SEO page not found");
     }
 
     const before = {
@@ -347,8 +366,8 @@ export async function updateSeoPage(id, input, auditContext) {
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
-        actionCode: 'SEO_PAGE_UPDATED',
-        entityType: 'site_pages_seo',
+        actionCode: "SEO_PAGE_UPDATED",
+        entityType: "site_pages_seo",
         entityId: id,
         beforeJson: before,
         afterJson: after,

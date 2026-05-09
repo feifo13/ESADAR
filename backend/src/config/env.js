@@ -37,7 +37,7 @@ export const env = {
   storeName: process.env.STORE_NAME || "ESADAR",
   storeDescription:
     process.env.STORE_DESCRIPTION ||
-    "Ropa second hand seleccionada: sportswear, vintage y prendas modernas.",
+    "Ropa: sportswear, vintage y prendas modernas.",
   db: {
     host: required("DB_HOST"),
     port: toNumber(process.env.DB_PORT, 3306),

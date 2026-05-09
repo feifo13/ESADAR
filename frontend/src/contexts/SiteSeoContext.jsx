@@ -1,11 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../lib/api.js';
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api.js";
 
 const SiteSeoContext = createContext(null);
 
 function getDefaultSiteUrl() {
-  if (typeof window === 'undefined') {
-    return 'http://localhost:5173';
+  if (typeof window === "undefined") {
+    return "http://localhost:5173";
   }
 
   return window.location.origin;
@@ -13,8 +13,8 @@ function getDefaultSiteUrl() {
 
 const fallbackValue = {
   site: {
-    name: 'ESADAR',
-    description: 'Ropa second hand seleccionada: sportswear, vintage y prendas modernas.',
+    name: "ESADAR",
+    description: "Ropa: sportswear, vintage y prendas modernas.",
     url: getDefaultSiteUrl(),
   },
   pages: [],
@@ -30,14 +30,16 @@ export function SiteSeoProvider({ children }) {
 
     async function loadSeoConfig() {
       try {
-        const response = await apiFetch('/api/public/seo/site');
+        const response = await apiFetch("/api/public/seo/site");
         if (ignore) return;
 
         const pages = response.pages || [];
         setValue({
           site: response.site || fallbackValue.site,
           pages,
-          pagesByRoute: Object.fromEntries(pages.map((page) => [page.route, page])),
+          pagesByRoute: Object.fromEntries(
+            pages.map((page) => [page.route, page]),
+          ),
           loaded: true,
         });
       } catch {
@@ -56,13 +58,17 @@ export function SiteSeoProvider({ children }) {
   }, []);
 
   const memoizedValue = useMemo(() => value, [value]);
-  return <SiteSeoContext.Provider value={memoizedValue}>{children}</SiteSeoContext.Provider>;
+  return (
+    <SiteSeoContext.Provider value={memoizedValue}>
+      {children}
+    </SiteSeoContext.Provider>
+  );
 }
 
 export function useSiteSeo() {
   const context = useContext(SiteSeoContext);
   if (!context) {
-    throw new Error('useSiteSeo must be used inside SiteSeoProvider');
+    throw new Error("useSiteSeo must be used inside SiteSeoProvider");
   }
   return context;
 }

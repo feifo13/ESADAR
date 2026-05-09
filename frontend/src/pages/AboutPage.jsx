@@ -21,18 +21,6 @@ export default function AboutPage() {
         ]}
       />
 
-      {/* <section className="about-collage">
-        <div className="about-card large">
-          <span>Ropa second hand curada para un catalogo con identidad propia.</span>
-        </div>
-        <div className="about-card">
-          <span>Sportswear, vintage y prendas modernas seleccionadas con criterio.</span>
-        </div>
-        <div className="about-card">
-          <span>Stock limitado, piezas unicas y una curaduria honesta.</span>
-        </div>
-      </section> */}
-
       <section className="section-card page-stack">
         <div>
           <p className="section-kicker">Sobre nosotros</p>

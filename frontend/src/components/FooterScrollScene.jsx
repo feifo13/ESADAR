@@ -23,20 +23,20 @@ export default function FooterScrollScene() {
 
   const logoOpacity = useTransform(
     scrollYProgress,
-    [0, 0.18, 0.82, 1],
-    [0, 1, 1, 0.9],
+    [0, 0.14, 0.86, 1],
+    [0, 0.96, 1, 0.96],
   );
   const logoScale = useTransform(
     scrollYProgress,
-    [0, 0.26, 1],
-    [0.86, 1, 1.16],
+    [0, 0.35, 0.75, 1],
+    [0.38, 0.9, 1.55, 2.15],
   );
-  const logoY = useTransform(scrollYProgress, [0, 1], [42, -30]);
-  const ringScale = useTransform(scrollYProgress, [0, 1], [0.75, 1.38]);
+  const logoY = useTransform(scrollYProgress, [0, 0.58, 1], [80, 14, -20]);
+  const ringScale = useTransform(scrollYProgress, [0, 0.7, 1], [0.68, 1.28, 1.62]);
   const ringOpacity = useTransform(
     scrollYProgress,
-    [0, 0.26, 1],
-    [0, 0.32, 0.08],
+    [0, 0.24, 0.72, 1],
+    [0, 0.18, 0.1, 0.04],
   );
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function FooterScrollScene() {
         ? progress >= 0.72
           ? 1
           : 0
-        : clamp01((progress - 0.18) / 0.72);
+        : clamp01((progress - 0.42) / 0.4);
 
       appShell.style.setProperty("--footer-scroll-progress", String(progress));
       appShell.style.setProperty(

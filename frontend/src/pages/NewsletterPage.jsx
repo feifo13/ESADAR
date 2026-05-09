@@ -105,7 +105,7 @@ export default function NewsletterPage() {
     <div className="container page-stack newsletter-page-shell">
       <SeoHead
         title="ESADAR | Avisos de ropa nueva"
-        description="Recibi avisos cuando entren prendas second hand seleccionadas segun tus preferencias."
+        description="Recibi avisos cuando entren prendas segun tus preferencias."
       />
 
       {/* <nav className="breadcrumb-row" aria-label="Breadcrumb">

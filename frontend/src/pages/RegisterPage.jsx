@@ -108,7 +108,7 @@ export default function RegisterPage() {
           </label>
         </div>
 
-        <button className="button button-primary" type="submit" disabled={submitting}>
+        <button className="button button-primary auth-submit-button" type="submit" disabled={submitting}>
           {submitting ? 'Creando…' : 'Crear cuenta'}
         </button>
         <p className="muted-copy">¿Ya tienes cuenta? <Link to="/login">Ingresar</Link></p>

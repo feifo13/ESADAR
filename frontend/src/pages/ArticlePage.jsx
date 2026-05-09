@@ -186,7 +186,7 @@ export default function ArticlePage() {
     const frameId = window.requestAnimationFrame(() => {
       stockAlertPanelRef.current?.scrollIntoView({
         behavior: "smooth",
-        block: "start",
+        block: "center",
       });
       stockAlertFirstFieldRef.current?.focus({ preventScroll: true });
     });

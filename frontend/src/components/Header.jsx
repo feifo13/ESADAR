@@ -363,6 +363,13 @@ export default function Header({ hideBrand = false }) {
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
       ];
 
+  function handleLogout() {
+    logout();
+    setMobileMenuOpen(false);
+    navigate("/", { replace: true });
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   const adminMenuChildren = [
     { key: "admin-articles", label: "Articulos", to: "/admin/articles" },
     {
@@ -412,7 +419,7 @@ export default function Header({ hideBrand = false }) {
             key: "logout",
             label: "Salir",
             kind: "button",
-            onClick: logout,
+            onClick: handleLogout,
           },
         ]
       : []),
@@ -577,7 +584,7 @@ export default function Header({ hideBrand = false }) {
                   <HeartIcon />,
                 )}
                 {renderCartButton(desktopCartButtonRef)}
-                {renderIconButton(logout, "Salir", <LogoutIcon />)}
+                {renderIconButton(handleLogout, "Salir", <LogoutIcon />)}
               </>
             ) : (
               <>

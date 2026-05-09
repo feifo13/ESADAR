@@ -369,6 +369,29 @@ export default function HomePage() {
   const showCatalogInitialLoading =
     loading && !items.length && !showCatalogLoadingSplash;
 
+  function scrollCatalogToStart({ behavior = "smooth" } = {}) {
+    const section = catalogSectionRef.current;
+    if (!section || typeof window === "undefined") return;
+
+    const header = document.querySelector(".site-header");
+    const headerHeight = Number(header?.offsetHeight || 0);
+    const fallbackOffset = window.matchMedia("(max-width: 780px)").matches
+      ? 76
+      : 96;
+    const offset = headerHeight > 0 ? headerHeight + 16 : fallbackOffset;
+    const targetTop = Math.max(
+      0,
+      section.getBoundingClientRect().top + window.scrollY - offset,
+    );
+
+    window.scrollTo({ top: targetTop, behavior });
+    section.focus({ preventScroll: true });
+  }
+
+  function scheduleCatalogScroll(options = {}) {
+    window.requestAnimationFrame(() => scrollCatalogToStart(options));
+  }
+
   useEffect(() => {
     const sentinel = loadMoreRef.current;
 
@@ -412,10 +435,7 @@ export default function HomePage() {
     if (location.pathname !== "/articles") return;
 
     const scrollFrame = window.requestAnimationFrame(() => {
-      catalogSectionRef.current?.scrollIntoView({
-        behavior: "auto",
-        block: "start",
-      });
+      scrollCatalogToStart({ behavior: "auto" });
     });
 
     return () => window.cancelAnimationFrame(scrollFrame);
@@ -571,10 +591,11 @@ export default function HomePage() {
     }
   }
 
-  function applyFilters(nextFilters) {
+  function applyFilters(nextFilters, { scroll = true } = {}) {
     const normalizedFilters = normalizeCatalogFilters(nextFilters);
     const filtersChanged = !areCatalogFiltersEqual(filters, normalizedFilters);
-    const shouldReloadEmptyCatalog = !filtersChanged && !loading && !items.length;
+    const shouldReloadEmptyCatalog =
+      !filtersChanged && !loading && !items.length;
 
     syncCatalogUrl(normalizedFilters);
 
@@ -584,13 +605,15 @@ export default function HomePage() {
 
     resetPaginationState({ clearItems: false });
     setFilters(normalizedFilters);
+    if (scroll) scheduleCatalogScroll();
     return true;
   }
 
   function applyMobileFilters(nextFilters) {
-    const applied = applyFilters(nextFilters);
+    const applied = applyFilters(nextFilters, { scroll: false });
     setMobileFiltersOpen(false);
     if (applied) {
+      scheduleCatalogScroll();
       notifyMobileStatus({
         type: "filters",
         icon: "filters",
@@ -601,10 +624,14 @@ export default function HomePage() {
 
   function applyMobileSort(nextSort) {
     const safeSort = nextSort || initialFilters.sort;
-    const applied = applyFilters({ ...filters, sort: safeSort });
+    const applied = applyFilters(
+      { ...filters, sort: safeSort },
+      { scroll: false },
+    );
     setMobileFiltersOpen(false);
 
     if (applied) {
+      scheduleCatalogScroll();
       notifyMobileStatus({
         type: "sort",
         icon: "sort",
@@ -617,7 +644,9 @@ export default function HomePage() {
   }
 
   function resetCatalogFilters() {
-    applyFilters({ ...initialFilters });
+    applyFilters({ ...initialFilters }, { scroll: false });
+    setMobileFiltersOpen(false);
+    scheduleCatalogScroll();
     notifyMobileStatus({
       type: "filters",
       icon: "filters",
@@ -626,7 +655,9 @@ export default function HomePage() {
   }
 
   function resetSort() {
-    applyFilters({ ...filters, sort: initialFilters.sort });
+    applyFilters({ ...filters, sort: initialFilters.sort }, { scroll: false });
+    setMobileFiltersOpen(false);
+    scheduleCatalogScroll();
     notifyMobileStatus({
       type: "sort",
       icon: "sort",
@@ -635,15 +666,8 @@ export default function HomePage() {
   }
 
   function resetFilters() {
-    applyFilters({ ...initialFilters });
-
-    window.requestAnimationFrame(() => {
-      catalogSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      catalogSectionRef.current?.focus({ preventScroll: true });
-    });
+    applyFilters({ ...initialFilters }, { scroll: false });
+    scheduleCatalogScroll();
   }
 
   function removeFilterChip(key) {
@@ -705,13 +729,12 @@ export default function HomePage() {
 
   function showOfferableCatalog() {
     applyFilters({ ...filters, offerable: true });
-    window.requestAnimationFrame(() => scrollToSection(catalogSectionRef));
   }
 
   return (
     <div className="home-page page-stack page-stack-wide">
       <SeoHead
-        title={homeSeo?.title || `${site.name} | Ropa second hand seleccionada`}
+        title={homeSeo?.title || `${site.name} | Ropa`}
         description={homeSeo?.description || site.description}
         canonical={homeSeo?.canonicalUrl || toAbsoluteUrl("/", site)}
         url={toAbsoluteUrl("/", site)}
@@ -749,7 +772,7 @@ export default function HomePage() {
       {/* <section className="container value-hero-card section-card">
         <div className="value-hero-copy">
           <p className="section-kicker">ESADAR</p>
-          <h1>Ropa second hand seleccionada</h1>
+          <h1>Ropa seleccionada</h1>
           <p className="hero-copy">
             Sportswear, vintage y prendas modernas elegidas una por una.
           </p>

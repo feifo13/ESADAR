@@ -71,7 +71,7 @@ export default function LoginPage() {
         </label>
 
         <button
-          className="button button-primary"
+          className="button button-primary auth-submit-button"
           type="submit"
           disabled={submitting}
         >

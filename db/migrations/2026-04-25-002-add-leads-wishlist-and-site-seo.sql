@@ -319,7 +319,7 @@ DEALLOCATE PREPARE stmt;
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable)
 SELECT
   '/',
-  'ESADAR | Ropa second hand seleccionada',
+  'ESADAR | Ropa seleccionada',
   'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.',
   NULL,
   NULL,
@@ -331,8 +331,8 @@ WHERE NOT EXISTS (
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable)
 SELECT
   '/about',
-  'Sobre ESADAR | Curaduria second hand',
-  'Conoce la seleccion second hand de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.',
+  'Sobre ESADAR | Curaduria',
+  'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.',
   NULL,
   NULL,
   1
