@@ -123,8 +123,10 @@ async function upsertLeadPreferences(potentialCustomerId, preferences, connectio
 }
 
 async function resolveAuthenticatedCustomer(userId, connection) {
-  return findCustomerByUserId(userId, connection)
-    || ensureCustomerForUser(userId, connection);
+  const existingCustomer = await findCustomerByUserId(userId, connection);
+  if (existingCustomer) return existingCustomer;
+
+  return ensureCustomerForUser(userId, connection);
 }
 
 async function getWishlistOwner({ sessionToken, actor, contact, generateSessionToken = true }, connection) {

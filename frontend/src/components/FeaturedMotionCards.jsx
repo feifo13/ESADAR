@@ -26,7 +26,11 @@ function useMediaQuery(query) {
   return matches;
 }
 
-export default function FeaturedMotionCards({ title, items = [] }) {
+export default function FeaturedMotionCards({
+  title,
+  items = [],
+  railControlsClassName = "",
+}) {
   const shouldReduceMotion = useReducedMotion();
   const isDesktop = useMediaQuery("(min-width: 961px)");
   const featuredRailRef = useRef(null);
@@ -181,7 +185,10 @@ export default function FeaturedMotionCards({ title, items = [] }) {
           <p className="section-kicker">Seleccion</p>
           <h2>{title}</h2>
         </div>
-        <ScrollRailControls targetRef={featuredRailRef} />
+        <ScrollRailControls
+          targetRef={featuredRailRef}
+          className={railControlsClassName}
+        />
       </div>
 
       <div

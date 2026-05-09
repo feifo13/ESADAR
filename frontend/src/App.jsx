@@ -1,34 +1,38 @@
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import RootLayout from './components/RootLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import HomePage from './pages/HomePage.jsx';
-import ArticlePage from './pages/ArticlePage.jsx';
-import OfferPage from './pages/OfferPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
-import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
-import CheckoutPage from './pages/CheckoutPage.jsx';
-import CheckoutCompletePage from './pages/CheckoutCompletePage.jsx';
-import ContactPage from './pages/ContactPage.jsx';
-import AboutPage from './pages/AboutPage.jsx';
-import NewsletterPage from './pages/NewsletterPage.jsx';
-import AccountPage from './pages/AccountPage.jsx';
-import AccountOrderDetailPage from './pages/AccountOrderDetailPage.jsx';
-import AdminArticlesPage from './pages/admin/AdminArticlesPage.jsx';
-import AdminArticleFormPage from './pages/admin/AdminArticleFormPage.jsx';
-import AdminArticleStockPage from './pages/admin/AdminArticleStockPage.jsx';
-import BulkArticleCreatePage from './pages/admin/BulkArticleCreatePage.jsx';
-import AdminOrdersPage from './pages/admin/AdminOrdersPage.jsx';
-import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage.jsx';
-import AdminOffersPage from './pages/admin/AdminOffersPage.jsx';
-import AdminContactMessagesPage from './pages/admin/AdminContactMessagesPage.jsx';
-import AdminContactMessageDetailPage from './pages/admin/AdminContactMessageDetailPage.jsx';
-import AdminAuditPage from './pages/admin/AdminAuditPage.jsx';
-import AdminLeadsPage from './pages/admin/AdminLeadsPage.jsx';
-import AdminLeadDetailPage from './pages/admin/AdminLeadDetailPage.jsx';
-import AdminWishlistsPage from './pages/admin/AdminWishlistsPage.jsx';
-import AdminStatisticsPage from './pages/admin/AdminStatisticsPage.jsx';
+
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const ArticlePage = lazy(() => import('./pages/ArticlePage.jsx'));
+const OfferPage = lazy(() => import('./pages/OfferPage.jsx'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage.jsx'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.jsx'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage.jsx'));
+const CheckoutCompletePage = lazy(() => import('./pages/CheckoutCompletePage.jsx'));
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
+const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+const NewsletterPage = lazy(() => import('./pages/NewsletterPage.jsx'));
+const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
+const AccountOrderDetailPage = lazy(() => import('./pages/AccountOrderDetailPage.jsx'));
+const AdminArticlesPage = lazy(() => import('./pages/admin/AdminArticlesPage.jsx'));
+const AdminArticleFormPage = lazy(() => import('./pages/admin/AdminArticleFormPage.jsx'));
+const AdminArticleStockPage = lazy(() => import('./pages/admin/AdminArticleStockPage.jsx'));
+const BulkArticleCreatePage = lazy(() => import('./pages/admin/BulkArticleCreatePage.jsx'));
+const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage.jsx'));
+const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage.jsx'));
+const AdminOffersPage = lazy(() => import('./pages/admin/AdminOffersPage.jsx'));
+const AdminContactMessagesPage = lazy(() => import('./pages/admin/AdminContactMessagesPage.jsx'));
+const AdminContactMessageDetailPage = lazy(
+  () => import('./pages/admin/AdminContactMessageDetailPage.jsx'),
+);
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage.jsx'));
+const AdminLeadsPage = lazy(() => import('./pages/admin/AdminLeadsPage.jsx'));
+const AdminLeadDetailPage = lazy(() => import('./pages/admin/AdminLeadDetailPage.jsx'));
+const AdminWishlistsPage = lazy(() => import('./pages/admin/AdminWishlistsPage.jsx'));
+const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
 
 export default function App() {
   return (

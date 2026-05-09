@@ -773,7 +773,10 @@ export default function ArticlePage() {
                   </p>
                 ) : null} */}
               </div>
-              <ScrollRailControls targetRef={relatedTrackRef} />
+              <ScrollRailControls
+                targetRef={relatedTrackRef}
+                className="scroll-rail-controls--left"
+              />
             </div>
 
             <div

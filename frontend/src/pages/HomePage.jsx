@@ -914,6 +914,9 @@ export default function HomePage() {
         <FeaturedMotionCards
           title="Destacados y descuentos"
           items={featuredItems}
+          railControlsClassName={
+            location.pathname === "/articles" ? "scroll-rail-controls--left" : ""
+          }
         />
       </section>
 

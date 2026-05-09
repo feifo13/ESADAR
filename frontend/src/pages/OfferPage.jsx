@@ -516,7 +516,10 @@ export default function OfferPage() {
             <p className="section-kicker">Tambien permiten oferta</p>
             <h2>Mas prendas abiertas a negociacion</h2>
           </div>
-          <ScrollRailControls targetRef={relatedTrackRef} />
+          <ScrollRailControls
+            targetRef={relatedTrackRef}
+            className="scroll-rail-controls--left"
+          />
         </div>
 
         <div

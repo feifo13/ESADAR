@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Header from "./Header.jsx";
 import AppBreadcrumbs from "./AppBreadcrumbs.jsx";
 import ThemeDock from "./ThemeDock.jsx";
@@ -141,7 +141,9 @@ export default function RootLayout() {
         <main className="page-shell">
           <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
           <div className="page-transition-shell">
-            <Outlet context={{ setHeroLogoVisible, setBreadcrumbLabelOverrides }} />
+            <Suspense fallback={<div className="centered-card">Cargando...</div>}>
+              <Outlet context={{ setHeroLogoVisible, setBreadcrumbLabelOverrides }} />
+            </Suspense>
           </div>
         </main>
       </MobileMenuProvider>
