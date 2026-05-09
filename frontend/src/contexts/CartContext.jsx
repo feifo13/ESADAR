@@ -172,6 +172,8 @@ export function CartProvider({ children }) {
     });
   }, [isAuthenticated, user?.id]);
 
+  const flushCartSync = useCallback(() => syncQueueRef.current.catch(() => undefined), []);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -209,6 +211,7 @@ export function CartProvider({ children }) {
     () => ({
       items,
       refreshCart,
+      flushCartSync,
       addItem(article, quantity = 1, options = {}) {
         const maxQuantity = Math.max(0, Number(article.quantityAvailable ?? article.maxQuantity ?? 0));
         const existingArticleQuantity = items
@@ -394,7 +397,7 @@ export function CartProvider({ children }) {
       cartFx,
       subtotal: items.reduce((sum, item) => sum + Number(item.lineTotal ?? calculateLineTotal(item)), 0),
     }),
-    [cartFx, cartOwnerId, isAuthenticated, items, refreshCart, user?.id],
+    [cartFx, cartOwnerId, flushCartSync, isAuthenticated, items, refreshCart, user?.id],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

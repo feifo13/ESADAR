@@ -1,6 +1,7 @@
 import { withTransaction } from '../../db/transaction.js';
 import { logAudit } from '../audit/audit.service.js';
 import { releaseArticleStockFromOrder } from '../articles/article-stock.service.js';
+import { restoreUsedOffersForOrder } from '../offers/offers.service.js';
 
 function normalizeLimit(limit) {
   const numeric = Number(limit || 100);
@@ -62,16 +63,28 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
         });
       }
 
-      await connection.execute(
+      const [orderUpdateResult] = await connection.execute(
         `
           UPDATE orders
           SET
             order_status = 'EXPIRED',
             updated_by = ?
           WHERE id = ?
+            AND order_status = 'RESERVED'
+            AND payment_status = 'PENDING'
         `,
         [auditContext.actorUserId || null, order.id],
       );
+
+      if (!orderUpdateResult.affectedRows) {
+        continue;
+      }
+
+      await restoreUsedOffersForOrder(connection, {
+        orderId: order.id,
+        auditContext,
+        reason: 'Reserva vencida; oferta disponible nuevamente',
+      });
 
       await connection.execute(
         `

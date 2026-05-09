@@ -357,9 +357,13 @@ export async function markReservedStockAsSold(connection, { articleId, quantity,
     throw badRequest('La cantidad a vender debe ser mayor a cero.');
   }
 
+  if (before.quantityReserved < quantityToSell) {
+    throw badRequest(`No hay stock reservado suficiente para vender la prenda ${articleId}.`);
+  }
+
   const nextBase = {
     ...before,
-    quantityReserved: Math.max(before.quantityReserved - quantityToSell, 0),
+    quantityReserved: before.quantityReserved - quantityToSell,
     quantitySold: before.quantitySold + quantityToSell,
   };
   const after = await persistStockState(

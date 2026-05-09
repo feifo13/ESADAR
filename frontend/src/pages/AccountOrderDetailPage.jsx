@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useNotification } from '../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../lib/api.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
+import { formatPaymentMethod } from '../lib/paymentMethods.js';
 
 const ORDER_STATUS_LABELS = {
   RESERVED: 'Reservada',
@@ -27,10 +28,6 @@ const PAYMENT_STATUS_LABELS = {
   PAID: 'Pagado',
 };
 
-const PAYMENT_METHOD_LABELS = {
-  BANK_TRANSFER: 'Transferencia',
-  MERCADO_PAGO: 'Mercado Pago',
-};
 
 export default function AccountOrderDetailPage() {
   const { id } = useParams();
@@ -131,7 +128,7 @@ export default function AccountOrderDetailPage() {
             <div className="admin-detail-meta account-order-detail-meta">
               <p className="summary-line"><span>Creada</span><strong>{formatDate(order.createdAt)}</strong></p>
               <p className="summary-line"><span>Pago</span><strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>
-              <p className="summary-line"><span>Método</span><strong>{PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod}</strong></p>
+              <p className="summary-line"><span>Método</span><strong>{formatPaymentMethod(order.paymentMethod)}</strong></p>
               <p className="summary-line"><span>Envío</span><strong>{order.shippingMethodName || order.shippingMethodDescription || 'Sin datos'}</strong></p>
               <p className="summary-line total"><span>Total</span><strong>{formatCurrency(order.total)}</strong></p>
             </div>

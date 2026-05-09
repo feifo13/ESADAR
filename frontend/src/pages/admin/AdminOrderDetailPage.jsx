@@ -8,6 +8,7 @@ import { DownloadIcon } from '../../components/ActionIcons.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
+import { formatPaymentMethod } from '../../lib/paymentMethods.js';
 
 const HISTORY_STATUS_LABELS = {
   RESERVED: 'Reservada',
@@ -226,7 +227,7 @@ export default function AdminOrderDetailPage() {
                 <div className="history-list">
                   {order.payments.map((payment) => (
                     <div key={payment.id} className="history-row">
-                      <strong>{payment.providerName || payment.paymentMethod}</strong>
+                      <strong>{payment.providerName || formatPaymentMethod(payment.paymentMethod)}</strong>
                       <span>{formatCurrency(payment.amount)} - {payment.providerReference || 'Sin referencia'}</span>
                       <span><StatusBadge status={payment.status} labels={PAYMENT_STATUS_LABELS} /></span>
                       <span>{formatDate(payment.paidAt || payment.createdAt)}</span>

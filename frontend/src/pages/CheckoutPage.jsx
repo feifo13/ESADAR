@@ -115,7 +115,7 @@ function TrashIcon() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, subtotal, removeItem, updateQuantity, refreshCart } = useCart();
+  const { items, subtotal, removeItem, updateQuantity, refreshCart, flushCartSync } = useCart();
   const { user, isAuthenticated } = useAuth();
   const { shippingMethodOptions, paymentMethodOptions, lookupError } =
     useLookups();
@@ -383,6 +383,10 @@ export default function CheckoutPage() {
       setSubmitting(true);
       setError("");
       setSuccess("");
+
+      if (isAuthenticated) {
+        await flushCartSync();
+      }
 
       const payload = {
         shippingMethodId: Number(shippingMethodId),

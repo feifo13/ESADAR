@@ -81,13 +81,14 @@ export default function LoginPage() {
           {submitting ? "Ingresando…" : "Ingresar"}
         </button>
 
-        <p className="muted-copy">
-          <Link to="/forgot-password">¿Olvidaste tu contraseña?</Link>
-        </p>
-
-        <p className="muted-copy">
-          ¿No tienes cuenta? <Link to="/register">Crear usuario</Link>
-        </p>
+        <div className="auth-highlight-links">
+          <Link className="auth-highlight-link" to="/forgot-password">
+            Reestablecer contraseña
+          </Link>
+          <Link className="auth-highlight-link auth-highlight-link--primary" to="/register">
+            Crear una cuenta
+          </Link>
+        </div>
       </form>
     </div>
   );

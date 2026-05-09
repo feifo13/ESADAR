@@ -841,3 +841,22 @@ COMMIT;
 -- Operaciones: operaciones@miamicloset.test / 123456
 -- Cliente:     lucia.cliente@test.com / 123456
 -- =========================================================
+
+
+INSERT INTO company_collecting_settings (
+  id,
+  is_bank_transfer_enabled,
+  bank_currency,
+  bank_instructions,
+  is_mercado_pago_enabled,
+  mercado_pago_instructions
+)
+VALUES (
+  1,
+  1,
+  'UYU',
+  'Luego de transferir, responde este correo con el comprobante para validar tu orden.',
+  1,
+  'Luego de pagar por Mercado Pago, responde este correo con el comprobante para validar tu orden.'
+)
+ON DUPLICATE KEY UPDATE id = id;

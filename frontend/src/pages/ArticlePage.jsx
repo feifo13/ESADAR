@@ -677,7 +677,8 @@ export default function ArticlePage() {
 
               {article.allowOffers && !isSoldOut ? (
                 <Link
-                  to={articleOfferPath(article)}
+                  to={isAuthenticated ? articleOfferPath(article) : "/login"}
+                  state={!isAuthenticated ? { from: { pathname: articleOfferPath(article) } } : undefined}
                   className="button footer-scroll-scene__copy footer-scroll-scene__copy--about"
                   onClick={() => {
                     void apiFetch("/api/public/article-events", {

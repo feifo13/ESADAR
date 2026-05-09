@@ -22,6 +22,7 @@ import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
 } from "../customers/customer-helpers.js";
+import { restoreUsedOffersForOrder } from "../offers/offers.service.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -196,7 +197,7 @@ export async function createOrder(input, actor, auditContext) {
           salePriceSnapshot: salePrice,
           discountTypeSnapshot: article.discountType,
           discountValueSnapshot: Number(article.discountValue),
-          finalUnitPriceSnapshot: finalUnitPrice,
+          finalUnitPriceSnapshot: acceptedOfferPrice,
           lineTotalSnapshot: lineTotal,
           ...costSnapshot,
           acceptedOfferId: acceptedOffer.id,
@@ -591,6 +592,7 @@ export async function getOrderDetail(id) {
 
 export async function approveOrder(id, auditContext) {
   const order = await withTransaction(async (connection) => {
+    await lockOrderForUpdate(id, connection);
     const before = await getOrderById(id, connection);
     if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
       throw badRequest(
@@ -598,7 +600,7 @@ export async function approveOrder(id, auditContext) {
       );
     }
 
-    await connection.execute(
+    const [orderUpdateResult] = await connection.execute(
       `
         UPDATE orders
         SET
@@ -606,9 +608,14 @@ export async function approveOrder(id, auditContext) {
           approved_at = NOW(),
           updated_by = ?
         WHERE id = ?
+          AND order_status IN ('RESERVED', 'PENDING')
       `,
       [auditContext.actorUserId, id],
     );
+
+    if (!orderUpdateResult.affectedRows) {
+      throw badRequest("La orden ya fue actualizada por otro proceso.");
+    }
 
     const [items] = await connection.execute(
       "SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?",
@@ -669,6 +676,7 @@ export async function approveOrder(id, auditContext) {
 
 export async function cancelOrder(id, reason, auditContext) {
   return withTransaction(async (connection) => {
+    await lockOrderForUpdate(id, connection);
     const before = await getOrderById(id, connection);
     if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
       throw badRequest(
@@ -692,7 +700,7 @@ export async function cancelOrder(id, reason, auditContext) {
       });
     }
 
-    await connection.execute(
+    const [orderUpdateResult] = await connection.execute(
       `
         UPDATE orders
         SET
@@ -701,9 +709,20 @@ export async function cancelOrder(id, reason, auditContext) {
           cancellation_reason = ?,
           updated_by = ?
         WHERE id = ?
+          AND order_status IN ('RESERVED', 'PENDING')
       `,
       [reason, auditContext.actorUserId, id],
     );
+
+    if (!orderUpdateResult.affectedRows) {
+      throw badRequest("La orden ya fue actualizada por otro proceso.");
+    }
+
+    await restoreUsedOffersForOrder(connection, {
+      orderId: id,
+      auditContext,
+      reason: reason || 'Orden cancelada; oferta disponible nuevamente',
+    });
 
     await connection.execute(
       `
@@ -807,13 +826,22 @@ export async function shipOrder(id, auditContext) {
 
 export async function createOrderPayment(id, input, auditContext) {
   return withTransaction(async (connection) => {
+    await lockOrderForUpdate(id, connection);
     const before = await getOrderById(id, connection);
+
+    if (!["RESERVED", "PENDING", "APPROVED"].includes(before.orderStatus)) {
+      throw badRequest("Solo se pueden registrar pagos en ordenes vigentes.");
+    }
 
     if (before.payments.length) {
       throw badRequest("Esta orden ya tiene un pago registrado.");
     }
 
     const amount = Number(input.amount ?? before.total);
+    if (!amountsMatch(amount, before.total)) {
+      throw badRequest("El monto del pago debe coincidir con el total de la orden.");
+    }
+
     const orderPaymentStatus = mapOrderPaymentStatus(input.status);
 
     const [insertResult] = await connection.execute(
@@ -930,6 +958,28 @@ async function getShippingMethod(id, connection) {
   }
 
   return rows[0];
+}
+
+
+async function lockOrderForUpdate(id, connection) {
+  const [rows] = await connection.execute(
+    `
+      SELECT id
+      FROM orders
+      WHERE id = ?
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [id],
+  );
+
+  if (!rows.length) {
+    throw notFound('Orden no encontrada.');
+  }
+}
+
+function amountsMatch(a, b) {
+  return Math.round(Number(a || 0) * 100) === Math.round(Number(b || 0) * 100);
 }
 
 async function getOrderById(id, connection) {

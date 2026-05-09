@@ -9,6 +9,6 @@ export const PAYMENT_METHODS = [
     id: 'MERCADO_PAGO',
     label: 'Mercado Pago',
     instructions:
-      'Flujo interno disponible para registrar pagos manuales mientras se define la pasarela externa.',
+      'Pagá con Mercado Pago usando el link o QR que te enviaremos al confirmar la orden.',
   },
 ];

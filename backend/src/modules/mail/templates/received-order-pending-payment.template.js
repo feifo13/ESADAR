@@ -2,6 +2,7 @@ import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { getArticleEmailImageUrl } from "../mail.assets.js";
 import { buildCustomerName, formatCurrencyUYU } from "../mail.format.js";
+import { getPaymentMethodLabel } from "../../payment-methods.js";
 import { renderEmailShell } from "./base-shell.js";
 
 function renderButton(url, label) {
@@ -67,13 +68,108 @@ function renderOrderItems(items = []) {
   `;
 }
 
+function renderPaymentInstructions(paymentInstructions) {
+  if (!paymentInstructions) return "";
+
+  const fields = Array.isArray(paymentInstructions.fields)
+    ? paymentInstructions.fields.filter((field) => field?.value)
+    : [];
+  const hasInstructions = Boolean(paymentInstructions.instructions);
+  const checkoutUrl = paymentInstructions.checkoutUrl || "";
+  const qrCodeUrl = paymentInstructions.qrCodeUrl || "";
+  const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
+  if (!fields.length && !hasInstructions && !checkoutUrl && !qrCodeUrl) return "";
+
+  const rows = fields
+    .map(
+      (field) => `
+        <tr>
+          <td style="padding:5px 0; color:#56737a; font-size:14px;">${escapeHtml(field.label)}</td>
+          <td align="right" style="padding:5px 0; color:#102b34; font-size:14px; font-weight:700; word-break:break-word;">${escapeHtml(field.value)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  const instructionsHtml = hasInstructions
+    ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(paymentInstructions.instructions).replace(/\n/g, "<br />")}</p>`
+    : "";
+
+  const mercadoPagoButtonHtml = isMercadoPago && checkoutUrl
+    ? `
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
+        <tr>
+          <td>
+            <a href="${escapeHtml(checkoutUrl)}" target="_blank" style="display:inline-block; padding:12px 18px; background:#008e97; color:#ffffff; text-decoration:none; font-weight:700; border:1px solid #008e97;">Pagar ahora con Mercado Pago</a>
+          </td>
+        </tr>
+      </table>
+    `
+    : "";
+
+  const qrHtml = isMercadoPago && qrCodeUrl
+    ? `
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
+        <tr>
+          <td style="padding:12px; border:1px solid rgba(16,43,52,0.14); background:#ffffff;">
+            <img src="${escapeHtml(qrCodeUrl)}" width="180" height="180" alt="QR para pagar con Mercado Pago" style="display:block; width:180px; height:180px; border:0; outline:none; text-decoration:none;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:8px; color:#56737a; font-size:12px; line-height:1.45;">Escaneá este QR para abrir el pago en Mercado Pago. Si no ves la imagen, usá el botón o el link de pago.</td>
+        </tr>
+      </table>
+    `
+    : "";
+
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0; background:#ffffff; border:1px solid rgba(16,43,52,0.14);">
+      <tr>
+        <td style="padding:16px 18px;">
+          <p style="margin:0 0 10px; color:#008e97; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">${escapeHtml(paymentInstructions.title || "Datos de pago")}</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-meta-table">
+            ${rows}
+          </table>
+          ${mercadoPagoButtonHtml}
+          ${qrHtml}
+          ${instructionsHtml}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function formatPaymentInstructionLines(paymentInstructions) {
+  if (!paymentInstructions) return [];
+  const lines = [];
+  const fields = Array.isArray(paymentInstructions.fields)
+    ? paymentInstructions.fields.filter((field) => field?.value)
+    : [];
+
+  if (!fields.length && !paymentInstructions.instructions && !paymentInstructions.checkoutUrl) return lines;
+
+  lines.push("", paymentInstructions.title || "Datos de pago");
+  fields.forEach((field) => lines.push(`${field.label}: ${field.value}`));
+  if (paymentInstructions.method === "MERCADO_PAGO" && paymentInstructions.checkoutUrl) {
+    lines.push(`Pagar ahora con Mercado Pago: ${paymentInstructions.checkoutUrl}`);
+    if (paymentInstructions.qrCodeUrl) {
+      lines.push(`QR de pago: ${paymentInstructions.qrCodeUrl}`);
+    }
+  }
+  if (paymentInstructions.instructions) {
+    lines.push(String(paymentInstructions.instructions));
+  }
+  return lines;
+}
+
 export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
   const name = buildCustomerName(order?.customer);
   const orderLabel = order?.orderNumber || order?.id || "";
   const orderUrl = `${env.publicSiteUrl}/cuenta/ordenes${order?.id ? `/${order.id}` : ""}`;
   const total = formatCurrencyUYU(order?.total, order?.currencyCode || "UYU");
-  const paymentMethod = order?.paymentMethod || "";
+  const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
+  const paymentInstructions = order?.paymentInstructions || null;
   const subject = `Recibimos tu orden - Pago pendiente`;
   const preheader = "Recibimos tu orden y reservamos tus prendas por 24 horas.";
 
@@ -90,7 +186,8 @@ export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
   ];
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
-  textLines.push("", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push(...formatPaymentInstructionLines(paymentInstructions));
+  textLines.push("", "Adjuntamos la boleta de tu orden en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
@@ -113,6 +210,7 @@ export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
         </td>
       </tr>
     </table>
+    ${renderPaymentInstructions(paymentInstructions)}
     ${renderOrderItems(order?.items || [])}
   `;
 

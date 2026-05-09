@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
@@ -49,8 +49,9 @@ function getBlockedOfferMessage(eligibility) {
 
 export default function OfferPage() {
   const { slugOrId } = useParams();
+  const location = useLocation();
   const relatedTrackRef = useRef(null);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { site } = useSiteSeo();
   const { notifyMobileStatus } = useMobileMenu();
   const [article, setArticle] = useState(null);
@@ -257,6 +258,18 @@ export default function OfferPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="container section-card centered-card">
+        Cargando sesión…
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   if (loading) {

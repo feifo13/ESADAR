@@ -13135,6 +13135,39 @@ textarea,
   }
 }
 
+
+.auth-highlight-links {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.auth-highlight-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-soft) 82%, white);
+  color: var(--text);
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+}
+
+.auth-highlight-link:hover {
+  transform: translateY(-1px);
+  border-color: var(--aqua);
+}
+
+.auth-highlight-link--primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--button-primary-text, white);
+}
+
 /* === ESADAR final polish: auth submit spacing and catalog card alignment === */
 .auth-submit-button {
   margin-top: clamp(8px, 1.5vw, 16px);

@@ -623,9 +623,13 @@ function drawItemRow(doc, item, y) {
     size: 9.7,
     bold: true,
   });
+  const displayUnitPrice = item.acceptedOffer?.price != null
+    ? Number(item.acceptedOffer.price)
+    : item.finalUnitPrice;
+
   drawCellValue(
     doc,
-    formatCurrency(item.finalUnitPrice),
+    formatCurrency(displayUnitPrice),
     ITEM_COLUMNS.precio,
     cellY,
     { size: 9.4 },
@@ -798,6 +802,13 @@ function normalizeOrder(order) {
       quantity: item?.quantity,
       finalUnitPrice: asNumber(item?.finalUnitPrice),
       lineTotal: asNumber(item?.lineTotal),
+      acceptedOffer: item?.acceptedOffer
+        ? {
+            id: item.acceptedOffer.id,
+            price: asNumber(item.acceptedOffer.price),
+            quantity: asNumber(item.acceptedOffer.quantity || 1),
+          }
+        : null,
     })),
   };
 }

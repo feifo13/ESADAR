@@ -1,6 +1,6 @@
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
-import { badRequest, notFound } from '../../utils/app-error.js';
+import { badRequest, notFound, unauthorized } from '../../utils/app-error.js';
 import { getPagination } from '../../utils/pagination.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
@@ -22,13 +22,15 @@ const OFFER_SORTS = {
 };
 
 export async function createOffer(input, actor, auditContext) {
+  if (!actor?.userId) {
+    throw unauthorized('Debes iniciar sesion para enviar una oferta.');
+  }
+
   return withTransaction(async (connection) => {
     const article = await getOfferableArticle(input.articleId, connection);
     assertOfferedAmountIsValid(input.offeredAmount, article);
 
-    const owner = actor?.userId
-      ? await resolveAuthenticatedOfferOwner(actor.userId, connection)
-      : await resolveGuestOfferOwner(input.guest, connection);
+    const owner = await resolveAuthenticatedOfferOwner(actor.userId, connection);
 
     const eligibility = await getOfferEligibilityForOwner(article.id, owner, connection, { forUpdate: true });
     assertOfferCreationIsAllowed(eligibility);
@@ -367,6 +369,7 @@ export async function changeOfferStatus(id, input, auditContext) {
 
     if (input.status === 'ACCEPTED') {
       assertOfferedAmountIsValid(before.offeredAmount, before.article);
+      await assertArticleCanStillAcceptOffer(before.article.id, connection);
     }
 
     const sql = `
@@ -589,6 +592,37 @@ async function resolveGuestOfferOwner(guest, connection) {
   };
 }
 
+
+async function assertArticleCanStillAcceptOffer(articleId, connection) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        status,
+        allow_offers AS allowOffers,
+        quantity_available AS quantityAvailable
+      FROM articles
+      WHERE id = ?
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [articleId],
+  );
+
+  if (!rows.length) {
+    throw notFound('Articulo no encontrado.');
+  }
+
+  const article = rows[0];
+  if (!article.allowOffers) {
+    throw badRequest('Esta prenda ya no acepta ofertas.');
+  }
+
+  if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
+    throw badRequest('Esta prenda ya no esta disponible para aceptar ofertas.');
+  }
+}
+
 async function getOfferableArticle(articleId, connection) {
   const [rows] = await connection.execute(
     `
@@ -735,6 +769,105 @@ function normalizeOfferRow(row) {
       instagram: row.contactInstagram,
     },
     history: [],
+  };
+}
+
+
+export async function restoreUsedOffersForOrder(connection, { orderId, auditContext = {}, reason = 'Orden liberada' } = {}) {
+  if (!orderId) return { restoredCount: 0, offerIds: [] };
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        o.id,
+        o.status,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId
+      FROM offers o
+      WHERE o.consumed_order_id = ?
+        AND o.status = 'USED'
+        AND o.consumed_at IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM order_items oi
+          WHERE oi.order_id = ?
+            AND oi.accepted_offer_id = o.id
+        )
+      FOR UPDATE
+    `,
+    [orderId, orderId],
+  );
+
+  const restoredOfferIds = [];
+
+  for (const row of rows) {
+    const [updateResult] = await connection.execute(
+      `
+        UPDATE offers
+        SET
+          status = 'ACCEPTED',
+          consumed_at = NULL,
+          consumed_order_id = NULL,
+          updated_by = ?
+        WHERE id = ?
+          AND status = 'USED'
+          AND consumed_order_id = ?
+      `,
+      [auditContext.actorUserId || null, row.id, orderId],
+    );
+
+    if (!updateResult.affectedRows) continue;
+
+    await connection.execute(
+      `
+        INSERT INTO offer_status_history (
+          offer_id,
+          from_status,
+          to_status,
+          reason,
+          changed_by,
+          source
+        ) VALUES (?, 'USED', 'ACCEPTED', ?, ?, ?)
+      `,
+      [
+        row.id,
+        reason,
+        auditContext.actorUserId || null,
+        auditContext.source || 'SYSTEM',
+      ],
+    );
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'OFFER_RESTORED_AFTER_ORDER_RELEASE',
+        entityType: 'offers',
+        entityId: row.id,
+        beforeJson: {
+          status: row.status,
+          consumedAt: row.consumedAt,
+          consumedOrderId: row.consumedOrderId,
+        },
+        afterJson: {
+          status: 'ACCEPTED',
+          consumedAt: null,
+          consumedOrderId: null,
+        },
+        metadataJson: { orderId, reason },
+        source: auditContext.source || 'SYSTEM',
+        ipAddress: auditContext.ipAddress || null,
+        userAgent: auditContext.userAgent || null,
+      },
+      connection,
+    );
+
+    restoredOfferIds.push(Number(row.id));
+  }
+
+  return {
+    restoredCount: restoredOfferIds.length,
+    offerIds: restoredOfferIds,
   };
 }
 

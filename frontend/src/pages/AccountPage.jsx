@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, useLocation } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -20,6 +20,7 @@ import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
+import { formatPaymentMethod } from "../lib/paymentMethods.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
 import {
@@ -30,10 +31,6 @@ import {
   notifyFormStatus,
 } from "../lib/validation.js";
 
-const PAYMENT_METHOD_LABELS = {
-  BANK_TRANSFER: "Transferencia",
-  MERCADO_PAGO: "Mercado Pago",
-};
 
 const PAYMENT_STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -145,7 +142,11 @@ export default function AccountPage() {
   const { notifyMobileStatus } = useMobileMenu();
   const { notifySuccess, notifyError } = useNotification();
 
-  const activeTab = getActiveTab(location.pathname);
+  const requestedTab = getActiveTab(location.pathname);
+  const activeTab = isAuthenticated ? requestedTab : "guardados";
+  const visibleTabs = isAuthenticated
+    ? TAB_ITEMS
+    : TAB_ITEMS.filter((tab) => tab.key === "guardados");
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
@@ -641,10 +642,14 @@ export default function AccountPage() {
         noindex={!isAuthenticated}
       />
 
+      {!isAuthenticated && requestedTab !== "guardados" ? (
+        <Navigate to="/cuenta/guardados" replace />
+      ) : null}
+
       {isAuthenticated ? null : renderGuestState()}
 
       <nav className="account-tabs" aria-label="Secciones de cuenta">
-        {TAB_ITEMS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <NavLink
             key={tab.key}
             to={tab.path}
@@ -1624,8 +1629,7 @@ export default function AccountPage() {
                           : null,
                         `Fecha: ${formatDate(order.createdAt)}`,
                         `Pago: ${
-                          PAYMENT_METHOD_LABELS[order.paymentMethod] ||
-                          order.paymentMethod
+                          formatPaymentMethod(order.paymentMethod)
                         }`,
                         order.shippingMethodName
                           ? `Envio: ${order.shippingMethodName}`
@@ -1715,8 +1719,7 @@ export default function AccountPage() {
                               <strong>{order.orderNumber}</strong>
                               <span className="muted-copy">
                                 {order.itemsCount} prendas ·{" "}
-                                {PAYMENT_METHOD_LABELS[order.paymentMethod] ||
-                                  order.paymentMethod}
+                                {formatPaymentMethod(order.paymentMethod)}
                                 {order.shippingMethodName
                                   ? ` · ${order.shippingMethodName}`
                                   : ""}

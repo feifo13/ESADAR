@@ -248,6 +248,9 @@ export default function Header({ hideBrand = false }) {
   const isAdmin = user?.roles?.some((role) =>
     ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
   );
+  const canManageUsers = user?.roles?.some((role) =>
+    ["SUPER_ADMIN", "ADMIN"].includes(role),
+  );
   const isCheckoutView = location.pathname.startsWith("/checkout");
   const isAccountView = location.pathname.startsWith("/cuenta");
   const isAdminView = location.pathname.startsWith("/admin");
@@ -391,6 +394,13 @@ export default function Header({ hideBrand = false }) {
     },
     { key: "admin-leads", label: "Leads", to: "/admin/leads" },
     { key: "admin-wishlists", label: "Wishlists", to: "/admin/wishlists" },
+    ...(canManageUsers
+      ? [
+          { key: "admin-users", label: "Usuarios", to: "/admin/users" },
+          { key: "admin-collecting", label: "Cobros", to: "/admin/collecting" },
+        ]
+      : []),
+    { key: "admin-shipping", label: "Envios", to: "/admin/shipping" },
     { key: "admin-statistics", label: "Estadisticas", to: "/admin/statistics" },
     { key: "admin-audit", label: "Auditoria", to: "/admin/audit" },
   ];

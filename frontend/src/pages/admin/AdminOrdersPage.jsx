@@ -15,6 +15,7 @@ import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
+import { formatPaymentMethod } from "../../lib/paymentMethods.js";
 import { buildQueryString } from "../../lib/query.js";
 
 const PAYMENT_STATUS_LABELS = {
@@ -429,7 +430,7 @@ export default function AdminOrdersPage() {
                     </td>
                     <td>
                       <div className="cell-stack cell-stack--compact">
-                        <span>{order.paymentMethod || "-"}</span>
+                        <span>{formatPaymentMethod(order.paymentMethod)}</span>
                         <StatusBadge
                           status={order.paymentStatus}
                           labels={PAYMENT_STATUS_LABELS}

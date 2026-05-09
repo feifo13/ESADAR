@@ -2,6 +2,7 @@ import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { getArticleEmailImageUrl } from "../mail.assets.js";
 import { buildCustomerName, formatCurrencyUYU } from "../mail.format.js";
+import { getPaymentMethodLabel } from "../../payment-methods.js";
 import { renderEmailShell } from "./base-shell.js";
 
 function renderButton(url, label) {
@@ -72,7 +73,7 @@ export function renderApprovedOrderEmail({ order } = {}) {
   const orderLabel = order?.orderNumber || order?.id || "";
   const orderUrl = `${env.publicSiteUrl}/cuenta/ordenes${order?.id ? `/${order.id}` : ""}`;
   const total = formatCurrencyUYU(order?.total, order?.currencyCode || "UYU");
-  const paymentMethod = order?.paymentMethod || "";
+  const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
   const subject = `Tu orden fue aprobada - ${orderLabel}`;
   const preheader = "Ya podés revisar los detalles de tu compra.";
