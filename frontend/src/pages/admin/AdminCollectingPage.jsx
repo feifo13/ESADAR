@@ -22,6 +22,8 @@ const initialForm = {
   mercadoPagoUserId: "",
   mercadoPagoCheckoutUrl: "",
   mercadoPagoNotificationUrl: "",
+  mercadoPagoWebhookSecret: "",
+  mercadoPagoWebhookSecretConfigured: false,
   mercadoPagoPreferenceNote: "",
   mercadoPagoInstructions: "",
 };
@@ -35,6 +37,8 @@ function normalizeSettings(settings = {}) {
     mercadoPagoEnvironment: settings.mercadoPagoEnvironment === "production" ? "production" : "test",
     mercadoPagoAccessToken: "",
     mercadoPagoAccessTokenConfigured: Boolean(settings.mercadoPagoAccessTokenConfigured),
+    mercadoPagoWebhookSecret: "",
+    mercadoPagoWebhookSecretConfigured: Boolean(settings.mercadoPagoWebhookSecretConfigured),
   };
 }
 
@@ -179,7 +183,7 @@ export default function AdminCollectingPage() {
                   <h2>Datos de integracion y pago</h2>
                   <p className="muted-copy">
                     Para las credenciales de prueba, selecciona ambiente Prueba y pega la public key, access token completo y user ID del panel de Mercado Pago.
-                    El access token queda guardado en el backend y no se vuelve a mostrar.
+                    El access token y la firma secreta del webhook quedan guardados en el backend y no se vuelven a mostrar.
                   </p>
                 </div>
                 <label className="preference-check">
@@ -224,7 +228,17 @@ export default function AdminCollectingPage() {
                 </label>
                 <label className="field-group field-group-span-2">
                   <span>URL de notificacion / webhook</span>
-                  <input className="input" placeholder="Opcional: https://tu-dominio.com/api/..." value={form.mercadoPagoNotificationUrl} onChange={(event) => updateField("mercadoPagoNotificationUrl", event.target.value)} />
+                  <input className="input" placeholder="https://tu-dominio.com/api/webhooks/mercado-pago?source_news=webhooks" value={form.mercadoPagoNotificationUrl} onChange={(event) => updateField("mercadoPagoNotificationUrl", event.target.value)} />
+                </label>
+                <label className="field-group field-group-span-2">
+                  <span>Firma secreta del webhook</span>
+                  <input
+                    className="input"
+                    type="password"
+                    placeholder={form.mercadoPagoWebhookSecretConfigured ? "Firma configurada. Pega una nueva solo si quieres reemplazarla." : "Pega la firma secreta generada en Webhooks de Mercado Pago"}
+                    value={form.mercadoPagoWebhookSecret}
+                    onChange={(event) => updateField("mercadoPagoWebhookSecret", event.target.value)}
+                  />
                 </label>
                 <label className="field-group field-group-span-2">
                   <span>Referencia / nota</span>

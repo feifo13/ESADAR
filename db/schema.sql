@@ -180,6 +180,7 @@ CREATE TABLE company_collecting_settings (
   mercado_pago_user_id VARCHAR(120) NULL,
   mercado_pago_checkout_url VARCHAR(500) NULL,
   mercado_pago_notification_url VARCHAR(500) NULL,
+  mercado_pago_webhook_secret VARCHAR(500) NULL,
   mercado_pago_preference_note TEXT NULL,
   mercado_pago_instructions TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -696,6 +697,31 @@ CREATE TABLE payments (
   CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_payments_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_payments_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE mercado_pago_webhook_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  provider_event_id VARCHAR(120) NULL,
+  request_id VARCHAR(120) NULL,
+  event_type VARCHAR(80) NULL,
+  action VARCHAR(120) NULL,
+  payment_id VARCHAR(120) NULL,
+  order_id BIGINT UNSIGNED NULL,
+  processing_status ENUM('RECEIVED','PROCESSED','IGNORED','FAILED') NOT NULL DEFAULT 'RECEIVED',
+  status_message VARCHAR(500) NULL,
+  signature_validated TINYINT(1) NOT NULL DEFAULT 0,
+  payload_json JSON NULL,
+  payment_json JSON NULL,
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at DATETIME NULL,
+  attempt_count INT UNSIGNED NOT NULL DEFAULT 1,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_mp_webhook_provider_event_id (provider_event_id),
+  KEY idx_mp_webhook_payment_id (payment_id),
+  KEY idx_mp_webhook_order_id (order_id),
+  KEY idx_mp_webhook_status (processing_status),
+  KEY idx_mp_webhook_received_at (received_at),
+  CONSTRAINT fk_mp_webhook_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- =========================================================

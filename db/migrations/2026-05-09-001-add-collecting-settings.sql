@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS company_collecting_settings (
   mercado_pago_user_id VARCHAR(120) NULL,
   mercado_pago_checkout_url VARCHAR(500) NULL,
   mercado_pago_notification_url VARCHAR(500) NULL,
+  mercado_pago_webhook_secret VARCHAR(500) NULL,
   mercado_pago_preference_note TEXT NULL,
   mercado_pago_instructions TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
