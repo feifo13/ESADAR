@@ -23,7 +23,6 @@ import { formatCurrency, formatDate } from "../lib/format.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
 import {
-  firstValidationMessage,
   getEmailValidationMessage,
   getFriendlyErrorMessage,
   getMinLengthValidationMessage,

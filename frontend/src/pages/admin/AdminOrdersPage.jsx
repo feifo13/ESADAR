@@ -7,7 +7,6 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import {
-  BanIcon,
   DownloadIcon,
   EyeIcon,
   ArchiveIcon,

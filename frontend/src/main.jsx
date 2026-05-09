@@ -9,6 +9,8 @@ import { LookupsProvider } from './contexts/LookupsContext.jsx';
 import { SiteSeoProvider } from './contexts/SiteSeoContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
 import './index.css';
+import './styles/rails.css';
+import './styles/feedback.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

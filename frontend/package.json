@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:imports": "node scripts/check-unused-imports.mjs",
+    "test:smoke": "node scripts/smoke-routes.mjs",
+    "test:visual": "node scripts/visual-smoke.mjs",
+    "test:qa": "npm run check:imports && npm run build && npm run test:smoke && npm run test:visual"
   },
   "dependencies": {
     "motion": "^12.38.0",

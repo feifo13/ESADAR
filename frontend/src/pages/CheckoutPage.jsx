@@ -11,7 +11,6 @@ import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
 import { apiFetch } from "../lib/api.js";
 import {
-  firstValidationMessage,
   getEmailValidationMessage,
   getFriendlyErrorMessage,
   getRequiredValidationMessage,

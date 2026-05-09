@@ -1,0 +1,50 @@
+/* Scroll rail controls shared by horizontal article rails. */
+.scroll-rail-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scroll-rail-controls.scroll-rail-controls--left {
+  width: 100%;
+  flex-basis: 100%;
+  align-self: flex-start;
+  justify-content: flex-start;
+  margin-top: 10px;
+  margin-right: auto;
+}
+
+.scroll-rail-button {
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.scroll-rail-button span {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.scroll-rail-button:hover,
+.scroll-rail-button:focus-visible {
+  border-color: color-mix(in srgb, var(--aqua) 52%, var(--border));
+  color: var(--aqua);
+  outline: none;
+}
+
+@media (max-width: 720px) {
+  .scroll-rail-controls {
+    display: none;
+  }
+}
