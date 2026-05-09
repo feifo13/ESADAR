@@ -9,10 +9,10 @@ export default function AboutPage() {
   return (
     <div className="container page-stack">
       <SeoHead
-        title={aboutSeo?.title || `Sobre ${site.name} | Curaduria second hand`}
+        title={aboutSeo?.title || `Sobre ${site.name} | Curaduria`}
         description={
           aboutSeo?.description ||
-          "Prendas second hand unicas, sportswear, vintage y ropa moderna elegida una por una."
+          "Prendas unicas, sportswear, vintage y ropa moderna elegida una por una."
         }
         canonical={aboutSeo?.canonicalUrl || toAbsoluteUrl("/about", site)}
         url={toAbsoluteUrl("/about", site)}
