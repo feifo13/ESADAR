@@ -11,10 +11,12 @@ CREATE TABLE IF NOT EXISTS company_collecting_settings (
   bank_document VARCHAR(80) NULL,
   bank_instructions TEXT NULL,
   is_mercado_pago_enabled TINYINT(1) NOT NULL DEFAULT 1,
+  mercado_pago_environment ENUM('test','production') NOT NULL DEFAULT 'test',
   mercado_pago_public_key VARCHAR(255) NULL,
   mercado_pago_access_token VARCHAR(500) NULL,
   mercado_pago_user_id VARCHAR(120) NULL,
   mercado_pago_checkout_url VARCHAR(500) NULL,
+  mercado_pago_notification_url VARCHAR(500) NULL,
   mercado_pago_preference_note TEXT NULL,
   mercado_pago_instructions TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,6 +31,6 @@ CREATE TABLE IF NOT EXISTS company_collecting_settings (
   CONSTRAINT fk_company_collecting_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO company_collecting_settings (id, bank_currency)
-VALUES (1, 'UYU')
+INSERT INTO company_collecting_settings (id, bank_currency, mercado_pago_environment)
+VALUES (1, 'UYU', 'test')
 ON DUPLICATE KEY UPDATE id = id;

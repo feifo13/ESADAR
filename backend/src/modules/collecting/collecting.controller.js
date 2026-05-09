@@ -11,13 +11,21 @@ function getAuditContext(req) {
   };
 }
 
+function sanitizeCollectingSettings(settings) {
+  return {
+    ...settings,
+    mercadoPagoAccessToken: '',
+    mercadoPagoAccessTokenConfigured: Boolean(settings?.mercadoPagoAccessToken),
+  };
+}
+
 export async function getAdminCollectingSettings(_req, res) {
   const settings = await getCollectingSettings();
-  return res.json({ ok: true, settings });
+  return res.json({ ok: true, settings: sanitizeCollectingSettings(settings) });
 }
 
 export async function updateAdminCollectingSettings(req, res) {
   const input = updateCollectingSettingsSchema.parse(req.body);
   const settings = await updateCollectingSettings(input, getAuditContext(req));
-  return res.json({ ok: true, settings });
+  return res.json({ ok: true, settings: sanitizeCollectingSettings(settings) });
 }

@@ -36,10 +36,12 @@ export const updateCollectingSettingsSchema = z.object({
   bankDocument: nullableText(80),
   bankInstructions: nullableLongText,
   isMercadoPagoEnabled: booleanishDefault(true),
+  mercadoPagoEnvironment: z.enum(['test', 'production']).default('test'),
   mercadoPagoPublicKey: nullableText(255),
   mercadoPagoAccessToken: nullableText(500),
   mercadoPagoUserId: nullableText(120),
   mercadoPagoCheckoutUrl: nullableText(500),
+  mercadoPagoNotificationUrl: nullableText(500),
   mercadoPagoPreferenceNote: nullableLongText,
   mercadoPagoInstructions: nullableLongText,
 });

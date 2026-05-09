@@ -15,10 +15,13 @@ const initialForm = {
   bankDocument: "",
   bankInstructions: "",
   isMercadoPagoEnabled: true,
+  mercadoPagoEnvironment: "test",
   mercadoPagoPublicKey: "",
   mercadoPagoAccessToken: "",
+  mercadoPagoAccessTokenConfigured: false,
   mercadoPagoUserId: "",
   mercadoPagoCheckoutUrl: "",
+  mercadoPagoNotificationUrl: "",
   mercadoPagoPreferenceNote: "",
   mercadoPagoInstructions: "",
 };
@@ -29,6 +32,9 @@ function normalizeSettings(settings = {}) {
     ...settings,
     isBankTransferEnabled: Boolean(settings.isBankTransferEnabled ?? true),
     isMercadoPagoEnabled: Boolean(settings.isMercadoPagoEnabled ?? true),
+    mercadoPagoEnvironment: settings.mercadoPagoEnvironment === "production" ? "production" : "test",
+    mercadoPagoAccessToken: "",
+    mercadoPagoAccessTokenConfigured: Boolean(settings.mercadoPagoAccessTokenConfigured),
   };
 }
 
@@ -171,6 +177,10 @@ export default function AdminCollectingPage() {
                 <div>
                   <p className="section-kicker">Mercado Pago</p>
                   <h2>Datos de integracion y pago</h2>
+                  <p className="muted-copy">
+                    Para las credenciales de prueba, selecciona ambiente Prueba y pega la public key, access token completo y user ID del panel de Mercado Pago.
+                    El access token queda guardado en el backend y no se vuelve a mostrar.
+                  </p>
                 </div>
                 <label className="preference-check">
                   <input
@@ -184,20 +194,37 @@ export default function AdminCollectingPage() {
 
               <div className="form-grid-two">
                 <label className="field-group">
+                  <span>Ambiente</span>
+                  <select className="input" value={form.mercadoPagoEnvironment} onChange={(event) => updateField("mercadoPagoEnvironment", event.target.value)}>
+                    <option value="test">Prueba</option>
+                    <option value="production">Produccion</option>
+                  </select>
+                </label>
+                <label className="field-group">
                   <span>Public key</span>
                   <input className="input" value={form.mercadoPagoPublicKey} onChange={(event) => updateField("mercadoPagoPublicKey", event.target.value)} />
                 </label>
                 <label className="field-group">
                   <span>Access token</span>
-                  <input className="input" type="password" value={form.mercadoPagoAccessToken} onChange={(event) => updateField("mercadoPagoAccessToken", event.target.value)} />
+                  <input
+                    className="input"
+                    type="password"
+                    placeholder={form.mercadoPagoAccessTokenConfigured ? "Access token configurado. Pega uno nuevo solo si quieres reemplazarlo." : "Pega el access token completo"}
+                    value={form.mercadoPagoAccessToken}
+                    onChange={(event) => updateField("mercadoPagoAccessToken", event.target.value)}
+                  />
                 </label>
                 <label className="field-group">
                   <span>Usuario / Collector ID</span>
                   <input className="input" value={form.mercadoPagoUserId} onChange={(event) => updateField("mercadoPagoUserId", event.target.value)} />
                 </label>
                 <label className="field-group">
-                  <span>Link de pago</span>
-                  <input className="input" value={form.mercadoPagoCheckoutUrl} onChange={(event) => updateField("mercadoPagoCheckoutUrl", event.target.value)} />
+                  <span>Link de pago fallback</span>
+                  <input className="input" placeholder="Opcional: se usa si falla la preferencia dinamica" value={form.mercadoPagoCheckoutUrl} onChange={(event) => updateField("mercadoPagoCheckoutUrl", event.target.value)} />
+                </label>
+                <label className="field-group field-group-span-2">
+                  <span>URL de notificacion / webhook</span>
+                  <input className="input" placeholder="Opcional: https://tu-dominio.com/api/..." value={form.mercadoPagoNotificationUrl} onChange={(event) => updateField("mercadoPagoNotificationUrl", event.target.value)} />
                 </label>
                 <label className="field-group field-group-span-2">
                   <span>Referencia / nota</span>

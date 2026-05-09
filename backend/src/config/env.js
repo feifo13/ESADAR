@@ -76,4 +76,16 @@ export const env = {
         process.env.SMTP_TLS_REJECT_UNAUTHORIZED || "true",
       ).toLowerCase() !== "false",
   },
+  mercadoPago: {
+    environment:
+      String(process.env.MERCADO_PAGO_ENV || "test").toLowerCase() ===
+      "production"
+        ? "production"
+        : "test",
+    publicKey: process.env.MERCADO_PAGO_PUBLIC_KEY || "",
+    accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN || "",
+    userId: process.env.MERCADO_PAGO_USER_ID || "",
+    checkoutUrl: process.env.MERCADO_PAGO_CHECKOUT_URL || "",
+    notificationUrl: process.env.MERCADO_PAGO_NOTIFICATION_URL || "",
+  },
 };

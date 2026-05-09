@@ -849,6 +849,7 @@ INSERT INTO company_collecting_settings (
   bank_currency,
   bank_instructions,
   is_mercado_pago_enabled,
+  mercado_pago_environment,
   mercado_pago_instructions
 )
 VALUES (
@@ -857,6 +858,7 @@ VALUES (
   'UYU',
   'Luego de transferir, responde este correo con el comprobante para validar tu orden.',
   1,
-  'Luego de pagar por Mercado Pago, responde este correo con el comprobante para validar tu orden.'
+  'test',
+  'Paga con el boton o escanea el QR de Mercado Pago. Luego responde este correo con el comprobante para validar tu orden.'
 )
 ON DUPLICATE KEY UPDATE id = id;

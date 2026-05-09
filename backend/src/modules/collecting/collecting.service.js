@@ -6,6 +6,12 @@ import { getPaymentMethodLabel } from '../payment-methods.js';
 
 const MERCADO_PAGO_PREFERENCE_URL = 'https://api.mercadopago.com/checkout/preferences';
 
+function normalizeMercadoPagoEnvironment(value) {
+  return String(value || env.mercadoPago.environment || 'test').toLowerCase() === 'production'
+    ? 'production'
+    : 'test';
+}
+
 function clean(value) {
   if (value == null) return null;
   const text = String(value).trim();
@@ -31,10 +37,13 @@ function normalizeSettingsRow(row = {}) {
     bankDocument: row.bankDocument || '',
     bankInstructions: row.bankInstructions || '',
     isMercadoPagoEnabled: bool(row.isMercadoPagoEnabled, true),
-    mercadoPagoPublicKey: row.mercadoPagoPublicKey || '',
-    mercadoPagoAccessToken: row.mercadoPagoAccessToken || '',
-    mercadoPagoUserId: row.mercadoPagoUserId || '',
-    mercadoPagoCheckoutUrl: row.mercadoPagoCheckoutUrl || '',
+    mercadoPagoEnvironment: normalizeMercadoPagoEnvironment(row.mercadoPagoEnvironment),
+    mercadoPagoPublicKey: row.mercadoPagoPublicKey || env.mercadoPago.publicKey || '',
+    mercadoPagoAccessToken: row.mercadoPagoAccessToken || env.mercadoPago.accessToken || '',
+    mercadoPagoAccessTokenConfigured: Boolean(row.mercadoPagoAccessToken || env.mercadoPago.accessToken),
+    mercadoPagoUserId: row.mercadoPagoUserId || env.mercadoPago.userId || '',
+    mercadoPagoCheckoutUrl: row.mercadoPagoCheckoutUrl || env.mercadoPago.checkoutUrl || '',
+    mercadoPagoNotificationUrl: row.mercadoPagoNotificationUrl || env.mercadoPago.notificationUrl || '',
     mercadoPagoPreferenceNote: row.mercadoPagoPreferenceNote || '',
     mercadoPagoInstructions: row.mercadoPagoInstructions || '',
     createdAt: row.createdAt || null,
@@ -53,8 +62,8 @@ function normalizeSettingsForAudit(settings) {
 async function ensureSettingsRow(connection = pool) {
   await connection.execute(
     `
-      INSERT INTO company_collecting_settings (id, bank_currency)
-      VALUES (1, 'UYU')
+      INSERT INTO company_collecting_settings (id, bank_currency, mercado_pago_environment)
+      VALUES (1, 'UYU', 'test')
       ON DUPLICATE KEY UPDATE id = id
     `,
   );
@@ -77,10 +86,12 @@ export async function getCollectingSettings(connection = pool) {
         bank_document AS bankDocument,
         bank_instructions AS bankInstructions,
         is_mercado_pago_enabled AS isMercadoPagoEnabled,
+        mercado_pago_environment AS mercadoPagoEnvironment,
         mercado_pago_public_key AS mercadoPagoPublicKey,
         mercado_pago_access_token AS mercadoPagoAccessToken,
         mercado_pago_user_id AS mercadoPagoUserId,
         mercado_pago_checkout_url AS mercadoPagoCheckoutUrl,
+        mercado_pago_notification_url AS mercadoPagoNotificationUrl,
         mercado_pago_preference_note AS mercadoPagoPreferenceNote,
         mercado_pago_instructions AS mercadoPagoInstructions,
         created_at AS createdAt,
@@ -113,10 +124,12 @@ export async function updateCollectingSettings(input, auditContext) {
           bank_document = ?,
           bank_instructions = ?,
           is_mercado_pago_enabled = ?,
+          mercado_pago_environment = ?,
           mercado_pago_public_key = ?,
           mercado_pago_access_token = ?,
           mercado_pago_user_id = ?,
           mercado_pago_checkout_url = ?,
+          mercado_pago_notification_url = ?,
           mercado_pago_preference_note = ?,
           mercado_pago_instructions = ?,
           updated_by = ?
@@ -134,10 +147,12 @@ export async function updateCollectingSettings(input, auditContext) {
         clean(input.bankDocument),
         clean(input.bankInstructions),
         input.isMercadoPagoEnabled ? 1 : 0,
+        normalizeMercadoPagoEnvironment(input.mercadoPagoEnvironment),
         clean(input.mercadoPagoPublicKey),
-        clean(input.mercadoPagoAccessToken),
+        clean(input.mercadoPagoAccessToken) || before.mercadoPagoAccessToken || null,
         clean(input.mercadoPagoUserId),
         clean(input.mercadoPagoCheckoutUrl),
+        clean(input.mercadoPagoNotificationUrl),
         clean(input.mercadoPagoPreferenceNote),
         clean(input.mercadoPagoInstructions),
         auditContext.actorUserId || null,
@@ -210,15 +225,20 @@ function toMercadoPagoAmount(value) {
   return Number(amount.toFixed(2));
 }
 
-function buildMercadoPagoPreferencePayload(order) {
+function getMercadoPagoBackUrl(order) {
+  return getOrderUrl(order);
+}
+
+function buildMercadoPagoPreferencePayload(order, settings) {
   const orderLabel = getOrderLabel(order);
   const total = toMercadoPagoAmount(order?.total);
   if (!total) return null;
 
   const customer = order?.customer || {};
-  const orderUrl = getOrderUrl(order);
+  const orderUrl = getMercadoPagoBackUrl(order);
+  const notificationUrl = clean(settings.mercadoPagoNotificationUrl);
 
-  return {
+  const payload = {
     items: [
       {
         id: String(order?.id || orderLabel),
@@ -241,18 +261,35 @@ function buildMercadoPagoPreferencePayload(order) {
     },
     auto_return: 'approved',
     external_reference: orderLabel,
+    statement_descriptor: 'ESADAR',
     metadata: {
       order_id: order?.id || null,
       order_number: order?.orderNumber || null,
+      source: 'esadar_checkout',
     },
   };
+
+  if (notificationUrl) {
+    payload.notification_url = notificationUrl;
+  }
+
+  return payload;
 }
 
-async function createMercadoPagoPreferenceUrl(order, settings) {
+function selectMercadoPagoCheckoutUrl(preference, environment) {
+  const initPoint = clean(preference?.init_point);
+  const sandboxInitPoint = clean(preference?.sandbox_init_point);
+
+  if (environment === 'test') return sandboxInitPoint || initPoint;
+  return initPoint || sandboxInitPoint;
+}
+
+async function createMercadoPagoPreference(order, settings) {
   const accessToken = clean(settings.mercadoPagoAccessToken);
   if (!accessToken) return null;
 
-  const payload = buildMercadoPagoPreferencePayload(order);
+  const environment = normalizeMercadoPagoEnvironment(settings.mercadoPagoEnvironment);
+  const payload = buildMercadoPagoPreferencePayload(order, settings);
   if (!payload) return null;
 
   const controller = new AbortController();
@@ -272,7 +309,16 @@ async function createMercadoPagoPreferenceUrl(order, settings) {
     if (!response.ok) return null;
 
     const preference = await response.json();
-    return clean(preference.init_point) || clean(preference.sandbox_init_point);
+    const checkoutUrl = selectMercadoPagoCheckoutUrl(preference, environment);
+
+    if (!checkoutUrl) return null;
+
+    return {
+      id: clean(preference.id),
+      checkoutUrl,
+      environment,
+      source: 'dynamic_preference',
+    };
   } catch {
     return null;
   } finally {
@@ -280,10 +326,12 @@ async function createMercadoPagoPreferenceUrl(order, settings) {
   }
 }
 
-function buildMercadoPagoDetails(settings, checkoutUrlOverride = null) {
-  const checkoutUrl = clean(checkoutUrlOverride) || clean(settings.mercadoPagoCheckoutUrl);
+function buildMercadoPagoDetails(settings, preference = null) {
+  const checkoutUrl = clean(preference?.checkoutUrl) || clean(settings.mercadoPagoCheckoutUrl);
+  const environment = normalizeMercadoPagoEnvironment(preference?.environment || settings.mercadoPagoEnvironment);
   const fields = [
     ['Link de pago', checkoutUrl],
+    ['Preferencia Mercado Pago', preference?.id],
     ['Usuario / Collector ID', settings.mercadoPagoUserId],
     ['Referencia', settings.mercadoPagoPreferenceNote],
   ]
@@ -299,6 +347,8 @@ function buildMercadoPagoDetails(settings, checkoutUrlOverride = null) {
     instructions: clean(settings.mercadoPagoInstructions),
     checkoutUrl,
     qrCodeUrl: buildMercadoPagoQrUrl(checkoutUrl),
+    environment,
+    source: preference?.source || (checkoutUrl ? 'configured_link' : null),
   };
 }
 
@@ -309,8 +359,8 @@ export async function getPaymentInstructionsForOrder(order, connection = pool) {
   if (paymentMethod === 'BANK_TRANSFER') return buildBankTransferDetails(settings);
 
   if (paymentMethod === 'MERCADO_PAGO') {
-    const preferenceCheckoutUrl = await createMercadoPagoPreferenceUrl(order, settings);
-    return buildMercadoPagoDetails(settings, preferenceCheckoutUrl);
+    const preference = await createMercadoPagoPreference(order, settings);
+    return buildMercadoPagoDetails(settings, preference);
   }
 
   return {
