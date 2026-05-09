@@ -87,5 +87,6 @@ export const env = {
     userId: process.env.MERCADO_PAGO_USER_ID || "",
     checkoutUrl: process.env.MERCADO_PAGO_CHECKOUT_URL || "",
     notificationUrl: process.env.MERCADO_PAGO_NOTIFICATION_URL || "",
+    webhookSecret: process.env.MERCADO_PAGO_WEBHOOK_SECRET || "",
   },
 };

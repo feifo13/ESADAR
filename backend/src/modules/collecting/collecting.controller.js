@@ -16,6 +16,8 @@ function sanitizeCollectingSettings(settings) {
     ...settings,
     mercadoPagoAccessToken: '',
     mercadoPagoAccessTokenConfigured: Boolean(settings?.mercadoPagoAccessToken),
+    mercadoPagoWebhookSecret: '',
+    mercadoPagoWebhookSecretConfigured: Boolean(settings?.mercadoPagoWebhookSecret),
   };
 }
 

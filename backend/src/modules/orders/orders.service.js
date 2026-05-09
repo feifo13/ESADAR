@@ -912,6 +912,248 @@ export async function createOrderPayment(id, input, auditContext) {
   });
 }
 
+
+export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {}) {
+  const result = await withTransaction(async (connection) => {
+    const paymentId = cleanProviderReference(payment?.id);
+    if (!paymentId) {
+      return {
+        status: 'ignored',
+        message: 'Notificacion sin payment id.',
+        order: null,
+        orderId: null,
+        shouldSendApprovedEmail: false,
+      };
+    }
+
+    const orderLookup = getMercadoPagoOrderLookup(payment);
+    const orderRow = await findOrderForMercadoPagoPayment(orderLookup, connection);
+    if (!orderRow) {
+      return {
+        status: 'ignored',
+        message: 'No se encontro una orden asociada al pago de Mercado Pago.',
+        order: null,
+        orderId: null,
+        shouldSendApprovedEmail: false,
+      };
+    }
+
+    const before = await getOrderById(orderRow.id, connection);
+    if (before.paymentMethod !== 'MERCADO_PAGO') {
+      return {
+        status: 'ignored',
+        message: 'La orden asociada no usa Mercado Pago como metodo de pago.',
+        order: before,
+        orderId: before.id,
+        shouldSendApprovedEmail: false,
+      };
+    }
+
+    const mappedPaymentStatus = mapMercadoPagoPaymentStatus(payment?.status);
+    const paymentAmount = getMercadoPagoPaymentAmount(payment);
+    const amountMatches = amountsMatch(paymentAmount, before.total);
+    const paidAt = getMercadoPagoPaidAt(payment, mappedPaymentStatus);
+
+    await upsertMercadoPagoPayment(connection, {
+      orderId: before.id,
+      payment,
+      paymentId,
+      amount: paymentAmount || Number(before.total || 0),
+      currencyCode: payment?.currency_id || 'UYU',
+      status: mappedPaymentStatus,
+      paidAt,
+    });
+
+    let status = 'processed';
+    let message = `Pago Mercado Pago ${paymentId} registrado.`;
+    let shouldSendApprovedEmail = false;
+
+    if (mappedPaymentStatus === 'APPROVED') {
+      if (!amountMatches) {
+        status = 'failed';
+        message = 'Pago aprobado con monto distinto al total de la orden. Requiere revision manual.';
+
+        await logAudit(
+          {
+            actorUserId: auditContext.actorUserId || null,
+            actorLabel: auditContext.actorLabel || null,
+            actionCode: 'MERCADO_PAGO_AMOUNT_MISMATCH',
+            entityType: 'orders',
+            entityId: before.id,
+            beforeJson: { total: before.total, paymentStatus: before.paymentStatus },
+            afterJson: { mercadoPagoAmount: paymentAmount, mercadoPagoStatus: payment?.status },
+            metadataJson: { paymentId, externalReference: payment?.external_reference || null },
+            source: auditContext.source || 'API',
+            ipAddress: auditContext.ipAddress || null,
+            userAgent: auditContext.userAgent || null,
+          },
+          connection,
+        );
+      } else if (['RESERVED', 'PENDING'].includes(before.orderStatus)) {
+        const [items] = await connection.execute(
+          'SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?',
+          [before.id],
+        );
+
+        for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+          await markReservedStockAsSold(connection, {
+            articleId,
+            quantity,
+            orderId: before.id,
+            auditContext,
+            reason: 'Pago aprobado automaticamente por Mercado Pago',
+          });
+        }
+
+        const [orderUpdateResult] = await connection.execute(
+          `
+            UPDATE orders
+            SET
+              order_status = 'APPROVED',
+              payment_status = 'PAID',
+              approved_at = COALESCE(approved_at, NOW()),
+              updated_by = NULL
+            WHERE id = ?
+              AND order_status IN ('RESERVED', 'PENDING')
+          `,
+          [before.id],
+        );
+
+        if (!orderUpdateResult.affectedRows) {
+          status = 'ignored';
+          message = 'La orden ya fue actualizada por otro proceso.';
+        } else {
+          await connection.execute(
+            `
+              INSERT INTO order_status_history (
+                order_id,
+                from_status,
+                to_status,
+                reason,
+                changed_by,
+                source
+              ) VALUES (?, ?, 'APPROVED', 'Pago aprobado automaticamente por Mercado Pago', NULL, ?)
+            `,
+            [before.id, before.orderStatus, auditContext.source || 'API'],
+          );
+
+          await logAudit(
+            {
+              actorUserId: null,
+              actorLabel: 'Mercado Pago webhook',
+              actionCode: 'ORDER_APPROVED_BY_MERCADO_PAGO',
+              entityType: 'orders',
+              entityId: before.id,
+              beforeJson: before,
+              afterJson: { orderStatus: 'APPROVED', paymentStatus: 'PAID', paymentId },
+              source: auditContext.source || 'API',
+              ipAddress: auditContext.ipAddress || null,
+              userAgent: auditContext.userAgent || null,
+            },
+            connection,
+          );
+
+          shouldSendApprovedEmail = true;
+          message = 'Pago aprobado y orden aprobada automaticamente.';
+        }
+      } else {
+        await connection.execute(
+          `
+            UPDATE orders
+            SET payment_status = 'PAID', updated_by = NULL
+            WHERE id = ?
+          `,
+          [before.id],
+        );
+
+        message = `Pago aprobado registrado sobre orden en estado ${before.orderStatus}.`;
+      }
+    } else if (mappedPaymentStatus === 'REFUNDED') {
+      await connection.execute(
+        `
+          UPDATE orders
+          SET payment_status = 'REFUNDED', updated_by = NULL
+          WHERE id = ?
+        `,
+        [before.id],
+      );
+      message = 'Pago Mercado Pago marcado como reembolsado.';
+    } else if (mappedPaymentStatus === 'REJECTED' || mappedPaymentStatus === 'FAILED') {
+      if (!['PAID', 'REFUNDED'].includes(before.paymentStatus)) {
+        await connection.execute(
+          `
+            UPDATE orders
+            SET payment_status = 'FAILED', updated_by = NULL
+            WHERE id = ?
+          `,
+          [before.id],
+        );
+      }
+      message = 'Pago Mercado Pago rechazado/fallido registrado.';
+    } else if (mappedPaymentStatus === 'PENDING') {
+      if (!['PAID', 'REFUNDED'].includes(before.paymentStatus)) {
+        await connection.execute(
+          `
+            UPDATE orders
+            SET payment_status = 'PENDING', updated_by = NULL
+            WHERE id = ?
+          `,
+          [before.id],
+        );
+      }
+      message = 'Pago Mercado Pago pendiente registrado.';
+    }
+
+    const after = await getOrderById(before.id, connection);
+
+    await logAudit(
+      {
+        actorUserId: null,
+        actorLabel: 'Mercado Pago webhook',
+        actionCode: 'MERCADO_PAGO_PAYMENT_SYNCED',
+        entityType: 'orders',
+        entityId: before.id,
+        beforeJson: {
+          orderStatus: before.orderStatus,
+          paymentStatus: before.paymentStatus,
+        },
+        afterJson: {
+          orderStatus: after.orderStatus,
+          paymentStatus: after.paymentStatus,
+          mercadoPagoStatus: payment?.status || null,
+          mercadoPagoPaymentStatus: mappedPaymentStatus,
+        },
+        metadataJson: {
+          paymentId,
+          amount: paymentAmount,
+          amountMatches,
+          externalReference: payment?.external_reference || null,
+        },
+        source: auditContext.source || 'API',
+        ipAddress: auditContext.ipAddress || null,
+        userAgent: auditContext.userAgent || null,
+      },
+      connection,
+    );
+
+    return {
+      status,
+      message,
+      order: after,
+      orderId: after.id,
+      shouldSendApprovedEmail,
+    };
+  });
+
+  if (result.shouldSendApprovedEmail && result.order) {
+    sendApprovedOrderEmail(result.order).catch((error) => {
+      console.warn('[orders] approved order email after Mercado Pago webhook failed', error?.message || error);
+    });
+  }
+
+  return result;
+}
+
 async function resolveOrderOwner(input, actor, connection) {
   if (actor?.userId) {
     const customer = await findCustomerByUserId(actor.userId, connection);
@@ -1129,6 +1371,173 @@ async function getOrderById(id, connection) {
     amount: Number(row.amount),
   }));
   return order;
+}
+
+
+function cleanProviderReference(value) {
+  if (value == null) return '';
+  return String(value).trim();
+}
+
+function toMysqlDateTime(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function getMercadoPagoOrderLookup(payment = {}) {
+  const metadata = payment.metadata && typeof payment.metadata === 'object' ? payment.metadata : {};
+  const rawOrderId = metadata.order_id ?? metadata.orderId ?? null;
+  const numericOrderId = Number(rawOrderId);
+  const orderId = Number.isInteger(numericOrderId) && numericOrderId > 0 ? numericOrderId : null;
+  const orderNumber = cleanProviderReference(
+    metadata.order_number || metadata.orderNumber || payment.external_reference || '',
+  );
+
+  return { orderId, orderNumber };
+}
+
+async function findOrderForMercadoPagoPayment({ orderId, orderNumber }, connection) {
+  if (!orderId && !orderNumber) return null;
+
+  const clauses = [];
+  const params = [];
+
+  if (orderId) {
+    clauses.push('id = ?');
+    params.push(orderId);
+  }
+
+  if (orderNumber) {
+    clauses.push('order_number = ?');
+    params.push(orderNumber);
+  }
+
+  const [rows] = await connection.execute(
+    `
+      SELECT id
+      FROM orders
+      WHERE ${clauses.join(' OR ')}
+      ORDER BY id DESC
+      LIMIT 1
+      FOR UPDATE
+    `,
+    params,
+  );
+
+  return rows[0] || null;
+}
+
+function getMercadoPagoPaymentAmount(payment = {}) {
+  const candidates = [
+    payment.transaction_amount,
+    payment.transaction_details?.total_paid_amount,
+    payment.transaction_details?.net_received_amount,
+  ];
+
+  for (const candidate of candidates) {
+    const amount = Number(candidate);
+    if (Number.isFinite(amount) && amount > 0) return Number(amount.toFixed(2));
+  }
+
+  return 0;
+}
+
+function getMercadoPagoPaidAt(payment = {}, mappedPaymentStatus) {
+  if (mappedPaymentStatus !== 'APPROVED') return null;
+  return toMysqlDateTime(payment.date_approved || payment.money_release_date || payment.date_last_updated || new Date());
+}
+
+function mapMercadoPagoPaymentStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+
+  if (normalized === 'approved' || normalized === 'accredited') return 'APPROVED';
+  if (normalized === 'refunded' || normalized === 'charged_back') return 'REFUNDED';
+  if (['rejected', 'cancelled', 'canceled'].includes(normalized)) return 'REJECTED';
+  if (['pending', 'in_process', 'authorized', 'in_mediation'].includes(normalized)) return 'PENDING';
+  return 'PENDING';
+}
+
+async function upsertMercadoPagoPayment(connection, {
+  orderId,
+  payment,
+  paymentId,
+  amount,
+  currencyCode,
+  status,
+  paidAt,
+}) {
+  const rawJson = JSON.stringify(payment || {});
+  const [existingRows] = await connection.execute(
+    `
+      SELECT id
+      FROM payments
+      WHERE provider_name = 'Mercado Pago'
+        AND provider_reference = ?
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [paymentId],
+  );
+
+  if (existingRows.length) {
+    await connection.execute(
+      `
+        UPDATE payments
+        SET
+          order_id = ?,
+          payment_method = 'MERCADO_PAGO',
+          amount = ?,
+          currency_code = ?,
+          status = ?,
+          paid_at = CASE WHEN ? IS NOT NULL THEN ? ELSE paid_at END,
+          raw_response_json = ?,
+          updated_by = NULL
+        WHERE id = ?
+      `,
+      [
+        orderId,
+        amount,
+        currencyCode || 'UYU',
+        status,
+        paidAt,
+        paidAt,
+        rawJson,
+        existingRows[0].id,
+      ],
+    );
+    return existingRows[0].id;
+  }
+
+  const [insertResult] = await connection.execute(
+    `
+      INSERT INTO payments (
+        order_id,
+        payment_method,
+        provider_name,
+        provider_reference,
+        amount,
+        currency_code,
+        status,
+        paid_at,
+        raw_response_json,
+        created_by,
+        updated_by
+      ) VALUES (?, 'MERCADO_PAGO', 'Mercado Pago', ?, ?, ?, ?, ?, ?, NULL, NULL)
+    `,
+    [
+      orderId,
+      paymentId,
+      amount,
+      currencyCode || 'UYU',
+      status,
+      paidAt,
+      rawJson,
+    ],
+  );
+
+  return insertResult.insertId;
 }
 
 function mapOrderPaymentStatus(paymentStatus) {

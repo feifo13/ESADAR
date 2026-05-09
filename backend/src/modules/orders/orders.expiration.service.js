@@ -26,7 +26,7 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
           order_status AS orderStatus
         FROM orders
         WHERE order_status = 'RESERVED'
-          AND payment_status = 'PENDING'
+          AND payment_status IN ('PENDING', 'FAILED')
           AND reserved_until IS NOT NULL
           AND reserved_until < ?
         ORDER BY reserved_until ASC, id ASC
@@ -71,7 +71,7 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
             updated_by = ?
           WHERE id = ?
             AND order_status = 'RESERVED'
-            AND payment_status = 'PENDING'
+            AND payment_status IN ('PENDING', 'FAILED')
         `,
         [auditContext.actorUserId || null, order.id],
       );

@@ -42,6 +42,7 @@ export const updateCollectingSettingsSchema = z.object({
   mercadoPagoUserId: nullableText(120),
   mercadoPagoCheckoutUrl: nullableText(500),
   mercadoPagoNotificationUrl: nullableText(500),
+  mercadoPagoWebhookSecret: nullableText(500),
   mercadoPagoPreferenceNote: nullableLongText,
   mercadoPagoInstructions: nullableLongText,
 });

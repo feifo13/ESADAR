@@ -22,6 +22,7 @@ import statisticsRoutes from './modules/statistics/statistics.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import collectingRoutes from './modules/collecting/collecting.routes.js';
 import shippingRoutes from './modules/shipping/shipping.routes.js';
+import mercadoPagoWebhookRoutes from './modules/webhooks/mercado-pago.webhook.routes.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 fs.mkdirSync(env.articleUploadDir, { recursive: true });
@@ -64,6 +65,7 @@ export function createApp() {
   app.use('/api/public/leads', publicLeadRouter);
   app.use('/api/public', publicInteractionRouter);
   app.use('/api/public/orders', publicOrderRoutes);
+  app.use('/api/webhooks', mercadoPagoWebhookRoutes);
   app.use('/api/admin/articles', adminArticleRoutes);
   app.use('/api/admin/offers', adminOfferRoutes);
   app.use('/api/admin/contact-messages', adminContactRoutes);
