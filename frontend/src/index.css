@@ -12788,6 +12788,29 @@ textarea,
   }
 }
 
+
+/* === Checkout mobile quantity controls: keep actions usable === */
+@media (max-width: 780px) {
+  .app-shell--checkout-view .summary-item-card__quantity {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(44px, 52px) minmax(64px, 1fr) minmax(44px, 52px);
+    width: 100%;
+    max-width: none;
+    min-height: 46px;
+    justify-self: stretch;
+  }
+
+  .app-shell--checkout-view .summary-item-card__qty-button,
+  .app-shell--checkout-view .summary-item-card__qty-input {
+    min-height: 44px;
+  }
+
+  .app-shell--checkout-view .summary-item-card__qty-button svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 /* Accepted offers flow */
 .summary-item-card--accepted-offer,
 .checkout-offer-row {
@@ -13680,4 +13703,14 @@ select.input,
   .app-shell--checkout-view .checkout-page-stack {
     padding-bottom: max(220px, 28vh);
   }
+}
+
+.offer-page .offer-eligibility-notice {
+  border-color: color-mix(in srgb, var(--orange) 42%, var(--border)) !important;
+  background: color-mix(in srgb, var(--orange) 7%, var(--surface)) !important;
+}
+
+.offer-page .offer-eligibility-notice strong {
+  display: block;
+  color: var(--text);
 }

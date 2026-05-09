@@ -5,6 +5,7 @@ import { getPagination } from '../../utils/pagination.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { logAudit } from '../audit/audit.service.js';
 import { sendAcceptedOfferEmail } from './offers.mailer.js';
+import { applyAcceptedOfferToActiveCart } from '../cart/cart.service.js';
 import {
   ensureCustomerForUser,
   findCustomerByUserId,
@@ -28,6 +29,9 @@ export async function createOffer(input, actor, auditContext) {
     const owner = actor?.userId
       ? await resolveAuthenticatedOfferOwner(actor.userId, connection)
       : await resolveGuestOfferOwner(input.guest, connection);
+
+    const eligibility = await getOfferEligibilityForOwner(article.id, owner, connection, { forUpdate: true });
+    assertOfferCreationIsAllowed(eligibility);
 
     const [insertResult] = await connection.execute(
       `
@@ -279,6 +283,23 @@ export async function listAcceptedOffersForUser(userId) {
 }
 
 
+export async function getOfferEligibilityForUser(userId, articleId) {
+  if (!userId) {
+    return buildOfferEligibility({ attemptCount: 0, activeOffer: null });
+  }
+
+  const customer = await findCustomerByUserId(userId, pool);
+  if (!customer?.id) {
+    return buildOfferEligibility({ attemptCount: 0, activeOffer: null });
+  }
+
+  return getOfferEligibilityForOwner(
+    Number(articleId),
+    { customerId: customer.id, potentialCustomerId: null },
+    pool,
+  );
+}
+
 export async function listOffersForUser(userId) {
   if (!userId) return [];
 
@@ -387,6 +408,22 @@ export async function changeOfferStatus(id, input, auditContext) {
 
     const after = await getOfferById(id, connection);
 
+    if (input.status === 'ACCEPTED' && after.customerId) {
+      const userId = await getUserIdForOfferCustomer(after.customerId, connection);
+      if (userId) {
+        await applyAcceptedOfferToActiveCart(
+          userId,
+          {
+            id: after.id,
+            articleId: after.article.id,
+            offeredAmount: after.offeredAmount,
+          },
+          auditContext,
+          connection,
+        );
+      }
+    }
+
     await logAudit(
       {
         actorUserId: auditContext.actorUserId,
@@ -421,6 +458,102 @@ export async function changeOfferStatus(id, input, auditContext) {
   }
 
   return offer;
+}
+
+async function getOfferEligibilityForOwner(articleId, owner, connection, options = {}) {
+  const ownerClause = owner.customerId
+    ? 'o.customer_id = ?'
+    : 'o.potential_customer_id = ?';
+  const ownerId = owner.customerId || owner.potentialCustomerId;
+  const lockClause = options.forUpdate ? 'FOR UPDATE' : '';
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        o.id,
+        o.status,
+        o.offered_price AS offeredAmount,
+        o.created_at AS createdAt,
+        o.accepted_at AS acceptedAt,
+        o.consumed_at AS consumedAt
+      FROM offers o
+      WHERE o.article_id = ?
+        AND ${ownerClause}
+      ORDER BY
+        CASE WHEN o.status IN ('PENDING', 'ACCEPTED') AND o.consumed_at IS NULL THEN 0 ELSE 1 END ASC,
+        o.created_at DESC,
+        o.id DESC
+      ${lockClause}
+    `,
+    [articleId, ownerId],
+  );
+
+  const activeOffer = rows.find(
+    (row) => ['PENDING', 'ACCEPTED'].includes(row.status) && row.consumedAt == null,
+  );
+
+  return buildOfferEligibility({
+    attemptCount: rows.length,
+    activeOffer: activeOffer || null,
+  });
+}
+
+function buildOfferEligibility({ attemptCount, activeOffer }) {
+  const maxAttempts = 3;
+  let canOffer = true;
+  let reasonCode = null;
+  let message = '';
+
+  if (activeOffer) {
+    canOffer = false;
+    reasonCode = activeOffer.status === 'ACCEPTED' ? 'ACTIVE_ACCEPTED_OFFER' : 'ACTIVE_PENDING_OFFER';
+    message = activeOffer.status === 'ACCEPTED'
+      ? 'Ya tenes una oferta aceptada para esta prenda. Puedes usarla desde el carrito.'
+      : 'Ya tenes una oferta pendiente para esta prenda. Espera la respuesta antes de enviar otra.';
+  } else if (Number(attemptCount || 0) >= maxAttempts) {
+    canOffer = false;
+    reasonCode = 'MAX_ATTEMPTS_REACHED';
+    message = 'Ya alcanzaste el maximo de 3 ofertas para esta prenda.';
+  }
+
+  return {
+    canOffer,
+    reasonCode,
+    message,
+    attemptCount: Number(attemptCount || 0),
+    remainingAttempts: Math.max(0, maxAttempts - Number(attemptCount || 0)),
+    maxAttempts,
+    activeOffer: activeOffer
+      ? {
+          id: activeOffer.id,
+          status: activeOffer.status,
+          offeredAmount: Number(activeOffer.offeredAmount),
+          createdAt: activeOffer.createdAt,
+          acceptedAt: activeOffer.acceptedAt || null,
+        }
+      : null,
+  };
+}
+
+function assertOfferCreationIsAllowed(eligibility) {
+  if (eligibility.canOffer) return;
+  throw badRequest(eligibility.message || 'No puedes crear otra oferta para esta prenda.');
+}
+
+async function getUserIdForOfferCustomer(customerId, connection) {
+  if (!customerId) return null;
+
+  const [rows] = await connection.execute(
+    `
+      SELECT user_id AS userId
+      FROM customers
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [customerId],
+  );
+
+  return rows[0]?.userId || null;
 }
 
 async function resolveAuthenticatedOfferOwner(userId, connection) {

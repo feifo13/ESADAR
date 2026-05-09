@@ -4,7 +4,14 @@ import {
   createOfferSchema,
   updateOfferStatusSchema,
 } from './offers.schemas.js';
-import { changeOfferStatus, createOffer, listAcceptedOffersForUser, listOffers, listOffersForUser } from './offers.service.js';
+import {
+  changeOfferStatus,
+  createOffer,
+  getOfferEligibilityForUser,
+  listAcceptedOffersForUser,
+  listOffers,
+  listOffersForUser,
+} from './offers.service.js';
 
 function getAuditContext(req) {
   return {
@@ -30,6 +37,14 @@ export async function getAcceptedOffers(req, res) {
 export async function getMyOffers(req, res) {
   const items = await listOffersForUser(req.auth?.userId);
   return res.json({ ok: true, items });
+}
+
+export async function getArticleOfferEligibility(req, res) {
+  const eligibility = await getOfferEligibilityForUser(
+    req.auth?.userId,
+    Number(req.params.articleId),
+  );
+  return res.json({ ok: true, eligibility });
 }
 
 export async function getAdminOffers(req, res) {

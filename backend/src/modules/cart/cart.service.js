@@ -9,6 +9,112 @@ export async function getCartForUser(userId) {
   return getCartById(cart.id, pool);
 }
 
+export async function applyAcceptedOfferToActiveCart(userId, offer, auditContext = {}, connection = pool) {
+  if (!userId || !offer?.articleId || !offer?.id) return null;
+
+  const [cartRows] = await connection.execute(
+    `
+      SELECT id
+      FROM carts
+      WHERE user_id = ? AND status = 'ACTIVE'
+      ORDER BY id DESC
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [userId],
+  );
+
+  if (!cartRows.length) return null;
+
+  const cartId = cartRows[0].id;
+  const [itemRows] = await connection.execute(
+    `
+      SELECT
+        id,
+        quantity,
+        accepted_offer_id AS acceptedOfferId
+      FROM cart_items
+      WHERE cart_id = ? AND article_id = ?
+      ORDER BY accepted_offer_id IS NULL ASC, id ASC
+      FOR UPDATE
+    `,
+    [cartId, offer.articleId],
+  );
+
+  if (!itemRows.length) return null;
+
+  const article = await getArticleSnapshotForCartSync(offer.articleId, connection);
+  const acceptedOffer = {
+    id: offer.id,
+    offeredAmount: Number(offer.offeredAmount),
+  };
+
+  const existingOfferLine = itemRows.find(
+    (item) => Number(item.acceptedOfferId) === Number(offer.id),
+  );
+
+  if (existingOfferLine) {
+    await updateCartLineSnapshot(connection, {
+      itemId: existingOfferLine.id,
+      article,
+      quantity: 1,
+      acceptedOffer,
+    });
+  } else {
+    const regularLine = itemRows.find((item) => item.acceptedOfferId == null);
+
+    if (!regularLine) return null;
+
+    const regularQuantity = Number(regularLine.quantity || 0);
+    if (regularQuantity <= 1) {
+      await updateCartLineSnapshot(connection, {
+        itemId: regularLine.id,
+        article,
+        quantity: 1,
+        acceptedOffer,
+      });
+    } else {
+      await updateCartLineSnapshot(connection, {
+        itemId: regularLine.id,
+        article,
+        quantity: regularQuantity - 1,
+        acceptedOffer: null,
+      });
+      await insertCartLine(connection, {
+        cartId,
+        article,
+        articleId: offer.articleId,
+        quantity: 1,
+        acceptedOffer,
+      });
+    }
+  }
+
+  const nextCart = await getCartById(cartId, connection);
+
+  await logAudit(
+    {
+      actorUserId: auditContext.actorUserId || null,
+      actorLabel: auditContext.actorLabel || null,
+      actionCode: 'CART_UPDATED',
+      entityType: 'carts',
+      entityId: cartId,
+      afterJson: nextCart,
+      metadataJson: {
+        operation: 'apply-accepted-offer',
+        articleId: offer.articleId,
+        acceptedOfferId: offer.id,
+      },
+      source: auditContext.source || 'SYSTEM',
+      ipAddress: auditContext.ipAddress || null,
+      userAgent: auditContext.userAgent || null,
+    },
+    connection,
+  );
+
+  return nextCart;
+}
+
 export async function addCartItem(userId, input, auditContext) {
   return withTransaction(async (connection) => {
     const cart = await getOrCreateActiveCartForUser(userId, connection);
@@ -421,6 +527,39 @@ async function getArticleForCart(articleId, connection) {
     throw badRequest('Esta prenda no esta disponible para agregar al carrito.');
   }
 
+  return {
+    ...article,
+    salePrice: Number(article.salePrice),
+    discountValue: Number(article.discountValue),
+    discountedPrice: Number(article.discountedPrice),
+    quantityAvailable: Number(article.quantityAvailable),
+  };
+}
+
+async function getArticleSnapshotForCartSync(articleId, connection) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        sale_price AS salePrice,
+        discount_type AS discountType,
+        discount_value AS discountValue,
+        discounted_price AS discountedPrice,
+        quantity_available AS quantityAvailable,
+        status
+      FROM articles
+      WHERE id = ?
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [articleId],
+  );
+
+  if (!rows.length) {
+    throw notFound('Articulo no encontrado.');
+  }
+
+  const article = rows[0];
   return {
     ...article,
     salePrice: Number(article.salePrice),

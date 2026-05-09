@@ -29,6 +29,21 @@ const initialGuest = {
   instagram: "",
 };
 
+const ACCEPTED_OFFER_NOTICE_MESSAGE =
+  "Ya tenes una oferta aceptada para esta prenda. Puedes usarla desde el carrito.";
+
+function isAcceptedOfferEligibility(eligibility) {
+  return (
+    eligibility?.reasonCode === "ACTIVE_ACCEPTED_OFFER" ||
+    String(eligibility?.activeOffer?.status || "").toUpperCase() === "ACCEPTED"
+  );
+}
+
+function getBlockedOfferMessage(eligibility) {
+  if (isAcceptedOfferEligibility(eligibility)) return ACCEPTED_OFFER_NOTICE_MESSAGE;
+  return eligibility?.message || "No puedes crear otra oferta para esta prenda.";
+}
+
 export default function OfferPage() {
   const { slugOrId } = useParams();
   const relatedTrackRef = useRef(null);
@@ -44,6 +59,7 @@ export default function OfferPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [offerEligibility, setOfferEligibility] = useState(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -85,12 +101,42 @@ export default function OfferPage() {
     };
   }, [slugOrId]);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadOfferEligibility() {
+      if (!isAuthenticated || !article?.id) {
+        setOfferEligibility(null);
+        return;
+      }
+
+      try {
+        const response = await apiFetch(`/api/public/offers/article/${article.id}/eligibility`);
+        if (!ignore) setOfferEligibility(response.eligibility || null);
+      } catch {
+        if (!ignore) setOfferEligibility(null);
+      }
+    }
+
+    loadOfferEligibility();
+    return () => {
+      ignore = true;
+    };
+  }, [article?.id, isAuthenticated]);
+
   function updateGuest(name, value) {
     setGuest((current) => ({ ...current, [name]: value }));
   }
 
   async function handleSubmit() {
     if (!article) return;
+
+    if (offerEligibility && !offerEligibility.canOffer) {
+      const eligibilityMessage = getBlockedOfferMessage(offerEligibility);
+      setError(eligibilityMessage);
+      notifyFormStatus(notifyMobileStatus, "error", eligibilityMessage);
+      return;
+    }
 
     try {
       const contactValidationMessage = !isAuthenticated
@@ -147,6 +193,23 @@ export default function OfferPage() {
         body: payload,
       });
 
+      if (response.offer?.id) {
+        setOfferEligibility({
+          canOffer: false,
+          reasonCode: "ACTIVE_PENDING_OFFER",
+          message: "Ya tenes una oferta pendiente para esta prenda. Espera la respuesta antes de enviar otra.",
+          attemptCount: Number(offerEligibility?.attemptCount || 0) + 1,
+          remainingAttempts: Math.max(0, 3 - (Number(offerEligibility?.attemptCount || 0) + 1)),
+          maxAttempts: 3,
+          activeOffer: {
+            id: response.offer.id,
+            status: response.offer.status || "PENDING",
+            offeredAmount: response.offer.offeredAmount,
+            createdAt: response.offer.createdAt || null,
+          },
+        });
+      }
+
       const successMessage = "Tu oferta quedo registrada. Te avisaremos cuando la respondamos.";
       setSuccess(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
@@ -177,6 +240,9 @@ export default function OfferPage() {
       </div>
     );
   }
+
+  const isAcceptedOfferBlocked = isAcceptedOfferEligibility(offerEligibility);
+  const blockedOfferMessage = getBlockedOfferMessage(offerEligibility);
 
   return (
     <div className="container article-page-shell page-stack offer-page">
@@ -346,6 +412,24 @@ export default function OfferPage() {
               </div>
             )}
 
+            {offerEligibility && !offerEligibility.canOffer ? (
+              <div className="section-card nested-card offer-eligibility-notice">
+                <p className="section-kicker">Oferta registrada</p>
+                <strong>{blockedOfferMessage}</strong>
+                {!isAcceptedOfferBlocked && offerEligibility.attemptCount != null ? (
+                  <p className="muted-copy">
+                    Intentos realizados: {offerEligibility.attemptCount} de {offerEligibility.maxAttempts || 3}.
+                  </p>
+                ) : null}
+              </div>
+            ) : offerEligibility ? (
+              <p className="muted-copy">
+                Puedes ofertar hasta {offerEligibility.maxAttempts || 3} veces sobre esta prenda.
+                {" "}Te quedan {offerEligibility.remainingAttempts} intento
+                {offerEligibility.remainingAttempts === 1 ? "" : "s"}.
+              </p>
+            ) : null}
+
             <label className="field-group">
               <span>Tu oferta</span>
               <input
@@ -377,7 +461,11 @@ export default function OfferPage() {
                 type="button"
                 className="button button-primary button-compact"
                 onClick={handleSubmit}
-                disabled={submitting || !article.allowOffers}
+                disabled={
+                  submitting ||
+                  !article.allowOffers ||
+                  Boolean(offerEligibility && !offerEligibility.canOffer)
+                }
               >
                 {submitting ? "Enviando oferta…" : "Ofertar"}
               </button>

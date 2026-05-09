@@ -5,6 +5,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createPublicOffer,
   getAcceptedOffers,
+  getArticleOfferEligibility,
   getMyOffers,
   getAdminOffers,
   updateAdminOfferStatus,
@@ -15,6 +16,7 @@ const adminRouter = Router();
 
 publicRouter.get('/mine', requireAuth, asyncHandler(getMyOffers));
 publicRouter.get('/accepted', requireAuth, asyncHandler(getAcceptedOffers));
+publicRouter.get('/article/:articleId/eligibility', requireAuth, asyncHandler(getArticleOfferEligibility));
 publicRouter.post('/', optionalAuth, asyncHandler(createPublicOffer));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));

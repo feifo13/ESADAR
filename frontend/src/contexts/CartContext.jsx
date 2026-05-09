@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { getDiscountedPrice } from '../lib/format.js';
 import { storage } from '../lib/storage.js';
 import { apiFetch } from '../lib/api.js';
@@ -161,6 +161,17 @@ export function CartProvider({ children }) {
     return syncQueueRef.current;
   }
 
+  const refreshCart = useCallback(() => {
+    if (!isAuthenticated || !user?.id) return Promise.resolve(null);
+
+    return enqueueSync(async () => {
+      const response = await apiFetch('/api/cart');
+      const nextItems = normalizeRemoteItems(response.cart?.items || []);
+      persist(nextItems, user.id);
+      return nextItems;
+    });
+  }, [isAuthenticated, user?.id]);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -197,6 +208,7 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       items,
+      refreshCart,
       addItem(article, quantity = 1, options = {}) {
         const maxQuantity = Math.max(0, Number(article.quantityAvailable ?? article.maxQuantity ?? 0));
         const existingArticleQuantity = items
@@ -382,7 +394,7 @@ export function CartProvider({ children }) {
       cartFx,
       subtotal: items.reduce((sum, item) => sum + Number(item.lineTotal ?? calculateLineTotal(item)), 0),
     }),
-    [cartFx, cartOwnerId, isAuthenticated, items, user?.id],
+    [cartFx, cartOwnerId, isAuthenticated, items, refreshCart, user?.id],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

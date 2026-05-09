@@ -48,7 +48,6 @@ export default function AdminOffersPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
 
   const query = useMemo(() => buildQueryString(filters), [filters]);
@@ -129,12 +128,10 @@ export default function AdminOffersPage() {
   async function handleStatusChange(offerId, nextStatus) {
     try {
       setError("");
-      setMessage("");
       await apiFetch(`/api/admin/offers/${offerId}/status`, {
         method: "PATCH",
         body: { status: nextStatus },
       });
-      setMessage("La oferta fue actualizada correctamente.");
       notifySuccess("La oferta fue actualizada correctamente.");
       setRefreshNonce((current) => current + 1);
     } catch (err) {
@@ -156,7 +153,6 @@ export default function AdminOffersPage() {
         </div>
 
         {error ? <p className="error-copy">{error}</p> : null}
-        {message ? <p className="success-copy">{message}</p> : null}
 
         <ResponsiveFilterPanel
           title="Filtros de ofertas"

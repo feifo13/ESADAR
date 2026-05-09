@@ -116,7 +116,7 @@ function TrashIcon() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, subtotal, removeItem, updateQuantity } = useCart();
+  const { items, subtotal, removeItem, updateQuantity, refreshCart } = useCart();
   const { user, isAuthenticated } = useAuth();
   const { shippingMethodOptions, paymentMethodOptions, lookupError } =
     useLookups();
@@ -137,6 +137,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void refreshCart?.();
+  }, [isAuthenticated, refreshCart]);
 
   const currentStepKey = location.pathname.split("/")[2] || "resumen";
   const currentStepIndex = Math.max(
