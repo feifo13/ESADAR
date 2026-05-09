@@ -12155,32 +12155,70 @@ textarea,
   align-items: start;
 }
 
-.footer-scroll-scene {
+/* Classic footer reveal: the fixed footer waits behind the page while the content lifts away. */
+.app-shell--has-footer-reveal .page-shell {
   position: relative;
-  min-height: 155vh;
+  z-index: 2;
+  min-height: 100dvh;
+  margin-bottom: 100dvh;
+  background: var(--bg);
+}
+
+.app-shell--has-footer-reveal .page-shell::before,
+.app-shell--has-footer-reveal .page-shell::after {
+  content: none;
+}
+
+.app-shell--footer-scroll-active .page-shell {
+  box-shadow: 0 28px 88px rgba(0, 0, 0, calc(0.16 * var(--footer-scroll-progress, 0)));
+}
+
+.footer-scroll-scene {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 1;
+  min-height: 100dvh;
+  height: 100dvh;
+  margin: 0;
   overflow: clip;
-  background:
-    radial-gradient(
-      circle at 50% 50%,
-      color-mix(in srgb, var(--aqua) 24%, transparent),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 50% 65%,
-      color-mix(in srgb, var(--orange) 16%, transparent),
-      transparent 32%
-    ),
-    color-mix(in srgb, var(--bg) 92%, var(--surface));
+  background: transparent;
+  isolation: isolate;
+  pointer-events: none;
 }
 
 .footer-scroll-scene__sticky {
-  position: sticky;
-  top: 0;
-  min-height: 100vh;
+  position: relative;
+  min-height: 100%;
+  height: 100%;
   display: grid;
-  place-items: center;
+  align-items: center;
+  justify-items: center;
+  padding: calc(var(--header-height, 74px) + clamp(22px, 4vh, 48px)) max(18px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+  overflow: clip;
   pointer-events: none;
   isolation: isolate;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      color-mix(in srgb, var(--aqua) 18%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 50% 78%,
+      color-mix(in srgb, var(--orange) 18%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface) 96%, var(--bg)) 0%,
+      color-mix(in srgb, var(--surface) 82%, var(--bg)) 100%
+    );
+  border-top: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.footer-scroll-scene__sticky::before {
+  content: none;
 }
 
 .footer-scroll-scene__content {
@@ -12188,62 +12226,87 @@ textarea,
   z-index: 2;
   display: grid;
   place-items: center;
-  gap: 18px;
+  gap: clamp(14px, 2vw, 22px);
+  width: min(1120px, calc(100vw - 36px));
+  margin: 0 auto;
   text-align: center;
-  will-change: opacity, transform;
 }
 
 .footer-scroll-scene__logo {
   width: min(760px, 82vw);
-  max-height: 62vh;
+  max-height: min(38vh, 400px);
   object-fit: contain;
-  filter: drop-shadow(0 30px 56px rgba(0, 0, 0, 0.22));
+  filter: drop-shadow(0 30px 56px rgba(0, 0, 0, 0.2));
 }
 
 .footer-scroll-scene__copy {
   margin: 0;
-  color: var(--muted);
-  font-size: clamp(0.9rem, 1.55vw, 1.12rem);
+  min-width: min(260px, 74vw);
+  padding: 12px 22px;
+  border: 1px solid color-mix(in srgb, var(--orange) 72%, var(--border));
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--orange) 92%, white),
+    var(--orange)
+  );
+  color: #ffffff !important;
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--orange) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  font-size: clamp(0.9rem, 1.35vw, 1.04rem);
+  font-weight: 800;
   letter-spacing: 0.08em;
+  line-height: 1.12;
+  text-align: center;
   text-transform: uppercase;
   text-decoration: none;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
   pointer-events: auto;
-  border-radius: 999px;
-  padding: 8px 12px;
   transition:
-    color var(--motion-fast) var(--ease-smooth),
+    transform var(--motion-fast) var(--ease-smooth),
+    border-color var(--motion-fast) var(--ease-smooth),
     background-color var(--motion-fast) var(--ease-smooth),
     box-shadow var(--motion-fast) var(--ease-smooth);
 }
 
 .footer-scroll-scene__copy:hover,
 .footer-scroll-scene__copy:focus-visible {
-  color: var(--text);
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aqua) 22%, transparent);
+  color: #ffffff !important;
+  background: linear-gradient(
+    135deg,
+    var(--orange),
+    color-mix(in srgb, var(--orange) 78%, var(--navy))
+  );
+  border-color: color-mix(in srgb, var(--orange) 84%, white);
+  box-shadow:
+    0 16px 34px color-mix(in srgb, var(--orange) 36%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--orange) 24%, transparent);
   outline: none;
+  transform: translateY(-1px);
 }
 
 .footer-scroll-scene__ring {
   position: absolute;
-  width: min(760px, 82vw);
+  width: min(880px, 92vw);
   aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--aqua) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aqua) 50%, transparent);
   border-radius: 999px !important;
   background:
     radial-gradient(
       circle,
-      color-mix(in srgb, var(--aqua) 20%, transparent),
+      color-mix(in srgb, var(--aqua) 16%, transparent),
       transparent 58%
     ),
     radial-gradient(
       circle,
-      color-mix(in srgb, var(--orange) 14%, transparent),
+      color-mix(in srgb, var(--orange) 11%, transparent),
       transparent 72%
     );
   filter: blur(1px);
   z-index: 1;
-  will-change: opacity, transform;
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 .contact-page-shell {
@@ -12382,8 +12445,31 @@ textarea,
     grid-template-columns: 1fr;
   }
 
+  .app-shell--has-footer-reveal .page-shell {
+    min-height: 100dvh;
+    margin-bottom: 100dvh;
+  }
+
   .footer-scroll-scene {
-    min-height: 135vh;
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+
+  .footer-scroll-scene__sticky {
+    min-height: 100%;
+    height: 100%;
+    padding-top: calc(var(--header-height, 68px) + 18px);
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+
+  .footer-scroll-scene__logo {
+    width: min(350px, 78vw);
+    max-height: 31vh;
+  }
+
+  .footer-scroll-scene__content {
+    gap: 14px;
+    max-width: calc(100vw - 32px);
   }
 
   .contact-page-shell {
@@ -12636,7 +12722,14 @@ textarea,
   }
 
   .footer-scroll-scene {
-    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .footer-scroll-scene__sticky {
+    position: relative;
+    min-height: 100dvh;
+    height: 100dvh;
+    transform: none !important;
   }
 
   .footer-scroll-scene__content,
@@ -13128,7 +13221,7 @@ textarea,
   }
 }
 
-/* === ESADAR final polish: auth submit spacing, catalog card alignment and footer logo takeover === */
+/* === ESADAR final polish: auth submit spacing and catalog card alignment === */
 .auth-submit-button {
   margin-top: clamp(8px, 1.5vw, 16px);
 }
@@ -13152,32 +13245,30 @@ textarea,
   margin-top: auto;
 }
 
-.footer-scroll-scene {
-  background:
-    radial-gradient(
-      circle at 50% 44%,
-      color-mix(in srgb, var(--surface) 40%, transparent),
-      transparent 30%
-    ),
-    color-mix(in srgb, var(--bg) 94%, var(--surface));
+/* === ESADAR minimal card title/sold-out visibility patch === */
+.article-card--catalog .article-card-title--plain {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
 }
 
-.footer-scroll-scene__content {
-  z-index: 4;
-  transform-origin: center center;
+.article-card-actions .article-card-soldout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 38px;
+  text-align: center;
+  cursor: not-allowed;
 }
 
-.footer-scroll-scene__logo {
-  position: relative;
-  z-index: 5;
-  width: min(660px, 76vw);
-  object-fit: contain;
-  object-position: center;
-  filter: drop-shadow(0 34px 58px rgba(0, 0, 0, 0.26));
-}
-
-.footer-scroll-scene__ring {
-  z-index: 1;
-  opacity: 0.16;
-  filter: blur(3px);
+@media (max-width: 720px) {
+  .article-card-actions .button-secondary.article-card-soldout-button {
+    display: inline-flex !important;
+  }
 }

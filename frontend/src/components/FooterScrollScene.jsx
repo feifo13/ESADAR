@@ -1,11 +1,6 @@
-import { Link } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "motion/react";
+import { Link, useLocation } from "react-router-dom";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { useReducedMotion } from "motion/react";
 import esadarWordmark from "../assets/esadar-wordmark.png";
 
 function clamp01(value) {
@@ -15,61 +10,65 @@ function clamp01(value) {
 
 export default function FooterScrollScene() {
   const sceneRef = useRef(null);
+  const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: sceneRef,
-    offset: ["start end", "end end"],
-  });
 
-  const logoOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.14, 0.86, 1],
-    [0, 0.96, 1, 0.96],
-  );
-  const logoScale = useTransform(
-    scrollYProgress,
-    [0, 0.35, 0.75, 1],
-    [0.38, 0.9, 1.55, 2.15],
-  );
-  const logoY = useTransform(scrollYProgress, [0, 0.58, 1], [80, 14, -20]);
-  const ringScale = useTransform(scrollYProgress, [0, 0.7, 1], [0.68, 1.28, 1.62]);
-  const ringOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.24, 0.72, 1],
-    [0, 0.18, 0.1, 0.04],
-  );
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const appShell = document.querySelector(".app-shell");
+    if (!appShell) return;
+
+    appShell.style.setProperty("--footer-scroll-progress", "0");
+    appShell.style.setProperty("--header-footer-hide-progress", "0");
+    appShell.classList.remove(
+      "app-shell--footer-scroll-active",
+      "app-shell--footer-scroll-deep",
+    );
+  }, [location.key]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const appShell = document.querySelector(".app-shell");
-    const header = document.querySelector(".site-header");
     const footer = sceneRef.current;
-    if (!appShell || !header || !footer) return undefined;
+    if (!appShell || !footer) return undefined;
 
     let frameId = 0;
+
+    appShell.classList.add("app-shell--has-footer-reveal");
 
     function update() {
       frameId = 0;
 
-      const footerRect = footer.getBoundingClientRect();
       const viewportHeight = window.innerHeight || 1;
-      const rawProgress = (viewportHeight - footerRect.top) / viewportHeight;
-      const progress = clamp01(rawProgress);
+      const scrollTop =
+        window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const maxScroll = Math.max(
+        0,
+        document.documentElement.scrollHeight - viewportHeight,
+      );
+      const remainingScroll = Math.max(0, maxScroll - scrollTop);
+      const revealProgress = clamp01(
+        1 - remainingScroll / Math.max(viewportHeight * 0.92, 1),
+      );
       const headerHideProgress = prefersReducedMotion
-        ? progress >= 0.72
+        ? revealProgress >= 0.58
           ? 1
           : 0
-        : clamp01((progress - 0.42) / 0.4);
+        : clamp01((revealProgress - 0.44) / 0.28);
 
-      appShell.style.setProperty("--footer-scroll-progress", String(progress));
+      appShell.style.setProperty(
+        "--footer-scroll-progress",
+        String(revealProgress),
+      );
       appShell.style.setProperty(
         "--header-footer-hide-progress",
         String(headerHideProgress),
       );
       appShell.classList.toggle(
         "app-shell--footer-scroll-active",
-        progress > 0.01,
+        revealProgress > 0.01,
       );
       appShell.classList.toggle(
         "app-shell--footer-scroll-deep",
@@ -83,28 +82,24 @@ export default function FooterScrollScene() {
     }
 
     scheduleUpdate();
+    const settleTimer = window.setTimeout(scheduleUpdate, 80);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
+      window.clearTimeout(settleTimer);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.classList.remove(
+        "app-shell--has-footer-reveal",
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
       );
     };
-  }, [prefersReducedMotion]);
-
-  const logoStyle = prefersReducedMotion
-    ? undefined
-    : { opacity: logoOpacity, scale: logoScale, y: logoY };
-  const ringStyle = prefersReducedMotion
-    ? undefined
-    : { opacity: ringOpacity, scale: ringScale };
+  }, [prefersReducedMotion, location.key]);
 
   return (
     <footer
@@ -113,21 +108,20 @@ export default function FooterScrollScene() {
       aria-label="Cierre visual ESADAR"
     >
       <div className="footer-scroll-scene__sticky">
-        <motion.div
+        <div
           className="footer-scroll-scene__ring"
-          style={ringStyle}
           aria-hidden="true"
         />
-        <motion.div className="footer-scroll-scene__content" style={logoStyle}>
+        <div className="footer-scroll-scene__content">
           <img
             src={esadarWordmark}
             alt="ESADAR"
             className="footer-scroll-scene__logo"
           />
-          <Link to="/about" className="footer-scroll-scene__copy">
+          <Link to="/about" className="button footer-scroll-scene__copy">
             Sobre nosotros
           </Link>
-        </motion.div>
+        </div>
       </div>
     </footer>
   );

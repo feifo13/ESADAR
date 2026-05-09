@@ -300,7 +300,7 @@ export default function ArticleCard({
           ) : (
             <button
               type="button"
-              className="button button-secondary button-compact"
+              className="button button-secondary button-compact article-card-soldout-button"
               disabled
             >
               Agotado

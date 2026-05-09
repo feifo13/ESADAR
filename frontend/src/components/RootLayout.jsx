@@ -53,9 +53,15 @@ export default function RootLayout() {
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      const appShell = document.querySelector(".app-shell");
+      const footerRevealActive = appShell?.classList.contains(
+        "app-shell--footer-scroll-active",
+      );
       scrollPositionsRef.current.set(
         location.key,
-        window.scrollY || document.documentElement.scrollTop || 0,
+        footerRevealActive
+          ? 0
+          : window.scrollY || document.documentElement.scrollTop || 0,
       );
     };
   }, [location.key, navigationType]);
