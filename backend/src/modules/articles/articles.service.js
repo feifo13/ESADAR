@@ -433,6 +433,30 @@ async function ensureUniqueSlugByTable(tableName, baseValue, connection) {
   return uniqueSlug(baseSlug);
 }
 
+async function resolveArticleCategoryId(input, connection, auditContext) {
+  if (input.categoryId) return Number(input.categoryId);
+  if (input.categoryName) {
+    return findOrCreateCategoryByName(input.categoryName, auditContext, connection);
+  }
+  return ensureDefaultCategoryId(connection, auditContext.actorUserId);
+}
+
+async function resolveArticleBrandId(input, connection, auditContext) {
+  if (input.brandId) return Number(input.brandId);
+  if (input.brandName) {
+    return findOrCreateBrandByName(input.brandName, auditContext, connection);
+  }
+  return null;
+}
+
+async function resolveArticleSizeId(input, connection, auditContext) {
+  if (input.sizeId) return Number(input.sizeId);
+  if (input.sizeCode) {
+    return findOrCreateSizeByCode(input.sizeCode, auditContext, connection);
+  }
+  return null;
+}
+
 async function normalizeArticleWritePayload(input, connection, auditContext = {}, isUpdate = false, currentId = null) {
   const title = String(input.title || '').trim();
   if (!title) {
@@ -489,9 +513,9 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     ageGroup: input.ageGroup || null,
     imageAltOverride: input.imageAltOverride || null,
     canonicalUrl: input.canonicalUrl || null,
-    categoryId: input.categoryId ? Number(input.categoryId) : await ensureDefaultCategoryId(connection, auditContext.actorUserId),
-    brandId: input.brandId ? Number(input.brandId) : null,
-    sizeId: input.sizeId ? Number(input.sizeId) : null,
+    categoryId: await resolveArticleCategoryId(input, connection, auditContext),
+    brandId: await resolveArticleBrandId(input, connection, auditContext),
+    sizeId: await resolveArticleSizeId(input, connection, auditContext),
     sizeText: input.sizeText || null,
     measurementsText: input.measurementsText || null,
     description: input.description || null,

@@ -1,4 +1,5 @@
 import {
+  listAvailableArticleBrands,
   listBrands,
   listCategories,
   listPaymentMethods,
@@ -7,9 +8,10 @@ import {
 } from './lookups.service.js';
 
 export async function getPublicLookups(_req, res) {
-  const [categories, brands, sizes, shippingMethods, paymentMethods] = await Promise.all([
+  const [categories, brands, availableBrands, sizes, shippingMethods, paymentMethods] = await Promise.all([
     listCategories(),
     listBrands(),
+    listAvailableArticleBrands(),
     listSizes(),
     listShippingMethods(),
     listPaymentMethods(),
@@ -19,6 +21,7 @@ export async function getPublicLookups(_req, res) {
     ok: true,
     categories,
     brands,
+    availableBrands,
     sizes,
     shippingMethods,
     paymentMethods,
@@ -32,6 +35,12 @@ export async function getPublicCategories(_req, res) {
 
 export async function getPublicBrands(_req, res) {
   const items = await listBrands();
+  return res.json({ ok: true, items });
+}
+
+
+export async function getPublicAvailableBrands(_req, res) {
+  const items = await listAvailableArticleBrands();
   return res.json({ ok: true, items });
 }
 

@@ -38,6 +38,17 @@ const AGE_GROUP_OPTIONS = [
   { value: "NEWBORN", label: "Newborn" },
 ];
 
+const NEW_LOOKUP_VALUE = "__CREATE_NEW__";
+
+const CONDITION_LABEL_OPTIONS = [
+  "Nuevo",
+  "Excelente",
+  "Muy Bueno",
+  "Bueno",
+  "Con detalles",
+];
+
+
 const STOCK_ADJUSTMENT_REASONS = [
   "Ingreso inicial",
   "Reposicion",
@@ -78,8 +89,11 @@ function toFormState(article) {
     ageGroup: article?.ageGroup || "",
     imageAltOverride: article?.imageAltOverride || "",
     categoryId: article?.categoryId || "",
+    categoryName: article?.categoryName || "",
     brandId: article?.brandId || "",
+    brandName: article?.brandName || "",
     sizeId: article?.sizeId || "",
+    sizeCode: article?.sizeCode || "",
     sizeText: article?.sizeText || "",
     measurementsText: article?.measurementsText || "",
     description: article?.description || "",
@@ -106,6 +120,24 @@ function toFormState(article) {
 
 function normalizeLabel(value) {
   return String(value || "").trim();
+}
+
+function isCreateNewLookup(value) {
+  return value === NEW_LOOKUP_VALUE;
+}
+
+function getSelectedLookupLabel(options, selectedId, typedLabel) {
+  if (isCreateNewLookup(selectedId)) return normalizeLabel(typedLabel);
+
+  return (
+    options.find((option) => Number(option.id) === Number(selectedId))?.label ||
+    normalizeLabel(typedLabel) ||
+    ""
+  );
+}
+
+function hasSelectedLookupOption(options, selectedId) {
+  return options.some((option) => Number(option.id) === Number(selectedId));
 }
 
 function buildSlugPreview(form, labels) {
@@ -248,22 +280,30 @@ export default function AdminArticleFormPage() {
   );
 
   const labels = useMemo(() => {
-    const categoryName =
-      categoryOptions.find(
-        (option) => Number(option.id) === Number(form.categoryId),
-      )?.label || "";
-    const brandName =
-      brandOptions.find((option) => Number(option.id) === Number(form.brandId))
-        ?.label || "";
-    const sizeName =
-      sizeOptions.find((option) => Number(option.id) === Number(form.sizeId))
-        ?.label || "";
+    const categoryName = getSelectedLookupLabel(
+      categoryOptions,
+      form.categoryId,
+      form.categoryName,
+    );
+    const brandName = getSelectedLookupLabel(
+      brandOptions,
+      form.brandId,
+      form.brandName,
+    );
+    const sizeName = getSelectedLookupLabel(
+      sizeOptions,
+      form.sizeId,
+      form.sizeCode,
+    );
     return { categoryName, brandName, sizeName };
   }, [
     brandOptions,
     categoryOptions,
     form.brandId,
+    form.brandName,
     form.categoryId,
+    form.categoryName,
+    form.sizeCode,
     form.sizeId,
     sizeOptions,
   ]);
@@ -338,6 +378,30 @@ export default function AdminArticleFormPage() {
       return {
         message: "El nombre es obligatorio para continuar.",
         target: "article-title",
+        stepIndex,
+      };
+    }
+
+    if (stepIndex === 0 && isCreateNewLookup(form.categoryId) && !normalizeLabel(form.categoryName)) {
+      return {
+        message: "Ingresa el nombre de la nueva categoria.",
+        target: "article-category-name",
+        stepIndex,
+      };
+    }
+
+    if (stepIndex === 0 && isCreateNewLookup(form.brandId) && !normalizeLabel(form.brandName)) {
+      return {
+        message: "Ingresa el nombre de la nueva marca.",
+        target: "article-brand-name",
+        stepIndex,
+      };
+    }
+
+    if (stepIndex === 0 && isCreateNewLookup(form.sizeId) && !normalizeLabel(form.sizeCode)) {
+      return {
+        message: "Ingresa el nombre del nuevo talle.",
+        target: "article-size-code",
         stepIndex,
       };
     }
@@ -425,9 +489,27 @@ export default function AdminArticleFormPage() {
         ...form,
         internalCode: normalizeLabel(form.internalCode) || undefined,
         slug: normalizeLabel(form.slug) || suggestedSlug,
-        categoryId: form.categoryId ? Number(form.categoryId) : null,
-        brandId: form.brandId ? Number(form.brandId) : null,
-        sizeId: form.sizeId ? Number(form.sizeId) : null,
+        categoryId:
+          form.categoryId && !isCreateNewLookup(form.categoryId)
+            ? Number(form.categoryId)
+            : null,
+        categoryName: isCreateNewLookup(form.categoryId)
+          ? normalizeLabel(form.categoryName)
+          : null,
+        brandId:
+          form.brandId && !isCreateNewLookup(form.brandId)
+            ? Number(form.brandId)
+            : null,
+        brandName: isCreateNewLookup(form.brandId)
+          ? normalizeLabel(form.brandName)
+          : null,
+        sizeId:
+          form.sizeId && !isCreateNewLookup(form.sizeId)
+            ? Number(form.sizeId)
+            : null,
+        sizeCode: isCreateNewLookup(form.sizeId)
+          ? normalizeLabel(form.sizeCode)
+          : null,
         purchasePriceItem: Number(form.purchasePriceItem || 0),
         purchasePriceShipping: Number(form.purchasePriceShipping || 0),
         purchasePriceCourier: Number(form.purchasePriceCourier || 0),
@@ -773,12 +855,19 @@ export default function AdminArticleFormPage() {
                 />
               </label>
 
-              <label className="field-group">
+              <label className="field-group field-group--quick-lookup">
                 <span>Categoria / rubro</span>
                 <select
                   className="input"
                   value={form.categoryId}
-                  onChange={(event) => update("categoryId", event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      categoryId: nextValue,
+                      categoryName: isCreateNewLookup(nextValue) ? current.categoryName : "",
+                    }));
+                  }}
                 >
                   <option value="">Sin categoria / default</option>
                   {categoryOptions.map((option) => (
@@ -786,15 +875,43 @@ export default function AdminArticleFormPage() {
                       {option.label}
                     </option>
                   ))}
+                  {form.categoryId &&
+                  !isCreateNewLookup(form.categoryId) &&
+                  !hasSelectedLookupOption(categoryOptions, form.categoryId) &&
+                  form.categoryName ? (
+                    <option value={form.categoryId}>{form.categoryName}</option>
+                  ) : null}
+                  <option value={NEW_LOOKUP_VALUE}>Crear nueva categoria...</option>
                 </select>
               </label>
 
-              <label className="field-group">
+              {isCreateNewLookup(form.categoryId) ? (
+                <label className="field-group field-group--quick-lookup field-group--quick-lookup-new">
+                  <span>Nueva categoria / rubro</span>
+                  <input
+                    className="input"
+                    name="article-category-name"
+                    data-validation-field="article-category-name"
+                    value={form.categoryName}
+                    onChange={(event) => update("categoryName", event.target.value)}
+                    placeholder="Ej: Camperas vintage"
+                  />
+                </label>
+              ) : null}
+
+              <label className="field-group field-group--quick-lookup">
                 <span>Marca</span>
                 <select
                   className="input"
                   value={form.brandId}
-                  onChange={(event) => update("brandId", event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      brandId: nextValue,
+                      brandName: isCreateNewLookup(nextValue) ? current.brandName : "",
+                    }));
+                  }}
                 >
                   <option value="">Sin marca</option>
                   {brandOptions.map((option) => (
@@ -802,15 +919,43 @@ export default function AdminArticleFormPage() {
                       {option.label}
                     </option>
                   ))}
+                  {form.brandId &&
+                  !isCreateNewLookup(form.brandId) &&
+                  !hasSelectedLookupOption(brandOptions, form.brandId) &&
+                  form.brandName ? (
+                    <option value={form.brandId}>{form.brandName}</option>
+                  ) : null}
+                  <option value={NEW_LOOKUP_VALUE}>Crear nueva marca...</option>
                 </select>
               </label>
 
-              <label className="field-group">
+              {isCreateNewLookup(form.brandId) ? (
+                <label className="field-group field-group--quick-lookup field-group--quick-lookup-new">
+                  <span>Nueva marca</span>
+                  <input
+                    className="input"
+                    name="article-brand-name"
+                    data-validation-field="article-brand-name"
+                    value={form.brandName}
+                    onChange={(event) => update("brandName", event.target.value)}
+                    placeholder="Ej: Starter"
+                  />
+                </label>
+              ) : null}
+
+              <label className="field-group field-group--quick-lookup">
                 <span>Talle</span>
                 <select
                   className="input"
                   value={form.sizeId}
-                  onChange={(event) => update("sizeId", event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      sizeId: nextValue,
+                      sizeCode: isCreateNewLookup(nextValue) ? current.sizeCode : "",
+                    }));
+                  }}
                 >
                   <option value="">Sin talle normalizado</option>
                   {sizeOptions.map((option) => (
@@ -818,8 +963,29 @@ export default function AdminArticleFormPage() {
                       {option.label}
                     </option>
                   ))}
+                  {form.sizeId &&
+                  !isCreateNewLookup(form.sizeId) &&
+                  !hasSelectedLookupOption(sizeOptions, form.sizeId) &&
+                  form.sizeCode ? (
+                    <option value={form.sizeId}>{form.sizeCode}</option>
+                  ) : null}
+                  <option value={NEW_LOOKUP_VALUE}>Crear nuevo talle...</option>
                 </select>
               </label>
+
+              {isCreateNewLookup(form.sizeId) ? (
+                <label className="field-group field-group--quick-lookup field-group--quick-lookup-new">
+                  <span>Nuevo talle</span>
+                  <input
+                    className="input"
+                    name="article-size-code"
+                    data-validation-field="article-size-code"
+                    value={form.sizeCode}
+                    onChange={(event) => update("sizeCode", event.target.value)}
+                    placeholder="Ej: XXL"
+                  />
+                </label>
+              ) : null}
 
               <label className="field-group">
                 <span>Talle libre</span>
@@ -833,14 +999,24 @@ export default function AdminArticleFormPage() {
 
               <label className="field-group">
                 <span>Estado / condicion</span>
-                <input
+                <select
                   className="input"
                   value={form.conditionLabel}
                   onChange={(event) =>
                     update("conditionLabel", event.target.value)
                   }
-                  placeholder="Ej: Muy buen estado"
-                />
+                >
+                  <option value="">Sin definir</option>
+                  {CONDITION_LABEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                  {form.conditionLabel &&
+                  !CONDITION_LABEL_OPTIONS.includes(form.conditionLabel) ? (
+                    <option value={form.conditionLabel}>{form.conditionLabel}</option>
+                  ) : null}
+                </select>
               </label>
 
               <label className="field-group">

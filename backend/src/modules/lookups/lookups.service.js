@@ -35,6 +35,26 @@ export async function listBrands() {
   return rows;
 }
 
+export async function listAvailableArticleBrands() {
+  const [rows] = await pool.query(
+    `
+      SELECT DISTINCT
+        b.id,
+        b.name,
+        b.slug
+      FROM brands b
+      INNER JOIN articles a ON a.brand_id = b.id
+      WHERE
+        b.is_active = 1
+        AND a.status = 'ACTIVE'
+        AND COALESCE(a.quantity_available, 0) > 0
+      ORDER BY b.name ASC
+    `,
+  );
+
+  return rows;
+}
+
 export async function listSizes() {
   const [rows] = await pool.query(
     `

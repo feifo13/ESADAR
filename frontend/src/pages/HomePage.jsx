@@ -136,7 +136,7 @@ function CatalogSortControl({ value, onChange, onApplied }) {
 
   return (
     <>
-      <label className="field-group" htmlFor="mobile-sort-control">
+      <label className="field-group mobile-sort-panel__field" htmlFor="mobile-sort-control">
         <span>Ordenar prendas</span>
         <select
           id="mobile-sort-control"

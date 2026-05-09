@@ -31,6 +31,7 @@ function isPublicShippingMethodVisible(option) {
 const fallbackValue = {
   categoryOptions: CATEGORY_OPTIONS,
   brandOptions: BRAND_OPTIONS,
+  catalogBrandOptions: BRAND_OPTIONS,
   sizeOptions: SIZE_OPTIONS,
   shippingMethodOptions: SHIPPING_METHOD_OPTIONS.filter(isPublicShippingMethodVisible),
   paymentMethodOptions: PAYMENT_METHOD_OPTIONS,
@@ -96,6 +97,7 @@ export function LookupsProvider({ children }) {
         setValue({
           categoryOptions: mapCategoryOptions(response.categories || []),
           brandOptions: mapBrandOptions(response.brands || []),
+          catalogBrandOptions: mapBrandOptions(response.availableBrands || response.brands || []),
           sizeOptions: mapSizeOptions(response.sizes || []),
           shippingMethodOptions: mapShippingMethodOptions(response.shippingMethods || []),
           paymentMethodOptions: mapPaymentMethodOptions(response.paymentMethods || []),

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
+  getPublicAvailableBrands,
   getPublicBrands,
   getPublicCategories,
   getPublicLookups,
@@ -14,6 +15,7 @@ const router = Router();
 router.get('/', asyncHandler(getPublicLookups));
 router.get('/categories', asyncHandler(getPublicCategories));
 router.get('/brands', asyncHandler(getPublicBrands));
+router.get('/brands/available', asyncHandler(getPublicAvailableBrands));
 router.get('/sizes', asyncHandler(getPublicSizes));
 router.get('/shipping-methods', asyncHandler(getPublicShippingMethods));
 router.get('/payment-methods', asyncHandler(getPublicPaymentMethods));

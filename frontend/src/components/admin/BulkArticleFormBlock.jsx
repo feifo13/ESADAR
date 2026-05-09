@@ -1,5 +1,13 @@
 import BulkArticleImageChecklist from "./BulkArticleImageChecklist.jsx";
 
+const CONDITION_LABEL_OPTIONS = [
+  "Nuevo",
+  "Excelente",
+  "Muy Bueno",
+  "Bueno",
+  "Con detalles",
+];
+
 export default function BulkArticleFormBlock({
   index,
   article,
@@ -104,7 +112,7 @@ export default function BulkArticleFormBlock({
           <div className="page-stack-sm">
             <h3>Caracteristicas</h3>
             <div className="admin-filter-grid">
-              <label className="field-group">
+              <label className="field-group field-group--quick-lookup">
                 <span>Categoria</span>
                 <input
                   className="input"
@@ -120,7 +128,7 @@ export default function BulkArticleFormBlock({
                   ))}
                 </datalist>
               </label>
-              <label className="field-group">
+              <label className="field-group field-group--quick-lookup">
                 <span>Marca</span>
                 <input
                   className="input"
@@ -136,7 +144,7 @@ export default function BulkArticleFormBlock({
                   ))}
                 </datalist>
               </label>
-              <label className="field-group">
+              <label className="field-group field-group--quick-lookup">
                 <span>Talle</span>
                 <input
                   className="input"
@@ -152,13 +160,26 @@ export default function BulkArticleFormBlock({
               </label>
               <label className="field-group">
                 <span>Estado de la prenda</span>
-                <input
+                <select
                   className="input"
                   value={article.conditionLabel}
                   onChange={(event) =>
                     onChange("conditionLabel", event.target.value)
                   }
-                />
+                >
+                  <option value="">Sin definir</option>
+                  {CONDITION_LABEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                  {article.conditionLabel &&
+                  !CONDITION_LABEL_OPTIONS.includes(article.conditionLabel) ? (
+                    <option value={article.conditionLabel}>
+                      {article.conditionLabel}
+                    </option>
+                  ) : null}
+                </select>
               </label>
               <label className="field-group">
                 <span>Color</span>
