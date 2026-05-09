@@ -140,6 +140,7 @@ export default function AdminAuditPage() {
           }
           onApply={applyFilters}
           onClear={clearFilters}
+          showClear={activeFiltersCount > 0}
         >
           <div className="admin-filter-grid">
             <label className="field-group">

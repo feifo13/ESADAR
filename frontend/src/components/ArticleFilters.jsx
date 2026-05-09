@@ -52,6 +52,17 @@ export default function ArticleFilters({
     normalizeFilters(value),
   );
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const hasClearableFilters =
+    Boolean(
+      draftFilters.search ||
+        draftFilters.categoryId ||
+        draftFilters.brandId ||
+        draftFilters.sizeId ||
+        draftFilters.discounted ||
+        draftFilters.offerable ||
+        draftFilters.featured,
+    ) ||
+    (showSort && draftFilters.sort !== defaultFilters.sort);
 
   useEffect(() => {
     setDraftFilters((current) =>
@@ -200,13 +211,15 @@ export default function ArticleFilters({
         >
           Aplicar filtros
         </button>
-        <button
-          type="button"
-          className="button button-secondary"
-          onClick={clearFilters}
-        >
-          Limpiar
-        </button>
+        {hasClearableFilters ? (
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={clearFilters}
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
       </div>
     </aside>
   );

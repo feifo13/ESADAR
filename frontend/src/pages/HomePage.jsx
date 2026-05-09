@@ -19,6 +19,7 @@ import ArticleFilters from "../components/ArticleFilters.jsx";
 import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import esadarWordmark from "../assets/esadar-wordmark.png";
 import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";
@@ -36,6 +37,65 @@ const initialFilters = {
   offerable: false,
   featured: false,
 };
+
+const CATALOG_BOOLEAN_FILTERS = ["discounted", "offerable", "featured"];
+const CATALOG_STRING_FILTERS = [
+  "search",
+  "sort",
+  "categoryId",
+  "brandId",
+  "sizeId",
+];
+
+function normalizeCatalogFilters(value = {}) {
+  return {
+    ...initialFilters,
+    ...value,
+    discounted: Boolean(value.discounted),
+    offerable: Boolean(value.offerable),
+    featured: Boolean(value.featured),
+  };
+}
+
+function areCatalogFiltersEqual(left, right) {
+  return Object.keys(initialFilters).every(
+    (key) => left?.[key] === right?.[key],
+  );
+}
+
+function readCatalogFiltersFromSearch(search) {
+  const params = new URLSearchParams(search);
+  const nextFilters = { ...initialFilters };
+
+  CATALOG_STRING_FILTERS.forEach((key) => {
+    const value = params.get(key);
+    if (value != null) nextFilters[key] = value;
+  });
+
+  CATALOG_BOOLEAN_FILTERS.forEach((key) => {
+    nextFilters[key] = params.get(key) === "true";
+  });
+
+  return normalizeCatalogFilters(nextFilters);
+}
+
+function buildCatalogSearch(filters) {
+  const params = new URLSearchParams();
+  const normalizedFilters = normalizeCatalogFilters(filters);
+
+  CATALOG_STRING_FILTERS.forEach((key) => {
+    const value = normalizedFilters[key];
+    if (!value) return;
+    if (key === "sort" && value === initialFilters.sort) return;
+    params.set(key, value);
+  });
+
+  CATALOG_BOOLEAN_FILTERS.forEach((key) => {
+    if (normalizedFilters[key]) params.set(key, "true");
+  });
+
+  return params.toString();
+}
 
 const initialLeadForm = {
   firstName: "",
@@ -144,7 +204,9 @@ export default function HomePage() {
     total: 0,
   });
   const [page, setPage] = useState(1);
+  const [catalogReloadNonce, setCatalogReloadNonce] = useState(0);
   const [articlesExhausted, setArticlesExhausted] = useState(false);
+  const [catalogTransitioning, setCatalogTransitioning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
@@ -232,7 +294,7 @@ export default function HomePage() {
   );
 
   const activeMobileFilterCount = activeFilterChips.filter(
-    (chip) => chip.key !== "sort" && chip.key !== "search",
+    (chip) => chip.key !== "sort",
   ).length;
   const activeMobileSort = filters.sort !== initialFilters.sort;
 
@@ -263,7 +325,7 @@ export default function HomePage() {
 
     setCatalogFiltersMeta({
       count: isCatalogView ? activeMobileFilterCount : 0,
-      onClear: isCatalogView ? () => resetNonSortFilters() : null,
+      onClear: isCatalogView ? () => resetCatalogFilters() : null,
     });
     setCatalogSortMeta({
       active: isCatalogView ? activeMobileSort : false,
@@ -277,7 +339,13 @@ export default function HomePage() {
   }, [
     activeMobileFilterCount,
     activeMobileSort,
+    filters.brandId,
+    filters.categoryId,
+    filters.discounted,
+    filters.featured,
+    filters.offerable,
     filters.search,
+    filters.sizeId,
     filters.sort,
     location.pathname,
     setCatalogFiltersMeta,
@@ -296,11 +364,21 @@ export default function HomePage() {
     !articlesExhausted &&
     items.length < Number(pagination.total || 0) &&
     page < totalPages;
+  const showCatalogLoadingSplash =
+    catalogTransitioning || (loading && page === 1 && items.length > 0);
+  const showCatalogInitialLoading =
+    loading && !items.length && !showCatalogLoadingSplash;
 
   useEffect(() => {
     const sentinel = loadMoreRef.current;
 
-    if (!sentinel || !canLoadMore || loading || loadingMore) {
+    if (
+      !sentinel ||
+      !canLoadMore ||
+      loading ||
+      loadingMore ||
+      catalogTransitioning
+    ) {
       return undefined;
     }
 
@@ -323,7 +401,7 @@ export default function HomePage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [canLoadMore, loading, loadingMore, totalPages]);
+  }, [canLoadMore, catalogTransitioning, loading, loadingMore, totalPages]);
 
   useEffect(() => {
     setHeroLogoVisible(false);
@@ -346,12 +424,10 @@ export default function HomePage() {
   useEffect(() => {
     if (location.pathname !== "/articles") return;
 
-    const nextSearch = new URLSearchParams(location.search).get("search") || "";
+    const nextFilters = readCatalogFiltersFromSearch(location.search);
 
     setFilters((current) =>
-      current.search === nextSearch
-        ? current
-        : { ...current, search: nextSearch },
+      areCatalogFiltersEqual(current, nextFilters) ? current : nextFilters,
     );
 
     lastAutoLoadPageRef.current = 1;
@@ -461,6 +537,7 @@ export default function HomePage() {
         }
       } finally {
         if (!ignore) {
+          setCatalogTransitioning(false);
           setLoading(false);
           setLoadingMore(false);
         }
@@ -471,68 +548,80 @@ export default function HomePage() {
     return () => {
       ignore = true;
     };
-  }, [page, queryString]);
+  }, [catalogReloadNonce, page, queryString]);
 
-  function resetPaginationState() {
+  function resetPaginationState({ clearItems = true } = {}) {
     lastAutoLoadPageRef.current = 1;
     setArticlesExhausted(false);
-    setItems([]);
+    setCatalogTransitioning(true);
+    if (clearItems) setItems([]);
     setPage(1);
+    setCatalogReloadNonce((current) => current + 1);
   }
 
-  function applyFilters(nextFilters) {
-    resetPaginationState();
-    setFilters(nextFilters);
+  function syncCatalogUrl(normalizedFilters) {
+    if (location.pathname !== "/articles") return;
 
-    if (location.pathname === "/articles") {
-      const params = new URLSearchParams();
-      if (nextFilters.search) params.set("search", nextFilters.search);
-      const nextSearch = params.toString();
-      const nextUrl = nextSearch ? `/articles?${nextSearch}` : "/articles";
-      const currentUrl = `${location.pathname}${location.search}`;
+    const nextSearch = buildCatalogSearch(normalizedFilters);
+    const nextUrl = nextSearch ? `/articles?${nextSearch}` : "/articles";
+    const currentUrl = `${location.pathname}${location.search}`;
 
-      if (currentUrl !== nextUrl) {
-        navigate(nextUrl, { replace: true });
-      }
+    if (currentUrl !== nextUrl) {
+      navigate(nextUrl, { replace: true });
     }
   }
 
+  function applyFilters(nextFilters) {
+    const normalizedFilters = normalizeCatalogFilters(nextFilters);
+    const filtersChanged = !areCatalogFiltersEqual(filters, normalizedFilters);
+    const shouldReloadEmptyCatalog = !filtersChanged && !loading && !items.length;
+
+    syncCatalogUrl(normalizedFilters);
+
+    if (!filtersChanged && !shouldReloadEmptyCatalog) {
+      return false;
+    }
+
+    resetPaginationState({ clearItems: false });
+    setFilters(normalizedFilters);
+    return true;
+  }
+
   function applyMobileFilters(nextFilters) {
-    applyFilters(nextFilters);
+    const applied = applyFilters(nextFilters);
     setMobileFiltersOpen(false);
-    notifyMobileStatus({
-      type: "filters",
-      icon: "filters",
-      message: "Filtros aplicados",
-    });
+    if (applied) {
+      notifyMobileStatus({
+        type: "filters",
+        icon: "filters",
+        message: "Filtros aplicados",
+      });
+    }
   }
 
   function applyMobileSort(nextSort) {
     const safeSort = nextSort || initialFilters.sort;
-
-    resetPaginationState();
-    setFilters((current) => ({ ...current, sort: safeSort }));
+    const applied = applyFilters({ ...filters, sort: safeSort });
     setMobileFiltersOpen(false);
 
-    notifyMobileStatus({
-      type: "sort",
-      icon: "sort",
-      message:
-        safeSort !== initialFilters.sort
-          ? "Ordenamiento aplicado sin quitar filtros"
-          : "Ordenamiento restablecido",
-    });
+    if (applied) {
+      notifyMobileStatus({
+        type: "sort",
+        icon: "sort",
+        message:
+          safeSort !== initialFilters.sort
+            ? "Ordenamiento aplicado sin quitar filtros"
+            : "Ordenamiento restablecido",
+      });
+    }
   }
 
-  function resetNonSortFilters() {
-    applyFilters({
-      ...initialFilters,
-      sort: filters.sort,
-    });
+  function resetCatalogFilters() {
+    applyFilters({ ...initialFilters });
     notifyMobileStatus({
       type: "filters",
       icon: "filters",
-      message: "Filtros limpiados",
+      message: "Filtros restablecidos",
     });
   }
 
@@ -762,7 +851,26 @@ export default function HomePage() {
           idPrefix="desktop-filter"
         />
 
-        <div className="catalog-content">
+        <div
+          className={`catalog-content${showCatalogLoadingSplash ? " catalog-content--loading" : ""}`}
+        >
+          {showCatalogLoadingSplash ? (
+            <div
+              className="catalog-filter-loading-splash"
+              aria-live="polite"
+              aria-label="Cargando filtros"
+            >
+              <div className="catalog-filter-loading-splash__logo-wrap">
+                <img
+                  src={esadarWordmark}
+                  alt=""
+                  className="catalog-filter-loading-splash__logo"
+                />
+                <span className="sr-only">Cargando filtros</span>
+              </div>
+            </div>
+          ) : null}
+
           <div className="catalog-summary-row">
             <div>
               <p className="section-kicker">Catalogo</p>
@@ -817,7 +925,7 @@ export default function HomePage() {
 
           {error ? <p className="error-inline">{error}</p> : null}
 
-          {loading ? (
+          {showCatalogInitialLoading ? (
             <div className="centered-card section-card">
               <p className="muted-copy">Cargando prendas seleccionadas…</p>
             </div>

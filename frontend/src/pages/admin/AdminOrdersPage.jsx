@@ -186,6 +186,7 @@ export default function AdminOrdersPage() {
           }
           onApply={applyFilters}
           onClear={clearFilters}
+          showClear={activeFiltersCount > 0}
         >
           <div className="admin-filter-grid">
             <label className="field-group">
@@ -448,12 +449,11 @@ export default function AdminOrdersPage() {
                       <div className="table-actions">
                         <Link
                           to={`/admin/orders/${order.id}`}
-                          className="ghost-button admin-icon-action"
+                          className="icon-action-button"
                           aria-label={`Ver orden ${order.orderNumber}`}
                           title="Ver orden"
                         >
                           <EyeIcon />
-                          {/* <span className="admin-action-label">Ver orden</span> */}
                         </Link>
                         <button
                           type="button"

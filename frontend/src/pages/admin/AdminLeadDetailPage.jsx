@@ -11,7 +11,21 @@ const LEAD_STATUS_LABELS = { NEW: 'Nuevo', CONTACTED: 'Contactado', QUALIFIED: '
 const SOURCE_LABELS = { CHECKOUT: 'Checkout', CONTACT_FORM: 'Contacto', MANUAL: 'Manual', OFFER: 'Oferta', NEWSLETTER: 'Newsletter', STOCK_ALERT: 'Alerta de stock', WISHLIST: 'Guardado', ABANDONED_CART: 'Carrito abandonado', PRODUCT_INTEREST: 'Interes de producto' };
 const ALERT_STATUS_LABELS = { ACTIVE: 'Activa', PAUSED: 'Pausada', CONVERTED: 'Convertida', CANCELLED: 'Cancelada' };
 const formatSource = (source) => SOURCE_LABELS[source] || source || 'Sin origen';
-const formatPreferences = (preferences = {}) => ([...(preferences.preferredCategories || []), ...(preferences.preferredBrands || []), ...(preferences.preferredSizes || []), ...(preferences.preferredColors || [])].filter(Boolean));
+
+function normalizePreferences(preferences) {
+  if (!preferences || typeof preferences !== 'object') return {};
+  return preferences;
+}
+
+function formatPreferences(preferences) {
+  const normalized = normalizePreferences(preferences);
+  return [
+    ...(normalized.preferredCategories || []),
+    ...(normalized.preferredBrands || []),
+    ...(normalized.preferredSizes || []),
+    ...(normalized.preferredColors || []),
+  ].filter(Boolean);
+}
 
 export default function AdminLeadDetailPage() {
   const { id } = useParams();
@@ -63,6 +77,9 @@ export default function AdminLeadDetailPage() {
     }
   }
 
+  const preferenceItems = formatPreferences(lead?.preferences);
+  const preferenceNotes = normalizePreferences(lead?.preferences).notes;
+
   return (
     <div className="container page-stack admin-page-shell admin-detail-page admin-lead-detail-page">
       <AdminToolbar />
@@ -76,7 +93,7 @@ export default function AdminLeadDetailPage() {
           <div className="admin-detail-meta admin-detail-meta--grid">
             <p className="summary-line"><span>Origen</span><strong>{formatSource(lead.source)}</strong></p><p className="summary-line"><span>Email</span><strong>{lead.email || 'Sin email'}</strong></p><p className="summary-line"><span>WhatsApp</span><strong>{lead.phone || 'Sin telefono'}</strong></p><p className="summary-line"><span>Instagram</span><strong>{lead.instagram || 'Sin Instagram'}</strong></p><p className="summary-line"><span>Alta</span><strong>{formatDate(lead.createdAt)}</strong></p><p className="summary-line"><span>Actualizacion</span><strong>{formatDate(lead.updatedAt)}</strong></p>
           </div>
-          <div className="page-stack-sm"><p className="section-kicker">Preferencias</p><div className="preference-chip-list">{formatPreferences(lead.preferences).length ? formatPreferences(lead.preferences).map((item) => <span key={`${lead.id}-${item}`} className="preference-chip">{item}</span>) : <span className="muted-copy">Sin preferencias guardadas.</span>}</div>{lead.preferences?.notes ? <p className="muted-copy admin-detail-note">{lead.preferences.notes}</p> : null}</div>
+          <div className="page-stack-sm"><p className="section-kicker">Preferencias</p><div className="preference-chip-list">{preferenceItems.length ? preferenceItems.map((item) => <span key={`${lead.id}-${item}`} className="preference-chip">{item}</span>) : <span className="muted-copy">Sin preferencias guardadas.</span>}</div>{preferenceNotes ? <p className="muted-copy admin-detail-note">{preferenceNotes}</p> : null}</div>
           <div className="page-stack-sm"><p className="section-kicker">Alertas</p>{(lead.alerts || []).length ? <div className="history-list">{lead.alerts.map((alert) => <article key={alert.id} className="history-row"><div><strong>{alert.alertType}</strong><p className="muted-copy">{alert.articleTitle || 'Sin articulo asociado'} · {formatDate(alert.createdAt)}</p></div><div className="table-actions"><StatusBadge status={alert.status} labels={ALERT_STATUS_LABELS} />{alert.articleSlug ? <Link className="ghost-button" to={articlePath({ slug: alert.articleSlug, articleId: alert.articleId })}>Ver articulo</Link> : null}</div></article>)}</div> : <p className="muted-copy">Sin alertas asociadas.</p>}</div>
           <div className="page-stack-sm"><p className="section-kicker">Wishlists</p>{(lead.wishlists || []).length ? <div className="history-list">{lead.wishlists.map((wishlist) => <article key={wishlist.id} className="history-row"><strong>Wishlist #{wishlist.id}</strong><span>{wishlist.itemCount} prendas guardadas</span></article>)}</div> : <p className="muted-copy">Sin listas guardadas.</p>}</div>
           <form className="section-card nested-card page-stack-sm admin-detail-form-card" onSubmit={handleStatusSubmit} noValidate>

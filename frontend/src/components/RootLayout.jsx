@@ -28,6 +28,7 @@ export default function RootLayout() {
   const [introFadeDuration, setIntroFadeDuration] = useState(
     INTRO_INITIAL_FADE_MS,
   );
+  const [breadcrumbLabelOverrides, setBreadcrumbLabelOverrides] = useState({});
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === "/";
@@ -127,9 +128,9 @@ export default function RootLayout() {
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
         <main className="page-shell">
-          <AppBreadcrumbs />
+          <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
           <div className="page-transition-shell">
-            <Outlet context={{ setHeroLogoVisible }} />
+            <Outlet context={{ setHeroLogoVisible, setBreadcrumbLabelOverrides }} />
           </div>
         </main>
       </MobileMenuProvider>

@@ -202,6 +202,7 @@ export default function AdminLeadsPage() {
           }
           onApply={applyFilters}
           onClear={clearFilters}
+          showClear={activeFiltersCount > 0}
         >
           <div className="admin-filter-grid">
             <label className="field-group">
@@ -394,12 +395,11 @@ export default function AdminLeadsPage() {
                         <div className="table-actions">
                           <Link
                             to={`/admin/leads/${lead.id}`}
-                            className="button button-secondary button-compact admin-icon-action"
+                            className="icon-action-button"
                             aria-label={`Ver detalle de ${lead.firstName} ${lead.lastName}`}
                             title="Ver detalle"
                           >
                             <EyeIcon />
-                            {/* <span className="admin-action-label">Ver detalle</span> */}
                           </Link>
                           {lead.leadStatus !== "ARCHIVED" ? (
                             <button

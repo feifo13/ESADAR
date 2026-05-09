@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -8,6 +8,7 @@ import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { toAbsoluteUrl } from "../lib/seo.js";
 import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
+import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import { articlePath } from "../lib/routes.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import {
@@ -30,6 +31,7 @@ const initialGuest = {
 
 export default function OfferPage() {
   const { slugOrId } = useParams();
+  const relatedTrackRef = useRef(null);
   const { user, isAuthenticated } = useAuth();
   const { site } = useSiteSeo();
   const { notifyMobileStatus } = useMobileMenu();
@@ -384,14 +386,15 @@ export default function OfferPage() {
       </section>
 
       <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
-        <div className="section-heading">
+        <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Tambien permiten oferta</p>
             <h2>Mas prendas abiertas a negociacion</h2>
           </div>
+          <ScrollRailControls targetRef={relatedTrackRef} />
         </div>
 
-        <div className="article-grid article-horizontal-card-track">
+        <div ref={relatedTrackRef} className="article-grid article-horizontal-card-track">
           {related.map((item) => (
             <ArticleCard
               key={item.id}

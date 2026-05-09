@@ -45,16 +45,29 @@ function detailLabel(prefix, value) {
   return decoded ? `${prefix} #${decoded}` : prefix;
 }
 
-function buildBreadcrumbs(pathname) {
+function titleizePathSegment(value) {
+  return decodeURIComponent(String(value || ""))
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function buildBreadcrumbs(pathname, labelOverrides = {}) {
   const cleanPath = pathname.replace(/\/+$/, "") || "/";
   const parts = cleanPath.split("/").filter(Boolean);
 
   if (cleanPath === "/" || cleanPath === "/articles") return [];
 
   if (parts[0] === "articles") {
+    const articlePathname = parts[1] ? `/articles/${parts[1]}` : "/articles";
+    const articleLabel =
+      labelOverrides[articlePathname] ||
+      titleizePathSegment(parts[1]) ||
+      "Articulo";
     const crumbs = [
       { label: "Catalogo", to: "/articles" },
-      { label: "Articulo", to: parts[1] ? `/articles/${parts[1]}` : undefined },
+      { label: articleLabel, to: parts[1] ? articlePathname : undefined },
     ];
 
     if (parts[2] === "offer") {
@@ -129,9 +142,9 @@ function buildBreadcrumbs(pathname) {
   return [{ label: fallbackLabel }];
 }
 
-export default function AppBreadcrumbs() {
+export default function AppBreadcrumbs({ labelOverrides = {} }) {
   const location = useLocation();
-  const crumbs = buildBreadcrumbs(location.pathname);
+  const crumbs = buildBreadcrumbs(location.pathname, labelOverrides);
 
   if (!crumbs.length) return null;
 

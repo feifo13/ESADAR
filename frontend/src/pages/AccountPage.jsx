@@ -6,7 +6,12 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import SortableTh from "../components/SortableTh.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
-import { BellIcon, CartIcon, XIcon } from "../components/ActionIcons.jsx";
+import {
+  BellIcon,
+  CartIcon,
+  EyeIcon,
+  XIcon,
+} from "../components/ActionIcons.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
@@ -74,23 +79,6 @@ const TAB_ITEMS = [
 ];
 
 const ACCOUNT_TABLE_PAGE_SIZE = 8;
-
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
 
 function LocalTablePagination() {
   return null;
@@ -171,6 +159,10 @@ export default function AccountPage() {
     direction: "asc",
   });
   const [ordersSort, setOrdersSort] = useState({
+    key: "createdAt",
+    direction: "desc",
+  });
+  const [offersSort, setOffersSort] = useState({
     key: "createdAt",
     direction: "desc",
   });
@@ -291,6 +283,23 @@ export default function AccountPage() {
           order.createdAt,
       }),
     [orders, ordersSort],
+  );
+
+  const sortedOffers = useMemo(
+    () =>
+      sortRows(offers, offersSort, {
+        createdAt: (offer) => offer.createdAt,
+        article: (offer) => offer.article?.title || "",
+        originalPrice: (offer) =>
+          Number(
+            offer.article?.salePrice || offer.article?.discountedPrice || 0,
+          ),
+        offeredAmount: (offer) => Number(offer.offeredAmount || 0),
+        status: (offer) =>
+          OFFER_STATUS_LABELS[getOfferDisplayStatus(offer)] ||
+          getOfferDisplayStatus(offer),
+      }),
+    [offers, offersSort],
   );
 
   const wishlistTotalPages = Math.max(
@@ -451,6 +460,17 @@ export default function AccountPage() {
         current,
         key,
         key === "createdAt" || key === "updatedAt" ? "desc" : "asc",
+      ),
+    }));
+  }
+
+  function toggleOffersSort(key) {
+    setOffersSort((current) => ({
+      key,
+      direction: getNextSortDirection(
+        current,
+        key,
+        key === "createdAt" ? "desc" : "asc",
       ),
     }));
   }
@@ -1205,23 +1225,21 @@ export default function AccountPage() {
                         >
                           <BellIcon active />
                         </button>,
-                        alertPath ? (
-                          <Link
-                            to={alertPath}
-                            className="icon-action-button"
-                            aria-label={`Ver ${alert.articleTitle || "alerta"}`}
-                            title="Ver prenda"
-                          >
-                            <EyeIcon />
-                          </Link>
-                        ) : (
-                          <span
-                            className="icon-action-button summary-item-card__icon-placeholder"
-                            aria-hidden="true"
-                          >
-                            <EyeIcon />
-                          </span>
-                        ),
+                        ...(alertPath
+                          ? [
+                              <Link
+                                key="view-alert"
+                                to={alertPath}
+                                className="icon-action-button"
+                                aria-label={`Ver ${
+                                  alert.articleTitle || "alerta"
+                                }`}
+                                title="Ver prenda"
+                              >
+                                <EyeIcon />
+                              </Link>,
+                            ]
+                          : []),
                         <button
                           type="button"
                           className="icon-action-button"
@@ -1305,31 +1323,61 @@ export default function AccountPage() {
           {isAuthenticated &&
           !profileLoading &&
           !profileError &&
-          !offers.length ? (
+          !sortedOffers.length ? (
             <p className="muted-copy">Todavia no tienes ofertas registradas.</p>
           ) : null}
 
           {isAuthenticated &&
           !profileLoading &&
           !profileError &&
-          offers.length ? (
+          sortedOffers.length ? (
             <>
               <div className="table-shell account-offers-table-shell">
                 <table className="data-table account-offers-table">
                   <thead>
                     <tr>
                       <th>Imagen</th>
-                      <th>Fecha</th>
-                      <th>Artículo</th>
-                      <th>Precio original</th>
-                      <th>Monto ofertado</th>
-                      <th>Estado</th>
+                      <SortableTh
+                        sortKey="createdAt"
+                        sort={offersSort}
+                        onSort={toggleOffersSort}
+                      >
+                        Fecha
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="article"
+                        sort={offersSort}
+                        onSort={toggleOffersSort}
+                      >
+                        Artículo
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="originalPrice"
+                        sort={offersSort}
+                        onSort={toggleOffersSort}
+                      >
+                        Precio original
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="offeredAmount"
+                        sort={offersSort}
+                        onSort={toggleOffersSort}
+                      >
+                        Monto ofertado
+                      </SortableTh>
+                      <SortableTh
+                        sortKey="status"
+                        sort={offersSort}
+                        onSort={toggleOffersSort}
+                      >
+                        Estado
+                      </SortableTh>
                       <th>Respuesta / uso</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {offers.map((offer) => {
+                    {sortedOffers.map((offer) => {
                       const article = offer.article || {};
                       const displayStatus = getOfferDisplayStatus(offer);
                       const isAcceptedAvailable = displayStatus === "ACCEPTED";
@@ -1404,11 +1452,12 @@ export default function AccountPage() {
                           </td>
                           <td>
                             <Link
-                              className="button button-secondary button-compact account-offer-link"
+                              className="icon-action-button"
                               to={articleLink}
+                              aria-label={`Ver ${article.title || `oferta #${offer.id}`}`}
+                              title="Ver prenda"
                             >
                               <EyeIcon />
-                              {/* <span>Ver artículo</span> */}
                             </Link>
                           </td>
                         </tr>
@@ -1419,7 +1468,7 @@ export default function AccountPage() {
               </div>
 
               <div className="summary-item-card-list account-offers-list account-offers-list--mobile">
-                {offers.map((offer) => {
+                {sortedOffers.map((offer) => {
                   const article = offer.article || {};
                   const displayStatus = getOfferDisplayStatus(offer);
                   const isAcceptedAvailable = displayStatus === "ACCEPTED";
@@ -1478,11 +1527,12 @@ export default function AccountPage() {
                       actions={[
                         <Link
                           key="view-article"
-                          className="button button-secondary button-compact account-offer-link"
+                          className="icon-action-button"
                           to={articleLink}
+                          aria-label={`Ver ${article.title || `oferta #${offer.id}`}`}
+                          title="Ver prenda"
                         >
                           <EyeIcon />
-                          {/* <span>Ver artículo</span> */}
                         </Link>,
                       ]}
                     />

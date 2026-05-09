@@ -177,6 +177,7 @@ export default function AdminContactMessagesPage() {
           }
           onApply={applyFilters}
           onClear={clearFilters}
+          showClear={activeFiltersCount > 0}
         >
           <div className="admin-filter-grid">
             <label className="field-group">
@@ -357,13 +358,12 @@ export default function AdminContactMessagesPage() {
                     <td>
                       <div className="table-actions">
                         <Link
-                          className="ghost-button admin-icon-action"
+                          className="icon-action-button"
                           to={`/admin/contact-messages/${item.id}`}
                           aria-label={`Ver detalle de ${item.firstName} ${item.lastName}`}
                           title="Ver detalle"
                         >
                           <EyeIcon />
-                          {/* <span className="admin-action-label">Ver detalle</span> */}
                         </Link>
                         {item.status !== "ARCHIVED" ? (
                           <button

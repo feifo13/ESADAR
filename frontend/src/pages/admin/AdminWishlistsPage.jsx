@@ -208,6 +208,7 @@ export default function AdminWishlistsPage() {
           }
           onApply={applyFilters}
           onClear={clearFilters}
+          showClear={activeFiltersCount > 0}
         >
           <div className="admin-filter-grid">
             <label className="field-group">
@@ -408,7 +409,14 @@ export default function AdminWishlistsPage() {
                     <span>
                       {formatCurrency(item.discountedPrice || item.salePrice)}
                     </span>
-                    <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver articulo</span></Link>
+                    <Link
+                      to={articlePath(item)}
+                      className="icon-action-button"
+                      aria-label={`Ver ${item.title}`}
+                      title="Ver articulo"
+                    >
+                      <EyeIcon />
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -581,7 +589,14 @@ export default function AdminWishlistsPage() {
                         {formatCurrency(item.discountedPrice || item.salePrice)}
                       </strong>
                       <span>{formatDate(item.savedAt)}</span>
-                      <Link to={articlePath(item)} className="admin-inline-icon-link"><EyeIcon /><span>Ver</span></Link>
+                      <Link
+                        to={articlePath(item)}
+                        className="icon-action-button"
+                        aria-label={`Ver ${item.title}`}
+                        title="Ver articulo"
+                      >
+                        <EyeIcon />
+                      </Link>
                     </div>
                   </article>
                 ))}

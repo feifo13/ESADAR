@@ -23,9 +23,10 @@ export default function ResponsiveFilterPanel({
   description = '',
   buttonLabel = 'Mostrar filtros',
   applyLabel = 'Aplicar',
-  clearLabel = 'Limpiar',
+  clearLabel = 'Limpiar filtros',
   onApply,
   onClear,
+  showClear = true,
   defaultOpen = false,
   summary = null,
   children,
@@ -46,7 +47,7 @@ export default function ResponsiveFilterPanel({
       >
         {applyLabel}
       </button>
-      {onClear ? (
+      {onClear && showClear ? (
         <button
           type="button"
           className="button button-secondary"

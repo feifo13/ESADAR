@@ -9,6 +9,7 @@ import {
 import { articleOfferPath, articlePath } from "../lib/routes.js";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
+import { useNotification } from "../contexts/NotificationContext.jsx";
 import SmartImage from "./SmartImage.jsx";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 
@@ -25,6 +26,7 @@ export default function ArticleCard({
   const shouldReduceMotion = useReducedMotion();
   const { addItem } = useCart();
   const { isSaved, toggleItem, pendingIds } = useWishlist();
+  const { notifySuccess, notifyError } = useNotification();
   const discounted = hasDiscount(article);
   const price = getDiscountedPrice(article);
   const isSoldOut =
@@ -81,6 +83,22 @@ export default function ArticleCard({
     image: article.primaryImage || "",
     allowOffers: article.allowOffers,
   };
+
+  async function handleWishlistToggle() {
+    const wasSaved = saved;
+    const result = await toggleItem(article, optimisticWishlistItem);
+
+    if (!result.ok) {
+      notifyError(
+        result.error?.message || "No pudimos actualizar tus guardados.",
+      );
+      return;
+    }
+
+    if (!wasSaved) {
+      notifySuccess("La prenda quedo guardada.");
+    }
+  }
 
   if (variant === "editorial" && view === "grid") {
     return (
@@ -148,7 +166,7 @@ export default function ArticleCard({
           className="article-card-heart article-card-heart--editorial article-card-heart--bare"
           labelActive="Quitar de guardados"
           labelInactive="Guardar articulo"
-          onToggle={() => void toggleItem(article, optimisticWishlistItem)}
+          onToggle={() => void handleWishlistToggle()}
         />
       </motion.article>
     );
@@ -196,7 +214,7 @@ export default function ArticleCard({
           className="article-card-heart"
           labelActive="Quitar de guardados"
           labelInactive="Guardar articulo"
-          onToggle={() => void toggleItem(article, optimisticWishlistItem)}
+          onToggle={() => void handleWishlistToggle()}
         />
       </div>
 
@@ -274,7 +292,7 @@ export default function ArticleCard({
                   ? "button button-secondary button-compact is-active"
                   : "button button-secondary button-compact"
               }
-              onClick={() => void toggleItem(article, optimisticWishlistItem)}
+              onClick={() => void handleWishlistToggle()}
               disabled={pending}
             >
               {saved ? "Guardado" : "Guardar"}

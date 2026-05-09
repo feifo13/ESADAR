@@ -4,7 +4,14 @@ import SeoHead from "../components/SeoHead.jsx";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { apiFetch } from "../lib/api.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
-import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getRequiredSelectValidationMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  getFriendlyErrorMessage,
+  getRequiredSelectValidationMessage,
+  getRequiredValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 
 const initialLeadForm = {
   firstName: "",
@@ -38,7 +45,10 @@ export default function NewsletterPage() {
         getRequiredValidationMessage(leadForm.email, "el email"),
         getEmailValidationMessage(leadForm.email),
         getRequiredValidationMessage(leadForm.phone, "el WhatsApp"),
-        getRequiredSelectValidationMessage(leadForm.preferredCategory, "la categoría"),
+        getRequiredSelectValidationMessage(
+          leadForm.preferredCategory,
+          "la categoría",
+        ),
         getRequiredSelectValidationMessage(leadForm.preferredBrand, "la marca"),
         getRequiredSelectValidationMessage(leadForm.preferredSize, "el talle"),
         getRequiredValidationMessage(leadForm.preferredColor, "el color"),
@@ -74,12 +84,16 @@ export default function NewsletterPage() {
         },
       });
 
-      const successMessage = "Te vamos a avisar cuando entren prendas que encajen con tu estilo.";
+      const successMessage =
+        "Te vamos a avisar cuando entren prendas que encajen con tu estilo.";
       setLeadSuccess(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
       setLeadForm(initialLeadForm);
     } catch (err) {
-      const errorMessage = getFriendlyErrorMessage(err, "No pudimos guardar tu preferencia ahora.");
+      const errorMessage = getFriendlyErrorMessage(
+        err,
+        "No pudimos guardar tu preferencia ahora.",
+      );
       setLeadError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
@@ -94,11 +108,11 @@ export default function NewsletterPage() {
         description="Recibi avisos cuando entren prendas second hand seleccionadas segun tus preferencias."
       />
 
-      <nav className="breadcrumb-row" aria-label="Breadcrumb">
+      {/* <nav className="breadcrumb-row" aria-label="Breadcrumb">
         <Link to="/">Inicio</Link>
         <span>/</span>
         <strong>Avisos de ropa nueva</strong>
-      </nav>
+      </nav> */}
 
       <section className="section-card page-stack lead-capture-card lead-capture-card--page">
         <div className="lead-capture-copy">
@@ -110,7 +124,11 @@ export default function NewsletterPage() {
           </p>
         </div>
 
-        <form className="lead-capture-form" onSubmit={handleLeadSubmit} noValidate>
+        <form
+          className="lead-capture-form"
+          onSubmit={handleLeadSubmit}
+          noValidate
+        >
           <div className="form-grid-two">
             <label className="field-group">
               <span>Nombre</span>

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import SmartImage from "./SmartImage.jsx";
+import ScrollRailControls from "./ScrollRailControls.jsx";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { formatCurrency, getDiscountedPrice } from "../lib/format.js";
@@ -27,6 +28,7 @@ function useMediaQuery(query) {
 export default function FeaturedMotionCards({ title, items = [] }) {
   const shouldReduceMotion = useReducedMotion();
   const isDesktop = useMediaQuery("(min-width: 961px)");
+  const featuredRailRef = useRef(null);
   const { isSaved, toggleItem, pendingIds } = useWishlist();
   // const featuredItems = isDesktop ? items.slice(0, 3) : items.slice(0, 4);
   const featuredItems = items;
@@ -138,7 +140,7 @@ export default function FeaturedMotionCards({ title, items = [] }) {
           </div>
         </div>
 
-        <div className="rail-scroller">
+        <div ref={featuredRailRef} className="rail-scroller">
           {featuredItems.map((article, index) => (
             <div key={article.id} className="rail-item">
               {renderFeaturedItem(article, index)}
@@ -151,14 +153,15 @@ export default function FeaturedMotionCards({ title, items = [] }) {
 
   return (
     <section className="featured-motion-shell container">
-      <div className="section-heading">
+      <div className="section-heading section-heading-wrap">
         <div>
           <p className="section-kicker">Seleccion</p>
           <h2>{title}</h2>
         </div>
+        <ScrollRailControls targetRef={featuredRailRef} />
       </div>
 
-      <div className="featured-motion-grid featured-motion-grid--all">
+      <div ref={featuredRailRef} className="featured-motion-grid featured-motion-grid--all">
         {featuredItems.map((article, index) =>
           renderFeaturedItem(article, index),
         )}

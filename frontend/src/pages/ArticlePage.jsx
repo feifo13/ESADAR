@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import {
+  Link,
+  useLocation,
+  useOutletContext,
+  useParams,
+} from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
+import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import { EditIcon } from "../components/ActionIcons.jsx";
 import { apiFetch } from "../lib/api.js";
 import {
@@ -23,7 +29,11 @@ import {
   toAbsoluteUrl,
 } from "../lib/seo.js";
 import { getPublicSessionToken } from "../lib/publicSession.js";
-import { firstValidationMessage, getEmailValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 
 const initialAlertForm = {
@@ -35,6 +45,11 @@ const initialAlertForm = {
 
 export default function ArticlePage() {
   const { slugOrId } = useParams();
+  const location = useLocation();
+  const { setBreadcrumbLabelOverrides } = useOutletContext();
+  const relatedTrackRef = useRef(null);
+  const stockAlertPanelRef = useRef(null);
+  const stockAlertFirstFieldRef = useRef(null);
   const { addItem, getItem } = useCart();
   const { isAuthenticated, user } = useAuth();
   const { site } = useSiteSeo();
@@ -62,6 +77,34 @@ export default function ArticlePage() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [slugOrId]);
+
+  useEffect(() => {
+    if (!article?.title || !setBreadcrumbLabelOverrides) return undefined;
+
+    const currentPath = location.pathname;
+    const canonicalPath = `/articles/${article.slug || slugOrId}`;
+
+    setBreadcrumbLabelOverrides((current) => ({
+      ...current,
+      [currentPath]: article.title,
+      [canonicalPath]: article.title,
+    }));
+
+    return () => {
+      setBreadcrumbLabelOverrides((current) => {
+        const next = { ...current };
+        delete next[currentPath];
+        delete next[canonicalPath];
+        return next;
+      });
+    };
+  }, [
+    article?.slug,
+    article?.title,
+    location.pathname,
+    setBreadcrumbLabelOverrides,
+    slugOrId,
+  ]);
 
   useEffect(() => {
     let ignore = false;
@@ -110,7 +153,6 @@ export default function ArticlePage() {
     };
   }, [slugOrId]);
 
-
   useEffect(() => {
     let ignore = false;
 
@@ -123,7 +165,9 @@ export default function ArticlePage() {
       try {
         const response = await apiFetch("/api/public/offers/accepted");
         if (ignore) return;
-        const match = (response.items || []).find((item) => Number(item.article?.id) === Number(article.id));
+        const match = (response.items || []).find(
+          (item) => Number(item.article?.id) === Number(article.id),
+        );
         setAcceptedOffer(match || null);
       } catch {
         if (!ignore) setAcceptedOffer(null);
@@ -135,6 +179,20 @@ export default function ArticlePage() {
       ignore = true;
     };
   }, [article?.id, isAuthenticated]);
+
+  useEffect(() => {
+    if (!alertInlineOpen) return undefined;
+
+    const frameId = window.requestAnimationFrame(() => {
+      stockAlertPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      stockAlertFirstFieldRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [alertInlineOpen]);
 
   if (loading) {
     return (
@@ -183,7 +241,10 @@ export default function ArticlePage() {
   ];
 
   function isMobileViewport() {
-    return typeof window !== "undefined" && window.matchMedia("(max-width: 780px)").matches;
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 780px)").matches
+    );
   }
 
   function openStockAlertForm() {
@@ -195,15 +256,16 @@ export default function ArticlePage() {
   function showStockNotice(result) {
     if (!result || result.ok) return;
 
-    const nextDialog = result.code === "OUT_OF_STOCK"
-      ? {
-          title: "Articulo agotado",
-          message: "Esta prenda no tiene stock disponible ahora.",
-        }
-      : {
-          title: "Stock maximo alcanzado",
-          message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
-        };
+    const nextDialog =
+      result.code === "OUT_OF_STOCK"
+        ? {
+            title: "Articulo agotado",
+            message: "Esta prenda no tiene stock disponible ahora.",
+          }
+        : {
+            title: "Stock maximo alcanzado",
+            message: `Solo hay ${result.maxQuantity} unidad${result.maxQuantity === 1 ? "" : "es"} disponible${result.maxQuantity === 1 ? "" : "s"} para esta prenda.`,
+          };
 
     notifyError(nextDialog.message);
   }
@@ -230,7 +292,9 @@ export default function ArticlePage() {
     });
 
     if (!result.ok) {
-      notifyError(result.error?.message || "No pudimos actualizar tus guardados.");
+      notifyError(
+        result.error?.message || "No pudimos actualizar tus guardados.",
+      );
       return;
     }
 
@@ -335,7 +399,11 @@ export default function ArticlePage() {
   function renderStockAlertForm({ inline = false } = {}) {
     return (
       <form
-        className={inline ? "page-stack stock-alert-inline-form" : "page-stack stock-alert-modal-form"}
+        className={
+          inline
+            ? "page-stack stock-alert-inline-form"
+            : "page-stack stock-alert-modal-form"
+        }
         onSubmit={handleStockAlertSubmit}
         noValidate
       >
@@ -343,6 +411,7 @@ export default function ArticlePage() {
           <label className="field-group">
             <span>Nombre</span>
             <input
+              ref={inline ? stockAlertFirstFieldRef : undefined}
               className="input"
               value={alertForm.firstName}
               required
@@ -439,7 +508,7 @@ export default function ArticlePage() {
       />
 
       <div className="container article-page-shell page-stack">
-        <nav className="breadcrumb-row" aria-label="Breadcrumb">
+        {/* <nav className="breadcrumb-row" aria-label="Breadcrumb">
           <Link to="/">Inicio</Link>
           <span>/</span>
           <span>
@@ -447,7 +516,7 @@ export default function ArticlePage() {
           </span>
           <span>/</span>
           <strong>{article.title}</strong>
-        </nav>
+        </nav> */}
 
         <section className="ebay-article-layout">
           <div className="ebay-article-layout__gallery">
@@ -541,8 +610,9 @@ export default function ArticlePage() {
 
             {acceptedOffer ? (
               <p className="checkbox-row-accent">
-                Tenes una oferta aceptada: {formatCurrency(acceptedOffer.offeredAmount)}.
-                Aplica a 1 unidad.
+                Tenes una oferta aceptada:{" "}
+                {formatCurrency(acceptedOffer.offeredAmount)}. Aplica a 1
+                unidad.
               </p>
             ) : null}
 
@@ -611,7 +681,10 @@ export default function ArticlePage() {
             </div>
 
             {alertInlineOpen ? (
-              <section className="section-card page-stack-sm stock-alert-inline-panel">
+              <section
+                ref={stockAlertPanelRef}
+                className="section-card page-stack-sm stock-alert-inline-panel"
+              >
                 <div>
                   <p className="section-kicker">Seguimiento</p>
                   <h3>
@@ -657,7 +730,7 @@ export default function ArticlePage() {
 
         {relatedState.items.length ? (
           <section className="page-stack article-related-scroll-section">
-            <div className="section-heading">
+            <div className="section-heading section-heading-wrap">
               <div>
                 <p className="section-kicker">Relacionados</p>
                 <h2>Artículos relacionados</h2>
@@ -667,9 +740,13 @@ export default function ArticlePage() {
                   </p>
                 ) : null} */}
               </div>
+              <ScrollRailControls targetRef={relatedTrackRef} />
             </div>
 
-            <div className="related-articles-track article-horizontal-card-track">
+            <div
+              ref={relatedTrackRef}
+              className="related-articles-track article-horizontal-card-track"
+            >
               {relatedState.items.map((item) => (
                 <div key={item.id} className="related-articles-track__item">
                   <ArticleCard article={item} view="grid" variant="default" />
@@ -679,7 +756,6 @@ export default function ArticlePage() {
           </section>
         ) : null}
       </div>
-
     </>
   );
 }
