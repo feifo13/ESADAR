@@ -169,9 +169,7 @@ function MenuGlyph() {
       strokeLinecap="square"
       strokeLinejoin="round"
     >
-      <path
-        d="M5 7h14M5 12h14M5 17h14"
-      />
+      <path d="M5 7h14M5 12h14M5 17h14" />
     </svg>
   );
 }
@@ -351,11 +349,11 @@ export default function Header({ hideBrand = false }) {
 
   const accountMenuChildren = isAuthenticated
     ? [
-        { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
-        { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
-        { key: "account-offers", label: "Ofertas", to: "/cuenta/offers" },
-        // { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
         { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
+        { key: "account-offers", label: "Ofertas", to: "/cuenta/offers" },
+        { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
+        { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },
+        // { key: "account-alerts", label: "Alertas", to: "/cuenta/alertas" },
       ]
     : [
         { key: "account-login", label: "Ingresar", to: "/login" },

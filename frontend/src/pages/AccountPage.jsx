@@ -72,10 +72,10 @@ const ALERT_TYPE_LABELS = {
 
 const TAB_ITEMS = [
   { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
-  { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
-  { key: "ofertas", label: "Mis ofertas", path: "/cuenta/offers" },
-  // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
   { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
+  { key: "ofertas", label: "Mis ofertas", path: "/cuenta/offers" },
+  { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
+  // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
 ];
 
 const ACCOUNT_TABLE_PAGE_SIZE = 8;

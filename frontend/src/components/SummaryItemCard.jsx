@@ -38,7 +38,12 @@ function TrashIcon() {
   );
 }
 
-function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = false }) {
+function CheckoutSummaryItemCard({
+  item,
+  onQuantityChange,
+  onRemove,
+  readOnly = false,
+}) {
   const quantity = Math.max(1, Number(item.quantity || 1));
   const maxQuantity = Math.max(quantity, Number(item.maxQuantity || quantity));
   const unitPrice = Number(item.discountedPrice || 0);
@@ -46,8 +51,12 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
   const lineTotal = Number(item.lineTotal ?? unitPrice * quantity);
   const hasAcceptedOffer = Boolean(item.acceptedOffer);
   const lineKey = String(item.cartLineKey ?? item.id ?? item.articleId);
-  const offerPrice = hasAcceptedOffer ? Number(item.acceptedOffer.price || unitPrice) : unitPrice;
-  const offerSavings = hasAcceptedOffer ? Math.max(0, originalPrice - offerPrice) : 0;
+  const offerPrice = hasAcceptedOffer
+    ? Number(item.acceptedOffer.price || unitPrice)
+    : unitPrice;
+  const offerSavings = hasAcceptedOffer
+    ? Math.max(0, originalPrice - offerPrice)
+    : 0;
   const displayUnitPrice = hasAcceptedOffer ? offerPrice : unitPrice;
   const hasDiscount = originalPrice > displayUnitPrice;
   const articlePath = `/articles/${encodeURIComponent(String(item.slug || item.articleId))}`;
@@ -57,7 +66,13 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
   }
 
   return (
-    <article className={hasAcceptedOffer ? "summary-item-card summary-item-card--accepted-offer" : "summary-item-card"}>
+    <article
+      className={
+        hasAcceptedOffer
+          ? "summary-item-card summary-item-card--accepted-offer"
+          : "summary-item-card"
+      }
+    >
       <Link
         to={articlePath}
         className="summary-item-card__media"
@@ -72,7 +87,11 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
       </Link>
 
       <div className="summary-item-card__body">
-        {hasAcceptedOffer ? <span className="summary-item-card__badge pill pill-offer">Oferta aceptada</span> : null}
+        {hasAcceptedOffer ? (
+          <span className="summary-item-card__badge pill pill-offer">
+            Oferta aceptada
+          </span>
+        ) : null}
         <Link to={articlePath} className="summary-item-card__title">
           {item.title}
         </Link>
@@ -86,14 +105,16 @@ function CheckoutSummaryItemCard({ item, onQuantityChange, onRemove, readOnly = 
             <span className="price-old">{formatCurrency(originalPrice)}</span>
           ) : null}
           <strong> {formatCurrency(displayUnitPrice)}</strong>
-          {hasAcceptedOffer ? <span className="summary-item-card__meta"> oferta x1 · ahorro {formatCurrency(offerSavings)}</span> : null}
+          {/* {hasAcceptedOffer ? <span className="summary-item-card__meta"> oferta x1 · ahorro {formatCurrency(offerSavings)}</span> : null} */}
         </div>
 
         <p className="summary-item-card__price-row">
           Total: <strong>{formatCurrency(lineTotal)}</strong>
         </p>
         {hasAcceptedOffer ? (
-          <p className="summary-item-card__meta">La oferta aplica a 1 unidad. Unidades extra van en otra línea.</p>
+          <p className="summary-item-card__meta">
+            La oferta aplica a <strong>1</strong> unidad.
+          </p>
         ) : null}
       </div>
 
@@ -190,7 +211,9 @@ function GenericSummaryItemCard({
         ) : null}
 
         <div className="summary-item-card__body">
-          {badge ? <div className="summary-item-card__badge-row">{badge}</div> : null}
+          {badge ? (
+            <div className="summary-item-card__badge-row">{badge}</div>
+          ) : null}
 
           <TitleTag
             {...titleProps}
@@ -202,12 +225,17 @@ function GenericSummaryItemCard({
             {title}
           </TitleTag>
 
-          {subtitle ? <p className="summary-item-card__subtitle">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="summary-item-card__subtitle">{subtitle}</p>
+          ) : null}
 
           {meta.length ? (
             <div className="summary-item-card__meta-list">
               {meta.map((item, index) => (
-                <div key={`${title}-meta-${index}`} className="summary-item-card__meta-line">
+                <div
+                  key={`${title}-meta-${index}`}
+                  className="summary-item-card__meta-line"
+                >
                   {item}
                 </div>
               ))}
@@ -216,21 +244,32 @@ function GenericSummaryItemCard({
 
           {price != null || comparePrice != null ? (
             <div className="summary-item-card__price-block">
-              {price != null ? <strong className="summary-item-card__price-current">{price}</strong> : null}
+              {price != null ? (
+                <strong className="summary-item-card__price-current">
+                  {price}
+                </strong>
+              ) : null}
               {comparePrice != null ? (
-                <span className="summary-item-card__price-compare">{comparePrice}</span>
+                <span className="summary-item-card__price-compare">
+                  {comparePrice}
+                </span>
               ) : null}
             </div>
           ) : null}
 
-          {footer ? <div className="summary-item-card__footer">{footer}</div> : null}
+          {footer ? (
+            <div className="summary-item-card__footer">{footer}</div>
+          ) : null}
         </div>
       </div>
 
       {actions.length ? (
         <div className="summary-item-card__actions">
           {actions.map((action, index) => (
-            <div key={`${title}-action-${index}`} className="summary-item-card__action-slot">
+            <div
+              key={`${title}-action-${index}`}
+              className="summary-item-card__action-slot"
+            >
               {action}
             </div>
           ))}
@@ -247,4 +286,3 @@ export default function SummaryItemCard(props) {
 
   return <GenericSummaryItemCard {...props} />;
 }
-
