@@ -118,9 +118,20 @@ export default function FooterScrollScene() {
             alt="ESADAR"
             className="footer-scroll-scene__logo"
           />
-          <Link to="/about" className="button footer-scroll-scene__copy">
-            Sobre nosotros
-          </Link>
+          <div className="footer-scroll-scene__actions" aria-label="Acciones del footer">
+            <Link
+              to="/about"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--about"
+            >
+              Sobre nosotros
+            </Link>
+            <Link
+              to="/contact"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--contact"
+            >
+              Contacto
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

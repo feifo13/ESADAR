@@ -12239,6 +12239,15 @@ textarea,
   filter: drop-shadow(0 30px 56px rgba(0, 0, 0, 0.2));
 }
 
+.footer-scroll-scene__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.4vw, 16px);
+  width: min(680px, 100%);
+}
+
 .footer-scroll-scene__copy {
   margin: 0;
   min-width: min(260px, 74vw);
@@ -12256,10 +12265,10 @@ textarea,
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   font-size: clamp(0.9rem, 1.35vw, 1.04rem);
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   line-height: 1.12;
   text-align: center;
-  text-transform: uppercase;
+  text-transform: none !important;
   text-decoration: none;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
   pointer-events: auto;
@@ -12268,6 +12277,23 @@ textarea,
     border-color var(--motion-fast) var(--ease-smooth),
     background-color var(--motion-fast) var(--ease-smooth),
     box-shadow var(--motion-fast) var(--ease-smooth);
+}
+
+.footer-scroll-scene__copy--contact {
+  border-color: color-mix(in srgb, var(--aqua) 70%, var(--border));
+  background: linear-gradient(135deg, var(--aqua), var(--navy));
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--aqua) 24%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.footer-scroll-scene__copy--contact:hover,
+.footer-scroll-scene__copy--contact:focus-visible {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--aqua) 88%, white), var(--navy));
+  border-color: color-mix(in srgb, var(--aqua) 82%, white);
+  box-shadow:
+    0 16px 34px color-mix(in srgb, var(--aqua) 34%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--aqua) 22%, transparent);
 }
 
 .footer-scroll-scene__copy:hover,
@@ -12284,6 +12310,15 @@ textarea,
     0 0 0 3px color-mix(in srgb, var(--orange) 24%, transparent);
   outline: none;
   transform: translateY(-1px);
+}
+
+.footer-scroll-scene__copy--contact:hover,
+.footer-scroll-scene__copy--contact:focus-visible {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--aqua) 88%, white), var(--navy));
+  border-color: color-mix(in srgb, var(--aqua) 82%, white);
+  box-shadow:
+    0 16px 34px color-mix(in srgb, var(--aqua) 34%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--aqua) 22%, transparent);
 }
 
 .footer-scroll-scene__ring {
@@ -12470,6 +12505,15 @@ textarea,
   .footer-scroll-scene__content {
     gap: 14px;
     max-width: calc(100vw - 32px);
+  }
+
+  .footer-scroll-scene__actions {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .footer-scroll-scene__copy {
+    min-width: min(210px, 100%);
   }
 
   .contact-page-shell {

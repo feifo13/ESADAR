@@ -1004,7 +1004,7 @@ export default function HomePage() {
       <section className="container section-card lead-capture-card lead-capture-card--cta">
         <div className="lead-capture-copy">
           <p className="section-kicker">¡Ey!</p>
-          <h2>¿Queres enterarte cuando entra ropa nueva?</h2>
+          <h2>¿Querés enterarte cuando entra ropa nueva?</h2>
           <p className="muted-copy">
             Dejanos tus preferencias en una vista dedicada y te avisamos cuando
             aparezcan prendas que encajen con tu estilo.
@@ -1014,23 +1014,7 @@ export default function HomePage() {
           className="button button-primary lead-capture-cta-button"
           to="/avisos"
         >
-          Quiero enterarme
-        </Link>
-      </section>
-
-      <section className="container section-card lead-capture-card lead-capture-card--cta">
-        <div className="lead-capture-copy">
-          <p className="section-kicker">Contacto</p>
-          <h2>¿Tenes una consulta o viste algo que te interesa?</h2>
-          <p className="muted-copy">
-            Escribinos por prendas, talles, ingresos nuevos o formas de entrega.
-          </p>
-        </div>
-        <Link
-          className="button button-primary lead-capture-cta-button"
-          to="/contact"
-        >
-          Contacto
+          ¡Quiero!
         </Link>
       </section>
     </div>

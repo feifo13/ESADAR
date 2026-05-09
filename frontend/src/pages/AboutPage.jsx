@@ -41,6 +41,17 @@ export default function AboutPage() {
             ella y darle un lugar en la tuya. Gracias por elegir piezas con
             identidad, carácter y darle una nueva oportunidad.
           </p>
+          <p className="muted-copy">
+            Gracias por elegir piezas con identidad, carácter y darle una nueva
+            oportunidad.
+          </p>
+          <p className="muted-copy">
+            <strong>Esadar:</strong>
+          </p>
+          <p className="muted-copy">
+            Selecciones por y para{" "}
+            <strong className="checkbox-row-accent">HUMANOS/AS</strong>.
+          </p>
         </p>
         {/* <p className="muted-copy">
           Nos interesan las piezas unicas, el sportswear, lo vintage y las

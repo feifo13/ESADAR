@@ -117,10 +117,10 @@ export default function NewsletterPage() {
       <section className="section-card page-stack lead-capture-card lead-capture-card--page">
         <div className="lead-capture-copy">
           <p className="section-kicker">¡Ey!</p>
-          <h1>¿Queres enterarte cuando entra ropa nueva?</h1>
+          <h1>¿Querés enterarte cuando entra ropa nueva?</h1>
           <p className="muted-copy">
-            Dejanos un contacto y tus preferencias. Te avisamos cuando aparezcan
-            prendas que encajen con tu estilo.
+            Te avisaremos cuando aparezcan nuevos ingresos que se adapten a tus
+            gustos.
           </p>
         </div>
 
@@ -228,7 +228,7 @@ export default function NewsletterPage() {
                 ))}
               </select>
             </label>
-            <label className="field-group">
+            {/* <label className="field-group">
               <span>Color</span>
               <input
                 className="input"
@@ -239,7 +239,7 @@ export default function NewsletterPage() {
                 placeholder="Ej: negro, azul, neutros"
                 required
               />
-            </label>
+            </label> */}
           </div>
 
           <div className="inline-action-group">
