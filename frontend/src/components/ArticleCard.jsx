@@ -177,7 +177,7 @@ export default function ArticleCard({
             <p className="section-kicker">{categoryName}</p>
             <h3 className="article-card-editorial-title">{article.title}</h3>
             <div className="article-card-editorial-meta featured-motion-card__meta">
-              <span>{conditionLabel || "Segunda mano seleccionada"}</span>
+              <span>{conditionLabel || "Seleccion de Esadar"}</span>
               <strong>{formatCurrency(price)}</strong>
             </div>
             {SHOW_EDITORIAL_STATUS_BADGE && isSoldOut ? (
@@ -281,13 +281,24 @@ export default function ArticleCard({
         </div>
 
         <div className="article-card-pricebox">
-          <span className="price-current">{article.acceptedOffer ? formatCurrency(article.acceptedOffer.price || article.acceptedOffer.offeredAmount) : formatCurrency(price)}</span>
+          <span className="price-current">
+            {article.acceptedOffer
+              ? formatCurrency(
+                  article.acceptedOffer.price ||
+                    article.acceptedOffer.offeredAmount,
+                )
+              : formatCurrency(price)}
+          </span>
           {article.acceptedOffer || discounted ? (
             <span className="price-old">
               {formatCurrency(article.salePrice)}
             </span>
           ) : null}
-          {article.acceptedOffer ? <span className="muted-copy">Tenes una oferta aceptada - aplica a 1 unidad</span> : null}
+          {article.acceptedOffer ? (
+            <span className="muted-copy">
+              Tenes una oferta aceptada - aplica a 1 unidad
+            </span>
+          ) : null}
         </div>
 
         <div className="article-card-actions article-card-actions--catalog">
