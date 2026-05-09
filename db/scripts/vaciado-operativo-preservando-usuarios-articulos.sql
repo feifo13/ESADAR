@@ -1,9 +1,10 @@
--- Vaciado operativo total para desarrollo/testing.
--- Preserva usuarios, roles, permisos, user_roles, clientes registrados, direcciones y datos maestros.
--- Limpia tambien articulos e imagenes de articulos registradas en DB.
+-- Vaciado operativo para desarrollo/testing.
+-- Preserva usuarios, roles, permisos, clientes registrados, datos maestros,
+-- articulos e imagenes de articulos.
+-- Borra configuracion de cobros, metodos de envio y toda actividad operativa.
 --
 -- Uso:
---   mysql -u <usuario> -p <base_esadar> < db/scripts/vaciado-operativo-total-preservando-usuarios.sql
+--   mysql -u <usuario> -p <base_esadar> < db/scripts/vaciado-operativo-preservando-usuarios-articulos.sql
 
 SET @OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -32,8 +33,8 @@ DELETE FROM password_reset_tokens;
 DELETE FROM article_import_batch_items;
 DELETE FROM article_import_batches;
 DELETE FROM article_stock_movements;
-DELETE FROM article_images;
-DELETE FROM articles;
+DELETE FROM company_collecting_settings;
+DELETE FROM shipping_methods;
 
 COMMIT;
 
@@ -60,7 +61,6 @@ ALTER TABLE password_reset_tokens AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batch_items AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batches AUTO_INCREMENT = 1;
 ALTER TABLE article_stock_movements AUTO_INCREMENT = 1;
-ALTER TABLE article_images AUTO_INCREMENT = 1;
-ALTER TABLE articles AUTO_INCREMENT = 1;
+ALTER TABLE shipping_methods AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

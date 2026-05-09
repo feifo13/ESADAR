@@ -2,8 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
   BRAND_OPTIONS,
   CATEGORY_OPTIONS,
-  PAYMENT_METHOD_OPTIONS,
-  SHIPPING_METHOD_OPTIONS,
   SIZE_OPTIONS,
 } from '../constants/lookups.js';
 import { apiFetch } from '../lib/api.js';
@@ -33,8 +31,8 @@ const fallbackValue = {
   brandOptions: BRAND_OPTIONS,
   catalogBrandOptions: BRAND_OPTIONS,
   sizeOptions: SIZE_OPTIONS,
-  shippingMethodOptions: SHIPPING_METHOD_OPTIONS.filter(isPublicShippingMethodVisible),
-  paymentMethodOptions: PAYMENT_METHOD_OPTIONS,
+  shippingMethodOptions: [],
+  paymentMethodOptions: [],
   loaded: false,
   lookupError: '',
 };

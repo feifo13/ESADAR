@@ -469,7 +469,7 @@ export async function listAccountOrders(userId) {
         o.order_status AS orderStatus,
         o.total_snapshot AS total,
         o.created_at AS createdAt,
-        COALESCE(sm.description, o.shipping_method_description_snapshot) AS shippingMethodName,
+        COALESCE(o.shipping_method_description_snapshot, sm.description) AS shippingMethodName,
         COUNT(oi.id) AS itemsCount,
         SUM(CASE WHEN oi.accepted_offer_id IS NOT NULL THEN 1 ELSE 0 END) AS offerCount
       FROM orders o

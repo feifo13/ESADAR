@@ -11,6 +11,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 START TRANSACTION;
 
 DELETE FROM audit_log;
+DELETE FROM mercado_pago_preference_events;
+DELETE FROM mercado_pago_webhook_events;
 DELETE FROM payments;
 DELETE FROM offer_status_history;
 DELETE FROM offers;
@@ -29,11 +31,14 @@ DELETE FROM potential_customers;
 DELETE FROM password_reset_tokens;
 DELETE FROM article_import_batch_items;
 DELETE FROM article_import_batches;
+DELETE FROM article_stock_movements;
 
 COMMIT;
 
 -- ALTER TABLE hace commit implicito en MySQL; por eso va despues del bloque transaccional.
 ALTER TABLE audit_log AUTO_INCREMENT = 1;
+ALTER TABLE mercado_pago_preference_events AUTO_INCREMENT = 1;
+ALTER TABLE mercado_pago_webhook_events AUTO_INCREMENT = 1;
 ALTER TABLE payments AUTO_INCREMENT = 1;
 ALTER TABLE offer_status_history AUTO_INCREMENT = 1;
 ALTER TABLE offers AUTO_INCREMENT = 1;
@@ -52,5 +57,6 @@ ALTER TABLE potential_customers AUTO_INCREMENT = 1;
 ALTER TABLE password_reset_tokens AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batch_items AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batches AUTO_INCREMENT = 1;
+ALTER TABLE article_stock_movements AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

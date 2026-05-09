@@ -117,7 +117,7 @@ export default function CheckoutPage() {
   const location = useLocation();
   const { items, subtotal, removeItem, updateQuantity, refreshCart, flushCartSync } = useCart();
   const { user, isAuthenticated } = useAuth();
-  const { shippingMethodOptions, paymentMethodOptions, lookupError } =
+  const { shippingMethodOptions, paymentMethodOptions, lookupError, loaded: lookupsLoaded } =
     useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifyError } = useNotification();
@@ -151,7 +151,10 @@ export default function CheckoutPage() {
   const isMobileSummary = useMediaQuery("(max-width: 780px)");
 
   useEffect(() => {
-    if (!shippingMethodOptions.length) return;
+    if (!shippingMethodOptions.length) {
+      if (shippingMethodId) setShippingMethodId("");
+      return;
+    }
 
     if (
       !shippingMethodId ||
@@ -164,7 +167,10 @@ export default function CheckoutPage() {
   }, [shippingMethodId, shippingMethodOptions]);
 
   useEffect(() => {
-    if (!paymentMethodOptions.length) return;
+    if (!paymentMethodOptions.length) {
+      if (paymentMethod) setPaymentMethod("");
+      return;
+    }
 
     if (
       !paymentMethod ||
@@ -191,8 +197,16 @@ export default function CheckoutPage() {
   const total = subtotal + Number(shipping?.cost || 0);
 
   const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
-  const paymentComplete = Boolean(paymentMethod);
-  const shippingComplete = Boolean(shippingMethodId);
+  const paymentComplete = Boolean(
+    paymentMethod &&
+      paymentMethodOptions.some((item) => item.id === paymentMethod),
+  );
+  const shippingComplete = Boolean(
+    shippingMethodId &&
+      shippingMethodOptions.some(
+        (item) => Number(item.id) === Number(shippingMethodId),
+      ),
+  );
 
   const completion = {
     resumen: items.length > 0,
@@ -327,6 +341,13 @@ export default function CheckoutPage() {
     }
 
     if (currentStepKey === "pago" && !paymentComplete) {
+      if (!paymentMethodOptions.length) {
+        showCheckoutMessage(
+          "error",
+          "No hay medios de pago disponibles en este momento. Contacta a ESADAR para completar la compra.",
+        );
+        return false;
+      }
       showCheckoutMessage(
         "error",
         "Selecciona un medio de pago para continuar.",
@@ -335,6 +356,13 @@ export default function CheckoutPage() {
     }
 
     if (currentStepKey === "envio" && !shippingComplete) {
+      if (!shippingMethodOptions.length) {
+        showCheckoutMessage(
+          "error",
+          "No hay metodos de envio disponibles en este momento. Contacta a ESADAR para coordinar la entrega.",
+        );
+        return false;
+      }
       showCheckoutMessage(
         "error",
         "Selecciona un método de envío para continuar.",
@@ -432,7 +460,7 @@ export default function CheckoutPage() {
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("esadar:suppress-footer-reveal", {
-            detail: { duration: 1600, untilManual: true },
+            detail: { duration: 1600 },
           }),
         );
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -785,6 +813,11 @@ export default function CheckoutPage() {
       <div className="section-card nested-card">
         <p className="section-kicker">Medio seleccionado</p>
         {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
+        {lookupsLoaded && !paymentMethodOptions.length ? (
+          <p className="error-copy">
+            No hay medios de pago disponibles en este momento.
+          </p>
+        ) : null}
         <div className="stack-gap-sm">
           {paymentMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">
@@ -818,6 +851,11 @@ export default function CheckoutPage() {
       <div className="section-card nested-card">
         <p className="section-kicker">Envío</p>
         {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
+        {lookupsLoaded && !shippingMethodOptions.length ? (
+          <p className="error-copy">
+            No hay metodos de envio disponibles en este momento.
+          </p>
+        ) : null}
         <div className="stack-gap-sm">
           {shippingMethodOptions.map((option) => (
             <label key={option.id} className="radio-card radio-card-plain">

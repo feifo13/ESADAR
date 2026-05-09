@@ -55,16 +55,13 @@ export default function CheckoutCompletePage() {
       window.sessionStorage.removeItem(COMPLETE_STORAGE_KEY);
       window.dispatchEvent(
         new CustomEvent("esadar:suppress-footer-reveal", {
-          detail: { duration: 1600, untilManual: true },
+          detail: { release: true },
         }),
       );
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
 
-    navigate("/", {
-      replace: true,
-      state: { replayIntro: true, replayIntroReason: "order-complete" },
-    });
+    navigate("/", { replace: true });
   }
 
   if (!completedOrder?.orderNumber) {

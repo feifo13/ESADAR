@@ -724,6 +724,29 @@ CREATE TABLE mercado_pago_webhook_events (
   CONSTRAINT fk_mp_webhook_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE mercado_pago_preference_events (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id BIGINT UNSIGNED NULL,
+  order_number VARCHAR(50) NULL,
+  environment ENUM('test','production') NOT NULL DEFAULT 'test',
+  status ENUM('CREATED','FAILED','SKIPPED','FALLBACK_USED') NOT NULL,
+  source VARCHAR(80) NULL,
+  preference_id VARCHAR(120) NULL,
+  checkout_url VARCHAR(500) NULL,
+  fallback_checkout_url VARCHAR(500) NULL,
+  failure_status INT NULL,
+  failure_reason VARCHAR(255) NULL,
+  payload_json JSON NULL,
+  response_json JSON NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_mp_preference_events_order_id (order_id),
+  KEY idx_mp_preference_events_preference_id (preference_id),
+  KEY idx_mp_preference_events_status (status),
+  KEY idx_mp_preference_events_created_at (created_at),
+  CONSTRAINT fk_mp_preference_events_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- =========================================================
 -- 9) Contact / leads
 -- =========================================================

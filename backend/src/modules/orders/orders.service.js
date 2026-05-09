@@ -23,6 +23,7 @@ import {
   findCustomerByUserId,
 } from "../customers/customer-helpers.js";
 import { restoreUsedOffersForOrder } from "../offers/offers.service.js";
+import { getCollectingSettings } from "../collecting/collecting.service.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -67,6 +68,10 @@ function aggregateOrderItemQuantities(items = []) {
 export async function createOrder(input, actor, auditContext) {
   const order = await withTransaction(async (connection) => {
     const owner = await resolveOrderOwner(input, actor, connection);
+    await assertPaymentMethodIsAvailable(input.paymentMethod, connection);
+    if (!input.shippingMethodId) {
+      throw badRequest("Selecciona un metodo de envio para confirmar la orden.");
+    }
     const shipping = input.shippingMethodId
       ? await getShippingMethod(input.shippingMethodId, connection)
       : null;
@@ -605,6 +610,7 @@ export async function approveOrder(id, auditContext) {
         UPDATE orders
         SET
           order_status = 'APPROVED',
+          payment_status = 'PAID',
           approved_at = NOW(),
           updated_by = ?
         WHERE id = ?
@@ -631,6 +637,8 @@ export async function approveOrder(id, auditContext) {
         reason: 'Aprobada por administracion',
       });
     }
+
+    await ensureApprovedPaymentRecordForOrder(connection, before, auditContext);
 
     await connection.execute(
       `
@@ -837,6 +845,12 @@ export async function createOrderPayment(id, input, auditContext) {
       throw badRequest("Esta orden ya tiene un pago registrado.");
     }
 
+    if (input.status === "APPROVED" && before.orderStatus !== "APPROVED") {
+      throw badRequest(
+        "Primero aprueba la orden para registrar un pago aprobado.",
+      );
+    }
+
     const amount = Number(input.amount ?? before.total);
     if (!amountsMatch(amount, before.total)) {
       throw badRequest("El monto del pago debe coincidir con el total de la orden.");
@@ -958,7 +972,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
       orderId: before.id,
       payment,
       paymentId,
-      amount: paymentAmount || Number(before.total || 0),
+      amount: paymentAmount,
       currencyCode: payment?.currency_id || 'UYU',
       status: mappedPaymentStatus,
       paidAt,
@@ -1196,7 +1210,7 @@ async function getShippingMethod(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound("Metodo de envio no encontrado.");
+    throw notFound("Metodo de envio no encontrado o no disponible.");
   }
 
   return rows[0];
@@ -1222,6 +1236,146 @@ async function lockOrderForUpdate(id, connection) {
 
 function amountsMatch(a, b) {
   return Math.round(Number(a || 0) * 100) === Math.round(Number(b || 0) * 100);
+}
+
+function hasText(value) {
+  return String(value || '').trim().length > 0;
+}
+
+async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
+  const settings = await getCollectingSettings(connection);
+
+  if (paymentMethod === 'BANK_TRANSFER' && settings.isBankTransferEnabled) {
+    return;
+  }
+
+  if (
+    paymentMethod === 'MERCADO_PAGO' &&
+    settings.isMercadoPagoEnabled &&
+    (hasText(settings.mercadoPagoAccessToken) ||
+      hasText(settings.mercadoPagoCheckoutUrl))
+  ) {
+    return;
+  }
+
+  throw badRequest(
+    'El medio de pago seleccionado no esta disponible. Actualiza el checkout e intentalo nuevamente.',
+  );
+}
+
+async function ensureApprovedPaymentRecordForOrder(connection, order, auditContext = {}) {
+  if (!order || amountsMatch(0, order.total)) return null;
+
+  const approvedPayment = order.payments.find(
+    (payment) =>
+      payment.status === 'APPROVED' && amountsMatch(payment.amount, order.total),
+  );
+  if (approvedPayment) return approvedPayment.id;
+
+  const pendingPayment = order.payments.find(
+    (payment) =>
+      payment.status === 'PENDING' && amountsMatch(payment.amount, order.total),
+  );
+
+  if (pendingPayment) {
+    await connection.execute(
+      `
+        UPDATE payments
+        SET
+          status = 'APPROVED',
+          paid_at = COALESCE(paid_at, NOW()),
+          provider_name = COALESCE(provider_name, 'Admin manual approval'),
+          raw_response_json = COALESCE(raw_response_json, ?),
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [
+        JSON.stringify({ origin: 'admin_manual_approval' }),
+        auditContext.actorUserId || null,
+        pendingPayment.id,
+      ],
+    );
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'PAYMENT_APPROVED_BY_ADMIN',
+        entityType: 'payments',
+        entityId: pendingPayment.id,
+        beforeJson: pendingPayment,
+        afterJson: {
+          ...pendingPayment,
+          status: 'APPROVED',
+          paidAt: new Date().toISOString(),
+        },
+        metadataJson: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return pendingPayment.id;
+  }
+
+  const [insertResult] = await connection.execute(
+    `
+      INSERT INTO payments (
+        order_id,
+        payment_method,
+        provider_name,
+        provider_reference,
+        amount,
+        currency_code,
+        status,
+        paid_at,
+        raw_response_json,
+        created_by,
+        updated_by
+      ) VALUES (?, ?, 'Admin manual approval', NULL, ?, 'UYU', 'APPROVED', NOW(), ?, ?, ?)
+    `,
+    [
+      order.id,
+      order.paymentMethod,
+      Number(order.total || 0),
+      JSON.stringify({ origin: 'admin_manual_approval' }),
+      auditContext.actorUserId || null,
+      auditContext.actorUserId || null,
+    ],
+  );
+
+  await logAudit(
+    {
+      actorUserId: auditContext.actorUserId || null,
+      actorLabel: auditContext.actorLabel || null,
+      actionCode: 'PAYMENT_APPROVED_BY_ADMIN',
+      entityType: 'payments',
+      entityId: insertResult.insertId,
+      afterJson: {
+        orderId: order.id,
+        paymentMethod: order.paymentMethod,
+        providerName: 'Admin manual approval',
+        amount: Number(order.total || 0),
+        currencyCode: 'UYU',
+        status: 'APPROVED',
+      },
+      metadataJson: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
+      source: auditContext.source,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+    connection,
+  );
+
+  return insertResult.insertId;
 }
 
 async function getOrderById(id, connection) {

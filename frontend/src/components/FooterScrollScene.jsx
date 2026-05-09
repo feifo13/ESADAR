@@ -113,6 +113,15 @@ export default function FooterScrollScene() {
     }
 
     function handleSuppressFooterReveal(event) {
+      if (event.detail?.release) {
+        suppressRevealUntilManualRef.current = false;
+        suppressRevealUntilRef.current = 0;
+        setFooterRevealSuppressed(false);
+        resetFooterReveal();
+        scheduleUpdate();
+        return;
+      }
+
       const duration = Number(event.detail?.duration || 0);
       const suppressMs = Number.isFinite(duration) && duration > 0 ? duration : 1200;
       const untilManual = Boolean(event.detail?.untilManual);

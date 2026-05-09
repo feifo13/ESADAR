@@ -741,7 +741,7 @@ export async function getStatisticsMarketStudy(filters = {}) {
     `
       SELECT
         o.payment_method AS paymentMethod,
-        COALESCE(sm.description, o.shipping_method_description_snapshot) AS shippingMethodName,
+        COALESCE(o.shipping_method_description_snapshot, sm.description) AS shippingMethodName,
         COUNT(*) AS ordersCount,
         SUM(o.total_snapshot) AS revenue
       FROM orders o

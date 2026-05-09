@@ -1,4 +1,5 @@
 import { pool } from '../../db/pool.js';
+import { getCollectingSettings } from '../collecting/collecting.service.js';
 import { PAYMENT_METHODS } from './lookups.constants.js';
 
 export async function listCategories() {
@@ -92,6 +93,29 @@ export async function listShippingMethods() {
   }));
 }
 
+function hasText(value) {
+  return String(value || '').trim().length > 0;
+}
+
+function isPaymentMethodAvailable(method, settings) {
+  if (method.id === 'BANK_TRANSFER') {
+    return Boolean(settings.isBankTransferEnabled);
+  }
+
+  if (method.id === 'MERCADO_PAGO') {
+    return Boolean(
+      settings.isMercadoPagoEnabled &&
+        (hasText(settings.mercadoPagoAccessToken) ||
+          hasText(settings.mercadoPagoCheckoutUrl)),
+    );
+  }
+
+  return false;
+}
+
 export async function listPaymentMethods() {
-  return PAYMENT_METHODS;
+  const settings = await getCollectingSettings();
+  return PAYMENT_METHODS.filter((method) =>
+    isPaymentMethodAvailable(method, settings),
+  );
 }

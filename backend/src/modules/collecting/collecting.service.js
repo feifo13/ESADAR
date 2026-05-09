@@ -21,6 +21,84 @@ function clean(value) {
   return text || null;
 }
 
+function redactMercadoPagoText(value) {
+  const text = String(value || "");
+  return text
+    .replace(/(access[_-]?token["'\s:=]+)([^"',\s}]+)/gi, "$1[redacted]")
+    .replace(/(authorization["'\s:=]+bearer\s+)([^"',\s}]+)/gi, "$1[redacted]")
+    .replace(/(token["'\s:=]+)([^"',\s}]+)/gi, "$1[redacted]")
+    .slice(0, 1000);
+}
+
+function sanitizeMercadoPagoLogPayload(value) {
+  if (!value) return "";
+
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return JSON.parse(
+      JSON.stringify(parsed, (key, entry) => {
+        if (/token|authorization|secret/i.test(key)) return "[redacted]";
+        if (typeof entry === "string") return redactMercadoPagoText(entry);
+        return entry;
+      }),
+    );
+  } catch {
+    return redactMercadoPagoText(value);
+  }
+}
+
+function toJson(value) {
+  if (value == null) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return JSON.stringify({ serializationError: true });
+  }
+}
+
+async function recordMercadoPagoPreferenceEvent(connection, event) {
+  try {
+    await connection.execute(
+      `
+        INSERT INTO mercado_pago_preference_events (
+          order_id,
+          order_number,
+          environment,
+          status,
+          source,
+          preference_id,
+          checkout_url,
+          fallback_checkout_url,
+          failure_status,
+          failure_reason,
+          payload_json,
+          response_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        event.orderId || null,
+        clean(event.orderNumber),
+        normalizeMercadoPagoEnvironment(event.environment),
+        event.status,
+        clean(event.source),
+        clean(event.preferenceId),
+        clean(event.checkoutUrl),
+        clean(event.fallbackCheckoutUrl),
+        event.failureStatus || null,
+        clean(event.failureReason),
+        toJson(event.payload),
+        toJson(event.response),
+      ],
+    );
+  } catch (error) {
+    console.warn("[MercadoPago] No se pudo registrar evento de preferencia", {
+      message: redactMercadoPagoText(error?.message || error),
+      orderId: event.orderId || null,
+      orderNumber: event.orderNumber || null,
+    });
+  }
+}
+
 function bool(value, fallback = false) {
   if (value == null) return fallback;
   return Boolean(Number(value));
@@ -329,15 +407,41 @@ function selectMercadoPagoCheckoutUrl(preference, environment) {
   return initPoint || sandboxInitPoint;
 }
 
-async function createMercadoPagoPreference(order, settings) {
+async function createMercadoPagoPreference(order, settings, connection = pool) {
   const accessToken = clean(settings.mercadoPagoAccessToken);
-  if (!accessToken) return null;
-
   const environment = normalizeMercadoPagoEnvironment(
     settings.mercadoPagoEnvironment,
   );
+  const fallbackCheckoutUrl = clean(settings.mercadoPagoCheckoutUrl);
+  const baseEvent = {
+    orderId: order?.id || null,
+    orderNumber: order?.orderNumber || null,
+    environment,
+    fallbackCheckoutUrl,
+  };
+
+  if (!accessToken) {
+    await recordMercadoPagoPreferenceEvent(connection, {
+      ...baseEvent,
+      status: fallbackCheckoutUrl ? "SKIPPED" : "FAILED",
+      source: fallbackCheckoutUrl
+        ? "configured_link"
+        : "dynamic_preference_skipped",
+      failureReason: "mercado_pago_access_token_missing",
+    });
+    return null;
+  }
+
   const payload = buildMercadoPagoPreferencePayload(order, settings);
-  if (!payload) return null;
+  if (!payload) {
+    await recordMercadoPagoPreferenceEvent(connection, {
+      ...baseEvent,
+      status: fallbackCheckoutUrl ? "FALLBACK_USED" : "FAILED",
+      source: "dynamic_preference_failed",
+      failureReason: "mercado_pago_invalid_preference_payload",
+    });
+    return null;
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
@@ -353,20 +457,68 @@ async function createMercadoPagoPreference(order, settings) {
       signal: controller.signal,
     });
 
-    // if (!response.ok) return null;
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
+      const sanitizedBody = sanitizeMercadoPagoLogPayload(errorText);
       console.error("[MercadoPago] Error creando preferencia", {
         status: response.status,
-        body: errorText,
+        body: sanitizedBody,
+        orderId: order?.id || null,
+        orderNumber: order?.orderNumber || null,
       });
-      return null;
+      await recordMercadoPagoPreferenceEvent(connection, {
+        ...baseEvent,
+        status: fallbackCheckoutUrl ? "FALLBACK_USED" : "FAILED",
+        source: "dynamic_preference_failed",
+        failureStatus: response.status,
+        failureReason: "mercado_pago_preference_response_not_ok",
+        payload,
+        response: sanitizedBody,
+      });
+      return {
+        environment,
+        source: "dynamic_preference_failed",
+        failureStatus: response.status,
+        failureReason: "mercado_pago_preference_response_not_ok",
+      };
     }
 
     const preference = await response.json();
     const checkoutUrl = selectMercadoPagoCheckoutUrl(preference, environment);
 
-    if (!checkoutUrl) return null;
+    if (!checkoutUrl) {
+      console.error("[MercadoPago] Preferencia sin link de checkout", {
+        preferenceId: clean(preference.id),
+        environment,
+        orderId: order?.id || null,
+        orderNumber: order?.orderNumber || null,
+      });
+      await recordMercadoPagoPreferenceEvent(connection, {
+        ...baseEvent,
+        status: fallbackCheckoutUrl ? "FALLBACK_USED" : "FAILED",
+        source: "dynamic_preference_failed",
+        preferenceId: clean(preference.id),
+        failureReason: "mercado_pago_preference_without_checkout_url",
+        payload,
+        response: sanitizeMercadoPagoLogPayload(preference),
+      });
+      return {
+        id: clean(preference.id),
+        environment,
+        source: "dynamic_preference_failed",
+        failureReason: "mercado_pago_preference_without_checkout_url",
+      };
+    }
+
+    await recordMercadoPagoPreferenceEvent(connection, {
+      ...baseEvent,
+      status: "CREATED",
+      source: "dynamic_preference",
+      preferenceId: clean(preference.id),
+      checkoutUrl,
+      payload,
+      response: sanitizeMercadoPagoLogPayload(preference),
+    });
 
     return {
       id: clean(preference.id),
@@ -374,9 +526,33 @@ async function createMercadoPagoPreference(order, settings) {
       environment,
       source: "dynamic_preference",
     };
-  } catch {
-    // return null;
-    console.error("[MercadoPago] No se pudo crear preferencia", error);
+  } catch (error) {
+    console.error("[MercadoPago] No se pudo crear preferencia", {
+      message: redactMercadoPagoText(error?.message || error),
+      name: error?.name || null,
+      orderId: order?.id || null,
+      orderNumber: order?.orderNumber || null,
+    });
+    await recordMercadoPagoPreferenceEvent(connection, {
+      ...baseEvent,
+      status: fallbackCheckoutUrl ? "FALLBACK_USED" : "FAILED",
+      source: "dynamic_preference_failed",
+      failureReason: error?.name === "AbortError"
+        ? "mercado_pago_preference_timeout"
+        : "mercado_pago_preference_exception",
+      payload,
+      response: {
+        name: error?.name || null,
+        message: redactMercadoPagoText(error?.message || error),
+      },
+    });
+    return {
+      environment,
+      source: "dynamic_preference_failed",
+      failureReason: error?.name === "AbortError"
+        ? "mercado_pago_preference_timeout"
+        : "mercado_pago_preference_exception",
+    };
   } finally {
     clearTimeout(timeout);
   }
@@ -388,6 +564,7 @@ function buildMercadoPagoDetails(settings, preference = null) {
   const environment = normalizeMercadoPagoEnvironment(
     preference?.environment || settings.mercadoPagoEnvironment,
   );
+  const preferenceFailed = preference?.source === "dynamic_preference_failed";
   const fields = [
     ["Link de pago", checkoutUrl],
     ["Preferencia Mercado Pago", preference?.id],
@@ -397,17 +574,50 @@ function buildMercadoPagoDetails(settings, preference = null) {
     .filter(([, value]) => clean(value))
     .map(([label, value]) => ({ label, value: clean(value) }));
 
+  if (preferenceFailed && checkoutUrl) {
+    fields.push({
+      label: "Fallback",
+      value: "Se uso el link configurado porque la preferencia dinamica no pudo generarse.",
+    });
+  }
+
+  if (settings.isMercadoPagoEnabled && !checkoutUrl) {
+    fields.push({
+      label: "Estado",
+      value: "Link de pago no disponible. Requiere revision manual.",
+    });
+  }
+
+  const instructions = [
+    clean(settings.mercadoPagoInstructions),
+    settings.isMercadoPagoEnabled && !checkoutUrl
+      ? "Mercado Pago esta habilitado, pero no pudimos generar el link automatico ni hay un link fallback configurado. ESADAR te contactara para completar el pago."
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return {
     method: "MERCADO_PAGO",
     label: getPaymentMethodLabel("MERCADO_PAGO"),
     title: "Datos para pagar con Mercado Pago",
-    enabled: settings.isMercadoPagoEnabled,
+    enabled: Boolean(settings.isMercadoPagoEnabled && checkoutUrl),
     fields,
-    instructions: clean(settings.mercadoPagoInstructions),
+    instructions: clean(instructions),
     checkoutUrl,
     qrCodeUrl: buildMercadoPagoQrUrl(checkoutUrl),
     environment,
-    source: preference?.source || (checkoutUrl ? "configured_link" : null),
+    source:
+      preference?.checkoutUrl
+        ? preference.source
+        : checkoutUrl && preferenceFailed
+          ? "configured_link_after_preference_failure"
+          : checkoutUrl
+            ? "configured_link"
+            : preference?.source || null,
+    preferenceFailureReason: preferenceFailed
+      ? preference.failureReason || null
+      : null,
   };
 }
 
@@ -419,7 +629,10 @@ export async function getPaymentInstructionsForOrder(order, connection = pool) {
     return buildBankTransferDetails(settings);
 
   if (paymentMethod === "MERCADO_PAGO") {
-    const preference = await createMercadoPagoPreference(order, settings);
+    const preference =
+      order?.id && Number(order?.total || 0) > 0
+        ? await createMercadoPagoPreference(order, settings, connection)
+        : null;
     return buildMercadoPagoDetails(settings, preference);
   }
 
