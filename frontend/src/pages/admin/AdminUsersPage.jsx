@@ -26,7 +26,9 @@ const initialFilters = {
 };
 
 function getUserDisplayName(user) {
-  return `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Sin nombre";
+  return (
+    `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Sin nombre"
+  );
 }
 
 function getRoleLabel(role) {
@@ -57,7 +59,9 @@ export default function AdminUsersPage() {
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
     1,
-    Math.ceil(Number(pagination.total || 0) / Number(pagination.pageSize || 25)),
+    Math.ceil(
+      Number(pagination.total || 0) / Number(pagination.pageSize || 25),
+    ),
   );
   const activeFiltersCount =
     [filters.q, filters.isActive, filters.role].filter(Boolean).length +
@@ -73,10 +77,13 @@ export default function AdminUsersPage() {
         const response = await apiFetch(`/api/admin/users?${query}`);
         if (ignore) return;
         setUsers(response.items || []);
-        setPagination(response.pagination || { page: 1, pageSize: 25, total: 0 });
+        setPagination(
+          response.pagination || { page: 1, pageSize: 25, total: 0 },
+        );
       } catch (err) {
         if (!ignore) {
-          const errorMessage = err.message || "No se pudieron cargar los usuarios.";
+          const errorMessage =
+            err.message || "No se pudieron cargar los usuarios.";
           setError(errorMessage);
           notifyError(errorMessage);
         }
@@ -135,7 +142,11 @@ export default function AdminUsersPage() {
         method: "PATCH",
         body: { isActive },
       });
-      notifySuccess(isActive ? "Usuario activado correctamente." : "Usuario desactivado correctamente.");
+      notifySuccess(
+        isActive
+          ? "Usuario activado correctamente."
+          : "Usuario desactivado correctamente.",
+      );
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       const errorMessage = err.message || "No se pudo actualizar el usuario.";
@@ -209,7 +220,9 @@ export default function AdminUsersPage() {
               <select
                 className="input"
                 value={draftFilters.isActive}
-                onChange={(event) => updateDraft("isActive", event.target.value)}
+                onChange={(event) =>
+                  updateDraft("isActive", event.target.value)
+                }
               >
                 <option value="">Todos</option>
                 <option value="true">Activos</option>
@@ -283,8 +296,12 @@ export default function AdminUsersPage() {
           totalPages={totalPages}
           totalItems={Number(pagination.total || 0)}
           loading={loading}
-          onPrevious={() => changePage(Math.max(1, Number(filters.page || 1) - 1))}
-          onNext={() => changePage(Math.min(totalPages, Number(filters.page || 1) + 1))}
+          onPrevious={() =>
+            changePage(Math.max(1, Number(filters.page || 1) - 1))
+          }
+          onNext={() =>
+            changePage(Math.min(totalPages, Number(filters.page || 1) + 1))
+          }
         />
 
         {!loading ? (
@@ -339,8 +356,12 @@ export default function AdminUsersPage() {
                       <td data-label="Contacto">
                         <div className="cell-stack">
                           <span>{user.email || "Sin email"}</span>
-                          <span className="muted-copy">{user.phone || "Sin telefono"}</span>
-                          {user.instagram ? <span className="muted-copy">{user.instagram}</span> : null}
+                          <span className="muted-copy">
+                            {user.phone || "Sin telefono"}
+                          </span>
+                          {user.instagram ? (
+                            <span className="muted-copy">{user.instagram}</span>
+                          ) : null}
                         </div>
                       </td>
                       <td data-label="Roles">
@@ -364,10 +385,17 @@ export default function AdminUsersPage() {
                       </td>
                       <td data-label="Actividad">
                         <div className="cell-stack">
-                          <span className="muted-copy">Ordenes: {user.orderCount}</span>
-                          <span className="muted-copy">Ofertas: {user.offerCount}</span>
                           <span className="muted-copy">
-                            Ultimo ingreso: {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Sin ingresos"}
+                            Ordenes: {user.orderCount}
+                          </span>
+                          <span className="muted-copy">
+                            Ofertas: {user.offerCount}
+                          </span>
+                          <span className="muted-copy">
+                            Ultimo ingreso:{" "}
+                            {user.lastLoginAt
+                              ? formatDate(user.lastLoginAt)
+                              : "Sin ingresos"}
                           </span>
                         </div>
                       </td>
@@ -384,7 +412,7 @@ export default function AdminUsersPage() {
                               title="Desactivar"
                             >
                               <BanIcon />
-                              <span className="admin-action-label">Desactivar</span>
+                              {/* <span className="admin-action-label">Desactivar</span> */}
                             </button>
                           ) : (
                             <button
@@ -396,7 +424,9 @@ export default function AdminUsersPage() {
                               title="Activar"
                             >
                               <CheckIcon />
-                              <span className="admin-action-label">Activar</span>
+                              {/* <span className="admin-action-label">
+                                Activar
+                              </span> */}
                             </button>
                           )}
 
@@ -409,7 +439,7 @@ export default function AdminUsersPage() {
                             title="Eliminar"
                           >
                             <XIcon />
-                            <span className="admin-action-label">Eliminar</span>
+                            {/* <span className="admin-action-label">Eliminar</span> */}
                           </button>
                         </div>
                       </td>
@@ -420,7 +450,9 @@ export default function AdminUsersPage() {
                 {!users.length ? (
                   <tr>
                     <td colSpan="7">
-                      <p className="muted-copy">No hay usuarios para mostrar.</p>
+                      <p className="muted-copy">
+                        No hay usuarios para mostrar.
+                      </p>
                     </td>
                   </tr>
                 ) : null}
@@ -434,8 +466,12 @@ export default function AdminUsersPage() {
           totalPages={totalPages}
           totalItems={Number(pagination.total || 0)}
           loading={loading}
-          onPrevious={() => changePage(Math.max(1, Number(filters.page || 1) - 1))}
-          onNext={() => changePage(Math.min(totalPages, Number(filters.page || 1) + 1))}
+          onPrevious={() =>
+            changePage(Math.max(1, Number(filters.page || 1) - 1))
+          }
+          onNext={() =>
+            changePage(Math.min(totalPages, Number(filters.page || 1) + 1))
+          }
         />
       </section>
     </div>
