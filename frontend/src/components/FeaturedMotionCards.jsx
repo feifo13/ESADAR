@@ -162,7 +162,7 @@ export default function FeaturedMotionCards({
       <section className="featured-rail container">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Seleccion</p>
+            <p className="section-kicker">Selección</p>
             <h2>{title}</h2>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function FeaturedMotionCards({
     <section className="featured-motion-shell container">
       <div className="section-heading section-heading-wrap">
         <div>
-          <p className="section-kicker">Seleccion</p>
+          <p className="section-kicker">Selección</p>
           <h2>{title}</h2>
         </div>
         <ScrollRailControls
