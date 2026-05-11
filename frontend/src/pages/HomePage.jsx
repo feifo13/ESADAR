@@ -863,34 +863,34 @@ export default function HomePage() {
         <div className="hero-offer-ticker" aria-label="Aceptamos ofertas">
           <div className="hero-offer-ticker__track" aria-hidden="true">
             <span className="hero-offer-ticker__group">
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
             </span>
             <span className="hero-offer-ticker__group">
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
             </span>
             <span className="hero-offer-ticker__group">
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
             </span>
             <span className="hero-offer-ticker__group">
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
             </span>
             <span className="hero-offer-ticker__group">
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
-              <span>ABIERTOS A OFERTAS EN LOS ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
+              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
             </span>
           </div>
         </div>
