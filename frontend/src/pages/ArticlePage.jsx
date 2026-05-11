@@ -592,7 +592,7 @@ export default function ArticlePage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Seleccion de Esadar"}
+                      {article.conditionLabel || "Muy bueno"}
                     </span>
                   </strong>
                 </div>
@@ -678,7 +678,11 @@ export default function ArticlePage() {
               {article.allowOffers && !isSoldOut ? (
                 <Link
                   to={isAuthenticated ? articleOfferPath(article) : "/login"}
-                  state={!isAuthenticated ? { from: { pathname: articleOfferPath(article) } } : undefined}
+                  state={
+                    !isAuthenticated
+                      ? { from: { pathname: articleOfferPath(article) } }
+                      : undefined
+                  }
                   className="button footer-scroll-scene__copy footer-scroll-scene__copy--about"
                   onClick={() => {
                     void apiFetch("/api/public/article-events", {

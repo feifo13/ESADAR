@@ -134,7 +134,7 @@ export default function FeaturedMotionCards({
             </p>
             <h3>{article.title}</h3>
             <div className="featured-motion-card__meta">
-              <span>{article.conditionLabel || "Seleccion de Esadar"}</span>
+              <span>{article.conditionLabel || "Muy bueno"}</span>
               <strong>{formatCurrency(price)}</strong>
             </div>
             {soldOut ? (

@@ -339,7 +339,7 @@ export default function OfferPage() {
                   <span>Estado</span>
                   <strong>
                     <span className="status-badge status-available">
-                      {article.conditionLabel || "Seleccion de Esadar"}
+                      {article.conditionLabel || "Muy bueno"}
                     </span>
                   </strong>
                 </div>

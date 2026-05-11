@@ -177,7 +177,7 @@ export default function ArticleCard({
             <p className="section-kicker">{categoryName}</p>
             <h3 className="article-card-editorial-title">{article.title}</h3>
             <div className="article-card-editorial-meta featured-motion-card__meta">
-              <span>{conditionLabel || "Seleccion de Esadar"}</span>
+              <span>{conditionLabel || "Muy bueno"}</span>
               <strong>{formatCurrency(price)}</strong>
             </div>
             {SHOW_EDITORIAL_STATUS_BADGE && isSoldOut ? (
