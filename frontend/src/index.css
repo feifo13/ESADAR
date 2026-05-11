@@ -7262,9 +7262,13 @@ a.button.button-primary {
   object-fit: contain !important;
 }
 
-/* .article-card-ribbon--offerable {
-  background: linear-gradient(135deg, var(--orange), var(--orange));
-} */
+.article-card-ribbon--offerable {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 142, 151, 0.96),
+    rgba(0, 167, 179, 0.9)
+  );
+}
 
 .detail-title-row {
   display: flex;
