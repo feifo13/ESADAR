@@ -13713,7 +13713,7 @@ dialog,
 .hero-offer-ticker__track {
   display: flex;
   width: max-content;
-  animation: hero-offer-ticker-marquee 28s linear infinite;
+  animation: hero-offer-ticker-marquee 99s linear infinite;
   will-change: transform;
 }
 
