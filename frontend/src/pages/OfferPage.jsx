@@ -515,7 +515,7 @@ export default function OfferPage() {
 
             {!isAuthenticated ? (
               <p className="muted-copy">
-                Si prefieres, tambien puedes <Link to="/login">ingresar</Link>{" "}
+                Si prefieres, también puedes <Link to="/login">ingresar</Link>{" "}
                 antes de ofertar.
               </p>
             ) : null}
@@ -526,8 +526,8 @@ export default function OfferPage() {
       <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
         <div className="section-heading section-heading-wrap">
           <div>
-            <p className="section-kicker">Tambien permiten oferta</p>
-            <h2>Mas prendas abiertas a negociacion</h2>
+            <p className="section-kicker">También permiten oferta</p>
+            <h2>Más articulos ofertables</h2>
           </div>
           <ScrollRailControls
             targetRef={relatedTrackRef}
