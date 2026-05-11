@@ -2,7 +2,14 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
-import { firstValidationMessage, getEmailValidationMessage, getFriendlyErrorMessage, getMinLengthValidationMessage, getRequiredValidationMessage, notifyFormStatus } from "../lib/validation.js";
+import {
+  firstValidationMessage,
+  getEmailValidationMessage,
+  getFriendlyErrorMessage,
+  getMinLengthValidationMessage,
+  getRequiredValidationMessage,
+  notifyFormStatus,
+} from "../lib/validation.js";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,7 +32,9 @@ export default function LoginPage() {
       );
       if (validationMessage) {
         setError(validationMessage);
-        notifyFormStatus(notifyMobileStatus, "error", validationMessage, { focusInvalidRoot: event.currentTarget });
+        notifyFormStatus(notifyMobileStatus, "error", validationMessage, {
+          focusInvalidRoot: event.currentTarget,
+        });
         return;
       }
       setSubmitting(true);
@@ -33,7 +42,10 @@ export default function LoginPage() {
       await login(email, password);
       navigate(location.state?.from?.pathname || "/", { replace: true });
     } catch (err) {
-      const errorMessage = getFriendlyErrorMessage(err, "No se pudo iniciar sesión.");
+      const errorMessage = getFriendlyErrorMessage(
+        err,
+        "No se pudo iniciar sesión.",
+      );
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
@@ -43,7 +55,11 @@ export default function LoginPage() {
 
   return (
     <div className="container auth-shell">
-      <form className="section-card auth-card" onSubmit={handleSubmit} noValidate>
+      <form
+        className="section-card auth-card"
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <p className="section-kicker">Ingresar</p>
         <h1>Entrar a tu cuenta</h1>
         {/* <p className="muted-copy">Si completas login o registro, vuelves directo a la landing.</p> */}
@@ -73,21 +89,22 @@ export default function LoginPage() {
           />
         </label>
 
-        <button
-          className="button button-primary auth-submit-button"
-          type="submit"
-          disabled={submitting}
-        >
-          {submitting ? "Ingresando…" : "Ingresar"}
-        </button>
-
         <div className="auth-highlight-links">
-          <Link className="auth-highlight-link" to="/forgot-password">
+          <button
+            className="button button-primary auth-submit-button"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting ? "Ingresando…" : "Ingresar"}
+          </button>
+          {/* <div> */}
+          <Link className="button footer-scroll-scene__copy" to="/register">
+            Crear cuenta
+          </Link>
+          <Link className="button button-secondary" to="/forgot-password">
             Reestablecer contraseña
           </Link>
-          <Link className="auth-highlight-link auth-highlight-link--primary" to="/register">
-            Crear una cuenta
-          </Link>
+          {/* </div> */}
         </div>
       </form>
     </div>
