@@ -79,25 +79,26 @@ function readCatalogFiltersFromSearch(search) {
   return normalizeCatalogFilters(nextFilters);
 }
 
-
 function hasCatalogSearchIntent(search) {
   const params = new URLSearchParams(search);
 
-  return CATALOG_STRING_FILTERS.some((key) => {
-    const value = params.get(key);
-    if (!value) return false;
-    if (key === "sort") return value !== initialFilters.sort;
-    return true;
-  }) || CATALOG_BOOLEAN_FILTERS.some((key) => params.get(key) === "true");
+  return (
+    CATALOG_STRING_FILTERS.some((key) => {
+      const value = params.get(key);
+      if (!value) return false;
+      if (key === "sort") return value !== initialFilters.sort;
+      return true;
+    }) || CATALOG_BOOLEAN_FILTERS.some((key) => params.get(key) === "true")
+  );
 }
 
 function shouldScrollToCatalogForLocation(location) {
   const state = location.state || {};
   return Boolean(
     state.scrollToCatalog ||
-      state.source === "header-search" ||
-      state.source === "catalog-action" ||
-      hasCatalogSearchIntent(location.search),
+    state.source === "header-search" ||
+    state.source === "catalog-action" ||
+    hasCatalogSearchIntent(location.search),
   );
 }
 
@@ -139,7 +140,9 @@ const SORT_LABELS = {
 
 const CATALOG_PROGRAMMATIC_SCROLL_SUPPRESS_MS = 1600;
 
-function suppressFooterRevealForCatalogScroll(duration = CATALOG_PROGRAMMATIC_SCROLL_SUPPRESS_MS) {
+function suppressFooterRevealForCatalogScroll(
+  duration = CATALOG_PROGRAMMATIC_SCROLL_SUPPRESS_MS,
+) {
   if (typeof window === "undefined") return;
 
   window.dispatchEvent(
@@ -170,7 +173,10 @@ function CatalogSortControl({ value, onChange, onApplied }) {
 
   return (
     <>
-      <label className="field-group mobile-sort-panel__field" htmlFor="mobile-sort-control">
+      <label
+        className="field-group mobile-sort-panel__field"
+        htmlFor="mobile-sort-control"
+      >
         <span>Ordenar prendas</span>
         <select
           id="mobile-sort-control"
@@ -915,7 +921,9 @@ export default function HomePage() {
           title="Destacados y descuentos"
           items={featuredItems}
           railControlsClassName={
-            location.pathname === "/articles" ? "scroll-rail-controls--left" : ""
+            location.pathname === "/articles"
+              ? "scroll-rail-controls--left"
+              : ""
           }
         />
       </section>
@@ -1098,11 +1106,11 @@ export default function HomePage() {
               className="infinite-scroll-sentinel"
               aria-live="polite"
             >
-              <span className="muted-copy">
+              {/* <span className="muted-copy">
                 {loadingMore
                   ? "Cargando mas prendas…"
                   : "Desliza para cargar mas prendas"}
-              </span>
+              </span> */}
             </div>
           ) : null}
         </div>
