@@ -143,7 +143,7 @@ export default function RootLayout() {
       <MobileMenuProvider>
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
-        <main className={`page-shell${isHome ? " page-shell--home" : ""}`}>
+        <main className="page-shell">
           <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
           <div className="page-transition-shell">
             <Suspense fallback={<div className="centered-card">Cargando...</div>}>

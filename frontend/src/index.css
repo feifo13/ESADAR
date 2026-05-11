@@ -13755,29 +13755,35 @@ dialog,
 }
 
 @media (max-width: 960px) {
-  .page-shell--home {
+  .page-shell {
     width: 100% !important;
     max-width: 100% !important;
     margin-inline: 0 !important;
     overflow-x: clip;
   }
 
-  .page-shell--home .home-page,
-  .page-shell--home .hero-strip--carousel,
-  .page-shell--home .hero-offer-ticker,
-  .page-shell--home .hero-carousel {
+  .page-transition-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home-page,
+  .hero-strip--carousel,
+  .hero-offer-ticker,
+  .hero-carousel {
     width: 100%;
     max-width: 100%;
     min-width: 0;
     margin-inline: 0;
   }
 
-  .page-shell--home .hero-strip--carousel {
+  .hero-strip--carousel {
     padding-inline: 0;
     overflow: clip;
   }
 
-  .page-shell--home .hero-carousel {
+  .hero-carousel {
     border-inline: 0;
   }
 }
