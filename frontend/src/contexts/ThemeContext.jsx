@@ -5,13 +5,21 @@ import { THEME_IDS, THEME_MAP, THEME_OPTIONS, getThemeGroups } from '../constant
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'miami-closet-theme';
 const FONT_STORAGE_KEY = 'esadar-theme-font';
+const BRAND_FONT_BODY = "'Neo Grotesk', 'Sharp Light 01', system-ui, sans-serif";
+const BRAND_FONT_DISPLAY = "'Sharp Light 01', 'Neo Grotesk', system-ui, sans-serif";
 
 const FONT_OPTIONS = [
   {
-    id: 'plex',
-    label: 'Plex Sans',
-    body: "'IBM Plex Sans', system-ui, sans-serif",
-    display: "'IBM Plex Sans', system-ui, sans-serif",
+    id: 'brand',
+    label: 'Sharp / Neo',
+    body: BRAND_FONT_BODY,
+    display: BRAND_FONT_DISPLAY,
+  },
+  {
+    id: 'neo',
+    label: 'Neo Grotesk',
+    body: BRAND_FONT_BODY,
+    display: BRAND_FONT_BODY,
   },
   {
     id: 'sport',
@@ -26,15 +34,9 @@ const FONT_OPTIONS = [
     display: "Georgia, 'Times New Roman', serif",
   },
   {
-    id: 'neo',
-    label: 'Neo Grotesk',
-    body: "'Trebuchet MS', 'Segoe UI', sans-serif",
-    display: "'Trebuchet MS', 'Segoe UI', sans-serif",
-  },
-  {
     id: 'mono',
     label: 'Mono Accent',
-    body: "'IBM Plex Sans', system-ui, sans-serif",
+    body: BRAND_FONT_BODY,
     display: "'Courier New', monospace",
   },
 ];
@@ -71,7 +73,7 @@ function getThemeMode(theme) {
 
 function normalizeFont(rawFont) {
   if (FONT_IDS.includes(rawFont)) return rawFont;
-  return 'plex';
+  return 'brand';
 }
 
 function normalizeTheme(rawTheme) {
@@ -83,7 +85,7 @@ function normalizeTheme(rawTheme) {
 function applyFontVariables(fontId) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const font = FONT_MAP[fontId] || FONT_MAP.plex;
+  const font = FONT_MAP[fontId] || FONT_MAP.brand;
   root.style.setProperty('--font-body', font.body);
   root.style.setProperty('--font-display', font.display);
 }
@@ -105,7 +107,7 @@ function applyThemeVariables(themeId) {
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => normalizeTheme(storage.get(STORAGE_KEY, 'default')));
-  const [font, setFontState] = useState(() => normalizeFont(storage.get(FONT_STORAGE_KEY, 'plex')));
+  const [font, setFontState] = useState(() => normalizeFont(storage.get(FONT_STORAGE_KEY, 'brand')));
 
   function setTheme(nextTheme) {
     setThemeState(normalizeTheme(nextTheme));

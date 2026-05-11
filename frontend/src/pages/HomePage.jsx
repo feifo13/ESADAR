@@ -860,6 +860,22 @@ export default function HomePage() {
         className="hero-strip hero-strip--carousel"
         aria-label="Galeria destacada"
       >
+        <div className="hero-offer-ticker" aria-label="Aceptamos ofertas">
+          <div className="hero-offer-ticker__track" aria-hidden="true">
+            <span className="hero-offer-ticker__group">
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+            </span>
+            <span className="hero-offer-ticker__group">
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+            </span>
+          </div>
+        </div>
         <div className="hero-carousel" aria-hidden="true">
           <div className="hero-carousel__track">
             {HERO_SEQUENCE.map((image, index) => (

@@ -15,6 +15,11 @@ export default function FooterScrollScene() {
   const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
 
+  function handleLogoClick() {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -207,11 +212,18 @@ export default function FooterScrollScene() {
           aria-hidden="true"
         />
         <div className="footer-scroll-scene__content">
-          <img
-            src={esadarWordmark}
-            alt="ESADAR"
-            className="footer-scroll-scene__logo"
-          />
+          <button
+            type="button"
+            className="footer-scroll-scene__logo-button"
+            onClick={handleLogoClick}
+            aria-label="Volver al inicio"
+          >
+            <img
+              src={esadarWordmark}
+              alt="ESADAR"
+              className="footer-scroll-scene__logo"
+            />
+          </button>
           <div className="footer-scroll-scene__actions" aria-label="Acciones del footer">
             <Link
               to="/about"

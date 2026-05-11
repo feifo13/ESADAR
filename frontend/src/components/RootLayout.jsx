@@ -9,6 +9,7 @@ import SeoHead from "./SeoHead.jsx";
 import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
 import AppSnackbar from "./AppSnackbar.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.png";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
@@ -21,6 +22,7 @@ const CART_REPLAY_FADE_MS = 350;
 export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
+  const { user } = useAuth();
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
   const [introStage, setIntroStage] = useState("hidden");
   const [introKey, setIntroKey] = useState(0);
@@ -34,6 +36,9 @@ export default function RootLayout() {
   const isHome = location.pathname === "/";
   const isCheckoutView = location.pathname.startsWith("/checkout");
   const isAdminView = location.pathname.startsWith("/admin");
+  const canUseThemeDock = user?.roles?.some((role) =>
+    ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
+  );
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
   const shouldNoIndex =
@@ -148,7 +153,7 @@ export default function RootLayout() {
         </main>
       </MobileMenuProvider>
       {!shouldNoIndex ? <FooterScrollScene /> : null}
-      <ThemeDock />
+      {canUseThemeDock ? <ThemeDock /> : null}
       <ScrollChrome />
 
       {showIntro ? (
