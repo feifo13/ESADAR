@@ -34,6 +34,7 @@ export default function RootLayout() {
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === "/";
+  const isHeroView = isHome || location.pathname === "/articles";
   const isCheckoutView = location.pathname.startsWith("/checkout");
   const isAdminView = location.pathname.startsWith("/admin");
   const canUseThemeDock = user?.roles?.some((role) =>
@@ -143,7 +144,7 @@ export default function RootLayout() {
       <MobileMenuProvider>
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
-        <main className="page-shell">
+        <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
           <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
           <div className="page-transition-shell">
             <Suspense fallback={<div className="centered-card">Cargando...</div>}>

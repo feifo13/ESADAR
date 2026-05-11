@@ -13678,6 +13678,14 @@ dialog,
   font-family: var(--font-body);
 }
 
+.page-shell--hero {
+  padding-top: 0;
+}
+
+.page-shell--hero .hero-strip--carousel {
+  padding-top: 0;
+}
+
 .hero-strip--carousel {
   position: relative;
 }

@@ -874,6 +874,24 @@ export default function HomePage() {
               <span>ACEPTAMOS OFERTAS</span>
               <span>ACEPTAMOS OFERTAS</span>
             </span>
+            <span className="hero-offer-ticker__group">
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+            </span>
+            <span className="hero-offer-ticker__group">
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+            </span>
+            <span className="hero-offer-ticker__group">
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+              <span>ACEPTAMOS OFERTAS</span>
+            </span>
           </div>
         </div>
         <div className="hero-carousel" aria-hidden="true">
