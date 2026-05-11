@@ -1084,7 +1084,7 @@ export default function HomePage() {
                 <p className="section-kicker">Sin resultados</p>
                 <h2>No encontramos prendas con esos filtros.</h2>
                 <p className="muted-copy">
-                  Prueba quitar alguna seleccion o volver a mirar lo mas
+                  Prueba quitar alguna selección o volver a mirar lo más
                   reciente.
                 </p>
                 <div>
