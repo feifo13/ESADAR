@@ -13753,3 +13753,31 @@ dialog,
     width: min(350px, 78vw);
   }
 }
+
+@media (max-width: 960px) {
+  .page-shell--home {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+    overflow-x: clip;
+  }
+
+  .page-shell--home .home-page,
+  .page-shell--home .hero-strip--carousel,
+  .page-shell--home .hero-offer-ticker,
+  .page-shell--home .hero-carousel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-inline: 0;
+  }
+
+  .page-shell--home .hero-strip--carousel {
+    padding-inline: 0;
+    overflow: clip;
+  }
+
+  .page-shell--home .hero-carousel {
+    border-inline: 0;
+  }
+}
