@@ -3,7 +3,7 @@ import { getCollectingSettings } from '../collecting/collecting.service.js';
 import { PAYMENT_METHODS } from './lookups.constants.js';
 
 export async function listCategories() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         id,
@@ -21,7 +21,7 @@ export async function listCategories() {
 }
 
 export async function listBrands() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         id,
@@ -37,7 +37,7 @@ export async function listBrands() {
 }
 
 export async function listAvailableArticleBrands() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT DISTINCT
         b.id,
@@ -57,7 +57,7 @@ export async function listAvailableArticleBrands() {
 }
 
 export async function listSizes() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         id,
@@ -74,7 +74,7 @@ export async function listSizes() {
 }
 
 export async function listShippingMethods() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         id,

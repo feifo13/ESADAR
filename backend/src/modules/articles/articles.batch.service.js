@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as XLSX from 'xlsx';
 import { pool } from '../../db/pool.js';
+import { buildSqlPlaceholders } from '../../utils/sql-safety.js';
 import { badRequest } from '../../utils/app-error.js';
 import { normalizePublicAssetPath } from '../../utils/assets.js';
 import { logAudit } from '../audit/audit.service.js';
@@ -257,9 +258,9 @@ function isRawLocalFileName(value) {
 }
 
 async function loadImportReferenceData() {
-  const [categories] = await pool.query('SELECT id, name FROM categories');
-  const [brands] = await pool.query('SELECT id, name FROM brands');
-  const [sizes] = await pool.query('SELECT id, code FROM sizes');
+  const [categories] = await pool.execute('SELECT id, name FROM categories');
+  const [brands] = await pool.execute('SELECT id, name FROM brands');
+  const [sizes] = await pool.execute('SELECT id, code FROM sizes');
 
   return {
     categoriesById: new Map(categories.map((row) => [String(row.id), Number(row.id)])),
@@ -276,7 +277,7 @@ async function loadExistingArticlesByCode(internalCodes) {
     return new Map();
   }
 
-  const placeholders = internalCodes.map(() => '?').join(',');
+  const placeholders = buildSqlPlaceholders(internalCodes);
   const [rows] = await pool.execute(
     `
       SELECT id, internal_code AS internalCode

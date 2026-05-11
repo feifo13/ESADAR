@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { pool } from '../../db/pool.js';
 import { appendDateRangeFilters, buildLikeValue } from '../../utils/listing.js';
+import { buildSqlLimitClause } from '../../utils/sql-safety.js';
 import {
   getAdminWishlistSummary,
   getAdminWishlistTopArticles,
@@ -11,9 +12,10 @@ const ORDER_ITEM_COST_TOTAL_EXPR = 'COALESCE(oi.purchase_price_total_snapshot, C
 const ORDER_ITEM_PROFIT_EXPR = `COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR})`;
 const ORDER_ITEM_INCOMPLETE_COST_EXPR = `CASE WHEN ${ORDER_ITEM_COST_TOTAL_EXPR} <= 0 THEN 1 ELSE 0 END`;
 
-function normalizePositiveInt(value, fallback) {
+function normalizePositiveInt(value, fallback, max = 50) {
   const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : fallback;
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.min(max, Math.floor(numeric));
 }
 
 function buildCompletedOrderFilters(filters = {}) {
@@ -194,7 +196,8 @@ async function getSalesItemTotals(filters = {}) {
 export async function getStatisticsTopArticles(filters = {}, limit = 10) {
   const { where, params } = buildSalesItemFilters(filters);
   const safeLimit = normalizePositiveInt(limit, 10);
-  const [rows] = await pool.query(
+  const limitClause = buildSqlLimitClause(safeLimit, 10, 50);
+  const [rows] = await pool.execute(
     `
       SELECT
         COALESCE(a.id, 0) AS articleId,
@@ -225,7 +228,7 @@ export async function getStatisticsTopArticles(filters = {}, limit = 10) {
       ${where}
       GROUP BY COALESCE(a.id, 0), COALESCE(a.slug, oi.article_slug_snapshot)
       ORDER BY quantitySold DESC, revenue DESC, articleId DESC
-      LIMIT ${safeLimit}
+      ${limitClause}
     `,
     params,
   );
@@ -248,7 +251,8 @@ export async function getStatisticsTopArticles(filters = {}, limit = 10) {
 export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
   const { where, params } = buildCompletedOrderFilters(filters);
   const safeLimit = normalizePositiveInt(limit, 10);
-  const [rows] = await pool.query(
+  const limitClause = buildSqlLimitClause(safeLimit, 10, 50);
+  const [rows] = await pool.execute(
     `
       SELECT
         COALESCE(c.id, 0) AS customerId,
@@ -268,7 +272,7 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
       ${where}
       GROUP BY customerId, potentialCustomerId, customerName, email, phone
       ORDER BY totalSpent DESC, ordersCount DESC
-      LIMIT ${safeLimit}
+      ${limitClause}
     `,
     params,
   );
@@ -289,7 +293,8 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
 export async function getStatisticsTopCategories(filters = {}, limit = 10) {
   const { where, params } = buildSalesItemFilters(filters);
   const safeLimit = normalizePositiveInt(limit, 10);
-  const [rows] = await pool.query(
+  const limitClause = buildSqlLimitClause(safeLimit, 10, 50);
+  const [rows] = await pool.execute(
     `
       SELECT
         COALESCE(cat.id, 0) AS categoryId,
@@ -306,7 +311,7 @@ export async function getStatisticsTopCategories(filters = {}, limit = 10) {
       ${where}
       GROUP BY categoryId, categoryName
       ORDER BY quantitySold DESC, revenue DESC
-      LIMIT ${safeLimit}
+      ${limitClause}
     `,
     params,
   );

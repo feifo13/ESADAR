@@ -1,4 +1,5 @@
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { adminUserListQuerySchema, adminUserStatusSchema } from './users.schemas.js';
 import { deleteUser, listUsers, setUserActiveStatus } from './users.service.js';
 
@@ -21,11 +22,11 @@ export async function getAdminUsers(req, res) {
 
 export async function updateAdminUserStatus(req, res) {
   const input = adminUserStatusSchema.parse(req.body);
-  const user = await setUserActiveStatus(Number(req.params.id), input.isActive, getAuditContext(req));
+  const user = await setUserActiveStatus(parsePositiveIntParam(req.params.id, 'id'), input.isActive, getAuditContext(req));
   return res.json({ ok: true, user });
 }
 
 export async function removeAdminUser(req, res) {
-  const result = await deleteUser(Number(req.params.id), getAuditContext(req));
+  const result = await deleteUser(parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, ...result });
 }

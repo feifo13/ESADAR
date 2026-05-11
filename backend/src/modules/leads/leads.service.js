@@ -3,6 +3,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
   ensureCustomerForUser,
@@ -784,6 +785,9 @@ export async function trackArticleEvent(input, actor, auditContext) {
 
 export async function listLeads({ filters, pagination }) {
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const clauses = [];
   const params = [];
 
@@ -820,7 +824,7 @@ export async function listLeads({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         pc.id,
@@ -857,7 +861,7 @@ export async function listLeads({ filters, pagination }) {
       LEFT JOIN lead_preferences lp ON lp.potential_customer_id = pc.id
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );
@@ -931,6 +935,9 @@ export async function updateLeadStatus(id, input, auditContext) {
 
 export async function listArticleEvents({ filters, pagination }) {
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const clauses = [];
   const params = [];
 
@@ -966,7 +973,7 @@ export async function listArticleEvents({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         ae.id,
@@ -990,7 +997,7 @@ export async function listArticleEvents({ filters, pagination }) {
       LEFT JOIN potential_customers pc ON pc.id = ae.potential_customer_id
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );

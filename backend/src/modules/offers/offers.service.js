@@ -3,6 +3,7 @@ import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound, unauthorized } from '../../utils/app-error.js';
 import { getPagination } from '../../utils/pagination.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { sendAcceptedOfferEmail } from './offers.mailer.js';
 import { applyAcceptedOfferToActiveCart } from '../cart/cart.service.js';
@@ -114,6 +115,9 @@ export async function listOffers({ filters, pagination }) {
     sortDir,
   } = filters;
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const params = [];
   const clauses = [];
 
@@ -157,7 +161,7 @@ export async function listOffers({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         o.id,
@@ -203,7 +207,7 @@ export async function listOffers({ filters, pagination }) {
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );

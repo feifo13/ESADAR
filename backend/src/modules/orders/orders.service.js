@@ -7,6 +7,7 @@ import {
   buildLikeValue,
   resolveSortClause,
 } from "../../utils/listing.js";
+import { buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset } from "../../utils/sql-safety.js";
 import { logAudit } from "../audit/audit.service.js";
 import {
   markReservedStockAsSold,
@@ -79,7 +80,7 @@ export async function createOrder(input, actor, auditContext) {
     const requestedArticleIds = [
       ...new Set(input.items.map((item) => item.articleId)),
     ];
-    const placeholders = requestedArticleIds.map(() => "?").join(",");
+    const placeholders = buildSqlPlaceholders(requestedArticleIds);
     const [articleRows] = await connection.execute(
       `
         SELECT
@@ -445,6 +446,9 @@ export async function listOrders({ filters, pagination }) {
     sortDir,
   } = filters;
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const params = [];
   const clauses = [];
 
@@ -515,7 +519,7 @@ export async function listOrders({ filters, pagination }) {
     fallbackKey: "createdAt",
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         o.id,
@@ -565,7 +569,7 @@ export async function listOrders({ filters, pagination }) {
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );
@@ -872,7 +876,7 @@ export async function createOrderPayment(id, input, auditContext) {
           raw_response_json,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, 'UYU', ?, ${input.status === "APPROVED" ? "NOW()" : "NULL"}, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, 'UYU', ?, ?, ?, ?, ?)
       `,
       [
         id,
@@ -881,6 +885,7 @@ export async function createOrderPayment(id, input, auditContext) {
         input.providerReference || null,
         amount,
         input.status,
+        input.status === "APPROVED" ? new Date() : null,
         JSON.stringify({ origin: "admin_manual" }),
         auditContext.actorUserId,
         auditContext.actorUserId,

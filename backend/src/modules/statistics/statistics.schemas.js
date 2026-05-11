@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  emptyToUndefined,
   optionalDateString,
   optionalEnum,
   optionalPositiveInt,
@@ -33,4 +34,12 @@ export const statisticsExportQuerySchema = statisticsFiltersSchema.extend({
     'market_study',
     'full',
   ]).default('full'),
+});
+
+
+export const statisticsTopQuerySchema = statisticsFiltersSchema.extend({
+  limit: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(50).default(10),
+  ),
 });

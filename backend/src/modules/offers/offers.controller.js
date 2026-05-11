@@ -1,4 +1,5 @@
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   adminOfferListQuerySchema,
   createOfferSchema,
@@ -42,7 +43,7 @@ export async function getMyOffers(req, res) {
 export async function getArticleOfferEligibility(req, res) {
   const eligibility = await getOfferEligibilityForUser(
     req.auth?.userId,
-    Number(req.params.articleId),
+    parsePositiveIntParam(req.params.articleId, 'articleId'),
   );
   return res.json({ ok: true, eligibility });
 }
@@ -56,6 +57,6 @@ export async function getAdminOffers(req, res) {
 
 export async function updateAdminOfferStatus(req, res) {
   const input = updateOfferStatusSchema.parse(req.body);
-  const offer = await changeOfferStatus(Number(req.params.id), input, getAuditContext(req));
+  const offer = await changeOfferStatus(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
   return res.json({ ok: true, offer });
 }

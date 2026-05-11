@@ -1,3 +1,4 @@
+import { parsePositiveIntParam, parseSlugOrIdParam } from '../../utils/request-validation.js';
 import { updateSeoPageSchema } from './seo.schemas.js';
 import {
   buildGoogleProductsFeedXml,
@@ -39,7 +40,7 @@ export async function getPublicSiteSeoConfig(_req, res) {
 }
 
 export async function getPublicArticleSeoConfig(req, res) {
-  return res.json({ ok: true, seo: await getPublicArticleSeo(req.params.slugOrId) });
+  return res.json({ ok: true, seo: await getPublicArticleSeo(parseSlugOrIdParam(req.params.slugOrId, 'articulo')) });
 }
 
 export async function getAdminSeoPages(_req, res) {
@@ -48,6 +49,6 @@ export async function getAdminSeoPages(_req, res) {
 
 export async function putAdminSeoPage(req, res) {
   const input = updateSeoPageSchema.parse(req.body);
-  const page = await updateSeoPage(Number(req.params.id), input, getAuditContext(req));
+  const page = await updateSeoPage(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
   return res.json({ ok: true, page });
 }

@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import {
+  emptyToUndefined,
   optionalBooleanish,
   optionalDateString,
+  optionalEnum,
   optionalPositiveInt,
   optionalTrimmedString,
   pageSchema,
@@ -14,7 +16,7 @@ export const adminWishlistFiltersSchema = z.object({
   articleId: optionalPositiveInt,
   categoryId: optionalPositiveInt,
   brandId: optionalPositiveInt,
-  status: optionalTrimmedString(40),
+  status: optionalEnum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
   source: optionalTrimmedString(60),
   dateFrom: optionalDateString,
   dateTo: optionalDateString,
@@ -30,4 +32,12 @@ export const adminWishlistListQuerySchema = adminWishlistFiltersSchema.extend({
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),
+});
+
+
+export const adminWishlistTopQuerySchema = adminWishlistFiltersSchema.extend({
+  limit: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(50).default(10),
+  ),
 });

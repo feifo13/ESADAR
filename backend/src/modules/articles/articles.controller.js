@@ -1,4 +1,5 @@
 import { getPagination } from "../../utils/pagination.js";
+import { parsePositiveIntParam, parseSlugOrIdParam } from "../../utils/request-validation.js";
 import { badRequest } from '../../utils/app-error.js';
 import {
   addArticleImages,
@@ -18,6 +19,8 @@ import {
 } from "./articles.service.js";
 import {
   adminArticleListQuerySchema,
+  publicArticleListQuerySchema,
+  publicRelatedArticlesQuerySchema,
   articleCreateSchema,
   articleExportQuerySchema,
   articleImageReorderSchema,
@@ -49,18 +52,20 @@ function getAuditContext(req) {
 }
 
 export async function getPublicArticles(req, res) {
-  const pagination = getPagination(req.query, { pageSize: 20 });
-  const result = await listPublicArticles({ filters: req.query, pagination });
+  const filters = publicArticleListQuerySchema.parse(req.query);
+  const pagination = getPagination(filters, { pageSize: 20 });
+  const result = await listPublicArticles({ filters, pagination });
   return res.json({ ok: true, ...result });
 }
 
 export async function getPublicArticle(req, res) {
-  const article = await getPublicArticleBySlugOrId(req.params.slugOrId);
+  const article = await getPublicArticleBySlugOrId(parseSlugOrIdParam(req.params.slugOrId, 'articulo'));
   return res.json({ ok: true, article });
 }
 
 export async function getPublicRelatedArticles(req, res) {
-  const related = await getRelatedPublicArticles(req.params.slugOrId, Number(req.query.limit || 8));
+  const query = publicRelatedArticlesQuerySchema.parse(req.query);
+  const related = await getRelatedPublicArticles(parseSlugOrIdParam(req.params.slugOrId, 'articulo'), query.limit);
   return res.json({ ok: true, ...related });
 }
 
@@ -72,7 +77,7 @@ export async function getAdminArticles(req, res) {
 }
 
 export async function getAdminArticle(req, res) {
-  const article = await getAdminArticleById(Number(req.params.id));
+  const article = await getAdminArticleById(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, article });
 }
 
@@ -163,7 +168,7 @@ export async function createAdminBulkArticles(req, res) {
 export async function updateAdminArticle(req, res) {
   const input = articleUpdateSchema.parse(req.body);
   const article = await updateArticle(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input,
     getAuditContext(req),
   );
@@ -173,7 +178,7 @@ export async function updateAdminArticle(req, res) {
 export async function createAdminArticleStockAdjustment(req, res) {
   const input = articleStockAdjustmentSchema.parse(req.body);
   const article = await adjustArticleStock(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input,
     getAuditContext(req),
   );
@@ -183,7 +188,7 @@ export async function createAdminArticleStockAdjustment(req, res) {
 export async function updateAdminArticleStatus(req, res) {
   const input = articleStatusSchema.parse(req.body);
   const article = await changeArticleStatus(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input.status,
     getAuditContext(req),
   );
@@ -193,7 +198,7 @@ export async function updateAdminArticleStatus(req, res) {
 export async function updateAdminArticleQuickFlags(req, res) {
   const input = articleQuickFlagsSchema.parse(req.body);
   const article = await updateArticleQuickFlags(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input,
     getAuditContext(req),
   );
@@ -202,7 +207,7 @@ export async function updateAdminArticleQuickFlags(req, res) {
 
 export async function uploadAdminArticleImages(req, res) {
   const images = await addArticleImages(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     req.files,
     getAuditContext(req),
   );
@@ -212,8 +217,8 @@ export async function uploadAdminArticleImages(req, res) {
 export async function updateAdminArticleImage(req, res) {
   const input = articleImageUpdateSchema.parse(req.body);
   const images = await updateArticleImage(
-    Number(req.params.articleId),
-    Number(req.params.imageId),
+    parsePositiveIntParam(req.params.articleId, 'articleId'),
+    parsePositiveIntParam(req.params.imageId, 'imageId'),
     input,
     getAuditContext(req),
   );
@@ -223,8 +228,8 @@ export async function updateAdminArticleImage(req, res) {
 
 export async function deleteAdminArticleImage(req, res) {
   const images = await deleteArticleImage(
-    Number(req.params.articleId),
-    Number(req.params.imageId),
+    parsePositiveIntParam(req.params.articleId, 'articleId'),
+    parsePositiveIntParam(req.params.imageId, 'imageId'),
     getAuditContext(req),
   );
 
@@ -234,7 +239,7 @@ export async function deleteAdminArticleImage(req, res) {
 export async function reorderAdminArticleImages(req, res) {
   const input = articleImageReorderSchema.parse(req.body);
   const images = await reorderArticleImages(
-    Number(req.params.articleId),
+    parsePositiveIntParam(req.params.articleId, 'articleId'),
     input.imageIds,
     getAuditContext(req),
   );

@@ -1,4 +1,4 @@
-import { statisticsExportQuerySchema, statisticsFiltersSchema } from './statistics.schemas.js';
+import { statisticsExportQuerySchema, statisticsFiltersSchema, statisticsTopQuerySchema } from './statistics.schemas.js';
 import {
   exportStatisticsReport,
   getStatisticsMarketStudy,
@@ -24,20 +24,20 @@ export async function getAdminStatisticsSalesOverTime(req, res) {
 }
 
 export async function getAdminStatisticsTopArticles(req, res) {
-  const filters = statisticsFiltersSchema.parse(req.query);
-  const items = await getStatisticsTopArticles(filters, Number(req.query.limit || 10));
+  const filters = statisticsTopQuerySchema.parse(req.query);
+  const items = await getStatisticsTopArticles(filters, filters.limit);
   return res.json({ ok: true, items });
 }
 
 export async function getAdminStatisticsTopCustomers(req, res) {
-  const filters = statisticsFiltersSchema.parse(req.query);
-  const items = await getStatisticsTopCustomers(filters, Number(req.query.limit || 10));
+  const filters = statisticsTopQuerySchema.parse(req.query);
+  const items = await getStatisticsTopCustomers(filters, filters.limit);
   return res.json({ ok: true, items });
 }
 
 export async function getAdminStatisticsTopCategories(req, res) {
-  const filters = statisticsFiltersSchema.parse(req.query);
-  const items = await getStatisticsTopCategories(filters, Number(req.query.limit || 10));
+  const filters = statisticsTopQuerySchema.parse(req.query);
+  const items = await getStatisticsTopCategories(filters, filters.limit);
   return res.json({ ok: true, items });
 }
 

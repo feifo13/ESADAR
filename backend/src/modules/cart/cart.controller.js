@@ -1,3 +1,4 @@
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   addCartItemSchema,
   updateCartItemSchema,
@@ -35,7 +36,7 @@ export async function patchCartItem(req, res) {
   const input = updateCartItemSchema.parse(req.body);
   const cart = await updateCartItem(
     req.auth.userId,
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input,
     getAuditContext(req),
   );
@@ -44,7 +45,7 @@ export async function patchCartItem(req, res) {
 }
 
 export async function deleteCartItem(req, res) {
-  const cart = await removeCartItem(req.auth.userId, Number(req.params.id), getAuditContext(req));
+  const cart = await removeCartItem(req.auth.userId, parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, cart });
 }
 

@@ -199,6 +199,26 @@ export const adminArticleListQuerySchema = z.object({
   pageSize: pageSizeSchema(25),
 });
 
+export const publicArticleListQuerySchema = z.object({
+  search: optionalTrimmedString(150),
+  categoryId: optionalPositiveInt,
+  brandId: optionalPositiveInt,
+  sizeId: optionalPositiveInt,
+  featured: optionalBooleanish,
+  discounted: optionalBooleanish,
+  offerable: optionalBooleanish,
+  sort: optionalEnum(['price_asc', 'price_desc', 'intake_asc', 'intake_desc']),
+  page: pageSchema,
+  pageSize: pageSizeSchema(20),
+});
+
+export const publicRelatedArticlesQuerySchema = z.object({
+  limit: z.preprocess(
+    emptyToUndefined,
+    z.coerce.number().int().min(1).max(12).default(8),
+  ),
+});
+
 export const articleImportOptionsSchema = z.object({
   updateExisting: optionalBooleanish,
   createMissingLookups: optionalBooleanish,

@@ -1,6 +1,7 @@
 import { pool } from '../../db/pool.js';
 import { notFound } from '../../utils/app-error.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitClause, buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 
 const resolvedSourceExpr = `
   COALESCE(
@@ -29,9 +30,10 @@ const WISHLIST_SORTS = {
   source: (direction) => `${resolvedSourceExpr} ${direction}, w.id DESC`,
 };
 
-function normalizePositiveInt(value, fallback) {
+function normalizePositiveInt(value, fallback, max = 50) {
   const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 ? Math.floor(numeric) : fallback;
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.min(max, Math.floor(numeric));
 }
 
 function parseMetadata(value) {
@@ -172,10 +174,9 @@ export async function listAdminWishlists({ filters, pagination }) {
     sortMap: WISHLIST_SORTS,
     fallbackKey: 'updatedAt',
   });
-  const limit = normalizePositiveInt(pagination.limit, 25);
-  const offset = Number.isFinite(Number(pagination.offset)) && Number(pagination.offset) >= 0
-    ? Math.floor(Number(pagination.offset))
-    : 0;
+  const limit = normalizeSqlLimit(pagination.limit, 25, 100);
+  const offset = normalizeSqlOffset(pagination.offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(limit, offset, 25, 100);
 
   const baseFrom = `
     FROM wishlists w
@@ -197,7 +198,7 @@ export async function listAdminWishlists({ filters, pagination }) {
     params,
   );
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         w.id,
@@ -236,8 +237,7 @@ export async function listAdminWishlists({ filters, pagination }) {
         instagram,
         source
       ORDER BY ${sort}
-      LIMIT ${limit}
-      OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );
@@ -462,7 +462,8 @@ export async function getAdminWishlistSummary(filters = {}) {
 export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
   const { where, params } = buildWishlistFilters(filters);
   const safeLimit = normalizePositiveInt(limit, 10);
-  const [rows] = await pool.query(
+  const limitClause = buildSqlLimitClause(safeLimit, 10, 50);
+  const [rows] = await pool.execute(
     `
       SELECT
         a.id,
@@ -504,7 +505,7 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
         a.quantity_available,
         a.status
       ORDER BY savesCount DESC, a.is_featured DESC, a.updated_at DESC
-      LIMIT ${safeLimit}
+      ${limitClause}
     `,
     params,
   );
@@ -528,7 +529,8 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
 export async function getAdminWishlistTopUsers(filters = {}, limit = 10) {
   const { where, params } = buildWishlistFilters(filters);
   const safeLimit = normalizePositiveInt(limit, 10);
-  const [rows] = await pool.query(
+  const limitClause = buildSqlLimitClause(safeLimit, 10, 50);
+  const [rows] = await pool.execute(
     `
       SELECT
         w.id,
@@ -560,7 +562,7 @@ export async function getAdminWishlistTopUsers(filters = {}, limit = 10) {
         instagram,
         source
       ORDER BY itemCount DESC, lastSavedAt DESC, w.id DESC
-      LIMIT ${safeLimit}
+      ${limitClause}
     `,
     params,
   );

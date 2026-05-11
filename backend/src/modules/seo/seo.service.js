@@ -1,5 +1,6 @@
 import { env } from "../../config/env.js";
 import { pool } from "../../db/pool.js";
+import { buildSqlPlaceholders } from "../../utils/sql-safety.js";
 import { withTransaction } from "../../db/transaction.js";
 import { notFound } from "../../utils/app-error.js";
 import { joinPublicSiteUrl, toAbsoluteSiteUrl } from "../../utils/assets.js";
@@ -55,7 +56,7 @@ function buildSiteFallbackPages() {
 }
 
 export async function listSeoPages() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         id,
@@ -130,7 +131,7 @@ export async function buildRobotsTxt() {
 }
 
 async function listIndexableArticles() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         a.id,
@@ -178,7 +179,7 @@ ${urlEntries.join("\n")}
 }
 
 async function listFeedArticles() {
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         a.id,
@@ -210,8 +211,8 @@ async function listFeedArticles() {
   }
 
   const articleIds = rows.map((row) => Number(row.id));
-  const placeholders = articleIds.map(() => "?").join(",");
-  const [imageRows] = await pool.query(
+  const placeholders = buildSqlPlaceholders(articleIds);
+  const [imageRows] = await pool.execute(
     `
       SELECT
         article_id AS articleId,

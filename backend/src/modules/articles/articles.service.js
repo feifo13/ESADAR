@@ -8,6 +8,7 @@ import {
   normalizePublicAssetPath,
 } from '../../utils/assets.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitClause, buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset, resolveAllowedSqlIdentifier } from '../../utils/sql-safety.js';
 import { slugify, uniqueSlug } from '../../utils/slug.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
@@ -113,6 +114,20 @@ const ADMIN_ARTICLE_SORTS = {
   brandName: (direction) => `COALESCE(b.name, '') ${direction}, a.id DESC`,
   internalCode: (direction) => `a.internal_code ${direction}, a.id DESC`,
 };
+
+const ARTICLE_LOOKUP_IDENTIFIERS = {
+  categories: { tableName: 'categories', fields: { name: 'name', slug: 'slug' } },
+  brands: { tableName: 'brands', fields: { name: 'name', slug: 'slug' } },
+};
+
+function resolveArticleLookupIdentifiers(tableName, fieldName = null) {
+  const tableConfig = resolveAllowedSqlIdentifier(tableName, ARTICLE_LOOKUP_IDENTIFIERS, 'lookup de articulo');
+  if (!fieldName) return { tableName: tableConfig.tableName };
+  return {
+    tableName: tableConfig.tableName,
+    fieldName: resolveAllowedSqlIdentifier(fieldName, tableConfig.fields, 'campo de lookup de articulo'),
+  };
+}
 
 function buildPublicFilters(query, includeInactive = false) {
   const clauses = [];
@@ -337,8 +352,9 @@ async function ensureDefaultCategoryId(connection, actorUserId = null) {
 export async function findLookupByName(tableName, fieldName, value, connection = pool) {
   if (!value) return null;
 
+  const identifiers = resolveArticleLookupIdentifiers(tableName, fieldName);
   const [rows] = await connection.execute(
-    `SELECT id, ${fieldName} AS value FROM ${tableName} WHERE LOWER(${fieldName}) = LOWER(?) LIMIT 1`,
+    `SELECT id, ${identifiers.fieldName} AS value FROM ${identifiers.tableName} WHERE LOWER(${identifiers.fieldName}) = LOWER(?) LIMIT 1`,
     [String(value).trim()],
   );
 
@@ -414,12 +430,13 @@ async function ensureUniqueBrandSlug(name, connection) {
 }
 
 async function ensureUniqueSlugByTable(tableName, baseValue, connection) {
+  const { tableName: safeTableName } = resolveArticleLookupIdentifiers(tableName);
   const baseSlug = baseValue || uniqueSlug('item');
   let candidate = baseSlug;
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const [rows] = await connection.execute(
-      `SELECT id FROM ${tableName} WHERE slug = ? LIMIT 1`,
+      `SELECT id FROM ${safeTableName} WHERE slug = ? LIMIT 1`,
       [candidate],
     );
 
@@ -623,8 +640,8 @@ async function getArticleImagesMap(articleIds, connection = pool) {
     return new Map();
   }
 
-  const placeholders = articleIds.map(() => '?').join(',');
-  const [rows] = await connection.query(
+  const placeholders = buildSqlPlaceholders(articleIds);
+  const [rows] = await connection.execute(
     `
       SELECT
         ai.id,
@@ -698,12 +715,15 @@ export async function getArticleImages(articleId, connection = pool) {
 export async function listPublicArticles({ filters, pagination }) {
   const { where, params } = buildPublicFilters(filters, false);
   const orderBy = resolveArticleSort(filters.sort);
+  const safeLimit = normalizeSqlLimit(pagination.limit, 20, 100);
+  const safeOffset = normalizeSqlOffset(pagination.offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safeLimit, safeOffset, 20, 100);
 
-  const [items] = await pool.query(
+  const [items] = await pool.execute(
     `${publicBaseSelect}
      ${where}
      ORDER BY ${orderBy}
-     LIMIT ${pagination.limit} OFFSET ${pagination.offset}`,
+     ${limitOffsetClause}`,
     params,
   );
 
@@ -745,8 +765,9 @@ export async function getPublicArticleBySlugOrId(slugOrId) {
 export async function getRelatedPublicArticles(slugOrId, limit = 8) {
   const article = await getPublicArticleBySlugOrId(slugOrId);
   const safeLimit = Math.max(1, Math.min(Number(limit) || 8, 12));
+  const limitClause = buildSqlLimitClause(safeLimit, 8, 12);
 
-  const [sameCategoryRows] = await pool.query(
+  const [sameCategoryRows] = await pool.execute(
     `
       ${publicBaseSelect}
       WHERE
@@ -761,7 +782,7 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
         CASE WHEN COALESCE(a.size_text, s.code, '') = COALESCE(?, '') THEN 0 ELSE 1 END ASC,
         a.intake_date DESC,
         a.id DESC
-      LIMIT ?
+      ${limitClause}
     `,
     [
       article.id,
@@ -769,7 +790,6 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
       article.brandId,
       article.color || null,
       article.sizeText || article.sizeCode || null,
-      safeLimit,
     ],
   );
 
@@ -781,7 +801,7 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
     };
   }
 
-  const [fallbackRows] = await pool.query(
+  const [fallbackRows] = await pool.execute(
     `
       ${publicBaseSelect}
       WHERE
@@ -792,9 +812,9 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
         a.is_featured DESC,
         a.intake_date DESC,
         a.id DESC
-      LIMIT ?
+      ${limitClause}
     `,
-    [article.id, safeLimit],
+    [article.id],
   );
 
   if (!fallbackRows.length) {
@@ -815,12 +835,15 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
 export async function listAdminArticles({ filters, pagination }) {
   const { where, params } = buildAdminArticleFilters(filters);
   const orderBy = resolveAdminArticleSort(filters);
+  const safeLimit = normalizeSqlLimit(pagination.limit, 25, 100);
+  const safeOffset = normalizeSqlOffset(pagination.offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safeLimit, safeOffset, 25, 100);
 
-  const [items] = await pool.query(
+  const [items] = await pool.execute(
     `${publicBaseSelect}
      ${where}
      ORDER BY ${orderBy}
-     LIMIT ${pagination.limit} OFFSET ${pagination.offset}`,
+     ${limitOffsetClause}`,
     params,
   );
 
@@ -847,7 +870,7 @@ export async function listAdminArticles({ filters, pagination }) {
 export async function listAdminArticlesForExport({ filters }) {
   const { where, params } = buildAdminArticleFilters(filters);
   const orderBy = resolveAdminArticleSort(filters);
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `${publicBaseSelect}
      ${where}
      ORDER BY ${orderBy}`,

@@ -16,10 +16,11 @@ function toMysqlDateTime(value) {
 
 export async function expireReservedOrders({ now = new Date(), limit = 100, auditContext = {} } = {}) {
   const safeLimit = normalizeLimit(limit);
+  const limitClause = `LIMIT ${safeLimit}`;
   const nowSql = toMysqlDateTime(now);
 
   return withTransaction(async (connection) => {
-    const [orders] = await connection.query(
+    const [orders] = await connection.execute(
       `
         SELECT
           id,
@@ -30,7 +31,7 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
           AND reserved_until IS NOT NULL
           AND reserved_until < ?
         ORDER BY reserved_until ASC, id ASC
-        LIMIT ${safeLimit}
+        ${limitClause}
         FOR UPDATE
       `,
       [nowSql],

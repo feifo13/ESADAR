@@ -1,4 +1,5 @@
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   adminContactMessageListQuerySchema,
   createContactMessageSchema,
@@ -41,14 +42,14 @@ export async function getAdminContactMessages(req, res) {
 
 
 export async function getAdminContactMessage(req, res) {
-  const message = await getContactMessageById(Number(req.params.id));
+  const message = await getContactMessageById(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, message });
 }
 
 export async function updateAdminContactMessageStatus(req, res) {
   const input = updateContactMessageStatusSchema.parse(req.body);
   const message = await updateContactMessageStatus(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input.status,
     getAuditContext(req),
   );
@@ -59,7 +60,7 @@ export async function updateAdminContactMessageStatus(req, res) {
 export async function replyAdminContactMessage(req, res) {
   const input = replyContactMessageSchema.parse(req.body);
   const message = await replyContactMessage(
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
     input.replyMessage,
     getAuditContext(req),
   );

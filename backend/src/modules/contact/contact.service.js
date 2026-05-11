@@ -2,6 +2,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { notFound } from '../../utils/app-error.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { findPotentialCustomerByContact, upsertPotentialCustomerByContact } from '../customers/customer-helpers.js';
 import { sendContactReplyEmail } from './contact.mailer.js';
@@ -85,6 +86,9 @@ export async function listContactMessages({ filters, pagination }) {
     sortDir,
   } = filters;
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const whereClauses = [];
   const params = [];
   const searchTerm = q || search;
@@ -119,7 +123,7 @@ export async function listContactMessages({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         cm.id,
@@ -139,7 +143,7 @@ export async function listContactMessages({ filters, pagination }) {
       LEFT JOIN users u ON u.id = cm.handled_by
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );

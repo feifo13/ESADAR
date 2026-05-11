@@ -1,3 +1,4 @@
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { accountProfileUpdateSchema } from './account.schemas.js';
 import {
   getAccountProfile,
@@ -36,7 +37,7 @@ export async function getPublicAccountOrders(req, res) {
 }
 
 export async function getPublicAccountOrder(req, res) {
-  const order = await getAccountOrderDetail(req.auth.userId, Number(req.params.id));
+  const order = await getAccountOrderDetail(req.auth.userId, parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, order });
 }
 
@@ -44,7 +45,7 @@ export async function getPublicAccountOrder(req, res) {
 export async function getPublicAccountOrderReceiptPdf(req, res) {
   const { orderNumber, pdfBuffer } = await getAccountOrderReceiptPdf(
     req.auth.userId,
-    Number(req.params.id),
+    parsePositiveIntParam(req.params.id, 'id'),
   );
   const safeOrderNumber = String(orderNumber || req.params.id).replace(/[^a-zA-Z0-9_-]/g, '-');
 
@@ -61,6 +62,6 @@ export async function getPublicAccountAlerts(req, res) {
 
 
 export async function deletePublicAccountAlert(req, res) {
-  const result = await removeAccountAlert(req.auth.userId, Number(req.params.id), getAuditContext(req));
+  const result = await removeAccountAlert(req.auth.userId, parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, ...result });
 }

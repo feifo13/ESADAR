@@ -1,4 +1,5 @@
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   adminArticleEventsQuerySchema,
   adminLeadListQuerySchema,
@@ -61,7 +62,7 @@ export async function createPublicWishlistItem(req, res) {
 export async function deletePublicWishlistItem(req, res) {
   const query = wishlistQuerySchema.parse(req.query);
   const wishlist = await removeWishlistItem(
-    Number(req.params.articleId),
+    parsePositiveIntParam(req.params.articleId, 'articleId'),
     query,
     req.auth || null,
     getAuditContext(req),
@@ -89,13 +90,13 @@ export async function getAdminLeads(req, res) {
 }
 
 export async function getAdminLead(req, res) {
-  const lead = await getLeadById(Number(req.params.id));
+  const lead = await getLeadById(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, lead });
 }
 
 export async function patchAdminLeadStatus(req, res) {
   const input = updateLeadStatusSchema.parse(req.body);
-  const lead = await updateLeadStatus(Number(req.params.id), input, getAuditContext(req));
+  const lead = await updateLeadStatus(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
   return res.json({ ok: true, lead });
 }
 

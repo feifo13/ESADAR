@@ -1,4 +1,5 @@
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   adminShippingListQuerySchema,
   shippingMethodStatusSchema,
@@ -31,7 +32,7 @@ export async function getAdminShippingMethods(req, res) {
 }
 
 export async function getAdminShippingMethod(req, res) {
-  const method = await getShippingMethodDetail(Number(req.params.id));
+  const method = await getShippingMethodDetail(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, method });
 }
 
@@ -43,17 +44,17 @@ export async function createAdminShippingMethod(req, res) {
 
 export async function updateAdminShippingMethod(req, res) {
   const input = shippingMethodWriteSchema.parse(req.body);
-  const method = await updateShippingMethod(Number(req.params.id), input, getAuditContext(req));
+  const method = await updateShippingMethod(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
   return res.json({ ok: true, method });
 }
 
 export async function updateAdminShippingMethodStatus(req, res) {
   const input = shippingMethodStatusSchema.parse(req.body);
-  const method = await setShippingMethodActiveStatus(Number(req.params.id), input.isActive, getAuditContext(req));
+  const method = await setShippingMethodActiveStatus(parsePositiveIntParam(req.params.id, 'id'), input.isActive, getAuditContext(req));
   return res.json({ ok: true, method });
 }
 
 export async function removeAdminShippingMethod(req, res) {
-  const result = await deleteShippingMethod(Number(req.params.id), getAuditContext(req));
+  const result = await deleteShippingMethod(parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, ...result });
 }

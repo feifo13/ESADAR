@@ -1,5 +1,6 @@
 import { getPagination } from '../../utils/pagination.js';
-import { adminWishlistFiltersSchema, adminWishlistListQuerySchema } from './wishlists.schemas.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
+import { adminWishlistFiltersSchema, adminWishlistListQuerySchema, adminWishlistTopQuerySchema } from './wishlists.schemas.js';
 import {
   getAdminWishlistById,
   getAdminWishlistSummary,
@@ -16,7 +17,7 @@ export async function getAdminWishlists(req, res) {
 }
 
 export async function getAdminWishlist(req, res) {
-  const wishlist = await getAdminWishlistById(Number(req.params.id));
+  const wishlist = await getAdminWishlistById(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, wishlist });
 }
 
@@ -27,13 +28,13 @@ export async function getAdminWishlistsSummary(req, res) {
 }
 
 export async function getAdminWishlistsTopArticles(req, res) {
-  const filters = adminWishlistFiltersSchema.parse(req.query);
-  const items = await getAdminWishlistTopArticles(filters, Number(req.query.limit || 10));
+  const filters = adminWishlistTopQuerySchema.parse(req.query);
+  const items = await getAdminWishlistTopArticles(filters, filters.limit);
   return res.json({ ok: true, items });
 }
 
 export async function getAdminWishlistsTopUsers(req, res) {
-  const filters = adminWishlistFiltersSchema.parse(req.query);
-  const items = await getAdminWishlistTopUsers(filters, Number(req.query.limit || 10));
+  const filters = adminWishlistTopQuerySchema.parse(req.query);
+  const items = await getAdminWishlistTopUsers(filters, filters.limit);
   return res.json({ ok: true, items });
 }

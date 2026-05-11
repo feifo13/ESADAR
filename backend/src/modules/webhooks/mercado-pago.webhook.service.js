@@ -12,9 +12,14 @@ function clean(value) {
 }
 
 function normalizeEventType(value) {
-  const text = clean(value).toLowerCase();
+  const text = clean(value).toLowerCase().slice(0, 80);
   if (text === 'payments') return 'payment';
   return text;
+}
+
+function normalizeMercadoPagoPaymentId(value) {
+  const text = clean(value);
+  return /^\d{1,40}$/.test(text) ? text : '';
 }
 
 function normalizeJson(value) {
@@ -32,16 +37,19 @@ function getQueryValue(query, key) {
 }
 
 function getNotificationPaymentId({ payload, query }) {
-  return (
-    getQueryValue(query, 'data.id') ||
-    clean(payload?.data?.id) ||
-    getQueryValue(query, 'id') ||
-    clean(payload?.id)
-  );
+  const candidates = [
+    getQueryValue(query, 'data.id'),
+    clean(payload?.data?.id),
+    getQueryValue(query, 'id'),
+    clean(payload?.id),
+  ];
+
+  return candidates.map(normalizeMercadoPagoPaymentId).find(Boolean) || '';
 }
 
 function getProviderEventId(payload, query) {
-  return clean(payload?.id) || getQueryValue(query, 'id') || null;
+  const value = clean(payload?.id) || getQueryValue(query, 'id') || '';
+  return value ? value.slice(0, 120) : null;
 }
 
 function parseSignatureHeader(signatureHeader) {
@@ -216,9 +224,9 @@ async function fetchMercadoPagoPayment(paymentId, accessToken) {
 
 export async function handleMercadoPagoWebhook({ payload, query, headers, auditContext }) {
   const settings = await getCollectingSettings();
-  const requestId = clean(headers['x-request-id']);
+  const requestId = clean(headers['x-request-id']).slice(0, 120);
   const eventType = normalizeEventType(payload?.type || getQueryValue(query, 'type') || getQueryValue(query, 'topic'));
-  const action = clean(payload?.action || getQueryValue(query, 'action')) || null;
+  const action = clean(payload?.action || getQueryValue(query, 'action')).slice(0, 120) || null;
   const paymentId = getNotificationPaymentId({ payload, query });
   const providerEventId = getProviderEventId(payload, query);
 

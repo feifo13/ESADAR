@@ -2,6 +2,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 
 const USER_SORTS = {
@@ -78,6 +79,9 @@ async function getUserForAdmin(userId, connection = pool, options = {}) {
 export async function listUsers({ filters, pagination }) {
   const { q, isActive, role, sortBy, sortDir } = filters;
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const clauses = [];
   const params = [];
 
@@ -124,7 +128,7 @@ export async function listUsers({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         u.id,
@@ -149,7 +153,7 @@ export async function listUsers({ filters, pagination }) {
       ${where}
       GROUP BY u.id
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );

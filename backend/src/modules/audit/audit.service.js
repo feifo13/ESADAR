@@ -1,5 +1,6 @@
 import { pool } from '../../db/pool.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 
 const AUDIT_SORTS = {
   createdAt: (direction) => `al.created_at ${direction}, al.id ${direction}`,
@@ -46,6 +47,9 @@ export async function logAudit(input, connection = pool) {
 export async function listAudit({ page, pageSize, offset, q, source, entityType, actionCode, dateFrom, dateTo, sortBy, sortDir }) {
   const clauses = [];
   const params = [];
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
 
   if (q) {
     const like = buildLikeValue(q);
@@ -84,7 +88,7 @@ export async function listAudit({ page, pageSize, offset, q, source, entityType,
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         al.id,
@@ -100,7 +104,7 @@ export async function listAudit({ page, pageSize, offset, q, source, entityType,
       FROM audit_log al
       ${where}
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );

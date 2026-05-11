@@ -16,6 +16,7 @@ import {
   expireReservationsSchema,
 } from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
+import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
 
 function getAuditContext(req) {
@@ -42,14 +43,14 @@ export async function getAdminOrders(req, res) {
 }
 
 export async function getAdminOrder(req, res) {
-  const order = await getOrderDetail(Number(req.params.id));
+  const order = await getOrderDetail(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, order });
 }
 
 
 
 export async function getAdminOrderReceiptPdf(req, res) {
-  const order = await getOrderDetail(Number(req.params.id));
+  const order = await getOrderDetail(parsePositiveIntParam(req.params.id, 'id'));
   const pdfBuffer = await generateOrderReceiptPdf(order);
   const safeOrderNumber = String(order.orderNumber || req.params.id).replace(/[^a-zA-Z0-9_-]/g, '-');
 
@@ -60,13 +61,13 @@ export async function getAdminOrderReceiptPdf(req, res) {
 }
 
 export async function approveAdminOrder(req, res) {
-  const order = await approveOrder(Number(req.params.id), getAuditContext(req));
+  const order = await approveOrder(parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, order });
 }
 
 export async function cancelAdminOrder(req, res) {
   const input = cancelOrderSchema.parse(req.body);
-  const order = await cancelOrder(Number(req.params.id), input.reason, getAuditContext(req));
+  const order = await cancelOrder(parsePositiveIntParam(req.params.id, 'id'), input.reason, getAuditContext(req));
   return res.json({ ok: true, order });
 }
 
@@ -81,12 +82,12 @@ export async function expireAdminOrderReservations(req, res) {
 }
 
 export async function shipAdminOrder(req, res) {
-  const order = await shipOrder(Number(req.params.id), getAuditContext(req));
+  const order = await shipOrder(parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
   return res.json({ ok: true, order });
 }
 
 export async function createAdminOrderPayment(req, res) {
   const input = createOrderPaymentSchema.parse(req.body);
-  const order = await createOrderPayment(Number(req.params.id), input, getAuditContext(req));
+  const order = await createOrderPayment(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
   return res.status(201).json({ ok: true, order });
 }

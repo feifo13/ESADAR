@@ -2,6 +2,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
+import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 
 const SHIPPING_SORTS = {
@@ -57,6 +58,9 @@ async function getShippingMethodForAdmin(id, connection = pool, options = {}) {
 export async function listShippingMethodsForAdmin({ filters, pagination }) {
   const { q, isActive, sortBy, sortDir } = filters;
   const { page, pageSize, offset } = pagination;
+  const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
+  const safeOffset = normalizeSqlOffset(offset);
+  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
   const clauses = [];
   const params = [];
 
@@ -79,7 +83,7 @@ export async function listShippingMethodsForAdmin({ filters, pagination }) {
     fallbackKey: 'createdAt',
   });
 
-  const [rows] = await pool.query(
+  const [rows] = await pool.execute(
     `
       SELECT
         sm.id,
@@ -95,7 +99,7 @@ export async function listShippingMethodsForAdmin({ filters, pagination }) {
       ${where}
       GROUP BY sm.id
       ORDER BY ${orderBy}
-      LIMIT ${pageSize} OFFSET ${offset}
+      ${limitOffsetClause}
     `,
     params,
   );
