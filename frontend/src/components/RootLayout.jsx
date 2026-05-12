@@ -139,11 +139,19 @@ export default function RootLayout() {
   }, [location.key, location.state]);
 
   const showIntro = introStage !== "hidden";
+  const appShellClassName = [
+    "app-shell",
+    !shouldNoIndex ? "app-shell--has-footer-reveal" : "",
+    showIntro ? "app-shell--intro-active" : "",
+    isCheckoutView ? "app-shell--checkout-view" : "",
+    isAdminView ? "app-shell--admin-view" : "",
+    isAccountView ? "app-shell--account-view" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div
-      className={`app-shell${showIntro ? " app-shell--intro-active" : ""}${isCheckoutView ? " app-shell--checkout-view" : ""}${isAdminView ? " app-shell--admin-view" : ""}${isAccountView ? " app-shell--account-view" : ""}`}
-    >
+    <div className={appShellClassName}>
       <ResponsiveTableLabels />
       {shouldNoIndex ? (
         <SeoHead

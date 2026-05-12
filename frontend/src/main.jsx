@@ -12,8 +12,12 @@ import './index.css';
 import './styles/rails.css';
 import './styles/feedback.css';
 
-if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
-  window.history.scrollRestoration = 'manual';
+if (typeof window !== 'undefined') {
+  if ('scrollRestoration' in window.history) {
+    window.history.scrollRestoration = 'manual';
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

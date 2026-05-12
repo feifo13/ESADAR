@@ -26,7 +26,6 @@ export default function FooterScrollScene() {
     const appShell = document.querySelector(".app-shell");
     if (!appShell) return;
 
-    appShell.classList.add("app-shell--has-footer-reveal");
     appShell.style.setProperty("--footer-scroll-progress", "0");
     appShell.style.setProperty("--header-footer-hide-progress", "0");
     appShell.classList.remove(
@@ -46,7 +45,6 @@ export default function FooterScrollScene() {
     let frameId = 0;
     let suppressTimerId = 0;
 
-    appShell.classList.add("app-shell--has-footer-reveal");
 
     function setFooterRevealSuppressed(isSuppressed) {
       appShell.classList.toggle(
@@ -193,7 +191,6 @@ export default function FooterScrollScene() {
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.classList.remove(
-        "app-shell--has-footer-reveal",
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
         "app-shell--footer-reveal-suppressed",

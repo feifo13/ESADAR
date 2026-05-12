@@ -12176,6 +12176,18 @@ textarea,
     rgba(0, 0, 0, calc(0.16 * var(--footer-scroll-progress, 0)));
 }
 
+
+.app-shell:not(.app-shell--has-footer-reveal) .footer-scroll-scene {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.app-shell--has-footer-reveal .footer-scroll-scene {
+  opacity: 1;
+  visibility: visible;
+}
+
 .footer-scroll-scene {
   position: fixed;
   inset: auto 0 0 0;
