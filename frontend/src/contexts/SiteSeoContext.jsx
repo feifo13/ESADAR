@@ -2,10 +2,13 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../lib/api.js";
 
 const SiteSeoContext = createContext(null);
+const ENV_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 
 function getDefaultSiteUrl() {
+  if (ENV_SITE_URL) return ENV_SITE_URL;
+
   if (typeof window === "undefined") {
-    return "http://localhost:5173";
+    return "";
   }
 
   return window.location.origin;

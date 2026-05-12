@@ -1,7 +1,10 @@
+const ENV_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+
 export function getSiteUrl(site) {
   if (site?.url) return String(site.url).replace(/\/$/, '');
+  if (ENV_SITE_URL) return ENV_SITE_URL;
   if (typeof window !== 'undefined') return window.location.origin;
-  return 'http://localhost:5173';
+  return '';
 }
 
 export function toAbsoluteUrl(path, site) {

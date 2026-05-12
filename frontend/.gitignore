@@ -1,5 +1,10 @@
 node_modules
 dist
 .vite
-.env.local
 .artifacts
+
+# Environment files are machine-specific.
+# Keep only .env.example versioned.
+.env
+.env.*
+!.env.example

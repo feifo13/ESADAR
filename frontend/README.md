@@ -1,27 +1,14 @@
 # ESADAR Frontend
 
-Starter de frontend en React + Vite para la tienda curada de segunda mano.
-
-## Incluye
-
-- Landing pública conectada al backend real
-- Listado de artículos con filtros y vista grilla/lista
-- Detalle de artículo con galería
-- Vista de ofertar artículo (UI preparada)
-- Carrito y checkout con compra autenticada o invitada
-- Login y registro
-- Backoffice inicial para artículos y órdenes
-- Tipografía IBM Plex Sans
-- Paleta inspirada en Miami Dolphins
-- Toggle entre modo default y alternativo
+Frontend React + Vite para la tienda curada de segunda mano ESADAR.
 
 ## Requisitos
 
 - Node 20+
-- Backend starter funcionando en `http://localhost:4000`
+- Backend funcionando localmente en `http://localhost:4000`
 - Base de datos con schema y seed importados
 
-## Instalación
+## Instalación local
 
 ```bash
 npm install
@@ -29,11 +16,27 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## Variable de entorno
+La app usa URLs relativas por defecto:
+
+- API: `/api/*`
+- uploads/assets: `/uploads/*`
+
+En local, Vite proxyea `/api` y `/uploads` hacia `http://localhost:4000`.
+En sandbox/producción, Nginx proxyea `/api` y `/uploads` hacia el backend real.
+
+Esto evita hardcodear `localhost`, la IP de Lightsail o dominios dentro del código fuente.
+
+## Variables de entorno frontend
+
+Normalmente pueden quedar vacías:
 
 ```bash
-VITE_API_URL=http://localhost:4000
+VITE_API_URL=
+VITE_PUBLIC_SITE_URL=
+VITE_DEV_API_PROXY_TARGET=http://localhost:4000
 ```
+
+Usá `.env.local` para tu PC y `.env.production.local` solo si necesitás sobrescribir algo en el servidor. Estos archivos no deben commitearse.
 
 ## Credenciales demo
 
@@ -59,10 +62,3 @@ VITE_API_URL=http://localhost:4000
 - `/admin/articles/:id/edit`
 - `/admin/orders`
 - `/admin/orders/:id`
-
-## Notas importantes del starter
-
-- La vista de ofertas ya está diseñada, pero el backend de ofertas todavía no está conectado.
-- Los selects de categorías, marcas, talles y métodos de envío usan constantes locales alineadas con el seed demo.
-- Cuando agregues endpoints de lookup (`/categories`, `/brands`, `/sizes`, `/shipping-methods`), podrás reemplazar esas constantes por datos reales.
-- El checkout usa los endpoints de órdenes ya implementados en el backend starter.
