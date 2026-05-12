@@ -85,6 +85,88 @@ export async function apiFetch(path, options = {}) {
   return payload;
 }
 
+
+const PUBLIC_CACHE_PREFIX = 'esadar-public-cache:';
+const publicResponseCache = new Map();
+const publicInFlightRequests = new Map();
+
+function getCacheTimestamp() {
+  return Date.now();
+}
+
+function readSessionCache(cacheKey) {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+
+  try {
+    const rawValue = window.sessionStorage.getItem(`${PUBLIC_CACHE_PREFIX}${cacheKey}`);
+    return rawValue ? JSON.parse(rawValue) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(cacheKey, entry) {
+  if (typeof window === 'undefined' || !window.sessionStorage) return;
+
+  try {
+    window.sessionStorage.setItem(`${PUBLIC_CACHE_PREFIX}${cacheKey}`, JSON.stringify(entry));
+  } catch {
+    // Storage quotas or privacy settings should never block the app.
+  }
+}
+
+function getCachedPublicResponse(cacheKey, ttlMs) {
+  if (!cacheKey || ttlMs <= 0) return null;
+  const now = getCacheTimestamp();
+  const memoryEntry = publicResponseCache.get(cacheKey);
+
+  if (memoryEntry && now - memoryEntry.cachedAt <= ttlMs) {
+    return memoryEntry.payload;
+  }
+
+  const sessionEntry = readSessionCache(cacheKey);
+  if (sessionEntry && now - sessionEntry.cachedAt <= ttlMs) {
+    publicResponseCache.set(cacheKey, sessionEntry);
+    return sessionEntry.payload;
+  }
+
+  return null;
+}
+
+function setCachedPublicResponse(cacheKey, payload) {
+  if (!cacheKey) return payload;
+  const entry = { cachedAt: getCacheTimestamp(), payload };
+  publicResponseCache.set(cacheKey, entry);
+  writeSessionCache(cacheKey, entry);
+  return payload;
+}
+
+export async function cachedApiFetch(path, { ttlMs = 300000, cacheKey = path, force = false, ...options } = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+
+  if (method !== 'GET') {
+    return apiFetch(path, options);
+  }
+
+  if (!force) {
+    const cached = getCachedPublicResponse(cacheKey, ttlMs);
+    if (cached) return cached;
+  }
+
+  if (publicInFlightRequests.has(cacheKey)) {
+    return publicInFlightRequests.get(cacheKey);
+  }
+
+  const request = apiFetch(path, options)
+    .then((payload) => setCachedPublicResponse(cacheKey, payload))
+    .finally(() => {
+      publicInFlightRequests.delete(cacheKey);
+    });
+
+  publicInFlightRequests.set(cacheKey, request);
+  return request;
+}
+
 function getDownloadFileName(disposition = '') {
   const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
   if (utf8Match?.[1]) {

@@ -562,6 +562,7 @@ export default function Header({ hideBrand = false }) {
               src={esadarWordmark}
               alt="ESADAR"
               className="brand-mark__logo"
+              decoding="async"
             />
           </Link>
 
@@ -620,6 +621,7 @@ export default function Header({ hideBrand = false }) {
                 src={esadarWordmark}
                 alt="ESADAR"
                 className="brand-mark__logo"
+                decoding="async"
               />
             </Link>
             {renderCartButton(mobileCartButtonRef, "header-mobile-shell__cart")}
@@ -637,6 +639,7 @@ export default function Header({ hideBrand = false }) {
             src={esadarWordmark}
             alt="ESADAR"
             className="mobile-motion-menu__brand"
+            decoding="async"
           />
         }
         searchContent={mobileSearchContent}

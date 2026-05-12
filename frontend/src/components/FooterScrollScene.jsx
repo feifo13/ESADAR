@@ -220,6 +220,7 @@ export default function FooterScrollScene() {
               src={esadarWordmark}
               alt="ESADAR"
               className="footer-scroll-scene__logo"
+              decoding="async"
             />
           </button>
           <div className="footer-scroll-scene__actions" aria-label="Acciones del footer">

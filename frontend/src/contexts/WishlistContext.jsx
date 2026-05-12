@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
 import { getPublicSessionToken } from '../lib/publicSession.js';
 import { useAuth } from './AuthContext.jsx';
@@ -13,26 +13,33 @@ function normalizeItems(items = []) {
 }
 
 export function WishlistProvider({ children }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pendingIds, setPendingIds] = useState([]);
   const requestIdRef = useRef(0);
 
-  function getWishlistQuery() {
+  function getWishlistQuery({ includeGuest = false } = {}) {
     if (isAuthenticated) return '';
+    if (!includeGuest) return null;
     return `?sessionToken=${encodeURIComponent(getPublicSessionToken())}`;
   }
 
-  async function refresh() {
+  const refresh = useCallback(async ({ includeGuest = false } = {}) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
 
     try {
       setLoading(true);
       setError('');
-      const response = await apiFetch(`/api/public/wishlist${getWishlistQuery()}`);
+      const query = getWishlistQuery({ includeGuest });
+      if (query == null) {
+        setLoading(false);
+        return [];
+      }
+
+      const response = await apiFetch(`/api/public/wishlist${query}`);
       if (requestId !== requestIdRef.current) return [];
       setItems(normalizeItems(response.wishlist?.items || []));
       return response.wishlist?.items || [];
@@ -44,15 +51,26 @@ export function WishlistProvider({ children }) {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     requestIdRef.current += 1;
     setItems([]);
     setPendingIds([]);
     setError('');
+
+    if (authLoading) {
+      setLoading(Boolean(isAuthenticated));
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     void refresh();
-  }, [isAuthenticated, user?.id]);
+  }, [authLoading, isAuthenticated, refresh, user?.id]);
 
   const ids = useMemo(
     () => new Set(items.map((item) => Number(item.articleId))),

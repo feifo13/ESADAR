@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { apiFetch } from "../lib/api.js";
+import { cachedApiFetch } from "../lib/api.js";
 
 const SiteSeoContext = createContext(null);
 const ENV_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL || "").replace(/\/$/, "");
@@ -33,7 +33,7 @@ export function SiteSeoProvider({ children }) {
 
     async function loadSeoConfig() {
       try {
-        const response = await apiFetch("/api/public/seo/site");
+        const response = await cachedApiFetch("/api/public/seo/site", { ttlMs: 900000 });
         if (ignore) return;
 
         const pages = response.pages || [];

@@ -15,9 +15,9 @@ export default function ImageGallery({ images = [], title }) {
       thumbSrc: image.thumbFilePath || image.thumb_file_path || image.cardFilePath || image.filePath || image.src || '',
       altText: image.altText || title,
       sources: [
-        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
-        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
-        image.cardFilePath ? { srcSet: `${image.cardFilePath} 700w`, type: 'image/webp' } : null,
+        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 1600w`, media: '(min-width: 1280px)' } : null,
+        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1100w`, media: '(min-width: 720px)' } : null,
+        image.cardFilePath ? { srcSet: `${image.cardFilePath} 700w` } : null,
       ].filter(Boolean),
     }));
   }, [images, title]);
@@ -69,6 +69,7 @@ export default function ImageGallery({ images = [], title }) {
           fallbackLabel={title}
           className="gallery-main-image"
           sources={active.sources}
+          sizes="(max-width: 719px) 100vw, 52vw"
           loading="eager"
           fetchPriority="high"
         />
@@ -103,6 +104,7 @@ export default function ImageGallery({ images = [], title }) {
                 alt={`${title} ${index + 1}`}
                 fallbackLabel={title}
                 className="gallery-thumb-image"
+                sizes="72px"
               />
             </button>
           ))}

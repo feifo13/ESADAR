@@ -6,7 +6,8 @@ import {
   useOutletContext,
 } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
-import { apiFetch } from "../lib/api.js";
+import { apiFetch, cachedApiFetch } from "../lib/api.js";
+import { runWhenIdle } from "../lib/performance.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import {
@@ -26,6 +27,20 @@ import baller3 from "../assets/baller-3.jpg";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const HERO_SEQUENCE = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
+
+function mergeAcceptedOffers(items, acceptedOffersByArticle) {
+  return items.map((item) => {
+    const acceptedOffer = acceptedOffersByArticle[Number(item.id)];
+
+    if (acceptedOffer) {
+      return { ...item, acceptedOffer };
+    }
+
+    if (!item.acceptedOffer) return item;
+    const { acceptedOffer: _acceptedOffer, ...rest } = item;
+    return rest;
+  });
+}
 
 const initialFilters = {
   search: "",
@@ -549,8 +564,9 @@ export default function HomePage() {
 
     async function loadFeatured() {
       try {
-        const response = await apiFetch(
+        const response = await cachedApiFetch(
           "/api/public/articles?featured=true&sort=intake_desc&page=1&pageSize=100",
+          { ttlMs: 120000 },
         );
         if (!ignore) setFeaturedItems(response.items || []);
       } catch {
@@ -558,9 +574,13 @@ export default function HomePage() {
       }
     }
 
-    loadFeatured();
+    const cancelIdleLoad = runWhenIdle(() => {
+      void loadFeatured();
+    });
+
     return () => {
       ignore = true;
+      cancelIdleLoad();
     };
   }, []);
 
@@ -592,11 +612,19 @@ export default function HomePage() {
       }
     }
 
-    loadAcceptedOffers();
+    const cancelIdleLoad = runWhenIdle(() => {
+      void loadAcceptedOffers();
+    });
+
     return () => {
       ignore = true;
+      cancelIdleLoad();
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    setItems((current) => mergeAcceptedOffers(current, acceptedOffersByArticle));
+  }, [acceptedOffersByArticle]);
 
   useEffect(() => {
     let ignore = false;
@@ -607,16 +635,12 @@ export default function HomePage() {
         if (page === 1) setLoading(true);
         if (page > 1) setLoadingMore(true);
 
-        const response = await apiFetch(`/api/public/articles?${queryString}`);
+        const response = await cachedApiFetch(`/api/public/articles?${queryString}`, { ttlMs: 30000 });
         if (ignore) return;
 
-        const nextItems = (response.items || []).map((item) =>
-          acceptedOffersByArticle[Number(item.id)]
-            ? {
-                ...item,
-                acceptedOffer: acceptedOffersByArticle[Number(item.id)],
-              }
-            : item,
+        const nextItems = mergeAcceptedOffers(
+          response.items || [],
+          acceptedOffersByArticle,
         );
         const nextPagination = response.pagination || {
           page: 1,
@@ -905,7 +929,9 @@ export default function HomePage() {
                   src={image}
                   alt=""
                   className="hero-carousel__image"
-                  loading={index < 3 ? "eager" : "lazy"}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : "low"}
                 />
               </figure>
             ))}
@@ -1037,6 +1063,7 @@ export default function HomePage() {
                   src={esadarWordmark}
                   alt=""
                   className="catalog-filter-loading-splash__logo"
+                  decoding="async"
                 />
                 <span className="sr-only">Cargando filtros</span>
               </div>

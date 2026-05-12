@@ -130,6 +130,7 @@ export default function AccountPage() {
     items: wishlistItems,
     pendingIds,
     toggleItem,
+    refresh: refreshWishlist,
     loading: wishlistLoading,
   } = useWishlist();
   const {
@@ -170,6 +171,11 @@ export default function AccountPage() {
   const [ordersPage, setOrdersPage] = useState(1);
   const [alertPendingIds, setAlertPendingIds] = useState([]);
   const [alertError, setAlertError] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated || activeTab !== "guardados") return;
+    void refreshWishlist({ includeGuest: true });
+  }, [activeTab, isAuthenticated, refreshWishlist]);
 
   useEffect(() => {
     if (!isAuthenticated) return;

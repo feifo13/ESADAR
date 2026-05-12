@@ -186,7 +186,7 @@ export default function RootLayout() {
           aria-hidden="true"
         >
           <div className="intro-splash__logo-wrap">
-            <img src={esadarWordmark} alt="" className="intro-splash__logo" />
+            <img src={esadarWordmark} alt="" className="intro-splash__logo" decoding="async" />
           </div>
         </div>
       ) : null}

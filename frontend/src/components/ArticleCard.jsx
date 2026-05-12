@@ -50,17 +50,19 @@ export default function ArticleCard({
   const detailPath = articlePath(article);
   const offerPath = articleOfferPath(article);
   const imageSources =
-    article.primaryImageDetail || article.primaryImageThumb
+    article.primaryImageThumb || article.primaryImage || article.primaryImageDetail
       ? [
           article.primaryImageDetail
             ? {
                 srcSet: `${article.primaryImageDetail} 900w`,
                 media: "(min-width: 720px)",
-                type: "image/webp",
               }
             : null,
           article.primaryImage
-            ? { srcSet: `${article.primaryImage} 560w`, type: "image/webp" }
+            ? { srcSet: `${article.primaryImage} 560w` }
+            : null,
+          article.primaryImageThumb
+            ? { srcSet: `${article.primaryImageThumb} 320w` }
             : null,
         ].filter(Boolean)
       : [];
@@ -158,13 +160,15 @@ export default function ArticleCard({
           <div className="featured-motion-card__media">
             <SmartImage
               src={
-                article.primaryImage ||
                 article.primaryImageThumb ||
+                article.primaryImage ||
                 article.primaryImageDetail
               }
               alt={article.primaryImageAlt || article.title}
               fallbackLabel={article.title}
               loading="lazy"
+              fetchPriority="low"
+              sizes="(max-width: 719px) 92vw, 33vw"
               sources={imageSources}
               className="article-card-editorial-image featured-motion-card__image"
             />
@@ -225,13 +229,15 @@ export default function ArticleCard({
           ) : null}
           <SmartImage
             src={
-              article.primaryImage ||
               article.primaryImageThumb ||
+              article.primaryImage ||
               article.primaryImageDetail
             }
             alt={article.primaryImageAlt || article.title}
             fallbackLabel={article.title}
             loading="lazy"
+            fetchPriority="low"
+            sizes="(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 260px"
             sources={imageSources}
           />
         </Link>

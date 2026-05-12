@@ -35,9 +35,9 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         thumbSrc: fallbackThumbSrc,
         altText: fallback.altText || fallback.primaryImageAlt || title,
         sources: [
-          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
-          fallbackSrc ? { srcSet: `${fallbackSrc} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
-          fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 700w`, type: 'image/webp' } : null,
+          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 1600w`, media: '(min-width: 1280px)' } : null,
+          fallbackSrc ? { srcSet: `${fallbackSrc} 1100w`, media: '(min-width: 720px)' } : null,
+          fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 700w` } : null,
         ].filter(Boolean),
       }];
     }
@@ -76,9 +76,9 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         thumbSrc,
         altText: image.altText || image.alt_text || title,
         sources: [
-          zoomSrc ? { srcSet: `${zoomSrc} 1600w`, media: '(min-width: 1280px)', type: 'image/webp' } : null,
-          detailSrc ? { srcSet: `${detailSrc} 1100w`, media: '(min-width: 720px)', type: 'image/webp' } : null,
-          thumbSrc ? { srcSet: `${thumbSrc} 700w`, type: 'image/webp' } : null,
+          zoomSrc ? { srcSet: `${zoomSrc} 1600w`, media: '(min-width: 1280px)' } : null,
+          detailSrc ? { srcSet: `${detailSrc} 1100w`, media: '(min-width: 720px)' } : null,
+          thumbSrc ? { srcSet: `${thumbSrc} 700w` } : null,
         ].filter(Boolean),
       };
     });
@@ -128,6 +128,7 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
                 alt={`${title} ${index + 1}`}
                 fallbackLabel={title}
                 className="article-gallery-thumb__image"
+                sizes="72px"
               />
             </button>
           ))}

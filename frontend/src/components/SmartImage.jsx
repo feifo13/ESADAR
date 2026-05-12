@@ -54,6 +54,7 @@ export default function SmartImage({
   className,
   onError,
   loading = 'lazy',
+  decoding = 'async',
   fetchPriority,
   ...props
 }) {
@@ -92,6 +93,7 @@ export default function SmartImage({
       srcSet={currentSrc === placeholderSrc ? undefined : resolvedSrcSet || undefined}
       sizes={currentSrc === placeholderSrc ? undefined : sizes}
       loading={loading}
+      decoding={decoding}
       fetchPriority={fetchPriority}
       onError={(event) => {
         onError?.(event);

@@ -4,7 +4,7 @@ import {
   CATEGORY_OPTIONS,
   SIZE_OPTIONS,
 } from '../constants/lookups.js';
-import { apiFetch } from '../lib/api.js';
+import { cachedApiFetch } from '../lib/api.js';
 
 const LookupsContext = createContext(null);
 
@@ -89,7 +89,7 @@ export function LookupsProvider({ children }) {
 
     async function loadLookups() {
       try {
-        const response = await apiFetch('/api/public/lookups');
+        const response = await cachedApiFetch('/api/public/lookups', { ttlMs: 900000 });
         if (ignore) return;
 
         setValue({

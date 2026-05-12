@@ -13843,3 +13843,57 @@ dialog,
     border-inline: 0;
   }
 }
+
+/* === ESADAR performance pass: mobile/all-viewports rendering safeguards === */
+.article-card,
+.featured-motion-card,
+.summary-item-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 520px;
+}
+
+.article-card-media,
+.article-card-media--catalog,
+.featured-motion-card__media,
+.article-gallery-main,
+.gallery-main {
+  contain: layout paint;
+}
+
+.hero-carousel__image,
+.article-card img,
+.article-gallery-thumb__image,
+.gallery-thumb-image,
+.gallery-main-image {
+  image-rendering: auto;
+}
+
+@media (max-width: 780px) {
+  .article-card,
+  .featured-motion-card,
+  .summary-item-card {
+    contain-intrinsic-size: 1px 460px;
+  }
+
+  .hero-carousel__track,
+  .hero-offer-ticker__track,
+  .footer-scroll-scene__sticky {
+    will-change: transform;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel__track,
+  .hero-offer-ticker__track,
+  .footer-scroll-scene__sticky,
+  .intro-splash__logo,
+  .cart-fly-token,
+  .cart-fly-token__core,
+  .wishlist-heart-button__spark,
+  .button-cart-added,
+  .cart-button--pulse {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
