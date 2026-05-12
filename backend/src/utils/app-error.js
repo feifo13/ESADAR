@@ -22,3 +22,7 @@ export function forbidden(message = 'Forbidden') {
 export function notFound(message = 'Not found') {
   return new AppError(message, 404);
 }
+
+export function conflict(message = 'Conflict', details = null) {
+  return new AppError(message, 409, details);
+}

@@ -1,6 +1,6 @@
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
-import { notFound } from '../../utils/app-error.js';
+import { conflict, notFound } from '../../utils/app-error.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
   ensureCustomerForUser,
@@ -35,6 +35,29 @@ function normalizeAddressRow(row) {
     deliveryNotes: row.deliveryNotes || null,
     isDefault: Boolean(row.isDefault),
   };
+}
+
+
+async function ensureUserEmailAvailable(email, userId, connection = pool) {
+  if (!email) return;
+
+  const [rows] = await connection.execute(
+    `
+      SELECT id
+      FROM users
+      WHERE email = ?
+        AND id <> ?
+      LIMIT 1
+    `,
+    [email, userId],
+  );
+
+  if (rows.length) {
+    throw conflict('Ese email ya está asociado a otra cuenta.', {
+      field: 'email',
+      code: 'EMAIL_ALREADY_EXISTS',
+    });
+  }
 }
 
 async function getUserRow(userId, connection = pool) {
@@ -241,7 +264,7 @@ function mergeProfileInput(current, input = {}) {
     firstName: input.firstName ?? current.firstName ?? '',
     lastName: input.lastName ?? current.lastName ?? '',
     birthDate: input.birthDate ?? current.birthDate ?? null,
-    email: input.email ?? current.email ?? null,
+    email: input.email ? input.email.trim().toLowerCase() : (current.email ? current.email.trim().toLowerCase() : null),
     phone: input.phone ?? current.phone ?? null,
     instagram: input.instagram ?? current.instagram ?? null,
     defaultAddress: input.defaultAddress === undefined
@@ -344,6 +367,8 @@ export async function saveAccountProfile(userId, input, auditContext) {
     const customer = await ensureCustomerForUser(userId, connection);
     const before = await buildAccountProfile(customer, connection);
     const next = mergeProfileInput(before, input);
+
+    await ensureUserEmailAvailable(next.email, userId, connection);
 
     await connection.execute(
       `
