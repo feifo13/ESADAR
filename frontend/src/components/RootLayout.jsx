@@ -9,6 +9,7 @@ import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
 import AppSnackbar from "./AppSnackbar.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
+import AppLoader from "./AppLoader.jsx";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
@@ -28,6 +29,7 @@ export default function RootLayout() {
     INTRO_INITIAL_FADE_MS,
   );
   const [breadcrumbLabelOverrides, setBreadcrumbLabelOverrides] = useState({});
+  const [contentReady, setContentReady] = useState(false);
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === "/";
@@ -138,11 +140,27 @@ export default function RootLayout() {
     };
   }, [location.key, location.state]);
 
+
+  useEffect(() => {
+    setContentReady(false);
+    if (typeof window === "undefined") {
+      setContentReady(true);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setContentReady(true);
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [location.key]);
+
   const showIntro = introStage !== "hidden";
   const appShellClassName = [
     "app-shell",
     !shouldNoIndex ? "app-shell--has-footer-reveal" : "",
     showIntro ? "app-shell--intro-active" : "",
+    contentReady && !showIntro ? "app-shell--content-ready" : "app-shell--route-loading",
     isCheckoutView ? "app-shell--checkout-view" : "",
     isAdminView ? "app-shell--admin-view" : "",
     isAccountView ? "app-shell--account-view" : "",
@@ -166,13 +184,13 @@ export default function RootLayout() {
         <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
           <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
           <div className="page-transition-shell">
-            <Suspense fallback={<div className="centered-card">Cargando...</div>}>
+            <Suspense fallback={<AppLoader variant="page" label="Cargando vista" />}>
               <Outlet context={{ setHeroLogoVisible, setBreadcrumbLabelOverrides }} />
             </Suspense>
           </div>
         </main>
       </MobileMenuProvider>
-      {!shouldNoIndex ? <FooterScrollScene /> : null}
+      {!shouldNoIndex && contentReady && !showIntro ? <FooterScrollScene /> : null}
       <ScrollChrome />
 
       {showIntro ? (

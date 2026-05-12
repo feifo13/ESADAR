@@ -10,7 +10,8 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "images:backfill": "node scripts/backfill-article-image-variants.mjs",
-    "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run"
+    "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run",
+    "db:backup": "node scripts/backup-db.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

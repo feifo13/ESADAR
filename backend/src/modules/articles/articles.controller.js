@@ -6,6 +6,7 @@ import {
   adjustArticleStock,
   changeArticleStatus,
   createArticle,
+  deleteArticle,
   deleteArticleImage,
   getAdminArticleById,
   getRelatedPublicArticles,
@@ -173,6 +174,15 @@ export async function updateAdminArticle(req, res) {
     getAuditContext(req),
   );
   return res.json({ ok: true, article });
+}
+
+
+export async function deleteAdminArticle(req, res) {
+  const result = await deleteArticle(
+    parsePositiveIntParam(req.params.id, 'id'),
+    getAuditContext(req),
+  );
+  return res.json({ ok: true, ...result });
 }
 
 export async function createAdminArticleStockAdjustment(req, res) {

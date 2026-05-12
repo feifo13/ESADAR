@@ -1,5 +1,6 @@
 import { escapeHtml } from "../mail.escape.js";
 import { renderEmailShell } from "./base-shell.js";
+import { buildResetPasswordUrl, buildLoginUrl } from "./url-helpers.js";
 
 function renderButton(url, label) {
   return `
@@ -14,6 +15,8 @@ function renderButton(url, label) {
 }
 
 export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
+  const targetUrl = buildResetPasswordUrl(resetUrl);
+  const loginUrl = buildLoginUrl();
   const name = toName || "";
   const subject = "Recuperar contraseña de ESADAR";
   const preheader = "Usá este enlace para crear una nueva contraseña. Vence en 1 hora.";
@@ -23,7 +26,7 @@ export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
     "",
     "Recibimos una solicitud para recuperar tu contraseña de ESADAR.",
     "Usá este enlace para elegir una nueva contraseña:",
-    resetUrl,
+    targetUrl,
     "",
     "El enlace vence en 1 hora. Si no hiciste esta solicitud, podés ignorar este mensaje.",
     "",
@@ -38,7 +41,7 @@ export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
 
   const secondaryHtml = `
     <p style="margin:22px 0 0; color:#56737a; font-size:14px; line-height:1.6;">Si el botón no funciona, copiá y pegá este enlace en tu navegador:</p>
-    <p style="margin:8px 0 0; color:#102b34; font-size:13px; line-height:1.5; word-break:break-all;">${escapeHtml(resetUrl)}</p>
+    <p style="margin:8px 0 0; color:#102b34; font-size:13px; line-height:1.5; word-break:break-all;">${escapeHtml(targetUrl)}</p>
     <p style="margin:22px 0 0; color:#56737a; font-size:14px; line-height:1.6;">Si no hiciste esta solicitud, podés ignorar este mensaje.</p>
   `;
 
@@ -52,8 +55,8 @@ export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
       eyebrow: "SEGURIDAD DE CUENTA",
       title: "Recuperar contraseña",
       bodyHtml,
-      ctaHtml: renderButton(resetUrl, "Crear nueva contraseña"),
-      secondaryHtml,
+      ctaHtml: renderButton(targetUrl, "Crear nueva contraseña"),
+      secondaryHtml: `${secondaryHtml}${renderButton(loginUrl, "Ir al login")}`,
     }),
   };
 }

@@ -6,7 +6,7 @@ import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { ArchiveIcon, EditIcon, StockIcon } from "../../components/ActionIcons.jsx";
+import { ArchiveIcon, EditIcon, StockIcon, XIcon } from "../../components/ActionIcons.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
@@ -14,6 +14,7 @@ import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
 import { focusValidationTarget, notifyFormStatus } from "../../lib/validation.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -336,6 +337,30 @@ export default function AdminArticlesPage() {
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
       const errorMessage = err.message || "No se pudo desactivar el articulo.";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+    }
+  }
+
+
+  async function handleDeleteArticle(article) {
+    const confirmed = window.confirm(
+      `¿Eliminar definitivamente el artículo "${article.title}"? Esta acción solo se permite si no tiene órdenes, ofertas ni movimientos históricos vinculados.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setError("");
+      setMessage("");
+      await apiFetch(`/api/admin/articles/${article.id}`, { method: "DELETE" });
+      setItems((current) => current.filter((item) => Number(item.id) !== Number(article.id)));
+      const successMessage = "El artículo fue eliminado correctamente.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
+    } catch (err) {
+      const errorMessage =
+        err.message ||
+        "No se puede eliminar porque tiene movimientos/órdenes/ofertas asociadas. Se recomienda desactivarlo.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     }
@@ -844,7 +869,7 @@ export default function AdminArticlesPage() {
           </div>
         ) : null}
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando artículos" /> : null}
 
         <AdminPagination
           className="pagination-row--top"
@@ -1042,18 +1067,27 @@ export default function AdminArticlesPage() {
                               <button
                                 type="button"
                                 className="button button-secondary button-compact admin-icon-action"
-                                aria-label={`Eliminar ${article.title}`}
-                                title="Eliminar"
+                                aria-label={`Desactivar ${article.title}`}
+                                title="Desactivar"
                                 onClick={() =>
                                   void handleSoftDeleteArticle(article)
                                 }
                               >
                                 <ArchiveIcon />
                                 {/* <span className="admin-action-label">
-                                  Eliminar
+                                  Desactivar
                                 </span> */}
                               </button>
                             ) : null}
+                            <button
+                              type="button"
+                              className="button button-secondary button-compact admin-icon-action admin-icon-action--danger"
+                              aria-label={`Eliminar definitivamente ${article.title}`}
+                              title="Eliminar definitivamente"
+                              onClick={() => void handleDeleteArticle(article)}
+                            >
+                              <XIcon />
+                            </button>
                           </div>
                         </td>
                       </tr>

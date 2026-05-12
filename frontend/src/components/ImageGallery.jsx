@@ -58,7 +58,7 @@ export default function ImageGallery({ images = [], title }) {
   }, [zoomOpen, normalized.length]);
 
   return (
-    <div className="gallery-shell">
+    <div className={normalized.length === 1 ? 'gallery-shell gallery-shell--single' : 'gallery-shell'}>
       <div className="gallery-main">
         <div className="gallery-count" aria-live="polite">
           {activeIndex + 1} / {normalized.length}
@@ -90,7 +90,7 @@ export default function ImageGallery({ images = [], title }) {
         ) : null}
       </div>
 
-      {normalized.length > 1 ? (
+      {normalized.length >= 1 ? (
         <div className="gallery-thumbs">
           {normalized.map((image, index) => (
             <button

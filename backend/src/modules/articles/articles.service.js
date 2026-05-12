@@ -1814,3 +1814,61 @@ async function getAdminArticleByIdWithConnection(id, connection) {
   article.images = await getArticleImages(id, connection);
   return article;
 }
+
+export async function deleteArticle(id, auditContext) {
+  const result = await withTransaction(async (connection) => {
+    const before = await getAdminArticleByIdWithConnection(id, connection);
+
+    const referenceQueries = [
+      ['ordenes', 'SELECT COUNT(*) AS total FROM order_items WHERE article_id = ?', true],
+      ['ofertas', 'SELECT COUNT(*) AS total FROM offers WHERE article_id = ?', true],
+      ['movimientos de stock', 'SELECT COUNT(*) AS total FROM article_stock_movements WHERE article_id = ?', true],
+      ['carritos', 'SELECT COUNT(*) AS total FROM cart_items WHERE article_id = ?', false],
+    ];
+
+    const blockers = [];
+    for (const [label, query, isHistorical] of referenceQueries) {
+      const [rows] = await connection.execute(query, [id]);
+      const total = Number(rows[0]?.total || 0);
+      if (total > 0 && isHistorical) blockers.push(`${label}: ${total}`);
+    }
+
+    if (blockers.length) {
+      throw badRequest(`No se puede eliminar porque tiene registros historicos vinculados (${blockers.join(', ')}). Se recomienda desactivarlo.`);
+    }
+
+    await connection.execute('DELETE FROM cart_items WHERE article_id = ?', [id]);
+    await connection.execute('DELETE FROM article_images WHERE article_id = ?', [id]);
+
+    try {
+      const [deleteResult] = await connection.execute('DELETE FROM articles WHERE id = ?', [id]);
+      if (!deleteResult.affectedRows) throw notFound('Article not found');
+    } catch (error) {
+      if (error?.code === 'ER_ROW_IS_REFERENCED_2' || error?.errno === 1451) {
+        throw badRequest('No se puede eliminar porque tiene movimientos, ordenes u ofertas asociadas. Se recomienda desactivarlo.');
+      }
+      throw error;
+    }
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'ARTICLE_DELETED',
+        entityType: 'articles',
+        entityId: id,
+        beforeJson: before,
+        metadataJson: { mode: 'admin-hard-delete' },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return { deleted: true, article: before, images: before.images || [] };
+  });
+
+  await Promise.allSettled((result.images || []).map((image) => deleteArticleImageFiles(image)));
+  return { deleted: true, article: result.article };
+}

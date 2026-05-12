@@ -35,6 +35,7 @@ import {
   notifyFormStatus,
 } from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
+import AppLoader from "../components/AppLoader.jsx";
 
 const initialAlertForm = {
   firstName: "",
@@ -197,7 +198,7 @@ export default function ArticlePage() {
   if (loading) {
     return (
       <div className="container section-card centered-card">
-        Cargando prenda...
+        <AppLoader variant="page" label="Cargando prenda" />
       </div>
     );
   }

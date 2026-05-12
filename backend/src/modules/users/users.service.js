@@ -22,6 +22,7 @@ function normalizeUserRow(row) {
     email: row.email,
     phone: row.phone,
     instagram: row.instagram,
+    address: row.address,
     isActive: Boolean(row.isActive),
     lastLoginAt: row.lastLoginAt,
     createdAt: row.createdAt,
@@ -43,6 +44,7 @@ async function getUserForAdmin(userId, connection = pool, options = {}) {
         u.email,
         u.phone,
         u.instagram,
+        u.address,
         u.is_active AS isActive,
         u.last_login_at AS lastLoginAt,
         u.created_at AS createdAt,
@@ -109,6 +111,7 @@ export async function listUsers({ filters, pagination }) {
       OR u.email LIKE ?
       OR u.phone LIKE ?
       OR u.instagram LIKE ?
+      OR u.address LIKE ?
       OR EXISTS (
         SELECT 1
         FROM user_roles search_ur
@@ -117,7 +120,7 @@ export async function listUsers({ filters, pagination }) {
           AND search_r.code LIKE ?
       )
     )`);
-    params.push(like, like, like, like, like, like);
+    params.push(like, like, like, like, like, like, like);
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
@@ -137,6 +140,7 @@ export async function listUsers({ filters, pagination }) {
         u.email,
         u.phone,
         u.instagram,
+        u.address,
         u.is_active AS isActive,
         u.last_login_at AS lastLoginAt,
         u.created_at AS createdAt,
@@ -171,6 +175,137 @@ export async function listUsers({ filters, pagination }) {
       total: countRows[0].total,
     },
   };
+}
+
+
+
+export async function getUserByIdForAdmin(userId) {
+  const user = await getUserForAdmin(userId);
+  if (!user) throw notFound('Usuario no encontrado.');
+  return user;
+}
+
+async function getAdminRoleUserCount(connection) {
+  const [rows] = await connection.execute(
+    `
+      SELECT COUNT(DISTINCT ur.user_id) AS total
+      FROM user_roles ur
+      INNER JOIN roles r ON r.id = ur.role_id
+      INNER JOIN users u ON u.id = ur.user_id
+      WHERE r.code IN ('SUPER_ADMIN','ADMIN')
+        AND u.is_active = 1
+    `,
+  );
+  return Number(rows[0]?.total || 0);
+}
+
+async function resolveRoleIds(connection, roleCodes) {
+  const normalizedCodes = [...new Set((roleCodes || []).map((role) => String(role).trim()).filter(Boolean))];
+  if (!normalizedCodes.length) throw badRequest('El usuario debe tener al menos un rol.');
+  const placeholders = normalizedCodes.map(() => '?').join(', ');
+  const [rows] = await connection.execute(
+    `SELECT id, code FROM roles WHERE code IN (${placeholders}) AND is_active = 1`,
+    normalizedCodes,
+  );
+  const foundCodes = rows.map((row) => row.code);
+  const missing = normalizedCodes.filter((code) => !foundCodes.includes(code));
+  if (missing.length) {
+    throw badRequest(`Roles no válidos: ${missing.join(', ')}`);
+  }
+  return rows.map((row) => ({ id: Number(row.id), code: row.code }));
+}
+
+export async function updateUserForAdmin(userId, input, auditContext) {
+  return withTransaction(async (connection) => {
+    const before = await getUserForAdmin(userId, connection, { forUpdate: true });
+    if (!before) throw notFound('Usuario no encontrado.');
+
+    const nextRoles = [...new Set(input.roles || [])];
+    const nextHasAdminRole = nextRoles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
+    const beforeHasAdminRole = before.roles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
+
+    if (Number(userId) === Number(auditContext.actorUserId)) {
+      if (!input.isActive) {
+        throw badRequest('No puedes desactivar tu propio usuario desde esta vista.');
+      }
+      if (beforeHasAdminRole && !nextHasAdminRole) {
+        throw badRequest('No puedes quitarte tu propio rol de administración desde esta vista.');
+      }
+    }
+
+    if (beforeHasAdminRole && !nextHasAdminRole) {
+      const adminCount = await getAdminRoleUserCount(connection);
+      if (adminCount <= 1) {
+        throw badRequest('No puedes quitar el último usuario administrador activo.');
+      }
+    }
+
+    if (input.email) {
+      const [emailRows] = await connection.execute(
+        'SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1',
+        [input.email, userId],
+      );
+      if (emailRows.length) {
+        throw badRequest('Ya existe otro usuario con ese email.');
+      }
+    }
+
+    await connection.execute(
+      `
+        UPDATE users
+        SET
+          first_name = ?,
+          last_name = ?,
+          email = ?,
+          phone = ?,
+          instagram = ?,
+          address = ?,
+          is_active = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [
+        input.firstName,
+        input.lastName,
+        input.email,
+        input.phone,
+        input.instagram,
+        input.address,
+        input.isActive ? 1 : 0,
+        auditContext.actorUserId || null,
+        userId,
+      ],
+    );
+
+    const roles = await resolveRoleIds(connection, nextRoles);
+    await connection.execute('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+    for (const role of roles) {
+      await connection.execute(
+        'INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES (?, ?, ?)',
+        [userId, role.id, auditContext.actorUserId || null],
+      );
+    }
+
+    const after = await getUserForAdmin(userId, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'USER_UPDATED',
+        entityType: 'users',
+        entityId: userId,
+        beforeJson: before,
+        afterJson: after,
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
 }
 
 export async function setUserActiveStatus(userId, isActive, auditContext) {

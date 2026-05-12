@@ -1,6 +1,6 @@
-import { env } from "../../../config/env.js";
 import { escapeHtml, nl2br } from "../mail.escape.js";
 import { renderEmailShell } from "./base-shell.js";
+import { buildPublicUrl } from "./url-helpers.js";
 
 function renderButton(url, label) {
   return `
@@ -50,7 +50,7 @@ export function renderContactReplyEmail({ toName, message, replyMessage } = {}) 
       eyebrow: "RESPUESTA DE ESADAR",
       title: "Respondimos tu consulta",
       bodyHtml,
-      ctaHtml: renderButton(env.publicSiteUrl, "Ir a ESADAR"),
+      ctaHtml: renderButton(buildPublicUrl("/"), "Ir a ESADAR"),
     }),
   };
 }

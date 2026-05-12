@@ -6,6 +6,7 @@ import { apiFetch } from '../../lib/api.js';
 import { formatDate } from '../../lib/format.js';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { focusValidationTarget } from '../../lib/validation.js';
+import AppLoader from "../../components/AppLoader.jsx";
 
 const CONTACT_STATUS_LABELS = {
   NEW: 'Nuevo',
@@ -117,7 +118,7 @@ export default function AdminContactMessageDetailPage() {
       </button>
 
       <section className="section-card page-stack">
-        {loading ? <p className="muted-copy">Cargando contacto...</p> : null}
+        {loading ? <AppLoader variant="card" label="Cargando contacto" /> : null}
         {!loading && !message ? <p className="muted-copy">Contacto no encontrado.</p> : null}
 
         {message ? (

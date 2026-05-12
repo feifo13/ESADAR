@@ -1,12 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import AppLoader from './AppLoader.jsx';
 
 export default function ProtectedRoute({ children, roles = [] }) {
   const location = useLocation();
   const { user, loading, isAuthenticated } = useAuth();
 
   if (loading) {
-    return <div className="container section-card">Cargando sesión…</div>;
+    return <AppLoader variant="page" label="Cargando sesión" />;
   }
 
   if (!isAuthenticated) {

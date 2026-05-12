@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const initialForm = {
   isBankTransferEnabled: true,
@@ -116,7 +117,7 @@ export default function AdminCollectingPage() {
         </div>
 
         {error ? <p className="error-copy">{error}</p> : null}
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando Collecting" /> : null}
 
         {!loading ? (
           <form className="page-stack" onSubmit={handleSubmit}>

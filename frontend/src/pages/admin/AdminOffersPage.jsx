@@ -12,6 +12,7 @@ import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const OFFER_STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -293,7 +294,7 @@ export default function AdminOffersPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando Offers" /> : null}
 
         <AdminPagination
           className="pagination-row--top"

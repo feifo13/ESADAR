@@ -24,6 +24,7 @@ import esadarWordmark from "../assets/esadar-wordmark.webp";
 import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";
+import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const HERO_SEQUENCE = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
@@ -1126,7 +1127,7 @@ export default function HomePage() {
 
           {showCatalogInitialLoading ? (
             <div className="centered-card section-card">
-              <p className="muted-copy">Cargando prendas seleccionadas…</p>
+              <AppLoader variant="inline" label="Cargando prendas seleccionadas" />
             </div>
           ) : items.length ? (
             <div className="article-grid">
@@ -1169,7 +1170,7 @@ export default function HomePage() {
             >
               {/* <span className="muted-copy">
                 {loadingMore
-                  ? "Cargando mas prendas…"
+                  ? "Ver mas prendas"
                   : "Desliza para cargar mas prendas"}
               </span> */}
             </div>

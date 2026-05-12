@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS client_error_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  level VARCHAR(30) NOT NULL DEFAULT 'error',
+  type VARCHAR(120) NOT NULL DEFAULT 'ClientError',
+  message VARCHAR(500) NOT NULL,
+  stack TEXT NULL,
+  route VARCHAR(500) NULL,
+  user_agent VARCHAR(500) NULL,
+  status_code INT NULL,
+  request_id VARCHAR(120) NULL,
+  metadata_json JSON NULL,
+  ip_address VARCHAR(64) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_client_error_logs_created_at (created_at),
+  KEY idx_client_error_logs_level (level),
+  KEY idx_client_error_logs_type (type),
+  KEY idx_client_error_logs_status_code (status_code),
+  KEY idx_client_error_logs_request_id (request_id)
+) ENGINE=InnoDB;

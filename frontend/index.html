@@ -1,9 +1,27 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-theme="sharp-lab-light-01" data-color-mode="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#008E97" />
+    <meta name="theme-color" content="#ffffff" />
+    <style id="esadar-first-paint-theme">
+      :root {
+        color-scheme: light;
+        --bg: #ffffff;
+        --surface: #ffffff;
+        --surface-soft: #eef7f8;
+        --text: #102b34;
+        --muted: #667b82;
+        --border: rgba(16, 43, 52, 0.14);
+        --aqua: #00a7b3;
+        --orange: #fc4c02;
+        --navy: #002244;
+        --font-body: 'Neo Grotesk', system-ui, sans-serif;
+        --font-display: 'Neo Grotesk', system-ui, sans-serif;
+        background: #ffffff;
+      }
+      body { background: #ffffff; color: #102b34; }
+    </style>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <title>ESADAR</title>
@@ -12,6 +30,9 @@
         if ("scrollRestoration" in window.history) {
           window.history.scrollRestoration = "manual";
         }
+        ["miami-closet-theme", "esadar-theme", "esadar-theme-font", "esadar-theme-dock-hidden", "theme", "esadar-theme-id", "esadar-theme-mode", "esadar-color-mode"].forEach(function (key) {
+          try { window.localStorage.removeItem(key); } catch (_) {}
+        });
         document.documentElement.dataset.theme = "sharp-lab-light-01";
         document.documentElement.dataset.colorMode = "light";
         window.scrollTo(0, 0);

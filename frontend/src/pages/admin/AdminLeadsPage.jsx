@@ -11,6 +11,7 @@ import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { notifyFormStatus } from "../../lib/validation.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const LEAD_STATUS_LABELS = {
   NEW: "Nuevo",
@@ -313,7 +314,7 @@ export default function AdminLeadsPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando Leads" /> : null}
 
         <AdminPagination
           className="pagination-row--top"

@@ -19,6 +19,7 @@ import {
   getRequiredValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
+import AppLoader from "../components/AppLoader.jsx";
 
 const initialGuest = {
   firstName: "",
@@ -263,7 +264,7 @@ export default function OfferPage() {
   if (authLoading) {
     return (
       <div className="container section-card centered-card">
-        Cargando sesión…
+        <AppLoader variant="page" label="Cargando sesión" />
       </div>
     );
   }
@@ -275,7 +276,7 @@ export default function OfferPage() {
   if (loading) {
     return (
       <div className="container section-card centered-card">
-        Cargando articulo…
+        <AppLoader variant="page" label="Cargando artículo" />
       </div>
     );
   }

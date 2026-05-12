@@ -1,6 +1,7 @@
 import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { getEmailLogoSrc, getEmailBrandGradientSrc } from "../mail.assets.js";
+import { buildPublicUrl } from "./url-helpers.js";
 
 export function renderEmailShell({
   subject,
@@ -18,7 +19,7 @@ export function renderEmailShell({
   const safeTitle = escapeHtml(title || "");
   const logoUrl = escapeHtml(getEmailLogoSrc());
   const brandGradientUrl = escapeHtml(getEmailBrandGradientSrc());
-  const siteUrl = escapeHtml(env.publicSiteUrl || env.appOrigin || "");
+  const siteUrl = escapeHtml(buildPublicUrl("/"));
 
   return `<!doctype html>
 <html lang="es">

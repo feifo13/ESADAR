@@ -1,49 +1,48 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
+const leftLinks = [
+  { to: '/admin/articles', label: 'Articulos', end: true },
+  { to: '/admin/orders', label: 'Ordenes' },
+  { to: '/admin/offers', label: 'Ofertas' },
+  { to: '/admin/contact-messages', label: 'Contactos' },
+  { to: '/admin/leads', label: 'Leads' },
+  { to: '/admin/wishlists', label: 'Wishlists' },
+];
+
+const rightLinks = [
+  { to: '/admin/users', label: 'Usuarios', adminOnly: true },
+  { to: '/admin/collecting', label: 'Cobros', adminOnly: true },
+  { to: '/admin/shipping', label: 'Envios' },
+  { to: '/admin/statistics', label: 'Estadisticas' },
+  { to: '/admin/audit', label: 'Auditoria' },
+];
+
+function AdminTab({ to, label, end }) {
+  return (
+    <NavLink to={to} className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')} end={end}>
+      {label}
+    </NavLink>
+  );
+}
+
 export default function AdminToolbar() {
   const { user } = useAuth();
   const canManageUsers = user?.roles?.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
+  const visibleRightLinks = rightLinks.filter((link) => !link.adminOnly || canManageUsers);
 
   return (
-    <div className="admin-toolbar">
-      <NavLink to="/admin/articles" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')} end>
-        Articulos
-      </NavLink>
-      <NavLink to="/admin/orders" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Ordenes
-      </NavLink>
-      <NavLink to="/admin/offers" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Ofertas
-      </NavLink>
-      <NavLink to="/admin/contact-messages" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Contactos
-      </NavLink>
-      <NavLink to="/admin/leads" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Leads
-      </NavLink>
-      <NavLink to="/admin/wishlists" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Wishlists
-      </NavLink>
-      {canManageUsers ? (
-        <NavLink to="/admin/users" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-          Usuarios
-        </NavLink>
-      ) : null}
-      {canManageUsers ? (
-        <NavLink to="/admin/collecting" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-          Cobros
-        </NavLink>
-      ) : null}
-      <NavLink to="/admin/shipping" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Envios
-      </NavLink>
-      <NavLink to="/admin/statistics" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Estadisticas
-      </NavLink>
-      <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? 'admin-tab active' : 'admin-tab')}>
-        Auditoria
-      </NavLink>
+    <div className="admin-toolbar" aria-label="Navegacion de administracion">
+      <div className="admin-toolbar__group admin-toolbar__group--left">
+        {leftLinks.map((link) => (
+          <AdminTab key={link.to} {...link} />
+        ))}
+      </div>
+      <div className="admin-toolbar__group admin-toolbar__group--right">
+        {visibleRightLinks.map((link) => (
+          <AdminTab key={link.to} {...link} />
+        ))}
+      </div>
     </div>
   );
 }

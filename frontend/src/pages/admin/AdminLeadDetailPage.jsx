@@ -6,6 +6,7 @@ import { apiFetch } from '../../lib/api.js';
 import { formatDate } from '../../lib/format.js';
 import { articlePath } from '../../lib/routes.js';
 import { useMobileMenu } from '../../contexts/MobileMenuContext.jsx';
+import AppLoader from "../../components/AppLoader.jsx";
 
 const LEAD_STATUS_LABELS = { NEW: 'Nuevo', CONTACTED: 'Contactado', QUALIFIED: 'Calificado', ARCHIVED: 'Archivado' };
 const SOURCE_LABELS = { CHECKOUT: 'Checkout', CONTACT_FORM: 'Contacto', MANUAL: 'Manual', OFFER: 'Oferta', NEWSLETTER: 'Newsletter', STOCK_ALERT: 'Alerta de stock', WISHLIST: 'Guardado', ABANDONED_CART: 'Carrito abandonado', PRODUCT_INTEREST: 'Interes de producto' };
@@ -85,7 +86,7 @@ export default function AdminLeadDetailPage() {
       <AdminToolbar />
       <Link className="ghost-button linklike account-order-detail-back" to="/admin/leads">Volver a leads</Link>
       <section className="section-card page-stack">
-        {loading ? <p className="muted-copy">Cargando lead...</p> : null}
+        {loading ? <AppLoader variant="card" label="Cargando lead" /> : null}
         {!loading && error ? <p className="error-inline">{error}</p> : null}
         {!loading && !error && !lead ? <p className="muted-copy">Lead no encontrado.</p> : null}
         {lead ? (<>

@@ -6,8 +6,13 @@ const FIXED_THEME_ID = 'sharp-lab-light-01';
 const FIXED_FONT_ID = 'brand';
 const STORAGE_KEYS_TO_CLEAR = [
   'miami-closet-theme',
+  'esadar-theme',
   'esadar-theme-font',
   'esadar-theme-dock-hidden',
+  'theme',
+  'esadar-theme-id',
+  'esadar-theme-mode',
+  'esadar-color-mode',
 ];
 
 const BRAND_FONT_BODY = "'Neo Grotesk', system-ui, sans-serif";

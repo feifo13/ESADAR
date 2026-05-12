@@ -30,6 +30,7 @@ import {
   getRequiredValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
+import AppLoader from "../components/AppLoader.jsx";
 
 
 const PAYMENT_STATUS_LABELS = {
@@ -950,7 +951,7 @@ export default function AccountPage() {
           </div>
 
           {wishlistLoading ? (
-            <p className="muted-copy">Cargando guardados...</p>
+            <AppLoader variant="inline" label="Cargando guardados" />
           ) : null}
           {!wishlistLoading && !wishlistItems.length ? (
             <div className="page-stack-sm">
@@ -1353,7 +1354,7 @@ export default function AccountPage() {
           ) : null}
 
           {isAuthenticated && profileLoading ? (
-            <p className="muted-copy">Cargando ofertas...</p>
+            <AppLoader variant="inline" label="Cargando ofertas" />
           ) : null}
 
           {isAuthenticated && profileError ? (

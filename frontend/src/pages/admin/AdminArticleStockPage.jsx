@@ -6,6 +6,7 @@ import StatusBadge from "../../components/StatusBadge.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { focusValidationTarget } from "../../lib/validation.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const ARTICLE_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -111,7 +112,7 @@ export default function AdminArticleStockPage() {
   if (loading) {
     return (
       <div className="container section-card centered-card">
-        Cargando articulo...
+        <AppLoader variant="card" label="Cargando artículo" />
       </div>
     );
   }

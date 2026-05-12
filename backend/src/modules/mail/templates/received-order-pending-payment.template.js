@@ -1,9 +1,9 @@
-import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { getArticleEmailImageUrl } from "../mail.assets.js";
 import { buildCustomerName, formatCurrencyUYU } from "../mail.format.js";
 import { getPaymentMethodLabel } from "../../payment-methods.js";
 import { renderEmailShell } from "./base-shell.js";
+import { buildOrderUrl } from "./url-helpers.js";
 
 function renderButton(url, label) {
   return `
@@ -165,7 +165,7 @@ function formatPaymentInstructionLines(paymentInstructions) {
 export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
   const name = buildCustomerName(order?.customer);
   const orderLabel = order?.orderNumber || order?.id || "";
-  const orderUrl = `${env.publicSiteUrl}/cuenta/ordenes${order?.id ? `/${order.id}` : ""}`;
+  const orderUrl = buildOrderUrl(order);
   const total = formatCurrencyUYU(order?.total, order?.currencyCode || "UYU");
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";

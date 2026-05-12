@@ -1,7 +1,7 @@
-import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { buildCustomerName } from "../mail.format.js";
 import { renderEmailShell } from "./base-shell.js";
+import { buildAccountUrl } from "./url-helpers.js";
 
 function renderButton(url, label) {
   return `
@@ -17,7 +17,7 @@ function renderButton(url, label) {
 
 export function renderWelcomeUserEmail({ user, accountUrl } = {}) {
   const name = buildCustomerName(user);
-  const targetUrl = accountUrl || `${env.publicSiteUrl}/cuenta`;
+  const targetUrl = accountUrl || buildAccountUrl();
   const subject = "Bienvenido/a a ESADAR";
   const preheader = "Tu cuenta ya está lista para guardar prendas, hacer ofertas y comprar.";
   const text = [

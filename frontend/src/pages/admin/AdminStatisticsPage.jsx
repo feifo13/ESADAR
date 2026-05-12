@@ -6,6 +6,7 @@ import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { buildQueryString } from "../../lib/query.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const initialFilters = {
   dateFrom: "",
@@ -452,7 +453,7 @@ export default function AdminStatisticsPage() {
       </section>
 
       {loading ? (
-        <div className="section-card">Cargando estadisticas...</div>
+        <div className="section-card"><AppLoader variant="card" label="Cargando estadísticas" /></div>
       ) : null}
 
       {summary ? (

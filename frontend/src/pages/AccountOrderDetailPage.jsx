@@ -9,6 +9,7 @@ import { useNotification } from "../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
 import { formatPaymentMethod } from "../lib/paymentMethods.js";
+import AppLoader from "../components/AppLoader.jsx";
 
 const ORDER_STATUS_LABELS = {
   RESERVED: "Reservada",
@@ -96,7 +97,7 @@ export default function AccountOrderDetailPage() {
 
       {loading ? (
         <section className="section-card">
-          <p className="muted-copy">Cargando orden...</p>
+          <AppLoader variant="card" label="Cargando orden" />
         </section>
       ) : null}
 

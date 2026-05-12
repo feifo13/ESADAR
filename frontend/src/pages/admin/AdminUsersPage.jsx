@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { BanIcon, CheckIcon, XIcon } from "../../components/ActionIcons.jsx";
+import { BanIcon, CheckIcon, EditIcon, XIcon } from "../../components/ActionIcons.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const USER_STATUS_LABELS = {
   ACTIVE: "Activo",
@@ -288,7 +290,7 @@ export default function AdminUsersPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando usuarios" /> : null}
 
         <AdminPagination
           className="pagination-row--top"
@@ -402,6 +404,15 @@ export default function AdminUsersPage() {
                       <td data-label="Alta">{formatDate(user.createdAt)}</td>
                       <td data-label="Acciones">
                         <div className="table-actions">
+                          <Link
+                            to={`/admin/users/${user.id}/edit`}
+                            className="ghost-button admin-icon-action"
+                            aria-label={`Editar usuario ${getUserDisplayName(user)}`}
+                            title="Editar"
+                          >
+                            <EditIcon />
+                          </Link>
+
                           {user.isActive ? (
                             <button
                               type="button"

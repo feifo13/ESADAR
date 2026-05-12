@@ -1,3 +1,5 @@
+import { reportApiError } from './clientLogger.js';
+
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export function getApiUrl() {
@@ -60,11 +62,17 @@ export async function apiFetch(path, options = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-    body: isFormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      body: isFormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch (error) {
+    reportApiError(error, { path, method: options.method || 'GET', type: 'network' });
+    throw error;
+  }
 
   let payload = null;
   const text = await response.text();
@@ -79,6 +87,7 @@ export async function apiFetch(path, options = {}) {
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;
+    reportApiError(error, { path, method: options.method || 'GET', statusCode: response.status });
     throw error;
   }
 
@@ -188,11 +197,17 @@ function getDownloadFileName(disposition = '') {
 
 export async function apiDownload(path, options = {}) {
   const headers = getAuthHeaders(options.headers || {}, options.token);
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method || 'GET',
-    headers,
-    body: options.body,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: options.method || 'GET',
+      headers,
+      body: options.body,
+    });
+  } catch (error) {
+    reportApiError(error, { path, method: options.method || 'GET', type: 'network' });
+    throw error;
+  }
 
   if (!response.ok) {
     let payload = null;
@@ -207,6 +222,7 @@ export async function apiDownload(path, options = {}) {
     const error = new Error(message);
     error.status = response.status;
     error.payload = payload;
+    reportApiError(error, { path, method: options.method || 'GET', statusCode: response.status });
     throw error;
   }
 

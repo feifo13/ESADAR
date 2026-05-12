@@ -11,6 +11,7 @@ import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const FORM_STEPS = [
   { key: "main", label: "Paso 1", title: "Datos principales" },
@@ -606,7 +607,11 @@ export default function AdminArticleFormPage() {
             sortOrder: previousImagesCount + index,
           };
 
-          if (upload.value.isPrimary) {
+          const shouldMarkPrimary =
+            upload.value.isPrimary ||
+            (selectedImageUploads.length === 1 && previousImagesCount === 0);
+
+          if (shouldMarkPrimary) {
             pendingPrimaryPatch.push({ uploadedImage, patchPayload });
           } else {
             await apiFetch(
@@ -797,7 +802,7 @@ export default function AdminArticleFormPage() {
   if (loading) {
     return (
       <div className="container section-card centered-card">
-        Cargando articulo...
+        <AppLoader variant="card" label="Cargando artículo" />
       </div>
     );
   }

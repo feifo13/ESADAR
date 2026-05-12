@@ -17,6 +17,7 @@ import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { formatPaymentMethod } from "../../lib/paymentMethods.js";
 import { buildQueryString } from "../../lib/query.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const PAYMENT_STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -332,7 +333,7 @@ export default function AdminOrdersPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando Orders" /> : null}
 
         <AdminPagination
           className="pagination-row--top"

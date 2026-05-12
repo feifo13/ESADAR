@@ -9,6 +9,7 @@ import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 import { formatPaymentMethod } from '../../lib/paymentMethods.js';
+import AppLoader from "../../components/AppLoader.jsx";
 
 const HISTORY_STATUS_LABELS = {
   RESERVED: 'Reservada',
@@ -130,7 +131,7 @@ export default function AdminOrderDetailPage() {
   }
 
   if (loading) {
-    return <div className="container section-card centered-card">Cargando orden...</div>;
+    return <div className="container section-card centered-card"><AppLoader variant="card" label="Cargando orden" /></div>;
   }
 
   if (error && !order) {

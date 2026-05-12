@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { installClientErrorListeners } from './lib/clientLogger.js';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { CartProvider } from './contexts/CartContext.jsx';
@@ -18,6 +20,7 @@ if (typeof window !== 'undefined') {
   }
 
   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  installClientErrorListeners();
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -29,7 +32,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <SiteSeoProvider>
               <WishlistProvider>
                 <CartProvider>
-                  <App />
+                  <ErrorBoundary>
+                    <App />
+                  </ErrorBoundary>
                 </CartProvider>
               </WishlistProvider>
             </SiteSeoProvider>

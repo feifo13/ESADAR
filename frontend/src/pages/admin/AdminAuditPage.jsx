@@ -7,6 +7,7 @@ import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const initialFilters = {
   q: "",
@@ -254,7 +255,7 @@ export default function AdminAuditPage() {
           </div>
         </ResponsiveFilterPanel>
 
-        {loading ? <div className="centered-card">Cargando...</div> : null}
+        {loading ? <AppLoader variant="card" label="Cargando Audit" /> : null}
 
         <AdminPagination
           className="pagination-row--top"

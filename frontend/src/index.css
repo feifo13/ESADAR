@@ -13897,3 +13897,146 @@ dialog,
     transition-duration: 1ms !important;
   }
 }
+
+/* ESADAR unified loading state */
+.app-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 96px;
+}
+
+.app-loader--page,
+.app-loader--card {
+  min-height: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.app-loader--inline {
+  width: auto;
+  min-height: 40px;
+}
+
+.app-loader--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  min-height: 100dvh;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.app-loader__logo {
+  width: 54px;
+  height: auto;
+  animation: esadar-loader-spin 1.05s linear infinite;
+  transform-origin: center;
+}
+
+.app-loader--inline .app-loader__logo {
+  width: 32px;
+}
+
+@keyframes esadar-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loader__logo {
+    animation: none;
+  }
+}
+
+.error-boundary-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* ESADAR final hardening overrides: fixed light theme, footer loading guard, offer color, galleries and admin toolbar split. */
+:root,
+:root[data-theme],
+:root[data-color-mode] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #eef7f8;
+  --text: #102b34;
+  --muted: #667b82;
+  --border: rgba(16, 43, 52, 0.14);
+  --aqua: #00a7b3;
+  --orange: #fc4c02;
+  --navy: #002244;
+  --pill-offer-bg: var(--orange);
+  --pill-offer-text: #ffffff;
+}
+
+.app-shell--route-loading .footer-scroll-scene,
+.app-shell--intro-active .footer-scroll-scene,
+.app-shell:not(.app-shell--content-ready) .footer-scroll-scene {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.app-shell--has-footer-reveal.app-shell--route-loading,
+.app-shell--has-footer-reveal.app-shell--intro-active {
+  margin-bottom: 0 !important;
+}
+
+.article-gallery-layout--single,
+.gallery-shell--single {
+  align-items: stretch;
+}
+
+.article-gallery-layout--single .article-gallery-thumbs,
+.gallery-shell--single .gallery-thumbs {
+  display: flex;
+}
+
+.article-card-ribbon--offerable,
+.pill-offer,
+.badge-offer,
+.offer-badge,
+.summary-item-card__offer-badge {
+  background: var(--orange) !important;
+  border-color: var(--orange) !important;
+  color: #ffffff !important;
+}
+
+.admin-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.admin-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-toolbar__group--right {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.admin-icon-action--danger {
+  border-color: color-mix(in srgb, var(--orange) 42%, var(--border)) !important;
+  color: var(--orange) !important;
+}
+
+@media (max-width: 899px) {
+  .admin-toolbar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .admin-toolbar__group {
+    display: contents;
+  }
+}

@@ -12,6 +12,7 @@ import { apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { articlePath } from "../../lib/routes.js";
 import { buildQueryString } from "../../lib/query.js";
+import AppLoader from "../../components/AppLoader.jsx";
 
 const ALERT_STATUS_LABELS = {
   ACTIVE: "Activa",
@@ -369,7 +370,7 @@ export default function AdminWishlistsPage() {
         ) : null}
 
         {loading ? (
-          <p className="muted-copy">Cargando analitica de guardados...</p>
+          <AppLoader variant="inline" label="Cargando analítica de guardados" />
         ) : null}
       </section>
 
@@ -530,7 +531,7 @@ export default function AdminWishlistsPage() {
           </div>
 
           {detailLoading ? (
-            <p className="muted-copy">Cargando detalle...</p>
+            <AppLoader variant="inline" label="Cargando detalle" />
           ) : null}
           {selectedWishlist ? (
             <>

@@ -1,8 +1,8 @@
-import { env } from "../../../config/env.js";
 import { escapeHtml } from "../mail.escape.js";
 import { getArticleEmailImageUrl } from "../mail.assets.js";
 import { buildCustomerName, formatCurrencyUYU } from "../mail.format.js";
 import { renderEmailShell } from "./base-shell.js";
+import { buildArticleUrl } from "./url-helpers.js";
 
 function renderButton(url, label) {
   return `
@@ -36,8 +36,7 @@ function renderArticleImage(imageUrl, title) {
 export function renderAcceptedOfferEmail({ offer } = {}) {
   const name = buildCustomerName(offer?.contact);
   const articleTitle = offer?.article?.title || "la prenda";
-  const articleSlugOrId = offer?.article?.slug || offer?.article?.id || "";
-  const articleUrl = `${env.publicSiteUrl}/articles/${articleSlugOrId}`;
+  const articleUrl = buildArticleUrl(offer?.article);
   const amount = formatCurrencyUYU(offer?.offeredAmount, offer?.currencyCode || "UYU");
   const imageUrl = getArticleEmailImageUrl(offer?.article?.image || offer?.article);
   const subject = `Aceptamos tu oferta - ${articleTitle}`;

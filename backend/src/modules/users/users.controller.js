@@ -1,7 +1,7 @@
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
-import { adminUserListQuerySchema, adminUserStatusSchema } from './users.schemas.js';
-import { deleteUser, listUsers, setUserActiveStatus } from './users.service.js';
+import { adminUserListQuerySchema, adminUserStatusSchema, adminUserUpdateSchema } from './users.schemas.js';
+import { deleteUser, getUserByIdForAdmin, listUsers, setUserActiveStatus, updateUserForAdmin } from './users.service.js';
 
 function getAuditContext(req) {
   return {
@@ -18,6 +18,18 @@ export async function getAdminUsers(req, res) {
   const pagination = getPagination(filters, { pageSize: 25 });
   const result = await listUsers({ filters, pagination });
   return res.json({ ok: true, ...result });
+}
+
+
+export async function getAdminUser(req, res) {
+  const user = await getUserByIdForAdmin(parsePositiveIntParam(req.params.id, 'id'));
+  return res.json({ ok: true, user });
+}
+
+export async function updateAdminUser(req, res) {
+  const input = adminUserUpdateSchema.parse(req.body);
+  const user = await updateUserForAdmin(parsePositiveIntParam(req.params.id, 'id'), input, getAuditContext(req));
+  return res.json({ ok: true, user });
 }
 
 export async function updateAdminUserStatus(req, res) {
