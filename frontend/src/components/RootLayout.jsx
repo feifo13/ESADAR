@@ -39,7 +39,7 @@ export default function RootLayout() {
   const shouldNoIndex =
     isCheckoutView || isAdminView || isAuthView || isAccountView;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === "undefined" || !("scrollRestoration" in window.history)) {
       return undefined;
     }

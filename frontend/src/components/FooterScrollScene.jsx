@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import esadarWordmark from "../assets/esadar-wordmark.png";
 
@@ -26,6 +26,7 @@ export default function FooterScrollScene() {
     const appShell = document.querySelector(".app-shell");
     if (!appShell) return;
 
+    appShell.classList.add("app-shell--has-footer-reveal");
     appShell.style.setProperty("--footer-scroll-progress", "0");
     appShell.style.setProperty("--header-footer-hide-progress", "0");
     appShell.classList.remove(
@@ -35,7 +36,7 @@ export default function FooterScrollScene() {
     );
   }, [location.key]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const appShell = document.querySelector(".app-shell");
