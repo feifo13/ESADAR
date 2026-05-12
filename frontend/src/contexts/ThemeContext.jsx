@@ -1,48 +1,25 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../lib/storage.js';
-import { THEME_IDS, THEME_MAP, THEME_OPTIONS, getThemeGroups } from '../constants/themes.js';
+import { createContext, useContext, useEffect, useMemo } from 'react';
+import { THEME_MAP, THEME_OPTIONS } from '../constants/themes.js';
 
 const ThemeContext = createContext(null);
-const STORAGE_KEY = 'miami-closet-theme';
-const FONT_STORAGE_KEY = 'esadar-theme-font';
-const BRAND_FONT_BODY = "'Neo Grotesk', 'Sharp Light 01', system-ui, sans-serif";
-const BRAND_FONT_DISPLAY = "'Sharp Light 01', 'Neo Grotesk', system-ui, sans-serif";
 
-const FONT_OPTIONS = [
-  {
-    id: 'brand',
-    label: 'Sharp / Neo',
-    body: BRAND_FONT_BODY,
-    display: BRAND_FONT_DISPLAY,
-  },
-  {
-    id: 'neo',
-    label: 'Neo Grotesk',
-    body: BRAND_FONT_BODY,
-    display: BRAND_FONT_BODY,
-  },
-  {
-    id: 'sport',
-    label: 'Sport Condensed',
-    body: "'Arial Narrow', 'Helvetica Neue', Arial, sans-serif",
-    display: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
-  },
-  {
-    id: 'editorial',
-    label: 'Editorial Serif',
-    body: "Georgia, 'Times New Roman', serif",
-    display: "Georgia, 'Times New Roman', serif",
-  },
-  {
-    id: 'mono',
-    label: 'Mono Accent',
-    body: BRAND_FONT_BODY,
-    display: "'Courier New', monospace",
-  },
+const FIXED_THEME_ID = 'sharp-lab-light-01';
+const FIXED_FONT_ID = 'brand';
+const STORAGE_KEYS_TO_CLEAR = [
+  'miami-closet-theme',
+  'esadar-theme-font',
+  'esadar-theme-dock-hidden',
 ];
 
-const FONT_IDS = FONT_OPTIONS.map((font) => font.id);
-const FONT_MAP = Object.fromEntries(FONT_OPTIONS.map((font) => [font.id, font]));
+const BRAND_FONT_BODY = "'Neo Grotesk', system-ui, sans-serif";
+const BRAND_FONT_DISPLAY = "'Neo Grotesk', system-ui, sans-serif";
+
+const FIXED_FONT = {
+  id: FIXED_FONT_ID,
+  label: 'Neo Grotesk',
+  body: BRAND_FONT_BODY,
+  display: BRAND_FONT_DISPLAY,
+};
 
 const THEME_VARIABLE_KEYS = Array.from(
   new Set(
@@ -71,86 +48,64 @@ function getThemeMode(theme) {
   return luminance < 0.58 ? 'dark' : 'light';
 }
 
-function normalizeFont(rawFont) {
-  if (FONT_IDS.includes(rawFont)) return rawFont;
-  return 'brand';
-}
-
-function normalizeTheme(rawTheme) {
-  if (rawTheme === 'alt') return 'marine';
-  if (THEME_IDS.includes(rawTheme)) return rawTheme;
-  return 'default';
-}
-
-function applyFontVariables(fontId) {
+function applyFontVariables() {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const font = FONT_MAP[fontId] || FONT_MAP.brand;
-  root.style.setProperty('--font-body', font.body);
-  root.style.setProperty('--font-display', font.display);
+  root.style.setProperty('--font-body', FIXED_FONT.body);
+  root.style.setProperty('--font-display', FIXED_FONT.display);
 }
 
-function applyThemeVariables(themeId) {
+function applyThemeVariables() {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const theme = THEME_MAP[themeId] || THEME_MAP.default;
+  const theme = THEME_MAP[FIXED_THEME_ID];
 
   THEME_VARIABLE_KEYS.forEach((key) => {
     root.style.removeProperty(key);
   });
 
-  Object.entries(theme.vars || {}).forEach(([key, value]) => {
+  Object.entries(theme?.vars || {}).forEach(([key, value]) => {
     root.style.setProperty(key, value);
   });
 }
 
+function clearThemeStorage() {
+  if (typeof window === 'undefined') return;
+  STORAGE_KEYS_TO_CLEAR.forEach((key) => {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // localStorage can be unavailable in private browsing modes.
+    }
+  });
+}
 
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(() => normalizeTheme(storage.get(STORAGE_KEY, 'default')));
-  const [font, setFontState] = useState(() => normalizeFont(storage.get(FONT_STORAGE_KEY, 'brand')));
-
-  function setTheme(nextTheme) {
-    setThemeState(normalizeTheme(nextTheme));
-  }
-
-  function setFont(nextFont) {
-    setFontState(normalizeFont(nextFont));
-  }
-
   useEffect(() => {
-    const themeConfig = THEME_MAP[theme] || THEME_MAP.default;
-    document.documentElement.dataset.theme = theme;
+    const themeConfig = THEME_MAP[FIXED_THEME_ID];
+    document.documentElement.dataset.theme = FIXED_THEME_ID;
     document.documentElement.dataset.colorMode = getThemeMode(themeConfig);
-    applyThemeVariables(theme);
-    storage.set(STORAGE_KEY, theme);
-  }, [theme]);
+    applyThemeVariables();
+    applyFontVariables();
+    clearThemeStorage();
+  }, []);
 
-  useEffect(() => {
-    applyFontVariables(font);
-    storage.set(FONT_STORAGE_KEY, font);
-  }, [font]);
-
-  const value = useMemo(
-    () => ({
-      theme,
-      themes: THEME_OPTIONS,
-      themeGroups: getThemeGroups(),
-      setTheme,
-      font,
-      fonts: FONT_OPTIONS,
-      setFont,
-      cycleTheme: () => {
-        const currentIndex = THEME_IDS.indexOf(theme);
-        const nextIndex = (currentIndex + 1) % THEME_IDS.length;
-        setTheme(THEME_IDS[nextIndex]);
-      },
-      randomTheme: () => {
-        const nextIndex = Math.floor(Math.random() * THEME_IDS.length);
-        setTheme(THEME_IDS[nextIndex]);
-      },
-    }),
-    [font, theme],
-  );
+  const value = useMemo(() => {
+    const fixedTheme = THEME_MAP[FIXED_THEME_ID];
+    return {
+      theme: FIXED_THEME_ID,
+      themes: fixedTheme ? [fixedTheme] : [],
+      themeGroups: fixedTheme
+        ? [{ section: fixedTheme.section || 'Tema', items: [fixedTheme] }]
+        : [],
+      setTheme: () => undefined,
+      font: FIXED_FONT_ID,
+      fonts: [FIXED_FONT],
+      setFont: () => undefined,
+      cycleTheme: () => undefined,
+      randomTheme: () => undefined,
+    };
+  }, []);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

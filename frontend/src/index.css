@@ -1,11 +1,11 @@
 :root {
-  --bg: #f7fafb;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-soft: #eef4f5;
+  --surface-soft: #eef7f8;
   --text: #102b34;
-  --muted: #56737a;
-  --border: rgba(16, 43, 52, 0.12);
-  --aqua: #008e97;
+  --muted: #667b82;
+  --border: rgba(16, 43, 52, 0.14);
+  --aqua: #00a7b3;
   --orange: #fc4c02;
   --navy: #002244;
   --shadow: 0 16px 40px rgba(0, 34, 68, 0.08);
@@ -21,9 +21,9 @@
   --motion-fast: 240ms;
   --motion-smooth: 520ms;
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --font-primary: "Neo Grotesk", "Sharp Light 01", system-ui, sans-serif;
+  --font-primary: "Neo Grotesk", system-ui, sans-serif;
   --font-body: var(--font-primary);
-  --font-display: "Sharp Light 01", "Neo Grotesk", system-ui, sans-serif;
+  --font-display: "Neo Grotesk", system-ui, sans-serif;
 }
 
 :root[data-theme="alt"] {

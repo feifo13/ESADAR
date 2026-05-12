@@ -1,15 +1,13 @@
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Header from "./Header.jsx";
 import AppBreadcrumbs from "./AppBreadcrumbs.jsx";
-import ThemeDock from "./ThemeDock.jsx";
 import ScrollChrome from "./ScrollChrome.jsx";
 import FooterScrollScene from "./FooterScrollScene.jsx";
 import SeoHead from "./SeoHead.jsx";
 import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
 import AppSnackbar from "./AppSnackbar.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
-import { useAuth } from "../contexts/AuthContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.png";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
@@ -22,7 +20,6 @@ const CART_REPLAY_FADE_MS = 350;
 export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
-  const { user } = useAuth();
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
   const [introStage, setIntroStage] = useState("hidden");
   const [introKey, setIntroKey] = useState(0);
@@ -37,15 +34,33 @@ export default function RootLayout() {
   const isHeroView = isHome || location.pathname === "/articles";
   const isCheckoutView = location.pathname.startsWith("/checkout");
   const isAdminView = location.pathname.startsWith("/admin");
-  const canUseThemeDock = user?.roles?.some((role) =>
-    ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
-  );
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
   const shouldNoIndex =
     isCheckoutView || isAdminView || isAuthView || isAccountView;
 
   useEffect(() => {
+    if (typeof window === "undefined" || !("scrollRestoration" in window.history)) {
+      return undefined;
+    }
+
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    function handlePageShow(event) {
+      if (!event.persisted) return;
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const shouldPreserveScroll = Boolean(location.state?.preserveScroll);
@@ -55,15 +70,11 @@ export default function RootLayout() {
         ? scrollPositionsRef.current.get(location.key) || 0
         : 0;
 
-    let frameId = 0;
     if (!shouldPreserveScroll) {
-      frameId = window.requestAnimationFrame(() => {
-        window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
-      });
+      window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
     }
 
     return () => {
-      if (frameId) window.cancelAnimationFrame(frameId);
       const appShell = document.querySelector(".app-shell");
       const footerRevealActive = appShell?.classList.contains(
         "app-shell--footer-scroll-active",
@@ -154,7 +165,6 @@ export default function RootLayout() {
         </main>
       </MobileMenuProvider>
       {!shouldNoIndex ? <FooterScrollScene /> : null}
-      {canUseThemeDock ? <ThemeDock /> : null}
       <ScrollChrome />
 
       {showIntro ? (

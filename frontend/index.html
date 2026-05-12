@@ -7,6 +7,16 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <title>ESADAR</title>
+    <script id="esadar-initial-boot-state">
+      try {
+        if ("scrollRestoration" in window.history) {
+          window.history.scrollRestoration = "manual";
+        }
+        document.documentElement.dataset.theme = "sharp-lab-light-01";
+        document.documentElement.dataset.colorMode = "light";
+        window.scrollTo(0, 0);
+      } catch (_) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
