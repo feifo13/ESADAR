@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import MobileMotionMenu from "./MobileMotionMenu.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
-import esadarWordmark from "../assets/esadar-wordmark.png";
+import esadarWordmark from "../assets/esadar-wordmark.webp";
 
 function findVisibleTargetRect(...refs) {
   for (const ref of refs) {

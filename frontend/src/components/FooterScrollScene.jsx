@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
-import esadarWordmark from "../assets/esadar-wordmark.png";
+import esadarWordmark from "../assets/esadar-wordmark.webp";
 
 function clamp01(value) {
   if (!Number.isFinite(value)) return 0;

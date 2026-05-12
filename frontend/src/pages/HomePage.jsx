@@ -20,7 +20,7 @@ import ArticleFilters from "../components/ArticleFilters.jsx";
 import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import esadarWordmark from "../assets/esadar-wordmark.png";
+import esadarWordmark from "../assets/esadar-wordmark.webp";
 import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";

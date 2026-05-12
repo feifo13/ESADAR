@@ -8,7 +8,7 @@ import SeoHead from "./SeoHead.jsx";
 import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
 import AppSnackbar from "./AppSnackbar.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
-import esadarWordmark from "../assets/esadar-wordmark.png";
+import esadarWordmark from "../assets/esadar-wordmark.webp";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
