@@ -14040,3 +14040,66 @@ dialog,
     display: contents;
   }
 }
+
+/* ESADAR hotfix: keep single-image thumbnail compact beside main image. */
+@media (min-width: 781px) {
+  .article-gallery-layout--single {
+    grid-template-columns: 88px minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumbs {
+    display: grid !important;
+    grid-template-columns: 88px !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: unset !important;
+    align-items: start !important;
+    align-content: start !important;
+    justify-items: stretch !important;
+    overflow: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumb {
+    width: 88px !important;
+    height: 88px !important;
+    min-width: 88px !important;
+    min-height: 88px !important;
+    max-width: 88px !important;
+    max-height: 88px !important;
+    flex: 0 0 88px !important;
+    align-self: start !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumb__image {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+  }
+
+  .gallery-shell--single .gallery-thumbs {
+    display: grid !important;
+    grid-template-columns: 88px !important;
+    grid-auto-columns: unset !important;
+    align-content: start !important;
+    justify-content: start !important;
+  }
+
+  .gallery-shell--single .gallery-thumb {
+    width: 88px !important;
+    height: 88px !important;
+    min-width: 88px !important;
+    min-height: 88px !important;
+    max-width: 88px !important;
+    max-height: 88px !important;
+    flex: 0 0 88px !important;
+  }
+
+  .gallery-shell--single .gallery-thumb-image {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+  }
+}
