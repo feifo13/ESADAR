@@ -69,26 +69,40 @@ const publicBaseSelect = `
     s.code AS sizeCode,
     a.size_text AS sizeText,
     (
-      SELECT COALESCE(ai.card_file_path, ai.detail_file_path, ai.file_path)
+      SELECT COALESCE(ai.card_file_path, ai.thumb_file_path, ai.detail_file_path, ai.file_path)
       FROM article_images ai
       WHERE ai.article_id = a.id
       ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
       LIMIT 1
     ) AS primaryImage,
     (
-      SELECT COALESCE(ai.detail_file_path, ai.file_path)
+      SELECT COALESCE(ai.card_file_path, ai.thumb_file_path, ai.detail_file_path, ai.file_path)
+      FROM article_images ai
+      WHERE ai.article_id = a.id
+      ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+      LIMIT 1
+    ) AS primaryImageCard,
+    (
+      SELECT COALESCE(ai.detail_file_path, ai.card_file_path, ai.file_path)
       FROM article_images ai
       WHERE ai.article_id = a.id
       ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
       LIMIT 1
     ) AS primaryImageDetail,
     (
-      SELECT COALESCE(ai.thumb_file_path, ai.file_path)
+      SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
       FROM article_images ai
       WHERE ai.article_id = a.id
       ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
       LIMIT 1
     ) AS primaryImageThumb,
+    (
+      SELECT COALESCE(ai.original_file_path, ai.file_path)
+      FROM article_images ai
+      WHERE ai.article_id = a.id
+      ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+      LIMIT 1
+    ) AS primaryImageOriginal,
     (
       SELECT COALESCE(ai.alt_text, a.image_alt_override, a.title)
       FROM article_images ai
@@ -626,9 +640,15 @@ function normalizeArticleRow(row) {
       id: Number(row.sizeId),
       code: row.sizeCode,
     } : null,
-    primaryImage: normalizePublicAssetPath(row.primaryImage || row.primaryImageDetail || ''),
-    primaryImageDetail: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImage || ''),
-    primaryImageThumb: normalizePublicAssetPath(row.primaryImageThumb || row.primaryImage || ''),
+    primaryImage: normalizePublicAssetPath(row.primaryImage || row.primaryImageCard || row.primaryImageDetail || ''),
+    primaryImageCard: normalizePublicAssetPath(row.primaryImageCard || row.primaryImage || row.primaryImageDetail || ''),
+    primaryImageDetail: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImageCard || row.primaryImage || ''),
+    primaryImageThumb: normalizePublicAssetPath(row.primaryImageThumb || row.primaryImageCard || row.primaryImage || ''),
+    primaryImageOriginal: normalizePublicAssetPath(row.primaryImageOriginal || row.primaryImageDetail || row.primaryImage || ''),
+    imageThumbUrl: normalizePublicAssetPath(row.primaryImageThumb || row.primaryImageCard || row.primaryImage || ''),
+    imageCardUrl: normalizePublicAssetPath(row.primaryImageCard || row.primaryImage || row.primaryImageDetail || ''),
+    imageDetailUrl: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImageCard || row.primaryImage || ''),
+    imageOriginalUrl: normalizePublicAssetPath(row.primaryImageOriginal || row.primaryImageDetail || row.primaryImage || ''),
     primaryImageAlt: row.primaryImageAlt || row.imageAltOverride || row.title,
   };
 

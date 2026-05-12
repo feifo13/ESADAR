@@ -22,6 +22,24 @@ export function buildArticleUploadPublicPath(fileName) {
   return normalizePublicAssetPath(`uploads/articles/${safeFileName}`);
 }
 
+export function buildUploadPublicPathFromDiskPath(diskPath) {
+  const safeDiskPath = path.resolve(String(diskPath || ''));
+  const uploadRoot = path.resolve(env.uploadDir);
+  const relativePath = path.relative(uploadRoot, safeDiskPath);
+
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return buildArticleUploadPublicPath(path.basename(safeDiskPath));
+  }
+
+  return normalizePublicAssetPath(`uploads/${relativePath.split(path.sep).join('/')}`);
+}
+
+export function buildSiblingUploadPublicPath(originalPublicPath, fileName) {
+  const normalized = normalizePublicAssetPath(originalPublicPath);
+  const directory = normalized.split('/').slice(0, -1).join('/') || '/uploads/articles';
+  return normalizePublicAssetPath(`${directory}/${path.basename(String(fileName || ''))}`);
+}
+
 export function toAbsoluteSiteUrl(value) {
   const normalized = normalizePublicAssetPath(value);
   if (!normalized) return '';

@@ -1,14 +1,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
-import { buildArticleUploadPublicPath, isManagedUploadPath, normalizePublicAssetPath, resolveUploadDiskPath } from '../../utils/assets.js';
+import {
+  buildSiblingUploadPublicPath,
+  buildUploadPublicPathFromDiskPath,
+  isManagedUploadPath,
+  normalizePublicAssetPath,
+  resolveUploadDiskPath,
+} from '../../utils/assets.js';
 
 const VARIANTS = [
-  { key: 'thumb', width: 320 },
-  { key: 'card', width: 800 },
-  { key: 'detail', width: 1200 },
-  { key: 'zoom', width: 1800 },
+  { key: 'thumb', width: 320, quality: 76 },
+  { key: 'card', width: 640, quality: 80 },
+  { key: 'detail', width: 1200, quality: 84 },
+  { key: 'zoom', width: 1800, quality: 86 },
 ];
+
+const VARIANT_SUFFIX_PATTERN = /-(thumb|card|detail|zoom)\.webp$/i;
 
 function rgbToHex(value) {
   const normalized = Number(value || 0);
@@ -20,21 +28,37 @@ function dominantToHex(color) {
   return `#${rgbToHex(color.r)}${rgbToHex(color.g)}${rgbToHex(color.b)}`;
 }
 
-export async function processUploadedArticleImage(file, options = {}) {
-  const diskPath = String(file?.path || '');
-  const parsed = path.parse(diskPath);
-  const originalPublicPath = buildArticleUploadPublicPath(parsed.base);
+function getMimeTypeFromMetadata(metadata, fallback = null) {
+  if (fallback) return fallback;
+  if (!metadata?.format) return null;
+  if (metadata.format === 'jpg') return 'image/jpeg';
+  return `image/${metadata.format}`;
+}
 
-  const baseImage = sharp(diskPath, { failOn: 'none' });
+function buildVariantFileName(sourceFileName, variantKey) {
+  const parsed = path.parse(sourceFileName);
+  const baseName = parsed.name.replace(VARIANT_SUFFIX_PATTERN, '');
+  return `${baseName}-${variantKey}.webp`;
+}
+
+async function processArticleImageDiskPath(diskPath, options = {}) {
+  const safeDiskPath = path.resolve(String(diskPath || ''));
+  const parsed = path.parse(safeDiskPath);
+  const originalPublicPath = normalizePublicAssetPath(
+    options.originalPublicPath || buildUploadPublicPathFromDiskPath(safeDiskPath),
+  );
+
+  const baseImage = sharp(safeDiskPath, { failOn: 'none' });
   const metadata = await baseImage.metadata();
   const stats = await baseImage.stats();
-  const fileStats = await fs.stat(diskPath);
+  const fileStats = await fs.stat(safeDiskPath);
 
   const variants = {};
   for (const variant of VARIANTS) {
-    const outputFileName = `${parsed.name}-${variant.key}.webp`;
+    const outputFileName = buildVariantFileName(parsed.base, variant.key);
     const outputDiskPath = path.join(parsed.dir, outputFileName);
-    await sharp(diskPath, { failOn: 'none' })
+
+    await sharp(safeDiskPath, { failOn: 'none' })
       .rotate()
       .resize({
         width: variant.width,
@@ -42,27 +66,53 @@ export async function processUploadedArticleImage(file, options = {}) {
         withoutEnlargement: true,
       })
       .flatten({ background: options.background || '#f3eee7' })
-      .webp({ quality: 84 })
+      .webp({ quality: variant.quality, effort: 5 })
       .toFile(outputDiskPath);
 
-    variants[`${variant.key}FilePath`] = buildArticleUploadPublicPath(outputFileName);
+    variants[`${variant.key}FilePath`] = buildSiblingUploadPublicPath(
+      originalPublicPath,
+      outputFileName,
+    );
   }
 
   return {
+    // Keep filePath as a detail-size optimized asset for backwards compatibility.
+    // Cards/lists must prefer cardFilePath/thumbFilePath from the API response.
     filePath: variants.detailFilePath || originalPublicPath,
     originalFilePath: originalPublicPath,
     thumbFilePath: variants.thumbFilePath || originalPublicPath,
-    cardFilePath: variants.cardFilePath || originalPublicPath,
+    cardFilePath: variants.cardFilePath || variants.thumbFilePath || originalPublicPath,
     detailFilePath: variants.detailFilePath || originalPublicPath,
-    zoomFilePath: variants.zoomFilePath || originalPublicPath,
+    zoomFilePath: variants.zoomFilePath || variants.detailFilePath || originalPublicPath,
     width: metadata.width || null,
     height: metadata.height || null,
-    mimeType: file?.mimetype || (metadata.format ? `image/${metadata.format}` : null),
+    mimeType: getMimeTypeFromMetadata(metadata, options.mimeType),
     fileSizeBytes: Number(fileStats.size || 0),
     dominantColor: dominantToHex(stats?.dominant),
     processedStatus: 'DONE',
     processingError: null,
   };
+}
+
+export async function processUploadedArticleImage(file, options = {}) {
+  return processArticleImageDiskPath(file?.path, {
+    ...options,
+    mimeType: file?.mimetype || null,
+  });
+}
+
+export async function processManagedArticleImagePath(imagePath, options = {}) {
+  const normalized = normalizePublicAssetPath(imagePath);
+  if (!normalized || !isManagedUploadPath(normalized)) {
+    throw new Error('La imagen no pertenece a uploads.');
+  }
+
+  const diskPath = resolveUploadDiskPath(normalized);
+  await fs.access(diskPath);
+  return processArticleImageDiskPath(diskPath, {
+    ...options,
+    originalPublicPath: normalized,
+  });
 }
 
 export async function buildImportedImageRecord(imagePath) {
@@ -91,25 +141,9 @@ export async function buildImportedImageRecord(imagePath) {
     };
   }
 
-  const diskPath = resolveUploadDiskPath(normalized);
   try {
-    await fs.access(diskPath);
-    return {
-      filePath: normalized,
-      originalFilePath: normalized,
-      thumbFilePath: normalized,
-      cardFilePath: normalized,
-      detailFilePath: normalized,
-      zoomFilePath: normalized,
-      width: null,
-      height: null,
-      mimeType: null,
-      fileSizeBytes: null,
-      dominantColor: null,
-      processedStatus: 'DONE',
-      processingError: null,
-    };
-  } catch {
+    return await processManagedArticleImagePath(normalized);
+  } catch (error) {
     return {
       filePath: normalized,
       originalFilePath: normalized,
@@ -123,7 +157,7 @@ export async function buildImportedImageRecord(imagePath) {
       fileSizeBytes: null,
       dominantColor: null,
       processedStatus: 'PENDING',
-      processingError: 'La imagen referenciada todavia no existe en uploads.',
+      processingError: error?.message || 'La imagen referenciada todavia no se pudo procesar.',
     };
   }
 }

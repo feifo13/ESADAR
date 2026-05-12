@@ -449,7 +449,7 @@ async function getCartById(cartId, connection) {
         b.name AS brandName,
         COALESCE(s.code, a.size_text) AS sizeLabel,
         (
-          SELECT ai.file_path
+          SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
           WHERE ai.article_id = a.id
           ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
