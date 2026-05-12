@@ -99,7 +99,7 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
     title: article.title,
     brandName: article.brandName,
     sizeLabel: article.sizeText || article.sizeCode || '',
-    image: article.primaryImage || article.images?.[0]?.filePath || article.images?.[0]?.file_path || '',
+    image: article.imageThumbUrl || article.imageCardUrl || article.primaryImageThumb || article.primaryImageCard || article.primaryImage || article.images?.[0]?.thumbFilePath || article.images?.[0]?.thumb_file_path || article.images?.[0]?.cardFilePath || article.images?.[0]?.card_file_path || article.images?.[0]?.filePath || article.images?.[0]?.file_path || '',
     salePrice: Number(article.salePrice || 0),
     discountType: article.discountType || 'NONE',
     discountValue: Number(article.discountValue || 0),

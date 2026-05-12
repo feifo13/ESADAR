@@ -49,23 +49,18 @@ export default function ArticleCard({
   const showOfferRibbon = article.allowOffers && !isSoldOut;
   const detailPath = articlePath(article);
   const offerPath = articleOfferPath(article);
-  const imageSources =
-    article.primaryImageThumb || article.primaryImage || article.primaryImageDetail
-      ? [
-          article.primaryImageDetail
-            ? {
-                srcSet: `${article.primaryImageDetail} 900w`,
-                media: "(min-width: 720px)",
-              }
-            : null,
-          article.primaryImage
-            ? { srcSet: `${article.primaryImage} 560w` }
-            : null,
-          article.primaryImageThumb
-            ? { srcSet: `${article.primaryImageThumb} 320w` }
-            : null,
-        ].filter(Boolean)
-      : [];
+  const imageThumb = article.imageThumbUrl || article.primaryImageThumb || "";
+  const imageCard = article.imageCardUrl || article.primaryImageCard || article.primaryImage || "";
+  const imageDetail = article.imageDetailUrl || article.primaryImageDetail || "";
+  const cardImageSrc = imageCard || imageThumb || imageDetail;
+  const cardImageSrcSet = [
+    imageThumb ? `${imageThumb} 320w` : null,
+    imageCard ? `${imageCard} 640w` : null,
+    imageDetail ? `${imageDetail} 1200w` : null,
+  ]
+    .filter(Boolean)
+    .filter((entry, index, list) => list.indexOf(entry) === index)
+    .join(", ");
 
   const optimisticWishlistItem = {
     articleId: article.id,
@@ -82,7 +77,7 @@ export default function ArticleCard({
     quantityAvailable: article.quantityAvailable,
     brandName: article.brandName,
     sizeLabel,
-    image: article.primaryImage || "",
+    image: cardImageSrc || "",
     allowOffers: article.allowOffers,
   };
 
@@ -159,17 +154,13 @@ export default function ArticleCard({
           ) : null}
           <div className="featured-motion-card__media">
             <SmartImage
-              src={
-                article.primaryImageThumb ||
-                article.primaryImage ||
-                article.primaryImageDetail
-              }
+              src={cardImageSrc}
+              srcSet={cardImageSrcSet}
               alt={article.primaryImageAlt || article.title}
               fallbackLabel={article.title}
               loading="lazy"
               fetchPriority="low"
               sizes="(max-width: 719px) 92vw, 33vw"
-              sources={imageSources}
               className="article-card-editorial-image featured-motion-card__image"
             />
           </div>
@@ -228,17 +219,13 @@ export default function ArticleCard({
             </span>
           ) : null}
           <SmartImage
-            src={
-              article.primaryImageThumb ||
-              article.primaryImage ||
-              article.primaryImageDetail
-            }
+            src={cardImageSrc}
+            srcSet={cardImageSrcSet}
             alt={article.primaryImageAlt || article.title}
             fallbackLabel={article.title}
             loading="lazy"
             fetchPriority="low"
             sizes="(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 260px"
-            sources={imageSources}
           />
         </Link>
 
