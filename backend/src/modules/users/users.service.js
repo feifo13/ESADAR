@@ -4,6 +4,7 @@ import { badRequest, notFound } from '../../utils/app-error.js';
 import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
+import { hashPassword } from '../../utils/password.js';
 
 const USER_SORTS = {
   createdAt: (direction) => `u.created_at ${direction}, u.id ${direction}`,
@@ -297,6 +298,58 @@ export async function updateUserForAdmin(userId, input, auditContext) {
         entityId: userId,
         beforeJson: before,
         afterJson: after,
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
+}
+
+
+export async function updateUserPasswordForAdmin(userId, input, auditContext) {
+  return withTransaction(async (connection) => {
+    const before = await getUserForAdmin(userId, connection, { forUpdate: true });
+    if (!before) throw notFound('Usuario no encontrado.');
+
+    const passwordHash = await hashPassword(input.password);
+
+    await connection.execute(
+      `
+        UPDATE users
+        SET
+          password_hash = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [passwordHash, auditContext.actorUserId || null, userId],
+    );
+
+    await connection.execute(
+      `
+        UPDATE password_reset_tokens
+        SET used_at = COALESCE(used_at, NOW())
+        WHERE user_id = ?
+          AND used_at IS NULL
+      `,
+      [userId],
+    );
+
+    const after = await getUserForAdmin(userId, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId,
+        actorLabel: auditContext.actorLabel,
+        actionCode: 'USER_PASSWORD_CHANGED_BY_ADMIN',
+        entityType: 'users',
+        entityId: userId,
+        beforeJson: { id: before.id, email: before.email, roles: before.roles },
+        afterJson: { id: after.id, email: after.email, roles: after.roles },
+        metadataJson: { mode: 'super-admin-reset' },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,

@@ -11,6 +11,7 @@ import {
   getAdminArticle,
   getAdminArticles,
   getPublicArticle,
+  getPublicArticleAvailability,
   getPublicArticles,
   getPublicRelatedArticles,
   importAdminArticles,
@@ -30,6 +31,7 @@ const publicRouter = Router();
 const adminRouter = Router();
 
 publicRouter.get('/', asyncHandler(getPublicArticles));
+publicRouter.get('/availability', asyncHandler(getPublicArticleAvailability));
 publicRouter.get('/:slugOrId/related', asyncHandler(getPublicRelatedArticles));
 publicRouter.get('/:slugOrId', asyncHandler(getPublicArticle));
 

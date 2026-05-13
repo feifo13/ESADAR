@@ -1,5 +1,6 @@
 import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from './auth.schemas.js';
 import { getCurrentUser, loginUser, registerUser, requestPasswordReset, resetUserPassword } from './auth.service.js';
+import { clearAuthCookie, setAuthCookie } from './auth.cookies.js';
 
 function getAuditContext(req) {
   return {
@@ -13,16 +14,27 @@ function getAuditContext(req) {
 export async function register(req, res) {
   const input = registerSchema.parse(req.body);
   const result = await registerUser(input, getAuditContext(req));
+  setAuthCookie(res, result.token);
   return res.status(201).json({ ok: true, ...result });
 }
 
 export async function login(req, res) {
   const input = loginSchema.parse(req.body);
   const result = await loginUser(input, getAuditContext(req));
+  setAuthCookie(res, result.token);
   return res.json({ ok: true, ...result });
 }
 
+export async function logout(_req, res) {
+  clearAuthCookie(res);
+  return res.json({ ok: true });
+}
+
 export async function me(req, res) {
+  if (!req.auth?.userId) {
+    return res.json({ ok: true, user: null });
+  }
+
   const user = await getCurrentUser(req.auth.userId);
   return res.json({ ok: true, user });
 }

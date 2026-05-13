@@ -15,6 +15,25 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseDurationMs(value, fallbackMs) {
+  if (!value) return fallbackMs;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d+)\s*([smhd])?$/i);
+  if (!match) return fallbackMs;
+
+  const amount = Number(match[1]);
+  const unit = String(match[2] || "ms").toLowerCase();
+  const multipliers = {
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+    ms: 1,
+  };
+
+  return amount * (multipliers[unit] || multipliers.ms);
+}
+
 function getSmtpPassword() {
   const password = process.env.SMTP_PASSWORD || "";
   const host = String(process.env.SMTP_HOST || "").toLowerCase();
@@ -50,6 +69,10 @@ export const env = {
   },
   jwtSecret: required("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  authCookieMaxAgeMs: parseDurationMs(
+    process.env.AUTH_COOKIE_MAX_AGE || process.env.JWT_EXPIRES_IN || "7d",
+    7 * 24 * 60 * 60 * 1000,
+  ),
   uploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads"),
   articleUploadDir: path.resolve(
     process.cwd(),

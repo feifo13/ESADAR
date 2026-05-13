@@ -1,10 +1,14 @@
 import { verifyAccessToken } from '../utils/jwt.js';
 import { unauthorized } from '../utils/app-error.js';
+import { ACCESS_TOKEN_COOKIE_NAME, readCookie } from '../modules/auth/auth.cookies.js';
 
 function extractToken(req) {
   const authHeader = req.headers.authorization || '';
-  if (!authHeader.startsWith('Bearer ')) return null;
-  return authHeader.slice(7).trim();
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+
+  return readCookie(req, ACCESS_TOKEN_COOKIE_NAME);
 }
 
 export function optionalAuth(req, _res, next) {

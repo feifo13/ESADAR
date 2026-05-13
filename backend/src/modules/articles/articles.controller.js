@@ -11,6 +11,7 @@ import {
   getAdminArticleById,
   getRelatedPublicArticles,
   getPublicArticleBySlugOrId,
+  listPublicArticleAvailabilityByIds,
   listAdminArticles,
   listPublicArticles,
   reorderArticleImages,
@@ -57,6 +58,21 @@ export async function getPublicArticles(req, res) {
   const pagination = getPagination(filters, { pageSize: 20 });
   const result = await listPublicArticles({ filters, pagination });
   return res.json({ ok: true, ...result });
+}
+
+function parseAvailabilityIdsParam(value) {
+  if (!value) return [];
+
+  return [...new Set(String(value)
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isInteger(item) && item > 0))]
+    .slice(0, 100);
+}
+
+export async function getPublicArticleAvailability(req, res) {
+  const items = await listPublicArticleAvailabilityByIds(parseAvailabilityIdsParam(req.query.ids));
+  return res.json({ ok: true, items });
 }
 
 export async function getPublicArticle(req, res) {

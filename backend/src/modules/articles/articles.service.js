@@ -604,8 +604,8 @@ function normalizeArticleRow(row) {
     discountType: row.discountType,
     discountValue: Number(row.discountValue),
     discountedPrice: Number(row.discountedPrice),
-    allowOffers: Boolean(row.allowOffers),
-    isFeatured: Boolean(row.isFeatured),
+    allowOffers: Boolean(Number(row.allowOffers || 0)),
+    isFeatured: Boolean(Number(row.isFeatured || 0)),
     intakeDate: row.intakeDate,
     quantityTotal: row.quantityTotal != null ? Number(row.quantityTotal) : 0,
     quantityAvailable: Number(row.quantityAvailable),
@@ -730,6 +730,36 @@ function normalizeArticleImageRow(row) {
 export async function getArticleImages(articleId, connection = pool) {
   const imagesMap = await getArticleImagesMap([Number(articleId)], connection);
   return imagesMap.get(Number(articleId)) || [];
+}
+
+export async function listPublicArticleAvailabilityByIds(articleIds = []) {
+  const ids = [...new Set((articleIds || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0))]
+    .slice(0, 100);
+
+  if (!ids.length) {
+    return [];
+  }
+
+  const placeholders = buildSqlPlaceholders(ids);
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        id,
+        status,
+        quantity_available AS quantityAvailable
+      FROM articles
+      WHERE id IN (${placeholders})
+    `,
+    ids,
+  );
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    status: row.status || 'INACTIVE',
+    quantityAvailable: Number(row.quantityAvailable || 0),
+  }));
 }
 
 export async function listPublicArticles({ filters, pagination }) {
@@ -1270,7 +1300,7 @@ export async function changeArticleStatus(id, status, auditContext) {
     }
 
     await connection.execute(
-      'UPDATE articles SET status = ?, updated_by = ? WHERE id = ?',
+      'UPDATE articles SET status = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [status, auditContext.actorUserId, id],
     );
 
@@ -1323,7 +1353,8 @@ export async function updateArticleQuickFlags(id, input, auditContext) {
           status = ?,
           is_featured = ?,
           allow_offers = ?,
-          updated_by = ?
+          updated_by = ?,
+          updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `,
       [

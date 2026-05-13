@@ -49,3 +49,7 @@ export const adminUserUpdateSchema = z.object({
   isActive: z.boolean(),
   roles: z.array(z.enum(ROLE_CODES)).min(1),
 });
+
+export const adminUserPasswordSchema = z.object({
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.').max(128),
+});

@@ -484,6 +484,7 @@ async function getCartById(cartId, connection) {
       quantity: Number(row.acceptedOfferQuantity || 1),
     } : null,
     lineTotal: calculateAcceptedOfferLineTotal(row),
+    quantityAvailable: Number(row.quantityAvailable || 0),
     maxQuantity: Math.max(Number(row.quantityAvailable || 0), Number(row.quantity || 0)),
     articleStatus: row.articleStatus,
   }));
