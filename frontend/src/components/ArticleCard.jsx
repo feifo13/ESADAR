@@ -51,7 +51,7 @@ export default function ArticleCard({
   const detailPath = articlePath(article);
   const offerPath = articleOfferPath(article);
   const imageProfile = variant === "editorial" ? "featured" : "card";
-  const cardImageSrc = getArticleImageSrc(article, imageProfile === "featured" ? "detail" : "card");
+  const cardImageSrc = getArticleImageSrc(article, "card");
   const cardImageSrcSet = buildArticleImageSrcSet(article, imageProfile);
   const cardImageSizes = getArticleImageSizes(imageProfile);
 

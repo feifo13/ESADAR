@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import SmartImage from "./SmartImage.jsx";
-import { buildArticleImageSrcSet, getArticleImageSizes, getArticleImageSrc } from "../lib/article-images.js";
+import { buildArticleImageSrcSet, getArticleImageSrc } from "../lib/article-images.js";
 import ScrollRailControls from "./ScrollRailControls.jsx";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
@@ -71,9 +71,9 @@ export default function FeaturedMotionCards({
     const saved = isSaved(article.id);
     const pending = pendingIds.includes(Number(article.id));
 
-    const featuredImageSrc = getArticleImageSrc(article, "detail");
+    const featuredImageSrc = getArticleImageSrc(article, "card");
     const featuredImageSrcSet = buildArticleImageSrcSet(article, "featured");
-    const featuredImageSizes = getArticleImageSizes("featured");
+    const featuredImageSizes = "(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 280px";
 
     const optimisticWishlistItem = {
       articleId: article.id,

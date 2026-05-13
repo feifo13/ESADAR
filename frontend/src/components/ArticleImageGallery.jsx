@@ -8,9 +8,6 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
   const normalized = useMemo(() => {
     const fallback = fallbackImage || {};
     const fallbackSrc =
-      fallback.zoomFilePath ||
-      fallback.zoom_file_path ||
-      fallback.primaryImageZoom ||
       fallback.detailFilePath ||
       fallback.detail_file_path ||
       fallback.primaryImageDetail ||
@@ -18,6 +15,9 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
       fallback.filePath ||
       fallback.file_path ||
       fallback.src ||
+      fallback.zoomFilePath ||
+      fallback.zoom_file_path ||
+      fallback.primaryImageZoom ||
       '';
     const fallbackZoomSrc =
       fallback.zoomFilePath ||

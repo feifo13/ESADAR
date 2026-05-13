@@ -41,21 +41,41 @@ export function getArticleImageSrc(article = {}, preferred = 'card') {
 
 export function buildArticleImageSrcSet(article = {}, profile = 'card') {
   const sources = getArticleImageSources(article);
-  const includeOriginal = profile === 'detail' || profile === 'zoom';
-  const candidates = compactUnique([
-    { src: sources.thumb, width: IMAGE_WIDTHS.thumb },
-    { src: sources.card, width: IMAGE_WIDTHS.card },
-    { src: sources.detail, width: IMAGE_WIDTHS.detail },
-    { src: sources.zoom, width: IMAGE_WIDTHS.zoom },
-    includeOriginal ? { src: sources.original, width: IMAGE_WIDTHS.zoom } : null,
-  ].filter(Boolean));
+  const candidatesByProfile = {
+    card: [
+      { src: sources.thumb, width: IMAGE_WIDTHS.thumb },
+      { src: sources.card, width: IMAGE_WIDTHS.card },
+    ],
+    related: [
+      { src: sources.thumb, width: IMAGE_WIDTHS.thumb },
+      { src: sources.card, width: IMAGE_WIDTHS.card },
+      { src: sources.detail, width: IMAGE_WIDTHS.detail },
+    ],
+    featured: [
+      { src: sources.thumb, width: IMAGE_WIDTHS.thumb },
+      { src: sources.card, width: IMAGE_WIDTHS.card },
+      { src: sources.detail, width: IMAGE_WIDTHS.detail },
+    ],
+    detail: [
+      { src: sources.card, width: IMAGE_WIDTHS.card },
+      { src: sources.detail, width: IMAGE_WIDTHS.detail },
+      { src: sources.zoom, width: IMAGE_WIDTHS.zoom },
+    ],
+    zoom: [
+      { src: sources.detail, width: IMAGE_WIDTHS.detail },
+      { src: sources.zoom, width: IMAGE_WIDTHS.zoom },
+      { src: sources.original, width: IMAGE_WIDTHS.zoom },
+    ],
+  };
+
+  const candidates = compactUnique(candidatesByProfile[profile] || candidatesByProfile.card);
 
   return candidates.map((candidate) => `${candidate.src} ${candidate.width}w`).join(', ');
 }
 
 export function getArticleImageSizes(profile = 'card') {
   if (profile === 'featured') {
-    return '(max-width: 720px) 78vw, (max-width: 1180px) 56vw, 520px';
+    return '(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 280px';
   }
 
   if (profile === 'related') {
@@ -63,7 +83,7 @@ export function getArticleImageSizes(profile = 'card') {
   }
 
   if (profile === 'detail') {
-    return '(max-width: 960px) 100vw, min(1080px, calc(100vw - 520px))';
+    return '(max-width: 960px) 100vw, min(760px, calc(100vw - 520px))';
   }
 
   return '(max-width: 720px) 48vw, (max-width: 1180px) 32vw, 320px';
