@@ -12176,6 +12176,7 @@ textarea,
     rgba(0, 0, 0, calc(0.16 * var(--footer-scroll-progress, 0)));
 }
 
+
 .app-shell:not(.app-shell--has-footer-reveal) .footer-scroll-scene {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -12733,6 +12734,7 @@ textarea,
     var(--surface, #fff)
   );
 }
+
 
 .summary-item-card--unavailable,
 .checkout-unavailable-row {
@@ -13961,9 +13963,7 @@ dialog,
 }
 
 @keyframes esadar-loader-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14228,6 +14228,8 @@ dialog,
   }
 }
 
+
+
 /* === ESADAR loading view correction: keep header visible, white body, centered slow logo === */
 .app-loader--page {
   display: grid !important;
@@ -14240,8 +14242,8 @@ dialog,
 
 .app-loader--page .app-loader__logo,
 .catalog-filter-loading-splash__logo {
-  width: 130px !important;
-  max-width: 130px !important;
+  width: 54px !important;
+  max-width: 54px !important;
   filter: none !important;
   animation: esadar-loader-spin 2.1s linear infinite !important;
 }

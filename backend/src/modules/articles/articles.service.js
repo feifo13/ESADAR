@@ -172,16 +172,16 @@ function buildPublicFilters(query, includeInactive = false) {
     params.push(Number(query.sizeId));
   }
 
-  if (query.featured === 'true') {
+  if (query.featured === true || query.featured === 'true') {
     clauses.push('a.is_featured = 1');
   }
 
-  if (query.discounted === 'true') {
+  if (query.discounted === true || query.discounted === 'true') {
     clauses.push(`a.discount_type <> 'NONE'`);
     clauses.push('a.discount_value > 0');
   }
 
-  if (query.offerable === 'true') {
+  if (query.offerable === true || query.offerable === 'true') {
     clauses.push('a.allow_offers = 1');
   }
 
