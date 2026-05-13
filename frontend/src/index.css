@@ -12176,7 +12176,6 @@ textarea,
     rgba(0, 0, 0, calc(0.16 * var(--footer-scroll-progress, 0)));
 }
 
-
 .app-shell:not(.app-shell--has-footer-reveal) .footer-scroll-scene {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -12734,7 +12733,6 @@ textarea,
     var(--surface, #fff)
   );
 }
-
 
 .summary-item-card--unavailable,
 .checkout-unavailable-row {
@@ -13963,7 +13961,9 @@ dialog,
 }
 
 @keyframes esadar-loader-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14228,8 +14228,6 @@ dialog,
   }
 }
 
-
-
 /* === ESADAR loading view correction: keep header visible, white body, centered slow logo === */
 .app-loader--page {
   display: grid !important;
@@ -14242,8 +14240,8 @@ dialog,
 
 .app-loader--page .app-loader__logo,
 .catalog-filter-loading-splash__logo {
-  width: 54px !important;
-  max-width: 54px !important;
+  width: 130px !important;
+  max-width: 130px !important;
   filter: none !important;
   animation: esadar-loader-spin 2.1s linear infinite !important;
 }
@@ -14275,7 +14273,7 @@ dialog,
   opacity: 0.72;
 }
 
-/* === ESADAR image UI refinement: keep optimized sources, preserve layout === */
+/* === ESADAR image UI refinement: catalog/related/offer cards fill their media box === */
 .article-card--catalog .article-card-media img,
 .article-horizontal-card-track .article-card--catalog .article-card-media img,
 .related-articles-track .article-card--catalog .article-card-media img,
@@ -14283,7 +14281,7 @@ dialog,
   width: 100% !important;
   height: 100% !important;
   display: block !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   object-position: center center !important;
   background: var(--surface-soft) !important;
 }
@@ -14299,8 +14297,51 @@ dialog,
 
 .article-image-zoom .iiz__img,
 .article-image-zoom__image,
-.article-image-zoom__fallback-image,
-.article-image-zoom .iiz__zoom-img {
+.article-image-zoom__fallback-image {
   object-fit: contain !important;
   object-position: center center !important;
+}
+
+/*
+  react-inner-image-zoom renders: figure.iiz > div > picture > img.
+  The library leaves the intermediate wrapper/picture sizing to content, so
+  centered product photos can look tiny inside the pale zoom canvas. Stretch
+  only the visible image pipeline; do not force the zoom overlay dimensions.
+*/
+.article-image-zoom .iiz {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.article-image-zoom .iiz > div,
+.article-image-zoom .iiz picture {
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.article-image-zoom .iiz__img.article-image-zoom__image,
+.article-image-zoom__fallback-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 78vh !important;
+  display: block !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+@media (max-width: 960px) {
+  .article-image-zoom .iiz > div,
+  .article-image-zoom .iiz picture {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .article-image-zoom .iiz__img.article-image-zoom__image,
+  .article-image-zoom__fallback-image {
+    height: auto !important;
+    max-height: 68vh !important;
+  }
 }
