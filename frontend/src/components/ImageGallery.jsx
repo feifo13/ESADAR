@@ -11,12 +11,13 @@ export default function ImageGallery({ images = [], title }) {
     return images.map((image, index) => ({
       id: image.id || index,
       src: image.detailFilePath || image.detail_file_path || image.filePath || image.file_path || image.src || '',
-      zoomSrc: image.zoomFilePath || image.zoom_file_path || image.detailFilePath || image.filePath || image.src || '',
+      zoomSrc: image.zoomFilePath || image.zoom_file_path || image.originalFilePath || image.original_file_path || image.detailFilePath || image.filePath || image.src || '',
       thumbSrc: image.thumbFilePath || image.thumb_file_path || image.cardFilePath || image.filePath || image.src || '',
       altText: image.altText || title,
       sources: [
-        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 1600w`, media: '(min-width: 1280px)' } : null,
-        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1100w`, media: '(min-width: 720px)' } : null,
+        image.zoomFilePath ? { srcSet: `${image.zoomFilePath} 2400w`, media: '(min-width: 1280px)' } : null,
+        image.originalFilePath ? { srcSet: `${image.originalFilePath} 2400w`, media: '(min-width: 1280px)' } : null,
+        image.detailFilePath ? { srcSet: `${image.detailFilePath} 1600w`, media: '(min-width: 720px)' } : null,
         image.cardFilePath ? { srcSet: `${image.cardFilePath} 700w` } : null,
       ].filter(Boolean),
     }));

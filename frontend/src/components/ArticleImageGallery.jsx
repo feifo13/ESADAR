@@ -18,6 +18,8 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
     const fallbackZoomSrc =
       fallback.zoomFilePath ||
       fallback.zoom_file_path ||
+      fallback.imageOriginalUrl ||
+      fallback.primaryImageOriginal ||
       fallbackSrc;
     const fallbackThumbSrc =
       fallback.thumbFilePath ||
@@ -35,8 +37,8 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         thumbSrc: fallbackThumbSrc,
         altText: fallback.altText || fallback.primaryImageAlt || title,
         sources: [
-          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 1600w`, media: '(min-width: 1280px)' } : null,
-          fallbackSrc ? { srcSet: `${fallbackSrc} 1100w`, media: '(min-width: 720px)' } : null,
+          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 2400w`, media: '(min-width: 1280px)' } : null,
+          fallbackSrc ? { srcSet: `${fallbackSrc} 1600w`, media: '(min-width: 720px)' } : null,
           fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 700w` } : null,
         ].filter(Boolean),
       }];
@@ -53,6 +55,8 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
       const zoomSrc =
         image.zoomFilePath ||
         image.zoom_file_path ||
+        image.originalFilePath ||
+        image.original_file_path ||
         image.detailFilePath ||
         image.detail_file_path ||
         image.filePath ||
@@ -76,8 +80,8 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         thumbSrc,
         altText: image.altText || image.alt_text || title,
         sources: [
-          zoomSrc ? { srcSet: `${zoomSrc} 1600w`, media: '(min-width: 1280px)' } : null,
-          detailSrc ? { srcSet: `${detailSrc} 1100w`, media: '(min-width: 720px)' } : null,
+          zoomSrc ? { srcSet: `${zoomSrc} 2400w`, media: '(min-width: 1280px)' } : null,
+          detailSrc ? { srcSet: `${detailSrc} 1600w`, media: '(min-width: 720px)' } : null,
           thumbSrc ? { srcSet: `${thumbSrc} 700w` } : null,
         ].filter(Boolean),
       };

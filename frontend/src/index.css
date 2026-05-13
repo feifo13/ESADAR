@@ -14240,8 +14240,8 @@ dialog,
 
 .app-loader--page .app-loader__logo,
 .catalog-filter-loading-splash__logo {
-  width: 190px !important;
-  max-width: 190px !important;
+  width: 130px !important;
+  max-width: 130px !important;
   filter: none !important;
   animation: esadar-loader-spin 2.1s linear infinite !important;
 }

@@ -52,11 +52,13 @@ export default function ArticleCard({
   const imageThumb = article.imageThumbUrl || article.primaryImageThumb || "";
   const imageCard = article.imageCardUrl || article.primaryImageCard || article.primaryImage || "";
   const imageDetail = article.imageDetailUrl || article.primaryImageDetail || "";
-  const cardImageSrc = imageCard || imageThumb || imageDetail;
+  const imageOriginal = article.imageOriginalUrl || article.primaryImageOriginal || "";
+  const cardImageSrc = imageDetail || imageCard || imageThumb || imageOriginal;
   const cardImageSrcSet = [
     imageThumb ? `${imageThumb} 320w` : null,
     imageCard ? `${imageCard} 640w` : null,
-    imageDetail ? `${imageDetail} 1200w` : null,
+    imageDetail ? `${imageDetail} 1600w` : null,
+    imageOriginal ? `${imageOriginal} 2400w` : null,
   ]
     .filter(Boolean)
     .filter((entry, index, list) => list.indexOf(entry) === index)
@@ -160,7 +162,7 @@ export default function ArticleCard({
               fallbackLabel={article.title}
               loading="lazy"
               fetchPriority="low"
-              sizes="(max-width: 719px) 92vw, 33vw"
+              sizes="(max-width: 719px) 92vw, (max-width: 1180px) 48vw, 36vw"
               className="article-card-editorial-image featured-motion-card__image"
             />
           </div>
@@ -225,7 +227,7 @@ export default function ArticleCard({
             fallbackLabel={article.title}
             loading="lazy"
             fetchPriority="low"
-            sizes="(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 260px"
+            sizes="(max-width: 719px) 48vw, (max-width: 1180px) 34vw, 360px"
           />
         </Link>
 

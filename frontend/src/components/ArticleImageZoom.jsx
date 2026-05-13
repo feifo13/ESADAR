@@ -4,17 +4,18 @@ import SmartImage from "./SmartImage.jsx";
 import { resolveAssetUrl } from "../lib/api.js";
 
 export default function ArticleImageZoom({ image, title }) {
-  const src = image?.src || image?.zoomSrc || image?.thumbSrc || "";
-  const zoomSrc = image?.zoomSrc || image?.src || image?.thumbSrc || src;
-  const resolvedSrc = resolveAssetUrl(src);
-  const resolvedZoomSrc = resolveAssetUrl(zoomSrc || src) || resolvedSrc;
+  const baseSrc = image?.src || image?.zoomSrc || image?.thumbSrc || "";
+  const zoomSrc = image?.zoomSrc || image?.src || image?.thumbSrc || baseSrc;
+  const displaySrc = zoomSrc || baseSrc;
+  const resolvedSrc = resolveAssetUrl(displaySrc);
+  const resolvedZoomSrc = resolveAssetUrl(zoomSrc || displaySrc) || resolvedSrc;
   const alt = image?.altText || title || "Imagen de articulo";
 
   if (!resolvedSrc) {
     return (
       <div className="article-image-zoom article-image-zoom--fallback">
         <SmartImage
-          src={src}
+          src={displaySrc}
           alt={alt}
           fallbackLabel={title}
           className="article-image-zoom__fallback-image"

@@ -29,7 +29,7 @@ export default function RootLayout() {
     INTRO_INITIAL_FADE_MS,
   );
   const [breadcrumbLabelOverrides, setBreadcrumbLabelOverrides] = useState({});
-  const [contentReady, setContentReady] = useState(false);
+  const [contentReadyKey, setContentReadyKey] = useState(null);
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === "/";
@@ -72,6 +72,12 @@ export default function RootLayout() {
       : navigationType === "POP"
         ? scrollPositionsRef.current.get(location.key) || 0
         : 0;
+
+    window.dispatchEvent(
+      new CustomEvent("esadar:suppress-footer-reveal", {
+        detail: { untilManual: true, duration: 1800 },
+      }),
+    );
 
     if (!shouldPreserveScroll) {
       window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
@@ -139,20 +145,25 @@ export default function RootLayout() {
 
 
   useEffect(() => {
-    setContentReady(false);
     if (typeof window === "undefined") {
-      setContentReady(true);
+      setContentReadyKey(location.key);
       return undefined;
     }
 
     const timer = window.setTimeout(() => {
-      setContentReady(true);
-    }, 120);
+      setContentReadyKey(location.key);
+      window.dispatchEvent(
+        new CustomEvent("esadar:suppress-footer-reveal", {
+          detail: { release: true },
+        }),
+      );
+    }, 160);
 
     return () => window.clearTimeout(timer);
   }, [location.key]);
 
   const showIntro = introStage !== "hidden";
+  const contentReady = contentReadyKey === location.key;
   const appShellClassName = [
     "app-shell",
     !shouldNoIndex ? "app-shell--has-footer-reveal" : "",

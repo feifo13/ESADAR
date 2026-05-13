@@ -10,10 +10,10 @@ import {
 } from '../../utils/assets.js';
 
 const VARIANTS = [
-  { key: 'thumb', width: 320, quality: 76 },
-  { key: 'card', width: 640, quality: 80 },
-  { key: 'detail', width: 1200, quality: 84 },
-  { key: 'zoom', width: 1800, quality: 86 },
+  { key: 'thumb', width: 360, quality: 82 },
+  { key: 'card', width: 900, quality: 88 },
+  { key: 'detail', width: 1600, quality: 90 },
+  { key: 'zoom', width: 2400, quality: 92 },
 ];
 
 const VARIANT_SUFFIX_PATTERN = /-(thumb|card|detail|zoom)\.webp$/i;
