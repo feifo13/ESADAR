@@ -10,10 +10,15 @@ import {
 } from '../../utils/assets.js';
 
 const VARIANTS = [
-  { key: 'thumb', width: 360, quality: 82 },
-  { key: 'card', width: 900, quality: 88 },
-  { key: 'detail', width: 1600, quality: 90 },
-  { key: 'zoom', width: 2400, quality: 92 },
+  // UI contract:
+  // thumb  = thumbnails/admin previews
+  // card   = catalog, destacados, relacionados and ofertas cards
+  // detail = /articles main image
+  // zoom   = high-density zoom/lightbox source
+  { key: 'thumb', width: 360, quality: 84 },
+  { key: 'card', width: 1200, quality: 90 },
+  { key: 'detail', width: 1800, quality: 92 },
+  { key: 'zoom', width: 2600, quality: 94 },
 ];
 
 const VARIANT_SUFFIX_PATTERN = /-(thumb|card|detail|zoom)\.webp$/i;
@@ -65,8 +70,9 @@ async function processArticleImageDiskPath(diskPath, options = {}) {
         fit: 'inside',
         withoutEnlargement: true,
       })
+      .sharpen({ sigma: 0.35, m1: 0.6, m2: 0.35 })
       .flatten({ background: options.background || '#f3eee7' })
-      .webp({ quality: variant.quality, effort: 5 })
+      .webp({ quality: variant.quality, effort: 6, smartSubsample: true })
       .toFile(outputDiskPath);
 
     variants[`${variant.key}FilePath`] = buildSiblingUploadPublicPath(

@@ -2,13 +2,26 @@ import InnerImageZoom from "react-inner-image-zoom";
 import "react-inner-image-zoom/lib/styles.min.css";
 import SmartImage from "./SmartImage.jsx";
 import { resolveAssetUrl } from "../lib/api.js";
+import { getArticleImageSizes } from "../lib/article-images.js";
+
+function resolveSrcSet(value) {
+  if (!value) return "";
+  return String(value)
+    .split(",")
+    .map((entry) => {
+      const [src, descriptor] = entry.trim().split(/\s+/, 2);
+      return `${resolveAssetUrl(src)}${descriptor ? ` ${descriptor}` : ""}`;
+    })
+    .join(", ");
+}
 
 export default function ArticleImageZoom({ image, title }) {
   const baseSrc = image?.src || image?.zoomSrc || image?.thumbSrc || "";
   const zoomSrc = image?.zoomSrc || image?.src || image?.thumbSrc || baseSrc;
-  const displaySrc = zoomSrc || baseSrc;
+  const displaySrc = baseSrc || zoomSrc;
   const resolvedSrc = resolveAssetUrl(displaySrc);
   const resolvedZoomSrc = resolveAssetUrl(zoomSrc || displaySrc) || resolvedSrc;
+  const resolvedSrcSet = resolveSrcSet(image?.srcSet);
   const alt = image?.altText || title || "Imagen de articulo";
 
   if (!resolvedSrc) {
@@ -43,6 +56,8 @@ export default function ArticleImageZoom({ image, title }) {
           className: "article-image-zoom__image",
           loading: "eager",
           fetchPriority: "high",
+          srcSet: resolvedSrcSet || undefined,
+          sizes: getArticleImageSizes("detail"),
         }}
       />
     </div>

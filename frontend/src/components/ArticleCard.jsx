@@ -11,6 +11,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import SmartImage from "./SmartImage.jsx";
+import { buildArticleImageSrcSet, getArticleImageSizes, getArticleImageSrc } from "../lib/article-images.js";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 
 const SHOW_CARD_BADGES = false;
@@ -49,20 +50,10 @@ export default function ArticleCard({
   const showOfferRibbon = article.allowOffers && !isSoldOut;
   const detailPath = articlePath(article);
   const offerPath = articleOfferPath(article);
-  const imageThumb = article.imageThumbUrl || article.primaryImageThumb || "";
-  const imageCard = article.imageCardUrl || article.primaryImageCard || article.primaryImage || "";
-  const imageDetail = article.imageDetailUrl || article.primaryImageDetail || "";
-  const imageOriginal = article.imageOriginalUrl || article.primaryImageOriginal || "";
-  const cardImageSrc = imageDetail || imageCard || imageThumb || imageOriginal;
-  const cardImageSrcSet = [
-    imageThumb ? `${imageThumb} 320w` : null,
-    imageCard ? `${imageCard} 640w` : null,
-    imageDetail ? `${imageDetail} 1600w` : null,
-    imageOriginal ? `${imageOriginal} 2400w` : null,
-  ]
-    .filter(Boolean)
-    .filter((entry, index, list) => list.indexOf(entry) === index)
-    .join(", ");
+  const imageProfile = variant === "editorial" ? "featured" : "card";
+  const cardImageSrc = getArticleImageSrc(article, imageProfile === "featured" ? "detail" : "card");
+  const cardImageSrcSet = buildArticleImageSrcSet(article, imageProfile);
+  const cardImageSizes = getArticleImageSizes(imageProfile);
 
   const optimisticWishlistItem = {
     articleId: article.id,
@@ -162,7 +153,7 @@ export default function ArticleCard({
               fallbackLabel={article.title}
               loading="lazy"
               fetchPriority="low"
-              sizes="(max-width: 719px) 92vw, (max-width: 1180px) 48vw, 36vw"
+              sizes={cardImageSizes}
               className="article-card-editorial-image featured-motion-card__image"
             />
           </div>
@@ -227,7 +218,7 @@ export default function ArticleCard({
             fallbackLabel={article.title}
             loading="lazy"
             fetchPriority="low"
-            sizes="(max-width: 719px) 48vw, (max-width: 1180px) 34vw, 360px"
+            sizes={cardImageSizes}
           />
         </Link>
 

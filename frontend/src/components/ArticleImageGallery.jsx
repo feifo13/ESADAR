@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import ArticleImageZoom from './ArticleImageZoom.jsx';
 import PreviousNextControls from './PreviousNextControls.jsx';
 import SmartImage from './SmartImage.jsx';
+import { getArticleImageSizes } from '../lib/article-images.js';
 
 export default function ArticleImageGallery({ images = [], title, fallbackImage = null }) {
   const normalized = useMemo(() => {
     const fallback = fallbackImage || {};
     const fallbackSrc =
+      fallback.zoomFilePath ||
+      fallback.zoom_file_path ||
+      fallback.primaryImageZoom ||
       fallback.detailFilePath ||
       fallback.detail_file_path ||
       fallback.primaryImageDetail ||
@@ -18,6 +22,7 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
     const fallbackZoomSrc =
       fallback.zoomFilePath ||
       fallback.zoom_file_path ||
+      fallback.primaryImageZoom ||
       fallback.imageOriginalUrl ||
       fallback.primaryImageOriginal ||
       fallbackSrc;
@@ -36,10 +41,15 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         zoomSrc: fallbackZoomSrc,
         thumbSrc: fallbackThumbSrc,
         altText: fallback.altText || fallback.primaryImageAlt || title,
+        srcSet: [
+          fallbackThumbSrc ? `${fallbackThumbSrc} 360w` : null,
+          fallbackSrc ? `${fallbackSrc} 1800w` : null,
+          fallbackZoomSrc ? `${fallbackZoomSrc} 2600w` : null,
+        ].filter(Boolean).join(', '),
         sources: [
-          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 2400w`, media: '(min-width: 1280px)' } : null,
-          fallbackSrc ? { srcSet: `${fallbackSrc} 1600w`, media: '(min-width: 720px)' } : null,
-          fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 700w` } : null,
+          fallbackZoomSrc ? { srcSet: `${fallbackZoomSrc} 2600w`, media: '(min-width: 1280px)' } : null,
+          fallbackSrc ? { srcSet: `${fallbackSrc} 1800w`, media: '(min-width: 720px)' } : null,
+          fallbackThumbSrc ? { srcSet: `${fallbackThumbSrc} 360w` } : null,
         ].filter(Boolean),
       }];
     }
@@ -79,10 +89,15 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         zoomSrc,
         thumbSrc,
         altText: image.altText || image.alt_text || title,
+        srcSet: [
+          thumbSrc ? `${thumbSrc} 360w` : null,
+          detailSrc ? `${detailSrc} 1800w` : null,
+          zoomSrc ? `${zoomSrc} 2600w` : null,
+        ].filter(Boolean).join(', '),
         sources: [
-          zoomSrc ? { srcSet: `${zoomSrc} 2400w`, media: '(min-width: 1280px)' } : null,
-          detailSrc ? { srcSet: `${detailSrc} 1600w`, media: '(min-width: 720px)' } : null,
-          thumbSrc ? { srcSet: `${thumbSrc} 700w` } : null,
+          zoomSrc ? { srcSet: `${zoomSrc} 2600w`, media: '(min-width: 1280px)' } : null,
+          detailSrc ? { srcSet: `${detailSrc} 1800w`, media: '(min-width: 720px)' } : null,
+          thumbSrc ? { srcSet: `${thumbSrc} 360w` } : null,
         ].filter(Boolean),
       };
     });
@@ -132,7 +147,7 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
                 alt={`${title} ${index + 1}`}
                 fallbackLabel={title}
                 className="article-gallery-thumb__image"
-                sizes="72px"
+                sizes="88px"
               />
             </button>
           ))}
@@ -153,6 +168,7 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
               alt={active.altText || title}
               fallbackLabel={title}
               className="gallery-zoom-image"
+              sizes={getArticleImageSizes("detail")}
               loading="eager"
               fetchPriority="high"
             />

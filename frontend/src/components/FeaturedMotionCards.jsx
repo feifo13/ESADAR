@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import SmartImage from "./SmartImage.jsx";
+import { buildArticleImageSrcSet, getArticleImageSizes, getArticleImageSrc } from "../lib/article-images.js";
 import ScrollRailControls from "./ScrollRailControls.jsx";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
@@ -70,18 +71,9 @@ export default function FeaturedMotionCards({
     const saved = isSaved(article.id);
     const pending = pendingIds.includes(Number(article.id));
 
-    const imageThumb = article.imageThumbUrl || article.primaryImageThumb || "";
-    const imageCard = article.imageCardUrl || article.primaryImageCard || article.primaryImage || "";
-    const imageDetail = article.imageDetailUrl || article.primaryImageDetail || "";
-    const featuredImageSrc = imageCard || imageThumb || imageDetail;
-    const featuredImageSrcSet = [
-      imageThumb ? `${imageThumb} 320w` : null,
-      imageCard ? `${imageCard} 640w` : null,
-      imageDetail ? `${imageDetail} 1200w` : null,
-    ]
-      .filter(Boolean)
-      .filter((entry, sourceIndex, list) => list.indexOf(entry) === sourceIndex)
-      .join(", ");
+    const featuredImageSrc = getArticleImageSrc(article, "detail");
+    const featuredImageSrcSet = buildArticleImageSrcSet(article, "featured");
+    const featuredImageSizes = getArticleImageSizes("featured");
 
     const optimisticWishlistItem = {
       articleId: article.id,
@@ -131,7 +123,7 @@ export default function FeaturedMotionCards({
               className="featured-motion-card__image"
               loading={index === 0 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "low"}
-              sizes="(max-width: 719px) 46vw, (max-width: 1180px) 30vw, 280px"
+              sizes={featuredImageSizes}
             />
           </div>
 

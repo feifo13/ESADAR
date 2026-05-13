@@ -97,6 +97,13 @@ const publicBaseSelect = `
       LIMIT 1
     ) AS primaryImageThumb,
     (
+      SELECT COALESCE(ai.zoom_file_path, ai.detail_file_path, ai.original_file_path, ai.file_path)
+      FROM article_images ai
+      WHERE ai.article_id = a.id
+      ORDER BY ai.is_primary DESC, ai.sort_order ASC, ai.id ASC
+      LIMIT 1
+    ) AS primaryImageZoom,
+    (
       SELECT COALESCE(ai.original_file_path, ai.file_path)
       FROM article_images ai
       WHERE ai.article_id = a.id
@@ -644,11 +651,13 @@ function normalizeArticleRow(row) {
     primaryImageCard: normalizePublicAssetPath(row.primaryImageCard || row.primaryImage || row.primaryImageDetail || ''),
     primaryImageDetail: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImageCard || row.primaryImage || ''),
     primaryImageThumb: normalizePublicAssetPath(row.primaryImageThumb || row.primaryImageCard || row.primaryImage || ''),
+    primaryImageZoom: normalizePublicAssetPath(row.primaryImageZoom || row.primaryImageDetail || row.primaryImageOriginal || row.primaryImage || ''),
     primaryImageOriginal: normalizePublicAssetPath(row.primaryImageOriginal || row.primaryImageDetail || row.primaryImage || ''),
     imageThumbUrl: normalizePublicAssetPath(row.primaryImageThumb || row.primaryImageCard || row.primaryImage || ''),
-    imageCardUrl: normalizePublicAssetPath(row.primaryImageCard || row.primaryImage || row.primaryImageDetail || ''),
-    imageDetailUrl: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImageCard || row.primaryImage || ''),
-    imageOriginalUrl: normalizePublicAssetPath(row.primaryImageOriginal || row.primaryImageDetail || row.primaryImage || ''),
+    imageCardUrl: normalizePublicAssetPath(row.primaryImageCard || row.primaryImageDetail || row.primaryImage || ''),
+    imageDetailUrl: normalizePublicAssetPath(row.primaryImageDetail || row.primaryImageZoom || row.primaryImageCard || row.primaryImage || ''),
+    imageZoomUrl: normalizePublicAssetPath(row.primaryImageZoom || row.primaryImageDetail || row.primaryImageOriginal || row.primaryImage || ''),
+    imageOriginalUrl: normalizePublicAssetPath(row.primaryImageOriginal || row.primaryImageZoom || row.primaryImageDetail || row.primaryImage || ''),
     primaryImageAlt: row.primaryImageAlt || row.imageAltOverride || row.title,
   };
 
