@@ -16,18 +16,10 @@ const leadIdentitySchema = z.object({
   firstName: optionalContactString(100),
   lastName: optionalContactString(100),
   birthDate: z.string().date().optional().nullable(),
-  email: z.string().trim().email().max(255).optional().nullable(),
+  email: z.string().trim().email().max(255),
   phone: optionalContactString(50),
   instagram: optionalContactString(100),
   address: optionalContactString(255),
-}).superRefine((value, ctx) => {
-  if (!value.email && !value.phone && !value.instagram) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['email'],
-      message: 'Debes enviar al menos email, phone o instagram',
-    });
-  }
 });
 
 export const publicNewsletterLeadSchema = leadIdentitySchema.extend({

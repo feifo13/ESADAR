@@ -13,21 +13,10 @@ const guestOfferSchema = z.object({
   firstName: z.string().trim().min(2).max(100),
   lastName: z.string().trim().min(2).max(100),
   birthDate: z.string().date().optional().nullable(),
-  email: z.string().trim().email().max(255).optional().nullable(),
+  email: z.string().trim().email().max(255),
   address: z.string().trim().max(255).optional().nullable(),
   phone: z.string().trim().max(50).optional().nullable(),
   instagram: z.string().trim().max(100).optional().nullable(),
-}).superRefine((value, ctx) => {
-  const hasContact = [value.email, value.phone, value.instagram]
-    .some((item) => String(item || '').trim());
-
-  if (!hasContact) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['email'],
-      message: 'Deja al menos un medio de contacto: email, telefono o Instagram.',
-    });
-  }
 });
 
 export const createOfferSchema = z.object({

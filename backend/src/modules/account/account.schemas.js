@@ -49,7 +49,10 @@ export const accountProfileUpdateSchema = z.object({
   firstName: optionalTrimmed(100),
   lastName: optionalTrimmed(100),
   birthDate: z.preprocess(emptyToUndefined, z.string().date().nullable().optional()),
-  email: z.preprocess(emptyToUndefined, z.string().trim().email().max(255).nullable().optional()),
+  email: z.preprocess(
+    (value) => String(value || '').trim().toLowerCase(),
+    z.string().email().max(255),
+  ),
   phone: optionalTrimmed(50),
   instagram: optionalTrimmed(100),
   defaultAddress: defaultAddressSchema.nullable().optional(),

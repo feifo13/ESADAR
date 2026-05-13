@@ -13,7 +13,6 @@ import { articlePath } from "../lib/routes.js";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import {
   focusValidationTarget,
-  getAtLeastOneContactValidationMessage,
   getEmailValidationMessage,
   getPositiveNumberValidationMessage,
   getRequiredValidationMessage,
@@ -146,17 +145,6 @@ export default function OfferPage() {
     }
 
     try {
-      const contactValidationMessage = !isAuthenticated
-        ? getAtLeastOneContactValidationMessage(
-            {
-              email: guest.email,
-              phone: guest.phone,
-              instagram: guest.instagram,
-            },
-            "un email, telefono o Instagram",
-          )
-        : "";
-
       const validationChecks = [
         {
           target: "offer-first-name",
@@ -171,12 +159,10 @@ export default function OfferPage() {
             : "",
         },
         {
-          target: guest.email
-            ? "offer-email"
-            : guest.phone
-              ? "offer-phone"
-              : "offer-email",
-          message: contactValidationMessage,
+          target: "offer-email",
+          message: !isAuthenticated
+            ? getRequiredValidationMessage(guest.email, "el email")
+            : "",
         },
         {
           target: "offer-email",
@@ -213,7 +199,7 @@ export default function OfferPage() {
         payload.guest = {
           ...guest,
           birthDate: guest.birthDate || null,
-          email: guest.email || null,
+          email: guest.email,
           phone: guest.phone || null,
           instagram: guest.instagram || null,
         };
@@ -426,6 +412,7 @@ export default function OfferPage() {
                       onChange={(event) =>
                         updateGuest("email", event.target.value)
                       }
+                      required
                     />
                   </label>
                   <label className="field-group">

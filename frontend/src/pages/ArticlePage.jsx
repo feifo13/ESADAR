@@ -388,7 +388,7 @@ export default function ArticlePage() {
           articleId: article.id,
           alertType: isSoldOut ? "BACK_IN_STOCK" : "SIMILAR_ITEMS",
           firstName: alertForm.firstName || null,
-          email: alertForm.email || null,
+          email: alertForm.email,
           phone: alertForm.phone || null,
           instagram: alertForm.instagram || null,
           preferredCategories: article.categoryName

@@ -14,7 +14,7 @@ export const createContactMessageSchema = z.object({
   birthDate: z.string().date().optional().nullable(),
   phone: z.string().trim().max(50).optional().nullable(),
   instagram: z.string().trim().max(100).optional().nullable(),
-  email: z.string().trim().email().max(255).optional().nullable(),
+  email: z.string().trim().email().max(255),
   message: z.string().trim().min(2).max(3000),
 });
 

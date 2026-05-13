@@ -34,6 +34,7 @@ export default function ContactPage() {
       const validationMessage = firstValidationMessage(
         getRequiredValidationMessage(form.firstName, 'el nombre'),
         getRequiredValidationMessage(form.lastName, 'el apellido'),
+        getRequiredValidationMessage(form.email, 'el email'),
         getEmailValidationMessage(form.email),
         getRequiredValidationMessage(form.message, 'la consulta'),
       );
@@ -52,7 +53,7 @@ export default function ContactPage() {
           birthDate: form.birthDate || null,
           phone: form.phone || null,
           instagram: form.instagram || null,
-          email: form.email || null,
+          email: form.email,
           message: form.message,
         },
       });
@@ -88,7 +89,7 @@ export default function ContactPage() {
           <label className="field-group"><span>Fecha de nacimiento</span><input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} /></label>
           <label className="field-group"><span>Telefono</span><input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} /></label>
           <label className="field-group"><span>Instagram</span><input className="input" value={form.instagram} onChange={(event) => update('instagram', event.target.value)} /></label>
-          <label className="field-group"><span>Email</span><input className="input" type="email" value={form.email} onChange={(event) => update('email', event.target.value)} /></label>
+          <label className="field-group"><span>Email</span><input className="input" type="email" name="email" data-validation-field="contact-email" value={form.email} onChange={(event) => update('email', event.target.value)} required /></label>
           <label className="field-group form-grid-span-two"><span>Consulta</span><textarea className="input textarea" value={form.message} onChange={(event) => update('message', event.target.value)} required /></label>
         </div>
         <div className="contact-form-actions">
