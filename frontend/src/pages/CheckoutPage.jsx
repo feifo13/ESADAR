@@ -92,6 +92,13 @@ function getOfferSavings(item) {
   );
 }
 
+function isCheckoutItemUnavailable(item) {
+  const status = String(item?.articleStatus || 'ACTIVE').toUpperCase();
+  const quantityAvailable = Number(item?.quantityAvailable ?? item?.maxQuantity ?? 0);
+  return status !== 'ACTIVE' || quantityAvailable <= 0;
+}
+
+
 function TrashIcon() {
   return (
     <svg
@@ -115,7 +122,7 @@ function TrashIcon() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, subtotal, removeItem, updateQuantity, refreshCart, flushCartSync } = useCart();
+  const { items, removeItem, updateQuantity, refreshCartAvailability, flushCartSync } = useCart();
   const { user, isAuthenticated } = useAuth();
   const { shippingMethodOptions, paymentMethodOptions, lookupError, loaded: lookupsLoaded } =
     useLookups();
@@ -137,10 +144,15 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const cartAvailabilitySignature = useMemo(
+    () => items.map((item) => `${item.articleId}:${item.quantity}`).sort().join('|'),
+    [items],
+  );
+
   useEffect(() => {
-    if (!isAuthenticated) return;
-    void refreshCart?.();
-  }, [isAuthenticated, refreshCart]);
+    if (!cartAvailabilitySignature) return;
+    void refreshCartAvailability?.(items);
+  }, [cartAvailabilitySignature, isAuthenticated]);
 
   const currentStepKey = location.pathname.split("/")[2] || "resumen";
   const currentStepIndex = Math.max(
@@ -194,6 +206,14 @@ export default function CheckoutPage() {
     paymentMethodOptions.find((item) => item.id === paymentMethod) ||
     paymentMethodOptions[0] ||
     null;
+  const availableItems = useMemo(
+    () => items.filter((item) => !isCheckoutItemUnavailable(item)),
+    [items],
+  );
+  const subtotal = availableItems.reduce(
+    (sum, item) => sum + Number(item.lineTotal ?? item.discountedPrice * item.quantity),
+    0,
+  );
   const total = subtotal + Number(shipping?.cost || 0);
 
   const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
@@ -208,13 +228,15 @@ export default function CheckoutPage() {
       ),
   );
 
+
+
   const completion = {
-    resumen: items.length > 0,
+    resumen: availableItems.length > 0,
     comprador: buyerComplete,
     pago: paymentComplete,
     envio: shippingComplete,
     confirmacion:
-      items.length > 0 && buyerComplete && paymentComplete && shippingComplete,
+      availableItems.length > 0 && buyerComplete && paymentComplete && shippingComplete,
   };
 
   const maxAllowedStepIndex = useMemo(() => {
@@ -238,7 +260,7 @@ export default function CheckoutPage() {
   }, [guest, shippingMethodId, paymentMethod, notes]);
 
   useEffect(() => {
-    if (!items.length && currentStepKey !== "resumen") {
+    if (!availableItems.length && currentStepKey !== "resumen") {
       navigate("/checkout/resumen", { replace: true });
       return;
     }
@@ -249,7 +271,7 @@ export default function CheckoutPage() {
       });
     }
   }, [
-    items.length,
+    availableItems.length,
     currentStepIndex,
     currentStepKey,
     maxAllowedStepIndex,
@@ -327,7 +349,7 @@ export default function CheckoutPage() {
   function validateCurrentStep() {
     setError("");
 
-    if (currentStepKey === "resumen" && !items.length) {
+    if (currentStepKey === "resumen" && !availableItems.length) {
       showCheckoutMessage("error", "Tu carrito está vacío.");
       return false;
     }
@@ -391,7 +413,7 @@ export default function CheckoutPage() {
   }
 
   async function handleConfirmOrder() {
-    if (!completion.confirmacion || !items.length) {
+    if (!completion.confirmacion || !availableItems.length) {
       showCheckoutMessage(
         "error",
         "Completa los pasos previos antes de confirmar la orden.",
@@ -420,7 +442,7 @@ export default function CheckoutPage() {
         shippingMethodId: Number(shippingMethodId),
         paymentMethod,
         notes: notes || null,
-        items: items.map((item) => ({
+        items: availableItems.map((item) => ({
           articleId: item.articleId,
           quantity: item.quantity,
           acceptedOfferId: item.acceptedOffer?.id || null,
@@ -513,17 +535,22 @@ export default function CheckoutPage() {
               className="summary-item-card-list"
               aria-label="Prendas de la orden"
             >
-              {items.map((item) => (
-                <SummaryItemCard
-                  key={getCheckoutLineKey(item)}
-                  item={item}
-                  onRemove={removeItem}
-                  onQuantityChange={(articleId, quantity) => {
-                    const result = updateQuantity(articleId, quantity);
-                    showStockNotice(result);
-                  }}
-                />
-              ))}
+              {items.map((item) => {
+                const isUnavailable = isCheckoutItemUnavailable(item);
+                return (
+                  <SummaryItemCard
+                    key={getCheckoutLineKey(item)}
+                    item={item}
+                    isUnavailable={isUnavailable}
+                    onRemove={removeItem}
+                    onQuantityChange={(articleId, quantity) => {
+                      if (isUnavailable) return;
+                      const result = updateQuantity(articleId, quantity);
+                      showStockNotice(result);
+                    }}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="table-shell checkout-items-table-shell">
@@ -541,12 +568,18 @@ export default function CheckoutPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    const isUnavailable = isCheckoutItemUnavailable(item);
+                    const rowClassName = [
+                      item.acceptedOffer ? "checkout-offer-row" : "",
+                      isUnavailable ? "checkout-unavailable-row" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
                     <tr
                       key={getCheckoutLineKey(item)}
-                      className={
-                        item.acceptedOffer ? "checkout-offer-row" : undefined
-                      }
+                      className={rowClassName || undefined}
                     >
                       <td>
                         <SmartImage
@@ -566,21 +599,27 @@ export default function CheckoutPage() {
                         {item.sizeLabel || "Sin talle"}
                       </td>
                       <td>
-                        <input
-                          className="input input-small checkout-qty-input"
-                          type="number"
-                          min="1"
-                          max={item.maxQuantity || item.quantity}
-                          value={item.quantity}
-                          aria-label={`Cantidad de ${item.title}`}
-                          onChange={(event) => {
-                            const result = updateQuantity(
-                              getCheckoutLineKey(item),
-                              Number(event.target.value || 1),
-                            );
-                            showStockNotice(result);
-                          }}
-                        />
+                        {isUnavailable ? (
+                          <span className="status-badge status-unavailable">
+                            No disponible
+                          </span>
+                        ) : (
+                          <input
+                            className="input input-small checkout-qty-input"
+                            type="number"
+                            min="1"
+                            max={item.maxQuantity || item.quantity}
+                            value={item.quantity}
+                            aria-label={`Cantidad de ${item.title}`}
+                            onChange={(event) => {
+                              const result = updateQuantity(
+                                getCheckoutLineKey(item),
+                                Number(event.target.value || 1),
+                              );
+                              showStockNotice(result);
+                            }}
+                          />
+                        )}
                       </td>
                       <td>
                         {item.acceptedOffer ? (
@@ -609,12 +648,16 @@ export default function CheckoutPage() {
                         )}
                       </td>
                       <td>
-                        <strong>
-                          {formatCurrency(
-                            item.lineTotal ??
-                              item.discountedPrice * item.quantity,
-                          )}
-                        </strong>
+                        {isUnavailable ? (
+                          <span className="muted-copy">Fuera del total</span>
+                        ) : (
+                          <strong>
+                            {formatCurrency(
+                              item.lineTotal ??
+                                item.discountedPrice * item.quantity,
+                            )}
+                          </strong>
+                        )}
                       </td>
                       <td>
                         <button
@@ -628,7 +671,8 @@ export default function CheckoutPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -885,7 +929,7 @@ export default function CheckoutPage() {
           <div className="detail-meta-list checkout-meta-list">
             <div>
               <span>Artículos</span>
-              <strong>{items.length}</strong>
+              <strong>{availableItems.length}</strong>
             </div>
             <div>
               <span>Comprador</span>
@@ -937,6 +981,7 @@ export default function CheckoutPage() {
     );
   }
 
+
   function renderCurrentStep() {
     if (currentStepKey === "comprador") return renderBuyerStep();
     if (currentStepKey === "pago") return renderPaymentStep();
@@ -950,7 +995,7 @@ export default function CheckoutPage() {
       <div className="container">
         <div className="section-card centered-card checkout-empty-card">
           <h1>Tu carrito está vacío</h1>
-          <p>Cuando agregues prendas aparecerán aquí con resumen de orden.</p>
+          <p>Agrega prendas al carrito para iniciar el proceso de compra.</p>
           <Link className="button button-primary" to="/">
             Volver al catálogo
           </Link>

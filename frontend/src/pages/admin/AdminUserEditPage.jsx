@@ -37,9 +37,13 @@ export default function AdminUserEditPage() {
   const [loadedUser, setLoadedUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [error, setError] = useState('');
 
   const isEditingSelf = Number(currentUser?.id) === Number(id);
+  const canChangePasswords = currentUser?.roles?.includes('SUPER_ADMIN');
   const selectedRoles = useMemo(() => new Set(form.roles || []), [form.roles]);
 
   useEffect(() => {
@@ -129,6 +133,36 @@ export default function AdminUserEditPage() {
     }
   }
 
+
+  async function handlePasswordSubmit(event) {
+    event.preventDefault();
+
+    if (!newPassword || newPassword.length < 8) {
+      const message = 'La nueva contraseña debe tener al menos 8 caracteres.';
+      setError(message);
+      notifyError(message);
+      return;
+    }
+
+    try {
+      setPasswordSaving(true);
+      setError('');
+      await apiFetch(`/api/admin/users/${id}/password`, {
+        method: 'PATCH',
+        body: { password: newPassword },
+      });
+      setNewPassword('');
+      setShowNewPassword(false);
+      notifySuccess('Contraseña actualizada correctamente.');
+    } catch (err) {
+      const message = err.message || 'No se pudo actualizar la contraseña.';
+      setError(message);
+      notifyError(message);
+    } finally {
+      setPasswordSaving(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="container page-stack admin-page-shell">
@@ -200,6 +234,49 @@ export default function AdminUserEditPage() {
               ))}
             </div>
           </div>
+
+
+          {canChangePasswords ? (
+            <div className="nested-card page-stack-sm">
+              <div>
+                <h2>Contraseña</h2>
+                <p className="muted-copy">Solo SUPER_ADMIN puede definir una nueva contraseña. La contraseña actual no se muestra porque se guarda hasheada.</p>
+              </div>
+              <div className="admin-filter-grid">
+                <label className="field-group">
+                  <span>Nueva contraseña</span>
+                  <input
+                    className="input"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    minLength={8}
+                    autoComplete="new-password"
+                  />
+                </label>
+                <div className="field-group field-group-actions">
+                  <span>Visibilidad</span>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => setShowNewPassword((current) => !current)}
+                  >
+                    {showNewPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  </button>
+                </div>
+              </div>
+              <div className="toolbar-inline">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={handlePasswordSubmit}
+                  disabled={passwordSaving || !newPassword}
+                >
+                  {passwordSaving ? 'Actualizando...' : 'Modificar contraseña'}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="toolbar-inline">
             <button type="submit" className="button button-primary" disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</button>

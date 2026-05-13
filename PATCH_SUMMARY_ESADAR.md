@@ -1,37 +1,15 @@
-# ESADAR patch summary
+# ESADAR auth/me anonymous session check patch
 
-Cambios aplicados sobre el ZIP entregado:
+Iteración sobre `ESADAR_intro_cart_iteracion_2026-05-12.zip`.
 
-- Mails: helpers centralizados para URLs públicas, orden, prenda, cuenta, login y reset de contraseña.
-- Loader: componente `AppLoader` con logo girando y reemplazo de textos visibles de carga.
-- Footer: guardas para evitar aparición/pestañeo durante carga, intro y navegación.
-- Galerías: una sola imagen ahora se muestra como principal y miniatura activa.
-- Frontend logging: `ErrorBoundary`, listeners globales y logger sanitizado hacia `/api/client-logs`.
-- Backend logging: módulo `client-logs`, endpoint público rate-limited y endpoint admin de consulta.
-- DB: migración `client_error_logs` y actualización de `db/schema.sql`.
-- Backups: script `backend/scripts/backup-db.mjs`, script npm `db:backup` y documentación `docs/DB_BACKUPS.md`.
-- Theme: primer paint y contexto fijados a `sharp-lab-light-01` + Neo Grotesk; limpieza de storage legacy.
-- Admin artículos: acción de eliminación real segura, manteniendo desactivación como alternativa histórica.
-- Oferta: badges/ribbons de oferta forzados a naranja.
-- Admin toolbar: grupos izquierda/derecha en desktop y comportamiento responsive en mobile.
-- Admin usuarios: vista `/admin/users/:id/edit`, endpoints GET/PUT, validaciones y auditoría `USER_UPDATED`.
+## Problema
+Al entrar a `/` sin estar logueado, el frontend ejecutaba `/api/auth/me` para intentar restaurar sesión. Como esa ruta exigía autenticación, el backend respondía `401 Missing access token`. Luego `apiFetch` lo reportaba al módulo de client logs, generando entradas `[client-log]` aunque era un caso normal para visitantes anónimos.
 
-Validaciones ejecutadas:
+## Cambio aplicado
+- `GET /api/auth/me` ahora usa `optionalAuth` en vez de `requireAuth`.
+- Si no hay cookie/token válido, responde `200 { ok: true, user: null }`.
+- Si hay sesión válida, responde igual que antes con el usuario.
+- El frontend limpia token local stale cuando recibe `user: null`.
 
-- `cd frontend && npm run check:imports`
-- `cd frontend && npm run build`
-- `cd backend && node --check src/server.js`
-- `cd backend && find src scripts -name '*.js' -o -name '*.mjs' | xargs -n1 node --check`
-- `cd backend && node --test tests/*.test.js`
-
-Migración nueva:
-
-```sql
-SOURCE db/migrations/2026-05-12-001-client-error-logs.sql;
-```
-
-Backup diario recomendado:
-
-```bash
-0 3 * * * cd /var/www/esadar-sandbox/backend && npm run db:backup >> /var/log/esadar-db-backup.log 2>&1
-```
+## Seguridad
+No se expone información privada sin sesión: el endpoint solo devuelve `user: null` para visitantes anónimos o tokens inválidos. Las rutas realmente protegidas siguen usando `requireAuth`.

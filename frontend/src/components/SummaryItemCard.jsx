@@ -43,6 +43,7 @@ function CheckoutSummaryItemCard({
   onQuantityChange,
   onRemove,
   readOnly = false,
+  isUnavailable = false,
 }) {
   const quantity = Math.max(1, Number(item.quantity || 1));
   const maxQuantity = Math.max(quantity, Number(item.maxQuantity || quantity));
@@ -67,11 +68,11 @@ function CheckoutSummaryItemCard({
 
   return (
     <article
-      className={
-        hasAcceptedOffer
-          ? "summary-item-card summary-item-card--accepted-offer"
-          : "summary-item-card"
-      }
+      className={cn(
+        "summary-item-card",
+        hasAcceptedOffer ? "summary-item-card--accepted-offer" : "",
+        isUnavailable ? "summary-item-card--unavailable" : "",
+      )}
     >
       <Link
         to={articlePath}
@@ -87,7 +88,11 @@ function CheckoutSummaryItemCard({
       </Link>
 
       <div className="summary-item-card__body">
-        {hasAcceptedOffer ? (
+        {isUnavailable ? (
+          <span className="summary-item-card__badge status-badge status-unavailable">
+            No disponible
+          </span>
+        ) : hasAcceptedOffer ? (
           <span className="summary-item-card__badge pill pill-offer">
             Oferta aceptada
           </span>
@@ -108,9 +113,15 @@ function CheckoutSummaryItemCard({
           {/* {hasAcceptedOffer ? <span className="summary-item-card__meta"> oferta x1 · ahorro {formatCurrency(offerSavings)}</span> : null} */}
         </div>
 
-        <p className="summary-item-card__price-row">
-          Total: <strong>{formatCurrency(lineTotal)}</strong>
-        </p>
+        {isUnavailable ? (
+          <p className="summary-item-card__price-row summary-item-card__price-row--unavailable">
+            Fuera del total de la orden.
+          </p>
+        ) : (
+          <p className="summary-item-card__price-row">
+            Total: <strong>{formatCurrency(lineTotal)}</strong>
+          </p>
+        )}
         {hasAcceptedOffer ? (
           <p className="summary-item-card__meta">
             La oferta aplica a <strong>1</strong> unidad.
@@ -118,7 +129,24 @@ function CheckoutSummaryItemCard({
         ) : null}
       </div>
 
-      {readOnly ? (
+      {isUnavailable ? (
+        readOnly ? null : (
+          <div
+            className="summary-item-card__quantity summary-item-card__quantity--unavailable"
+            aria-label={`Quitar ${item.title}`}
+          >
+            <button
+              type="button"
+              className="summary-item-card__qty-button"
+              onClick={() => onRemove(lineKey)}
+              aria-label={`Quitar ${item.title}`}
+              title="Quitar"
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        )
+      ) : readOnly ? (
         <div className="summary-item-card__quantity summary-item-card__quantity--readonly">
           <span>Cant.</span>
           <strong>{quantity}</strong>

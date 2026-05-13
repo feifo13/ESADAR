@@ -12176,7 +12176,6 @@ textarea,
     rgba(0, 0, 0, calc(0.16 * var(--footer-scroll-progress, 0)));
 }
 
-
 .app-shell:not(.app-shell--has-footer-reveal) .footer-scroll-scene {
   opacity: 0 !important;
   visibility: hidden !important;
@@ -12733,6 +12732,29 @@ textarea,
     var(--pill-offer-bg, #ffec7a) 18%,
     var(--surface, #fff)
   );
+}
+
+.summary-item-card--unavailable,
+.checkout-unavailable-row {
+  border-color: #c1121f !important;
+  outline: 2px solid rgba(193, 18, 31, 0.5);
+  background: color-mix(in srgb, #ffffff 88%, #c1121f 12%);
+}
+
+.status-badge.status-unavailable {
+  border-color: #c1121f;
+  background: #ffffff;
+  color: #c1121f;
+}
+
+.summary-item-card__price-row--unavailable {
+  color: #c1121f;
+  font-weight: 850;
+}
+
+.summary-item-card__quantity--unavailable {
+  grid-template-columns: minmax(44px, 52px);
+  width: min(100%, 52px);
 }
 
 .checkout-offer-price,
@@ -13939,7 +13961,9 @@ dialog,
 }
 
 @keyframes esadar-loader-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14102,4 +14126,149 @@ dialog,
     aspect-ratio: 1 / 1 !important;
     object-fit: cover !important;
   }
+}
+
+/* === ESADAR production hardening patch: loader, sold-out ribbon, checkout stock ticker and mobile header stability === */
+.article-card-ribbon:not(.article-card-ribbon--offerable) {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+.app-loader--page {
+  min-height: calc(100dvh - var(--header-height, 72px));
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader--card {
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader__logo {
+  animation-duration: 2.1s !important;
+}
+
+.cart-unavailable-ticker {
+  position: sticky;
+  top: var(--header-height, 72px);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 10px 18px;
+  background: var(--orange, #fc4c02);
+  color: #ffffff;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cart-unavailable-ticker__content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cart-unavailable-ticker__content span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cart-unavailable-ticker__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 960px) {
+  .app-shell--footer-scroll-active .site-header {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+
+  .app-shell--footer-scroll-deep .site-header {
+    pointer-events: auto !important;
+  }
+
+  .cart-unavailable-ticker {
+    top: 72px;
+    align-items: flex-start;
+    padding-inline: 12px;
+  }
+
+  .cart-unavailable-ticker__content {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cart-unavailable-ticker__content span {
+    white-space: normal;
+  }
+}
+
+/* === ESADAR loading view correction: keep header visible, white body, centered slow logo === */
+.app-loader--page {
+  display: grid !important;
+  place-items: center !important;
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader--page .app-loader__logo,
+.catalog-filter-loading-splash__logo {
+  width: 190px !important;
+  max-width: 190px !important;
+  filter: none !important;
+  animation: esadar-loader-spin 2.1s linear infinite !important;
+}
+
+.catalog-content--loading {
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+}
+
+.catalog-filter-loading-splash {
+  position: fixed !important;
+  inset: var(--header-height, 72px) 0 0 0 !important;
+  z-index: 48 !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+  border: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  animation: none !important;
+}
+
+.catalog-filter-loading-splash__logo-wrap {
+  padding: 0 !important;
+}
+
+.quick-toggle-switch:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }

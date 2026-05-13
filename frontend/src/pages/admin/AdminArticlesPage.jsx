@@ -44,7 +44,30 @@ function formatPreviewList(values = []) {
   return values.join(" | ");
 }
 
-function QuickToggle({ checked, label, onText, offText, onClick }) {
+function asBooleanFlag(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  return ["1", "true", "yes", "si", "sí"].includes(String(value || "").toLowerCase());
+}
+
+function normalizeArticleFlags(article) {
+  if (!article) return article;
+  return {
+    ...article,
+    isFeatured: asBooleanFlag(article.isFeatured),
+    allowOffers: asBooleanFlag(article.allowOffers),
+  };
+}
+
+function articleStillMatchesVisibleFilters(article, filters) {
+  if (!article) return false;
+  if (filters.status && article.status !== filters.status) return false;
+  if (filters.featured !== "" && asBooleanFlag(article.isFeatured) !== (filters.featured === "true")) return false;
+  if (filters.offerable !== "" && asBooleanFlag(article.allowOffers) !== (filters.offerable === "true")) return false;
+  return true;
+}
+
+function QuickToggle({ checked, label, onText, offText, onClick, disabled = false, pending = false }) {
   const stateText = checked ? onText : offText;
 
   return (
@@ -52,17 +75,18 @@ function QuickToggle({ checked, label, onText, offText, onClick }) {
       <span className="quick-toggle-control__label">{label}</span>
       <button
         type="button"
-        className={checked ? "quick-toggle-switch is-on" : "quick-toggle-switch"}
+        className={[checked ? "quick-toggle-switch is-on" : "quick-toggle-switch", pending ? "is-pending" : ""].filter(Boolean).join(" ")}
         role="switch"
         aria-checked={checked}
-        aria-label={`${label}: ${stateText}`}
-        title={`${label}: ${stateText}`}
+        aria-label={`${label}: ${pending ? "Actualizando" : stateText}`}
+        title={`${label}: ${pending ? "Actualizando" : stateText}`}
         onClick={onClick}
+        disabled={disabled || pending}
       >
         <span className="quick-toggle-switch__track" aria-hidden="true">
           <span className="quick-toggle-switch__thumb" />
         </span>
-        <span className="quick-toggle-switch__state">{stateText}</span>
+        <span className="quick-toggle-switch__state">{pending ? "..." : stateText}</span>
       </button>
     </div>
   );
@@ -94,6 +118,7 @@ export default function AdminArticlesPage() {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [importPanelOpen, setImportPanelOpen] = useState(false);
+  const [pendingToggles, setPendingToggles] = useState({});
 
   const totalPages = Math.max(
     1,
@@ -127,7 +152,7 @@ export default function AdminArticlesPage() {
         setError("");
         const response = await apiFetch(`/api/admin/articles?${activeQuery}`);
         if (ignore) return;
-        setItems(response.items || []);
+        setItems((response.items || []).map(normalizeArticleFlags));
         setPagination(
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
@@ -321,17 +346,23 @@ export default function AdminArticlesPage() {
           body: { status: "INACTIVE" },
         },
       );
-      setItems((current) =>
-        current.map((item) =>
-          Number(item.id) === Number(article.id)
-            ? {
-                ...item,
-                ...(response.article || {}),
-                status: response.article?.status || "INACTIVE",
-              }
-            : item,
-        ),
-      );
+      const nextArticle = normalizeArticleFlags({
+        ...article,
+        ...(response.article || {}),
+        status: response.article?.status || "INACTIVE",
+      });
+      setItems((current) => {
+        const nextItems = articleStillMatchesVisibleFilters(nextArticle, filters)
+          ? current.map((item) => (Number(item.id) === Number(article.id) ? nextArticle : item))
+          : current.filter((item) => Number(item.id) !== Number(article.id));
+        if (nextItems.length < current.length) {
+          setPagination((currentPagination) => ({
+            ...currentPagination,
+            total: Math.max(0, Number(currentPagination.total || 0) - 1),
+          }));
+        }
+        return nextItems;
+      });
       const successMessage = "El articulo fue enviado a inactivos.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
@@ -379,15 +410,15 @@ export default function AdminArticlesPage() {
         fallbackError: "No se pudo actualizar el estado del artículo.",
       },
       isFeatured: {
-        payload: { isFeatured: !article.isFeatured },
-        success: !article.isFeatured
+        payload: { isFeatured: !asBooleanFlag(article.isFeatured) },
+        success: !asBooleanFlag(article.isFeatured)
           ? "Artículo marcado como destacado."
           : "Artículo quitado de destacados.",
         fallbackError: "No se pudo actualizar destacado.",
       },
       allowOffers: {
-        payload: { allowOffers: !article.allowOffers },
-        success: !article.allowOffers
+        payload: { allowOffers: !asBooleanFlag(article.allowOffers) },
+        success: !asBooleanFlag(article.allowOffers)
           ? "El artículo ahora acepta ofertas."
           : "El artículo ya no acepta ofertas.",
         fallbackError: "No se pudo actualizar aceptación de ofertas.",
@@ -407,7 +438,10 @@ export default function AdminArticlesPage() {
       return;
     }
 
+    const pendingKey = `${article.id}:${field}`;
+
     try {
+      setPendingToggles((current) => ({ ...current, [pendingKey]: true }));
       setError("");
       setMessage("");
       const response = await apiFetch(
@@ -418,19 +452,30 @@ export default function AdminArticlesPage() {
         },
       );
 
-      setItems((current) =>
-        current.map((item) =>
-          Number(item.id) === Number(article.id)
-            ? { ...item, ...(response.article || {}) }
-            : item,
-        ),
-      );
+      const nextArticle = normalizeArticleFlags({ ...article, ...(response.article || {}) });
+      setItems((current) => {
+        const nextItems = articleStillMatchesVisibleFilters(nextArticle, filters)
+          ? current.map((item) => (Number(item.id) === Number(article.id) ? nextArticle : item))
+          : current.filter((item) => Number(item.id) !== Number(article.id));
+        if (nextItems.length < current.length) {
+          setPagination((currentPagination) => ({
+            ...currentPagination,
+            total: Math.max(0, Number(currentPagination.total || 0) - 1),
+          }));
+        }
+        return nextItems;
+      });
       setMessage(config.success);
       notifySuccess(config.success);
     } catch (err) {
       const errorMessage = err.message || config.fallbackError;
       setError(errorMessage);
       notifyError(errorMessage);
+    } finally {
+      setPendingToggles((current) => {
+        const { [pendingKey]: _removed, ...rest } = current;
+        return rest;
+      });
     }
   }
 
@@ -1014,6 +1059,8 @@ export default function AdminArticlesPage() {
                           <div className="admin-article-toggles">
                             <QuickToggle
                               checked={article.status === "ACTIVE"}
+                              pending={Boolean(pendingToggles[`${article.id}:status`])}
+                              disabled={Boolean(pendingToggles[`${article.id}:status`])}
                               label="Activo"
                               onText="Sí"
                               offText="No"
@@ -1022,7 +1069,9 @@ export default function AdminArticlesPage() {
                               }
                             />
                             <QuickToggle
-                              checked={Boolean(article.isFeatured)}
+                              checked={asBooleanFlag(article.isFeatured)}
+                              pending={Boolean(pendingToggles[`${article.id}:isFeatured`])}
+                              disabled={Boolean(pendingToggles[`${article.id}:isFeatured`])}
                               label="Destacado"
                               onText="Sí"
                               offText="No"
@@ -1031,7 +1080,9 @@ export default function AdminArticlesPage() {
                               }
                             />
                             <QuickToggle
-                              checked={Boolean(article.allowOffers)}
+                              checked={asBooleanFlag(article.allowOffers)}
+                              pending={Boolean(pendingToggles[`${article.id}:allowOffers`])}
+                              disabled={Boolean(pendingToggles[`${article.id}:allowOffers`])}
                               label="Acepta ofertas"
                               onText="Sí"
                               offText="No"

@@ -6,7 +6,7 @@ import {
   useOutletContext,
 } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
-import { apiFetch, cachedApiFetch } from "../lib/api.js";
+import { apiFetch, cachedApiFetch, listenPublicCacheInvalidation } from "../lib/api.js";
 import { runWhenIdle } from "../lib/performance.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
@@ -28,6 +28,7 @@ import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const HERO_SEQUENCE = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
+const CATALOG_PAGE_SIZE = 20;
 
 function mergeAcceptedOffers(items, acceptedOffersByArticle) {
   return items.map((item) => {
@@ -257,7 +258,7 @@ export default function HomePage() {
   const [acceptedOffersByArticle, setAcceptedOffersByArticle] = useState({});
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 20,
+    pageSize: CATALOG_PAGE_SIZE,
     total: 0,
   });
   const [page, setPage] = useState(1);
@@ -285,6 +286,7 @@ export default function HomePage() {
     if (filters.offerable) params.set("offerable", "true");
     if (filters.featured) params.set("featured", "true");
     params.set("page", String(page));
+    params.set("pageSize", String(CATALOG_PAGE_SIZE));
     return params.toString();
   }, [filters, page]);
 
@@ -413,7 +415,7 @@ export default function HomePage() {
     1,
     Math.ceil(
       Number(pagination.total || 0) /
-        Math.max(1, Number(pagination.pageSize || 20)),
+        Math.max(1, Number(pagination.pageSize || CATALOG_PAGE_SIZE)),
     ),
   );
 
@@ -628,6 +630,17 @@ export default function HomePage() {
   }, [acceptedOffersByArticle]);
 
   useEffect(() => {
+    return listenPublicCacheInvalidation((detail = {}) => {
+      const match = String(detail.match || '');
+      if (match && !match.startsWith('/api/public/articles')) return;
+      lastAutoLoadPageRef.current = 1;
+      setArticlesExhausted(false);
+      setPage(1);
+      setCatalogReloadNonce((current) => current + 1);
+    });
+  }, []);
+
+  useEffect(() => {
     let ignore = false;
 
     async function loadArticles() {
@@ -645,7 +658,7 @@ export default function HomePage() {
         );
         const nextPagination = response.pagination || {
           page: 1,
-          pageSize: 20,
+          pageSize: CATALOG_PAGE_SIZE,
           total: 0,
         };
 

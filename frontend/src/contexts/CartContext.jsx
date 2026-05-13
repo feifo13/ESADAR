@@ -36,6 +36,10 @@ function findLineByKey(items, lineKey) {
   return items.find((item) => getLineKey(item) === wanted || String(item.articleId) === wanted) || null;
 }
 
+function isCartItemAvailable(item) {
+  return item?.articleStatus === 'ACTIVE' && Number(item.quantityAvailable ?? item.maxQuantity ?? 0) > 0;
+}
+
 function splitLocalAdd(items, article, quantity, maxQuantity) {
   const requestedQuantity = Math.max(1, Number(quantity || 1));
   const articleId = article.id;
@@ -107,6 +111,8 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
     acceptedOffer: acceptedOffer || null,
     quantity,
     maxQuantity,
+    quantityAvailable: maxQuantity,
+    articleStatus: article.status || 'ACTIVE',
   };
   item.lineTotal = calculateLineTotal(item);
   return item;
@@ -115,6 +121,39 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
 function readStoredItems() {
   const stored = storage.get(STORAGE_KEY, []);
   return Array.isArray(stored) ? stored : [];
+}
+
+function applyAvailabilitySnapshot(items = [], availabilityItems = []) {
+  const availabilityById = new Map(
+    (availabilityItems || []).map((item) => [Number(item.id), item]),
+  );
+
+  return items.map((item) => {
+    const snapshot = availabilityById.get(Number(item.articleId));
+    if (!snapshot) {
+      return {
+        ...item,
+        articleStatus: 'INACTIVE',
+        quantityAvailable: 0,
+        maxQuantity: 0,
+        lineTotal: calculateLineTotal(item),
+      };
+    }
+
+    const quantityAvailable = Number(snapshot.quantityAvailable || 0);
+    const articleStatus = snapshot.status || 'INACTIVE';
+    const maxQuantity = Math.max(0, quantityAvailable);
+    const quantity = item.acceptedOffer ? 1 : clampQuantity(item.quantity, Math.max(1, maxQuantity || item.quantity || 1));
+
+    return {
+      ...item,
+      articleStatus,
+      quantityAvailable,
+      maxQuantity,
+      quantity,
+      lineTotal: calculateLineTotal({ ...item, quantity }),
+    };
+  });
 }
 
 function normalizeRemoteItems(items = []) {
@@ -132,7 +171,9 @@ function normalizeRemoteItems(items = []) {
     discountValue: Number(item.discountValue || 0),
     discountedPrice: Number(item.discountedPrice || 0),
     quantity: Number(item.quantity || 1),
-    maxQuantity: Number(item.maxQuantity || item.quantity || 1),
+    maxQuantity: Number(item.maxQuantity || item.quantityAvailable || item.quantity || 1),
+    quantityAvailable: Number(item.quantityAvailable ?? item.maxQuantity ?? 0),
+    articleStatus: item.articleStatus || 'ACTIVE',
     acceptedOffer: item.acceptedOffer || null,
     lineTotal: Number(item.lineTotal ?? calculateLineTotal(item)),
   }));
@@ -145,6 +186,10 @@ export function CartProvider({ children }) {
   const [cartFx, setCartFx] = useState({ tick: 0, articleId: null, title: '', sourceRect: null });
   const syncQueueRef = useRef(Promise.resolve());
   const syncedUserIdRef = useRef(null);
+  const availabilityArticleIdsSignature = useMemo(
+    () => [...new Set(items.map((item) => Number(item.articleId)).filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b).join('|'),
+    [items],
+  );
 
   function persist(nextItems, ownerId = cartOwnerId) {
     setItems(nextItems);
@@ -172,7 +217,34 @@ export function CartProvider({ children }) {
     });
   }, [isAuthenticated, user?.id]);
 
+  const refreshCartAvailability = useCallback((itemsSnapshot = []) => {
+    if (isAuthenticated && user?.id) {
+      return refreshCart();
+    }
+
+    const currentItems = Array.isArray(itemsSnapshot) ? itemsSnapshot : [];
+    const articleIds = [...new Set(currentItems
+      .map((item) => Number(item.articleId))
+      .filter((item) => Number.isInteger(item) && item > 0))];
+
+    if (!articleIds.length) {
+      return Promise.resolve(currentItems);
+    }
+
+    return enqueueSync(async () => {
+      const response = await apiFetch(`/api/public/articles/availability?ids=${articleIds.join(',')}`);
+      const nextItems = applyAvailabilitySnapshot(currentItems, response.items || []);
+      persist(nextItems, null);
+      return nextItems;
+    });
+  }, [isAuthenticated, refreshCart, user?.id]);
+
   const flushCartSync = useCallback(() => syncQueueRef.current.catch(() => undefined), []);
+
+  useEffect(() => {
+    if (authLoading || isAuthenticated || !availabilityArticleIdsSignature) return;
+    void refreshCartAvailability(items);
+  }, [authLoading, availabilityArticleIdsSignature, isAuthenticated, refreshCartAvailability]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -211,6 +283,7 @@ export function CartProvider({ children }) {
     () => ({
       items,
       refreshCart,
+      refreshCartAvailability,
       flushCartSync,
       addItem(article, quantity = 1, options = {}) {
         const maxQuantity = Math.max(0, Number(article.quantityAvailable ?? article.maxQuantity ?? 0));
@@ -393,11 +466,12 @@ export function CartProvider({ children }) {
       getItems(articleId) {
         return items.filter((item) => Number(item.articleId) === Number(articleId));
       },
-      cartCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      cartCount: items.filter(isCartItemAvailable).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+      unavailableCount: items.filter((item) => !isCartItemAvailable(item)).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
       cartFx,
-      subtotal: items.reduce((sum, item) => sum + Number(item.lineTotal ?? calculateLineTotal(item)), 0),
+      subtotal: items.filter(isCartItemAvailable).reduce((sum, item) => sum + Number(item.lineTotal ?? calculateLineTotal(item)), 0),
     }),
-    [cartFx, cartOwnerId, flushCartSync, isAuthenticated, items, refreshCart, user?.id],
+    [cartFx, cartOwnerId, flushCartSync, isAuthenticated, items, refreshCart, refreshCartAvailability, user?.id],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

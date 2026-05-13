@@ -66,6 +66,7 @@ export async function apiFetch(path, options = {}) {
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
+      credentials: options.credentials || 'include',
       headers,
       body: isFormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
     });
@@ -91,6 +92,8 @@ export async function apiFetch(path, options = {}) {
     throw error;
   }
 
+  maybeInvalidatePublicCacheAfterMutation(path, options.method || 'GET');
+
   return payload;
 }
 
@@ -98,6 +101,99 @@ export async function apiFetch(path, options = {}) {
 const PUBLIC_CACHE_PREFIX = 'esadar-public-cache:';
 const publicResponseCache = new Map();
 const publicInFlightRequests = new Map();
+const PUBLIC_CACHE_BUST_KEY = 'esadar-public-cache-bust';
+
+function broadcastPublicCacheInvalidation(match = '') {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const payload = JSON.stringify({ match, at: Date.now() });
+    window.localStorage?.setItem(PUBLIC_CACHE_BUST_KEY, payload);
+    window.dispatchEvent(new CustomEvent('esadar:public-cache-invalidated', { detail: { match } }));
+  } catch {
+    // Cross-tab cache invalidation must never block the app.
+  }
+}
+
+export function listenPublicCacheInvalidation(handler) {
+  if (typeof window === 'undefined' || typeof handler !== 'function') {
+    return () => {};
+  }
+
+  const handleInvalidation = (detail = {}) => {
+    clearPublicCache(detail.match || '');
+    handler(detail);
+  };
+
+  const handleCustom = (event) => {
+    handleInvalidation(event?.detail || {});
+  };
+
+  const handleStorage = (event) => {
+    if (event.key !== PUBLIC_CACHE_BUST_KEY || !event.newValue) return;
+    try {
+      handleInvalidation(JSON.parse(event.newValue));
+    } catch {
+      handleInvalidation({ match: '' });
+    }
+  };
+
+  window.addEventListener('esadar:public-cache-invalidated', handleCustom);
+  window.addEventListener('storage', handleStorage);
+
+  return () => {
+    window.removeEventListener('esadar:public-cache-invalidated', handleCustom);
+    window.removeEventListener('storage', handleStorage);
+  };
+}
+
+function getPublicCacheStorageKey(cacheKey) {
+  return `${PUBLIC_CACHE_PREFIX}${cacheKey}`;
+}
+
+function clearPublicCache(match = '') {
+  const shouldRemove = (cacheKey) => {
+    if (typeof match === 'function') return Boolean(match(cacheKey));
+    if (!match) return true;
+    return String(cacheKey).startsWith(String(match));
+  };
+
+  Array.from(publicResponseCache.keys()).forEach((cacheKey) => {
+    if (shouldRemove(cacheKey)) publicResponseCache.delete(cacheKey);
+  });
+
+  Array.from(publicInFlightRequests.keys()).forEach((cacheKey) => {
+    if (shouldRemove(cacheKey)) publicInFlightRequests.delete(cacheKey);
+  });
+
+  if (typeof window === 'undefined' || !window.sessionStorage) return;
+
+  try {
+    const keysToRemove = [];
+    for (let index = 0; index < window.sessionStorage.length; index += 1) {
+      const storageKey = window.sessionStorage.key(index);
+      if (!storageKey?.startsWith(PUBLIC_CACHE_PREFIX)) continue;
+      const cacheKey = storageKey.slice(PUBLIC_CACHE_PREFIX.length);
+      if (shouldRemove(cacheKey)) keysToRemove.push(storageKey);
+    }
+    keysToRemove.forEach((storageKey) => window.sessionStorage.removeItem(storageKey));
+  } catch {
+    // Cache invalidation must never block the app.
+  }
+}
+
+export function invalidatePublicCache(match = '') {
+  clearPublicCache(match);
+  broadcastPublicCacheInvalidation(match);
+}
+
+function maybeInvalidatePublicCacheAfterMutation(path, method) {
+  if (String(method || 'GET').toUpperCase() === 'GET') return;
+
+  if (String(path || '').startsWith('/api/admin/articles')) {
+    invalidatePublicCache('/api/public/articles');
+  }
+}
 
 function getCacheTimestamp() {
   return Date.now();
@@ -107,7 +203,7 @@ function readSessionCache(cacheKey) {
   if (typeof window === 'undefined' || !window.sessionStorage) return null;
 
   try {
-    const rawValue = window.sessionStorage.getItem(`${PUBLIC_CACHE_PREFIX}${cacheKey}`);
+    const rawValue = window.sessionStorage.getItem(getPublicCacheStorageKey(cacheKey));
     return rawValue ? JSON.parse(rawValue) : null;
   } catch {
     return null;
@@ -118,7 +214,7 @@ function writeSessionCache(cacheKey, entry) {
   if (typeof window === 'undefined' || !window.sessionStorage) return;
 
   try {
-    window.sessionStorage.setItem(`${PUBLIC_CACHE_PREFIX}${cacheKey}`, JSON.stringify(entry));
+    window.sessionStorage.setItem(getPublicCacheStorageKey(cacheKey), JSON.stringify(entry));
   } catch {
     // Storage quotas or privacy settings should never block the app.
   }
@@ -201,6 +297,7 @@ export async function apiDownload(path, options = {}) {
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: options.method || 'GET',
+      credentials: options.credentials || 'include',
       headers,
       body: options.body,
     });

@@ -7,23 +7,29 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => storage.get('miami-closet-token', null));
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(Boolean(token));
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let ignore = false;
 
     async function loadCurrentUser() {
-      if (!token) {
-        setUser(null);
+      if (loggingOut) {
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        const response = await apiFetch('/api/auth/me', { token });
+        const response = await apiFetch('/api/auth/me', token ? { token } : {});
         if (!ignore) {
-          setUser(response.user);
+          if (response.user) {
+            setUser(response.user);
+          } else {
+            setToken(null);
+            setUser(null);
+            storage.remove('miami-closet-token');
+          }
         }
       } catch {
         if (!ignore) {
@@ -40,20 +46,21 @@ export function AuthProvider({ children }) {
     return () => {
       ignore = true;
     };
-  }, [token]);
+  }, [loggingOut, token]);
 
   const value = useMemo(
     () => ({
       token,
       user,
       loading,
-      isAuthenticated: Boolean(token && user),
+      isAuthenticated: Boolean(user),
       async login(email, password) {
         const response = await apiFetch('/api/auth/login', {
           method: 'POST',
           body: { email, password },
         });
         storage.set('miami-closet-token', response.token);
+        setLoggingOut(false);
         setToken(response.token);
         setUser(response.user);
         return response.user;
@@ -64,14 +71,18 @@ export function AuthProvider({ children }) {
           body: payload,
         });
         storage.set('miami-closet-token', response.token);
+        setLoggingOut(false);
         setToken(response.token);
         setUser(response.user);
         return response.user;
       },
       logout() {
+        setLoggingOut(true);
         storage.remove('miami-closet-token');
         setToken(null);
         setUser(null);
+        setLoading(false);
+        void apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
       },
     }),
     [token, user, loading],

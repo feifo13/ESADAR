@@ -22,7 +22,7 @@ export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
-  const [introStage, setIntroStage] = useState("hidden");
+  const [introStage, setIntroStage] = useState("visible");
   const [introKey, setIntroKey] = useState(0);
   const [introDuration, setIntroDuration] = useState(INTRO_INITIAL_VISIBLE_MS);
   const [introFadeDuration, setIntroFadeDuration] = useState(
@@ -38,6 +38,7 @@ export default function RootLayout() {
   const isAdminView = location.pathname.startsWith("/admin");
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
+  const showBreadcrumbs = true;
   const shouldNoIndex =
     isCheckoutView || isAdminView || isAuthView || isAccountView;
 
@@ -91,15 +92,9 @@ export default function RootLayout() {
   }, [location.key, location.state, navigationType]);
 
   useEffect(() => {
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
     const wantsReplay = Boolean(location.state?.replayIntro);
     const shouldShowInitial = !didInitialIntro.current;
-    const shouldShowIntro = !reduceMotion && (shouldShowInitial || wantsReplay);
-
-    didInitialIntro.current = true;
+    const shouldShowIntro = shouldShowInitial || wantsReplay;
 
     if (!shouldShowIntro) {
       setIntroStage("hidden");
@@ -129,10 +124,12 @@ export default function RootLayout() {
       () => setIntroStage("fading"),
       visibleMs,
     );
-    const hideTimer = window.setTimeout(
-      () => setIntroStage("hidden"),
-      visibleMs + fadeMs,
-    );
+    const hideTimer = window.setTimeout(() => {
+      if (shouldShowInitial) {
+        didInitialIntro.current = true;
+      }
+      setIntroStage("hidden");
+    }, visibleMs + fadeMs);
 
     return () => {
       window.clearTimeout(fadeTimer);
@@ -182,7 +179,7 @@ export default function RootLayout() {
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
         <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
-          <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} />
+          {showBreadcrumbs ? <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} /> : null}
           <div className="page-transition-shell">
             <Suspense fallback={<AppLoader variant="page" label="Cargando vista" />}>
               <Outlet context={{ setHeroLogoVisible, setBreadcrumbLabelOverrides }} />

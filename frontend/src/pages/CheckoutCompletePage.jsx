@@ -61,7 +61,10 @@ export default function CheckoutCompletePage() {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
 
-    navigate("/", { replace: true });
+    navigate("/", {
+      replace: true,
+      state: { replayIntro: true, replayIntroReason: "checkout-accepted" },
+    });
   }
 
   if (!completedOrder?.orderNumber) {
