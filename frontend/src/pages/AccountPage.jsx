@@ -1308,38 +1308,56 @@ export default function AccountPage() {
               </div>
 
               <div className="history-list account-desktop-list">
-                {alerts.map((alert) => (
-                  <article key={alert.id} className="history-row">
-                    <div>
-                      <strong>{alert.articleTitle || "Alerta general"}</strong>
-                      <p className="muted-copy">
-                        {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType}{" "}
-                        ·{" "}
-                        <StatusBadge
-                          status={alert.status}
-                          labels={{ ACTIVE: "Activa", INACTIVE: "Inactiva" }}
-                        />
-                      </p>
-                    </div>
-                    <div className="table-actions">
-                      <span>{formatDate(alert.createdAt)}</span>
-                      <button
-                        type="button"
-                        className={`icon-action-button summary-item-card__alert-action${
-                          alertPendingIds.includes(alert.id)
-                            ? " is-pending"
-                            : " is-active"
-                        }`}
-                        aria-label="Quitar alerta"
-                        title="Quitar alerta"
-                        disabled={alertPendingIds.includes(alert.id)}
-                        onClick={() => void handleRemoveAlert(alert.id)}
-                      >
-                        <BellIcon active />
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                {alerts.map((alert) => {
+                  const alertPath =
+                    alert.articleId || alert.articleSlug
+                      ? articlePath({
+                          articleId: alert.articleId,
+                          articleSlug: alert.articleSlug,
+                          slug: alert.articleSlug,
+                        })
+                      : null;
+                  const alertTitle = alert.articleTitle || "Alerta general";
+
+                  return (
+                    <article key={alert.id} className="history-row">
+                      <div>
+                        {alertPath ? (
+                          <Link to={alertPath} className="table-strong-link">
+                            {alertTitle}
+                          </Link>
+                        ) : (
+                          <strong>{alertTitle}</strong>
+                        )}
+                        <p className="muted-copy">
+                          {ALERT_TYPE_LABELS[alert.alertType] || alert.alertType}{" "}
+                          ·{" "}
+                          <StatusBadge
+                            status={alert.status}
+                            labels={{ ACTIVE: "Activa", INACTIVE: "Inactiva" }}
+                          />
+                        </p>
+                      </div>
+                      <div className="table-actions">
+                        <span>{formatDate(alert.createdAt)}</span>
+                        <button
+                          type="button"
+                          className={`icon-action-button summary-item-card__alert-action${
+                            alertPendingIds.includes(alert.id)
+                              ? " is-pending"
+                              : " is-active"
+                          }`}
+                          aria-label="Quitar alerta"
+                          title="Quitar alerta"
+                          disabled={alertPendingIds.includes(alert.id)}
+                          onClick={() => void handleRemoveAlert(alert.id)}
+                        >
+                          <BellIcon active />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </>
           ) : null}
@@ -1451,12 +1469,18 @@ export default function AccountPage() {
                             .join(" ")}
                         >
                           <td>
-                            <SmartImage
-                              src={offer.article.image}
-                              alt={offer.article.title}
-                              fallbackLabel={offer.article.title}
-                              className="table-thumb-image"
-                            />
+                            <Link
+                              to={articleLink}
+                              className="table-thumb-link"
+                              aria-label={`Ver ${article.title || `oferta #${offer.id}`}`}
+                            >
+                              <SmartImage
+                                src={article.image}
+                                alt={article.title || `Oferta #${offer.id}`}
+                                fallbackLabel={article.title || `Oferta #${offer.id}`}
+                                className="table-thumb-image"
+                              />
+                            </Link>
                           </td>
                           <td>{formatDate(offer.createdAt)}</td>
                           <td>
