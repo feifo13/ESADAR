@@ -33,12 +33,13 @@ function renderArticleImage(imageUrl, title) {
   `;
 }
 
-export function renderAcceptedOfferEmail({ offer } = {}) {
+export function renderAcceptedOfferEmail({ offer, publicSiteUrl } = {}) {
+  const urlOptions = { publicSiteUrl };
   const name = buildCustomerName(offer?.contact);
   const articleTitle = offer?.article?.title || "la prenda";
-  const articleUrl = buildArticleUrl(offer?.article);
+  const articleUrl = buildArticleUrl(offer?.article, urlOptions);
   const amount = formatCurrencyUYU(offer?.offeredAmount, offer?.currencyCode || "UYU");
-  const imageUrl = getArticleEmailImageUrl(offer?.article?.image || offer?.article);
+  const imageUrl = getArticleEmailImageUrl(offer?.article?.image || offer?.article, urlOptions);
   const subject = `Aceptamos tu oferta - ${articleTitle}`;
   const preheader = "Tu oferta fue aceptada y ya podés comprar la prenda.";
   const plainText = [
@@ -93,6 +94,7 @@ export function renderAcceptedOfferEmail({ offer } = {}) {
       bodyHtml,
       detailsHtml,
       ctaHtml: renderButton(articleUrl, "Ver prenda"),
+      publicSiteUrl,
     }),
   };
 }

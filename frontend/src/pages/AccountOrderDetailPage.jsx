@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
@@ -31,6 +31,7 @@ const PAYMENT_STATUS_LABELS = {
 
 export default function AccountOrderDetailPage() {
   const { id } = useParams();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { notifyError } = useNotification();
   const [order, setOrder] = useState(null);
@@ -82,7 +83,9 @@ export default function AccountOrderDetailPage() {
     }
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   return (
     <div className="container page-stack account-page-shell account-order-detail-page">

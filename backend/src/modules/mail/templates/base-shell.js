@@ -12,14 +12,16 @@ export function renderEmailShell({
   detailsHtml = "",
   ctaHtml = "",
   secondaryHtml = "",
+  publicSiteUrl,
 }) {
   const safeSubject = escapeHtml(subject || env.storeName || "ESADAR");
   const safePreheader = escapeHtml(preheader || "");
   const safeEyebrow = escapeHtml(eyebrow || "");
   const safeTitle = escapeHtml(title || "");
-  const logoUrl = escapeHtml(getEmailLogoSrc());
-  const brandGradientUrl = escapeHtml(getEmailBrandGradientSrc());
-  const siteUrl = escapeHtml(buildPublicUrl("/"));
+  const urlOptions = { publicSiteUrl };
+  const logoUrl = escapeHtml(getEmailLogoSrc(urlOptions));
+  const brandGradientUrl = escapeHtml(getEmailBrandGradientSrc(urlOptions));
+  const siteUrl = escapeHtml(buildPublicUrl("/", urlOptions));
 
   return `<!doctype html>
 <html lang="es">

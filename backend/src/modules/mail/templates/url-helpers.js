@@ -1,40 +1,65 @@
-import { env } from '../../../config/env.js';
+import { resolveMailSiteUrl } from '../mail.url-context.js';
 
-const DEFAULT_SITE_URL = 'https://esadar.com';
-
-function getSiteBaseUrl() {
-  return String(env.publicSiteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
+function getSiteBaseUrl(options = {}) {
+  return resolveMailSiteUrl(
+    options.publicSiteUrl,
+    options.siteBaseUrl,
+    options.origin,
+    options.baseUrl,
+  );
 }
 
-export function buildPublicUrl(path = '/') {
+function normalizeInternalPath(path = '/') {
   const rawPath = String(path || '/').trim();
-  if (/^https?:\/\//i.test(rawPath)) return rawPath;
-  const normalizedPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-  return `${getSiteBaseUrl()}${normalizedPath}`.replace(/([^:]\/)\/+/, '$1');
+
+  if (/^https?:\/\//i.test(rawPath)) {
+    try {
+      const parsed = new URL(rawPath);
+      return `${parsed.pathname || '/'}${parsed.search || ''}${parsed.hash || ''}`;
+    } catch {
+      return '/';
+    }
+  }
+
+  return rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
 }
 
-export function buildOrderUrl(order = {}) {
-  return buildPublicUrl(order?.id ? `/cuenta/ordenes/${order.id}` : '/cuenta/ordenes');
+export function buildPublicUrl(path = '/', options = {}) {
+  const normalizedPath = normalizeInternalPath(path);
+  return `${getSiteBaseUrl(options)}${normalizedPath}`.replace(/([^:]\/)\/+/, '$1');
 }
 
-export function buildArticleUrl(article = {}) {
+export function buildOrderUrl(order = {}, options = {}) {
+  return buildPublicUrl(order?.id ? `/cuenta/ordenes/${order.id}` : '/cuenta/ordenes', options);
+}
+
+export function buildArticleUrl(article = {}, options = {}) {
   const slugOrId = article?.slug || article?.id || article?.articleId || '';
-  return buildPublicUrl(slugOrId ? `/articles/${slugOrId}` : '/articles');
+  return buildPublicUrl(slugOrId ? `/articles/${slugOrId}` : '/articles', options);
 }
 
-export function buildLoginUrl() {
-  return buildPublicUrl('/login');
+export function buildLoginUrl(options = {}) {
+  return buildPublicUrl('/login', options);
 }
 
-export function buildAccountUrl() {
-  return buildPublicUrl('/cuenta');
+export function buildAccountUrl(options = {}) {
+  return buildPublicUrl('/cuenta', options);
 }
 
-export function buildResetPasswordUrl(tokenOrUrl = '') {
+export function buildResetPasswordUrl(tokenOrUrl = '', options = {}) {
   const raw = String(tokenOrUrl || '').trim();
-  if (!raw) return buildLoginUrl();
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith('/reset-password')) return buildPublicUrl(raw);
-  if (raw.startsWith('reset-password')) return buildPublicUrl(`/${raw}`);
-  return buildPublicUrl(`/reset-password?token=${encodeURIComponent(raw)}`);
+  if (!raw) return buildLoginUrl(options);
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      return buildPublicUrl(`${parsed.pathname || '/reset-password'}${parsed.search || ''}${parsed.hash || ''}`, options);
+    } catch {
+      return buildLoginUrl(options);
+    }
+  }
+
+  if (raw.startsWith('/reset-password')) return buildPublicUrl(raw, options);
+  if (raw.startsWith('reset-password')) return buildPublicUrl(`/${raw}`, options);
+  return buildPublicUrl(`/reset-password?token=${encodeURIComponent(raw)}`, options);
 }

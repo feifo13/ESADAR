@@ -1,6 +1,6 @@
 import { escapeHtml } from "../mail.escape.js";
 import { getArticleEmailImageUrl } from "../mail.assets.js";
-import { buildCustomerName, formatCurrencyUYU } from "../mail.format.js";
+import { buildCustomerName, formatCurrencyUYU, formatDateTimeEsUy } from "../mail.format.js";
 import { getPaymentMethodLabel } from "../../payment-methods.js";
 import { renderEmailShell } from "./base-shell.js";
 import { buildOrderUrl } from "./url-helpers.js";
@@ -57,7 +57,7 @@ function renderOrderItems(items = [], urlOptions = {}) {
   return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0; background:#ffffff; border:1px solid rgba(16,43,52,0.12);">
       <tr>
-        <td style="padding:14px 16px 6px; color:#102b34; font-size:15px; font-weight:700;">Prendas de la orden</td>
+        <td style="padding:14px 16px 6px; color:#102b34; font-size:15px; font-weight:700;">Prendas enviadas</td>
       </tr>
       <tr>
         <td style="padding:0 16px 12px;">
@@ -68,7 +68,7 @@ function renderOrderItems(items = [], urlOptions = {}) {
   `;
 }
 
-export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
+export function renderShippedOrderEmail({ order, publicSiteUrl } = {}) {
   const urlOptions = { publicSiteUrl };
   const name = buildCustomerName(order?.customer);
   const orderLabel = order?.orderNumber || order?.id || "";
@@ -76,27 +76,29 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
   const total = formatCurrencyUYU(order?.total, order?.currencyCode || "UYU");
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
-  const subject = `Tu orden fue aprobada - ${orderLabel}`;
-  const preheader = "Ya podés revisar los detalles de tu compra.";
+  const shippedAt = formatDateTimeEsUy(order?.shippedAt);
+  const subject = `Tu orden fue enviada - ${orderLabel}`;
+  const preheader = "Tu compra ya fue marcada como enviada.";
 
   const textLines = [
     `Hola ${name},`,
     "",
-    "Tu orden fue aprobada.",
+    "Tu orden fue enviada.",
     "",
     `Orden: ${orderLabel}`,
     `Total: ${total}`,
-    "Estado: Aprobada",
+    "Estado: Enviada",
   ];
+  if (shippedAt) textLines.push(`Fecha de envío: ${shippedAt}`);
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
-  textLines.push("", "Adjuntamos el comprobante de compra en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push("", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
-    <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">aprobada</strong>.</p>
-    <p style="margin:0 0 14px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
-    <p style="margin:0 0 18px;">Adjuntamos el comprobante de compra en PDF.</p>
+    <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">enviada</strong>.</p>
+    <p style="margin:0 0 14px;">Te avisamos para que puedas seguir el estado de tu compra desde tu cuenta.</p>
+    <p style="margin:0 0 18px;">Gracias por elegir <strong style="color:#102b34;">ESADAR</strong>.</p>
   `;
 
   const detailsHtml = `
@@ -106,7 +108,8 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-meta-table">
             ${renderSummaryRow("Orden", orderLabel)}
             ${renderSummaryRow("Total", total, { large: true })}
-            ${renderSummaryRow("Estado", "Aprobada", { accent: true })}
+            ${renderSummaryRow("Estado", "Enviada", { accent: true })}
+            ${renderSummaryRow("Fecha de envío", shippedAt)}
             ${renderSummaryRow("Método de pago", paymentMethod)}
             ${renderSummaryRow("Método de envío", shippingMethod)}
           </table>
@@ -123,8 +126,8 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
     html: renderEmailShell({
       subject,
       preheader,
-      eyebrow: "ORDEN APROBADA",
-      title: "Tu orden fue aprobada",
+      eyebrow: "ORDEN ENVIADA",
+      title: "Tu orden fue enviada",
       bodyHtml,
       detailsHtml,
       ctaHtml: renderButton(orderUrl, "Ver mi orden"),

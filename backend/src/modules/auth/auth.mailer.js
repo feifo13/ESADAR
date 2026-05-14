@@ -9,8 +9,8 @@ export function assertPasswordResetMailerReady() {
   assertMailConfigured(PASSWORD_RESET_MAILER_MESSAGE);
 }
 
-export async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
-  const email = renderPasswordResetEmail({ toName, resetUrl });
+export async function sendPasswordResetEmail({ toEmail, toName, resetUrl, publicSiteUrl }) {
+  const email = renderPasswordResetEmail({ toName, resetUrl, publicSiteUrl });
 
   await sendBrandedEmail({
     to: toEmail,
@@ -21,11 +21,11 @@ export async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
   });
 }
 
-export async function sendWelcomeUserEmail({ user, accountUrl }) {
+export async function sendWelcomeUserEmail({ user, accountUrl, publicSiteUrl }) {
   const toEmail = user?.email;
   if (!toEmail) return { skipped: true };
 
-  const email = renderWelcomeUserEmail({ user, accountUrl });
+  const email = renderWelcomeUserEmail({ user, accountUrl, publicSiteUrl });
 
   return sendBrandedEmail({
     to: toEmail,

@@ -14,9 +14,10 @@ function renderButton(url, label) {
   `;
 }
 
-export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
-  const targetUrl = buildResetPasswordUrl(resetUrl);
-  const loginUrl = buildLoginUrl();
+export function renderPasswordResetEmail({ toName, resetUrl, publicSiteUrl } = {}) {
+  const urlOptions = { publicSiteUrl };
+  const targetUrl = buildResetPasswordUrl(resetUrl, urlOptions);
+  const loginUrl = buildLoginUrl(urlOptions);
   const name = toName || "";
   const subject = "Recuperar contraseña de ESADAR";
   const preheader = "Usá este enlace para crear una nueva contraseña. Vence en 1 hora.";
@@ -57,6 +58,7 @@ export function renderPasswordResetEmail({ toName, resetUrl } = {}) {
       bodyHtml,
       ctaHtml: renderButton(targetUrl, "Crear nueva contraseña"),
       secondaryHtml: `${secondaryHtml}${renderButton(loginUrl, "Ir al login")}`,
+      publicSiteUrl,
     }),
   };
 }

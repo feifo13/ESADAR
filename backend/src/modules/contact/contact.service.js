@@ -209,6 +209,7 @@ export async function replyContactMessage(id, replyMessage, auditContext) {
     toName: `${before.firstName || ''} ${before.lastName || ''}`.trim(),
     message: before.message,
     replyMessage,
+    publicSiteUrl: auditContext.publicSiteUrl,
   });
 
   return withTransaction(async (connection) => {

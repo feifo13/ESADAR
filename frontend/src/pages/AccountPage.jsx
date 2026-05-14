@@ -650,7 +650,7 @@ export default function AccountPage() {
       />
 
       {!isAuthenticated && requestedTab !== "guardados" ? (
-        <Navigate to="/cuenta/guardados" replace />
+        <Navigate to="/login" replace state={{ from: location }} />
       ) : null}
 
       {isAuthenticated ? null : renderGuestState()}

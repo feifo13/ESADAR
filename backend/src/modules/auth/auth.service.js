@@ -102,8 +102,8 @@ function hashResetToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-function buildResetUrl(token) {
-  const base = (env.appOrigin || env.publicSiteUrl || 'http://localhost:5173').replace(/\/$/, '');
+function buildResetUrl(token, publicSiteUrl) {
+  const base = (publicSiteUrl || env.publicSiteUrl || env.appOrigin || 'http://localhost:5173').replace(/\/$/, '');
   return `${base}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
@@ -219,7 +219,10 @@ export async function registerUser(input, auditContext) {
     return { user: sanitizeUser(user), token };
   });
 
-  sendWelcomeUserEmail({ user: result.user }).catch((error) => {
+  sendWelcomeUserEmail({
+    user: result.user,
+    publicSiteUrl: auditContext.publicSiteUrl,
+  }).catch((error) => {
     console.warn('[auth] welcome email failed', error?.message || error);
   });
 
@@ -274,7 +277,7 @@ export async function requestPasswordReset(input, auditContext) {
 
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = hashResetToken(token);
-  const resetUrl = buildResetUrl(token);
+  const resetUrl = buildResetUrl(token, auditContext.publicSiteUrl);
 
   await withTransaction(async (connection) => {
     await connection.execute(
@@ -315,6 +318,7 @@ export async function requestPasswordReset(input, auditContext) {
     toEmail: user.email,
     toName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
     resetUrl,
+    publicSiteUrl: auditContext.publicSiteUrl,
   });
 
   return { sent: true };

@@ -14,7 +14,8 @@ function renderButton(url, label) {
   `;
 }
 
-export function renderContactReplyEmail({ toName, message, replyMessage } = {}) {
+export function renderContactReplyEmail({ toName, message, replyMessage, publicSiteUrl } = {}) {
+  const urlOptions = { publicSiteUrl };
   const name = toName || "";
   const subject = "Respuesta de ESADAR para tu consulta";
   const preheader = "Te respondimos el mensaje que nos enviaste.";
@@ -50,7 +51,8 @@ export function renderContactReplyEmail({ toName, message, replyMessage } = {}) 
       eyebrow: "RESPUESTA DE ESADAR",
       title: "Respondimos tu consulta",
       bodyHtml,
-      ctaHtml: renderButton(buildPublicUrl("/"), "Ir a ESADAR"),
+      ctaHtml: renderButton(buildPublicUrl("/", urlOptions), "Ir a ESADAR"),
+      publicSiteUrl,
     }),
   };
 }

@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { resolveMailSiteUrl } from "../mail/mail.url-context.js";
 import { pool } from "../../db/pool.js";
 import { withTransaction } from "../../db/transaction.js";
 import { logAudit } from "../audit/audit.service.js";
@@ -317,8 +318,9 @@ function buildMercadoPagoQrUrl(checkoutUrl) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(url)}`;
 }
 
-function getOrderUrl(order) {
-  return `${env.publicSiteUrl}/cuenta/ordenes${order?.id ? `/${order.id}` : ""}`;
+function getOrderUrl(order, options = {}) {
+  const siteUrl = resolveMailSiteUrl(options.publicSiteUrl);
+  return `${siteUrl}/cuenta/ordenes${order?.id ? `/${order.id}` : ""}`;
 }
 
 function getOrderLabel(order) {
@@ -331,8 +333,8 @@ function toMercadoPagoAmount(value) {
   return Number(amount.toFixed(2));
 }
 
-function getMercadoPagoBackUrl(order) {
-  return getOrderUrl(order);
+function getMercadoPagoBackUrl(order, options = {}) {
+  return getOrderUrl(order, options);
 }
 
 function buildMercadoPagoNotificationUrl(value) {
@@ -350,13 +352,13 @@ function buildMercadoPagoNotificationUrl(value) {
   }
 }
 
-function buildMercadoPagoPreferencePayload(order, settings) {
+function buildMercadoPagoPreferencePayload(order, settings, options = {}) {
   const orderLabel = getOrderLabel(order);
   const total = toMercadoPagoAmount(order?.total);
   if (!total) return null;
 
   const customer = order?.customer || {};
-  const orderUrl = getMercadoPagoBackUrl(order);
+  const orderUrl = getMercadoPagoBackUrl(order, options);
   const notificationUrl = buildMercadoPagoNotificationUrl(
     settings.mercadoPagoNotificationUrl,
   );
@@ -407,7 +409,7 @@ function selectMercadoPagoCheckoutUrl(preference, environment) {
   return initPoint || sandboxInitPoint;
 }
 
-async function createMercadoPagoPreference(order, settings, connection = pool) {
+async function createMercadoPagoPreference(order, settings, connection = pool, options = {}) {
   const accessToken = clean(settings.mercadoPagoAccessToken);
   const environment = normalizeMercadoPagoEnvironment(
     settings.mercadoPagoEnvironment,
@@ -432,7 +434,7 @@ async function createMercadoPagoPreference(order, settings, connection = pool) {
     return null;
   }
 
-  const payload = buildMercadoPagoPreferencePayload(order, settings);
+  const payload = buildMercadoPagoPreferencePayload(order, settings, options);
   if (!payload) {
     await recordMercadoPagoPreferenceEvent(connection, {
       ...baseEvent,
@@ -621,7 +623,7 @@ function buildMercadoPagoDetails(settings, preference = null) {
   };
 }
 
-export async function getPaymentInstructionsForOrder(order, connection = pool) {
+export async function getPaymentInstructionsForOrder(order, connection = pool, options = {}) {
   const settings = await getCollectingSettings(connection);
   const paymentMethod = order?.paymentMethod;
 
@@ -631,7 +633,7 @@ export async function getPaymentInstructionsForOrder(order, connection = pool) {
   if (paymentMethod === "MERCADO_PAGO") {
     const preference =
       order?.id && Number(order?.total || 0) > 0
-        ? await createMercadoPagoPreference(order, settings, connection)
+        ? await createMercadoPagoPreference(order, settings, connection, options)
         : null;
     return buildMercadoPagoDetails(settings, preference);
   }

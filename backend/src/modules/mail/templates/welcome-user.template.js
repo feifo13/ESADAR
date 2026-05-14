@@ -15,9 +15,10 @@ function renderButton(url, label) {
   `;
 }
 
-export function renderWelcomeUserEmail({ user, accountUrl } = {}) {
+export function renderWelcomeUserEmail({ user, accountUrl, publicSiteUrl } = {}) {
+  const urlOptions = { publicSiteUrl };
   const name = buildCustomerName(user);
-  const targetUrl = accountUrl || buildAccountUrl();
+  const targetUrl = accountUrl || buildAccountUrl(urlOptions);
   const subject = "Bienvenido/a a ESADAR";
   const preheader = "Tu cuenta ya está lista para guardar prendas, hacer ofertas y comprar.";
   const text = [
@@ -48,6 +49,7 @@ export function renderWelcomeUserEmail({ user, accountUrl } = {}) {
       title: "Bienvenido/a a ESADAR",
       bodyHtml,
       ctaHtml: renderButton(targetUrl, "Ir a mi cuenta"),
+      publicSiteUrl,
     }),
   };
 }

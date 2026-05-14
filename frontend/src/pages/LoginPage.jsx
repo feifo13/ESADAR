@@ -40,7 +40,10 @@ export default function LoginPage() {
       setSubmitting(true);
       setError("");
       await login(email, password);
-      navigate(location.state?.from?.pathname || "/", { replace: true });
+      const redirectTarget = location.state?.from
+        ? `${location.state.from.pathname || "/"}${location.state.from.search || ""}${location.state.from.hash || ""}`
+        : "/";
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       const errorMessage = getFriendlyErrorMessage(
         err,

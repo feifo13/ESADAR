@@ -27,7 +27,7 @@ function renderSummaryRow(label, value, options = {}) {
   `;
 }
 
-function renderOrderItems(items = []) {
+function renderOrderItems(items = [], urlOptions = {}) {
   const visibleItems = items.slice(0, 3);
   if (!visibleItems.length) return "";
 
@@ -36,7 +36,7 @@ function renderOrderItems(items = []) {
       const title = item.articleTitle || item.title || "Prenda";
       const quantity = Number(item.quantity || 1);
       const lineTotal = formatCurrencyUYU(item.lineTotal, item.currencyCode || "UYU");
-      const imageUrl = getArticleEmailImageUrl(item.image || item.imageSnapshot || item);
+      const imageUrl = getArticleEmailImageUrl(item.image || item.imageSnapshot || item, urlOptions);
       const imageCell = imageUrl
         ? `<td style="padding:10px 12px 10px 0; width:58px;" valign="top"><img class="email-item-image" src="${escapeHtml(imageUrl)}" width="52" height="52" alt="${escapeHtml(title)}" style="display:block; width:52px; height:52px; object-fit:cover; border:0; outline:none; text-decoration:none;" /></td>`
         : "";
@@ -162,10 +162,11 @@ function formatPaymentInstructionLines(paymentInstructions) {
   return lines;
 }
 
-export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
+export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } = {}) {
+  const urlOptions = { publicSiteUrl };
   const name = buildCustomerName(order?.customer);
   const orderLabel = order?.orderNumber || order?.id || "";
-  const orderUrl = buildOrderUrl(order);
+  const orderUrl = buildOrderUrl(order, urlOptions);
   const total = formatCurrencyUYU(order?.total, order?.currencyCode || "UYU");
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
@@ -212,7 +213,7 @@ export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
       </tr>
     </table>
     ${renderPaymentInstructions(paymentInstructions)}
-    ${renderOrderItems(order?.items || [])}
+    ${renderOrderItems(order?.items || [], urlOptions)}
   `;
 
   return {
@@ -227,6 +228,7 @@ export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
       bodyHtml,
       detailsHtml,
       ctaHtml: renderButton(orderUrl, "Ver mi orden"),
+      publicSiteUrl,
     }),
   };
 }

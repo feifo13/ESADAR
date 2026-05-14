@@ -10,12 +10,13 @@ export async function sendContactReplyEmail({
   toName,
   message,
   replyMessage,
+  publicSiteUrl,
 }) {
   if (!toEmail) {
     throw new AppError('Este mensaje no tiene email para responder.', 400);
   }
 
-  const email = renderContactReplyEmail({ toName, message, replyMessage });
+  const email = renderContactReplyEmail({ toName, message, replyMessage, publicSiteUrl });
 
   return sendBrandedEmail({
     to: toEmail,

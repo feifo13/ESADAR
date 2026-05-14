@@ -21,6 +21,7 @@ function getAuditContext(req) {
     source: req.auditSource,
     ipAddress: req.ip,
     userAgent: req.headers['user-agent'] || null,
+    publicSiteUrl: req.publicSiteUrl,
   };
 }
 

@@ -459,7 +459,7 @@ export async function changeOfferStatus(id, input, auditContext) {
   });
 
   if (shouldSendAcceptedEmail) {
-    sendAcceptedOfferEmail(offer).catch((error) => {
+    sendAcceptedOfferEmail(offer, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
       console.warn('[offers] accepted offer email failed', error?.message || error);
     });
   }

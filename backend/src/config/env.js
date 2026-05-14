@@ -51,7 +51,7 @@ export const env = {
   port: toNumber(process.env.PORT, 4000),
   appOrigin: process.env.APP_ORIGIN || "http://localhost:5173",
   publicSiteUrl: (
-    process.env.PUBLIC_SITE_URL || "http://localhost:5173"
+    process.env.PUBLIC_SITE_URL || process.env.APP_ORIGIN || "http://localhost:5173"
   ).replace(/\/$/, ""),
   storeName: process.env.STORE_NAME || "ESADAR",
   storeDescription:

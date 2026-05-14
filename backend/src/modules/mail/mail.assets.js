@@ -1,28 +1,34 @@
 import fs from "node:fs";
 import path from "node:path";
 import { env } from "../../config/env.js";
-import { toAbsoluteSiteUrl, joinPublicSiteUrl } from "../../utils/assets.js";
+import { normalizePublicAssetPath } from "../../utils/assets.js";
+import { resolveMailSiteUrl } from "./mail.url-context.js";
 
-export function absoluteEmailUrl(pathname) {
-  if (!pathname) return "";
-  return toAbsoluteSiteUrl(pathname);
+function getAssetBaseUrl(options = {}) {
+  return resolveMailSiteUrl(options.publicSiteUrl, options.siteBaseUrl, options.origin, options.baseUrl);
 }
 
-export function getEmailLogoUrl() {
+export function absoluteEmailUrl(pathname, options = {}) {
+  if (!pathname) return "";
+  const raw = String(pathname || "").trim();
+  if (/^https?:/i.test(raw)) return raw;
+  const normalized = normalizePublicAssetPath(raw);
+  if (!normalized) return "";
+  return `${getAssetBaseUrl(options)}${normalized}`;
+}
+
+export function getEmailLogoUrl(options = {}) {
   const configuredLogo =
     process.env.EMAIL_LOGO_URL || process.env.PUBLIC_LOGO_URL;
-  if (configuredLogo) return absoluteEmailUrl(configuredLogo);
+  if (configuredLogo) return absoluteEmailUrl(configuredLogo, options);
 
-  return (
-    joinPublicSiteUrl("/assets/esadar-logo.png") ||
-    `${env.publicSiteUrl}/assets/esadar-logo.png`
-  );
+  return `${getAssetBaseUrl(options) || env.publicSiteUrl}/assets/esadar-logo.png`;
 }
 
-export function getArticleEmailImageUrl(articleOrImageOrPath) {
+export function getArticleEmailImageUrl(articleOrImageOrPath, options = {}) {
   if (!articleOrImageOrPath) return "";
   if (typeof articleOrImageOrPath === "string") {
-    return absoluteEmailUrl(articleOrImageOrPath);
+    return absoluteEmailUrl(articleOrImageOrPath, options);
   }
 
   const candidate =
@@ -39,20 +45,17 @@ export function getArticleEmailImageUrl(articleOrImageOrPath) {
     articleOrImageOrPath.previewImage ||
     "";
 
-  return candidate ? absoluteEmailUrl(candidate) : "";
+  return candidate ? absoluteEmailUrl(candidate, options) : "";
 }
 
-export function getEmailBrandGradientUrl() {
+export function getEmailBrandGradientUrl(options = {}) {
   const configuredGradient =
     process.env.EMAIL_BRAND_GRADIENT_URL ||
     process.env.PUBLIC_BRAND_GRADIENT_URL;
 
-  if (configuredGradient) return absoluteEmailUrl(configuredGradient);
+  if (configuredGradient) return absoluteEmailUrl(configuredGradient, options);
 
-  return (
-    joinPublicSiteUrl("/assets/email-brand-gradient.png") ||
-    `${env.publicSiteUrl}/assets/email-brand-gradient.png`
-  );
+  return `${getAssetBaseUrl(options) || env.publicSiteUrl}/assets/email-brand-gradient.png`;
 }
 
 
@@ -72,18 +75,18 @@ function shouldEmbedEmailAssets() {
   return String(process.env.EMAIL_ASSETS_MODE || "cid").toLowerCase() !== "external";
 }
 
-export function getEmailLogoSrc() {
+export function getEmailLogoSrc(options = {}) {
   const logoPath = resolvePublicAssetFile("esadar-logo.png");
   if (shouldEmbedEmailAssets() && logoPath) return `cid:${EMAIL_LOGO_CID}`;
-  return getEmailLogoUrl();
+  return getEmailLogoUrl(options);
 }
 
-export function getEmailBrandGradientSrc() {
+export function getEmailBrandGradientSrc(options = {}) {
   const gradientPath = resolvePublicAssetFile("email-brand-gradient.png");
   if (shouldEmbedEmailAssets() && gradientPath) {
     return `cid:${EMAIL_BRAND_GRADIENT_CID}`;
   }
-  return getEmailBrandGradientUrl();
+  return getEmailBrandGradientUrl(options);
 }
 
 export function getDefaultEmailAttachments() {

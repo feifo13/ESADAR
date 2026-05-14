@@ -18,6 +18,7 @@ import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   sendApprovedOrderEmail,
   sendReceivedOrderPendingPaymentEmail,
+  sendShippedOrderEmail,
 } from "./orders.mailer.js";
 import {
   createPotentialCustomerFromInput,
@@ -423,7 +424,7 @@ export async function createOrder(input, actor, auditContext) {
     return order;
   });
 
-  sendReceivedOrderPendingPaymentEmail(order).catch((error) => {
+  sendReceivedOrderPendingPaymentEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
     console.warn(
       "[orders] received order pending payment email failed",
       error?.message || error,
@@ -679,7 +680,7 @@ export async function approveOrder(id, auditContext) {
     return after;
   });
 
-  sendApprovedOrderEmail(order).catch((error) => {
+  sendApprovedOrderEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
     console.warn('[orders] approved order email failed', error?.message || error);
   });
 
@@ -780,7 +781,7 @@ export async function cancelOrder(id, reason, auditContext) {
 }
 
 export async function shipOrder(id, auditContext) {
-  return withTransaction(async (connection) => {
+  const order = await withTransaction(async (connection) => {
     const before = await getOrderById(id, connection);
     if (before.orderStatus !== "APPROVED") {
       throw badRequest(
@@ -834,6 +835,12 @@ export async function shipOrder(id, auditContext) {
 
     return after;
   });
+
+  sendShippedOrderEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
+    console.warn('[orders] shipped order email failed', error?.message || error);
+  });
+
+  return order;
 }
 
 export async function createOrderPayment(id, input, auditContext) {
@@ -1165,7 +1172,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
   });
 
   if (result.shouldSendApprovedEmail && result.order) {
-    sendApprovedOrderEmail(result.order).catch((error) => {
+    sendApprovedOrderEmail(result.order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
       console.warn('[orders] approved order email after Mercado Pago webhook failed', error?.message || error);
     });
   }
