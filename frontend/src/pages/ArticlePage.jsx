@@ -569,6 +569,7 @@ export default function ArticlePage() {
               labelInactive="Guardar articulo"
               onToggle={() => void handleWishlistToggle()}
             />
+
           </div>
 
           <aside className="ebay-article-layout__sidebar section-card">
@@ -643,19 +644,24 @@ export default function ArticlePage() {
             </div> */}
 
             {acceptedOffer ? (
-              <p className="checkbox-row-accent">
-                Tenes una oferta aceptada:{" "}
-                {formatCurrency(acceptedOffer.offeredAmount)}. Aplica a 1
-                unidad.
-              </p>
+              <div className="article-status-notice article-status-notice--offer" role="status">
+                <span className="article-status-notice__badge">Oferta aceptada</span>
+                <span>
+                  Precio aceptado: {formatCurrency(acceptedOffer.offeredAmount)}.
+                  Aplica a 1 unidad.
+                </span>
+              </div>
             ) : null}
 
             {currentCartItem ? (
-              <p className="checkbox-row-accent">
-                Ya tienes {currentCartItem.quantity} unidad
-                {currentCartItem.quantity === 1 ? "" : "es"} de esta prenda en
-                el carrito.
-              </p>
+              <div className="article-status-notice article-status-notice--cart" role="status">
+                <span className="article-status-notice__badge">En carrito</span>
+                <span>
+                  Ya tienes {currentCartItem.quantity} unidad
+                  {currentCartItem.quantity === 1 ? "" : "es"} de esta prenda en
+                  el carrito.
+                </span>
+              </div>
             ) : null}
 
             <div className="detail-actions detail-actions--stacked">

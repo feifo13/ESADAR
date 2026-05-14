@@ -14586,3 +14586,72 @@ dialog,
     height: 100% !important;
   }
 }
+
+/* === ESADAR article/cart/offer state badges === */
+.ebay-article-layout__gallery {
+  position: relative;
+}
+
+.article-status-notice__badge,
+.article-card-offer-notice {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 26px;
+  padding: 6px 9px;
+  border-radius: 0;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.article-status-notice--offer .article-status-notice__badge,
+.article-card-ribbon--accepted-offer,
+.article-card-offer-notice {
+  background: var(--orange, #fc4c02) !important;
+  color: #fff !important;
+  border-color: var(--orange, #fc4c02) !important;
+}
+
+.article-status-notice--cart .article-status-notice__badge {
+  background: var(--aqua, #008e97) !important;
+  color: #fff !important;
+  border-color: var(--aqua, #008e97) !important;
+}
+
+.article-status-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.article-status-notice--offer {
+  border-color: color-mix(in srgb, var(--orange, #fc4c02) 38%, var(--border));
+  background: color-mix(in srgb, var(--orange, #fc4c02) 10%, #fff);
+}
+
+.article-status-notice--cart {
+  border-color: color-mix(in srgb, var(--aqua, #008e97) 38%, var(--border));
+  background: color-mix(in srgb, var(--aqua, #008e97) 9%, #fff);
+}
+
+.article-card-offer-notice {
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .article-status-notice {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 8px;
+    font-size: 0.86rem;
+  }
+}
