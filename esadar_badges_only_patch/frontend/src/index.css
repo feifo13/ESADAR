@@ -5767,23 +5767,19 @@ a.button.button-primary {
 
 .article-card-ribbon {
   position: absolute;
-  inset: 12px auto auto -34px;
+  inset: 16px auto auto -44px;
   z-index: 2;
-  width: clamp(118px, 42%, 148px);
-  min-width: 0;
-  max-width: 148px;
-  padding: 8px 12px;
+  min-width: 180px;
+  padding: 10px 18px;
   background: linear-gradient(135deg, #d91e36, #ff725e);
   color: #ffffff;
-  font-weight: 900;
-  font-size: clamp(0.66rem, 0.72vw, 0.76rem);
-  line-height: 1;
+  font-weight: 800;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.12em;
   text-align: center;
-  white-space: nowrap;
   transform: rotate(-38deg);
-  box-shadow: 0 10px 22px rgba(124, 12, 28, 0.24);
+  box-shadow: 0 14px 30px rgba(124, 12, 28, 0.28);
 }
 
 .pill-soldout {
@@ -14592,10 +14588,22 @@ dialog,
 }
 
 /* === ESADAR article/cart/offer state badges === */
+.article-gallery-notices {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  pointer-events: none;
+}
+
 .ebay-article-layout__gallery {
   position: relative;
 }
 
+.article-gallery-state-badge,
 .article-status-notice__badge,
 .article-card-offer-notice {
   display: inline-flex;
@@ -14611,6 +14619,7 @@ dialog,
   text-transform: uppercase;
 }
 
+.article-gallery-state-badge--offer,
 .article-status-notice--offer .article-status-notice__badge,
 .article-card-ribbon--accepted-offer,
 .article-card-offer-notice {
@@ -14619,6 +14628,7 @@ dialog,
   border-color: var(--orange, #fc4c02) !important;
 }
 
+.article-gallery-state-badge--cart,
 .article-status-notice--cart .article-status-notice__badge {
   background: var(--aqua, #008e97) !important;
   color: #fff !important;
@@ -14652,245 +14662,21 @@ dialog,
 }
 
 @media (max-width: 720px) {
+  .article-gallery-notices {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .article-gallery-state-badge {
+    min-height: 24px;
+    font-size: 0.7rem;
+  }
+
   .article-status-notice {
     grid-template-columns: 1fr;
     align-items: start;
     gap: 8px;
     font-size: 0.86rem;
-  }
-}
-
-/* === Checkout resumen mobile/tablet: compact action only for unavailable items === */
-@media (max-width: 960px) {
-  .app-shell--checkout-view
-    .summary-item-card-list
-    .summary-item-card--unavailable
-    .summary-item-card__quantity--unavailable {
-    grid-column: 1 / -1 !important;
-    display: inline-grid !important;
-    grid-template-columns: 44px !important;
-    justify-self: start !important;
-    align-self: start !important;
-    width: 44px !important;
-    max-width: 44px !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-  }
-
-  .app-shell--checkout-view
-    .summary-item-card-list
-    .summary-item-card--unavailable
-    .summary-item-card__quantity--unavailable
-    > .summary-item-card__qty-button {
-    width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    border: 1px solid rgba(16, 43, 52, 0.26) !important;
-    background: #ffffff !important;
-    color: #102b34 !important;
-  }
-}
-
-/* === ESADAR article cards: compact ribbons, no accepted-offer card callout === */
-.article-card-ribbon {
-  inset: 12px auto auto -34px !important;
-  width: clamp(118px, 42%, 148px) !important;
-  min-width: 0 !important;
-  max-width: 148px !important;
-  padding: 8px 12px !important;
-  font-size: clamp(0.66rem, 0.72vw, 0.76rem) !important;
-  line-height: 1 !important;
-  letter-spacing: 0.09em !important;
-  white-space: nowrap !important;
-  box-shadow: 0 10px 22px rgba(6, 19, 29, 0.22) !important;
-}
-
-.article-card--editorial .article-card-ribbon {
-  inset: 10px auto auto 10px !important;
-  width: auto !important;
-  max-width: calc(100% - 58px) !important;
-  padding: 6px 9px !important;
-  transform: none !important;
-}
-
-@media (max-width: 720px) {
-  .article-card-ribbon {
-    inset: 10px auto auto -30px !important;
-    width: 122px !important;
-    max-width: 122px !important;
-    padding: 7px 10px !important;
-    font-size: 0.64rem !important;
-    letter-spacing: 0.08em !important;
-  }
-
-  .article-card--editorial .article-card-ribbon {
-    inset: 8px auto auto 8px !important;
-    width: auto !important;
-    max-width: calc(100% - 54px) !important;
-  }
-}
-
-
-/* === ESADAR mobile/tablet header vertical centering + offer ribbon restore ===
-   Keep compact viewport header controls optically centered and allow the
-   OFERTA ribbon even when the card price comes from an accepted offer. */
-@media (max-width: 960px) {
-  .site-header {
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .site-header .header-inner,
-  .site-header .header-inner--compact.header-inner--mobile-balanced,
-  .site-header .header-inner--mobile-balanced {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-height: var(--header-height) !important;
-    height: var(--header-height) !important;
-    max-height: var(--header-height) !important;
-    padding-block: 0 !important;
-    margin-block: 0 !important;
-  }
-
-  .site-header .header-mobile-shell {
-    display: grid !important;
-    grid-template-columns: 48px minmax(0, 1fr) 48px !important;
-    align-items: center !important;
-    justify-items: center !important;
-    min-height: var(--header-height) !important;
-    height: var(--header-height) !important;
-    margin: 0 !important;
-  }
-
-  .site-header .header-mobile-menu-wrap,
-  .site-header .brand-mark--mobile,
-  .site-header .header-mobile-shell__cart,
-  .site-header .header-actions-mobile__menu {
-    align-self: center !important;
-    justify-self: center !important;
-    margin-block: 0 !important;
-  }
-
-  .site-header .header-actions-mobile__menu,
-  .site-header .header-mobile-shell__cart {
-    display: grid !important;
-    place-items: center !important;
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
-    padding: 0 !important;
-  }
-
-  .site-header .brand-mark--mobile {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    min-height: var(--header-height) !important;
-    height: var(--header-height) !important;
-  }
-
-  .site-header .brand-mark__logo {
-    display: block !important;
-    width: auto !important;
-    height: auto !important;
-    max-width: 150px !important;
-    max-height: 54px !important;
-    object-fit: contain !important;
-    margin: 0 auto !important;
-  }
-
-  .site-header .header-icon-button__icon,
-  .site-header .header-actions-mobile__menu > span {
-    display: grid !important;
-    place-items: center !important;
-  }
-}
-
-/* === ESADAR mobile/tablet loading overlays and checkout stock guard === */
-@media (max-width: 960px) {
-  .app-shell--intro-active .site-header {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
-
-  .intro-splash,
-  .app-loader--overlay,
-  .catalog-filter-loading-splash {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 7000 !important;
-    min-height: 100svh !important;
-    height: 100svh !important;
-    display: grid !important;
-    place-items: center !important;
-    background: #ffffff !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-
-  .app-shell--route-loading .app-loader--page {
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 7000 !important;
-    min-height: 100svh !important;
-    height: 100svh !important;
-    display: grid !important;
-    place-items: center !important;
-    background: #ffffff !important;
-  }
-
-  .intro-splash__logo,
-  .app-loader--overlay .app-loader__logo,
-  .app-shell--route-loading .app-loader--page .app-loader__logo,
-  .catalog-filter-loading-splash__logo {
-    width: 130px !important;
-    max-width: 130px !important;
-    filter: none !important;
-  }
-
-  .cart-unavailable-ticker {
-    z-index: 5200 !important;
-  }
-}
-
-
-/* === ESADAR mobile Chrome footer stability ===
-   Keep the footer in the classic behind-the-page reveal on compact viewports.
-   Avoid promoting the whole footer to a full-screen overlay because Chrome
-   mobile repaints it during browser-bar resize and can flicker over the header. */
-@media (max-width: 960px) {
-  .app-shell--has-footer-reveal .footer-scroll-scene {
-    position: fixed !important;
-    inset: auto 0 0 0 !important;
-    z-index: 1 !important;
-    width: 100% !important;
-    min-height: var(--esadar-footer-viewport, 100svh) !important;
-    height: var(--esadar-footer-viewport, 100svh) !important;
-    overflow: clip !important;
-    pointer-events: none !important;
-  }
-
-  .app-shell--has-footer-reveal .footer-scroll-scene__sticky {
-    min-height: 100% !important;
-    height: 100% !important;
-    padding-top: calc(var(--header-height, 74px) + 18px) !important;
-    padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
-  }
-
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__sticky,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__content,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__logo-button,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__copy {
-    pointer-events: auto !important;
   }
 }

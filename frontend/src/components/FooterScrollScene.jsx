@@ -79,18 +79,12 @@ export default function FooterScrollScene() {
 
       setFooterRevealSuppressed(false);
 
-      const visualViewportHeight = window.visualViewport?.height || 0;
       const layoutViewportHeight =
         document.documentElement.clientHeight || window.innerHeight || 1;
-      const activeViewportHeight = Math.max(
-        visualViewportHeight,
-        layoutViewportHeight,
-        1,
-      );
       const footerViewportHeight = footer.getBoundingClientRect().height || 0;
       const revealViewportHeight = Math.max(
         footerViewportHeight,
-        activeViewportHeight,
+        layoutViewportHeight,
         1,
       );
       const isCompactViewport =
@@ -124,9 +118,13 @@ export default function FooterScrollScene() {
         "app-shell--footer-scroll-active",
         revealProgress > 0.01,
       );
+      const isDeepFooterReveal = isCompactViewport
+        ? revealProgress > 0.985 || remainingScroll <= 2
+        : headerHideProgress > 0.88;
+
       appShell.classList.toggle(
         "app-shell--footer-scroll-deep",
-        isCompactViewport ? revealProgress > 0.93 : headerHideProgress > 0.88,
+        isDeepFooterReveal,
       );
     }
 
@@ -190,15 +188,12 @@ export default function FooterScrollScene() {
 
     scheduleUpdate();
     const settleTimer = window.setTimeout(scheduleUpdate, 80);
-    const visualViewport = window.visualViewport;
     window.addEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
     window.addEventListener("wheel", handleManualScrollIntent, { passive: true });
     window.addEventListener("touchmove", handleManualScrollIntent, { passive: true });
     window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
-    visualViewport?.addEventListener("resize", scheduleUpdate, { passive: true });
-    visualViewport?.addEventListener("scroll", scheduleUpdate, { passive: true });
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
@@ -210,8 +205,6 @@ export default function FooterScrollScene() {
       window.removeEventListener("keydown", handleManualScrollIntent);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
-      visualViewport?.removeEventListener("resize", scheduleUpdate);
-      visualViewport?.removeEventListener("scroll", scheduleUpdate);
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.classList.remove(

@@ -1,0 +1,80 @@
+--- esadar_badges_only_work/frontend/src/pages/ArticlePage.jsx	2026-05-14 15:37:11.687676711 +0000
++++ esadar_gallery_badges_removed_work/frontend/src/pages/ArticlePage.jsx	2026-05-14 15:58:25.718638770 +0000
+@@ -570,18 +570,6 @@
+               onToggle={() => void handleWishlistToggle()}
+             />
+ 
+-            <div className="article-gallery-notices" aria-live="polite">
+-              {acceptedOffer ? (
+-                <span className="article-gallery-state-badge article-gallery-state-badge--offer">
+-                  Oferta aceptada
+-                </span>
+-              ) : null}
+-              {currentCartItem ? (
+-                <span className="article-gallery-state-badge article-gallery-state-badge--cart">
+-                  En carrito
+-                </span>
+-              ) : null}
+-            </div>
+           </div>
+ 
+           <aside className="ebay-article-layout__sidebar section-card">
+--- esadar_badges_only_work/frontend/src/index.css	2026-05-14 15:45:37.962306891 +0000
++++ esadar_gallery_badges_removed_work/frontend/src/index.css	2026-05-14 15:58:25.725352895 +0000
+@@ -14588,22 +14588,10 @@
+ }
+ 
+ /* === ESADAR article/cart/offer state badges === */
+-.article-gallery-notices {
+-  position: absolute;
+-  left: 12px;
+-  bottom: 12px;
+-  z-index: 6;
+-  display: flex;
+-  flex-wrap: wrap;
+-  gap: 8px;
+-  pointer-events: none;
+-}
+-
+ .ebay-article-layout__gallery {
+   position: relative;
+ }
+ 
+-.article-gallery-state-badge,
+ .article-status-notice__badge,
+ .article-card-offer-notice {
+   display: inline-flex;
+@@ -14619,7 +14607,6 @@
+   text-transform: uppercase;
+ }
+ 
+-.article-gallery-state-badge--offer,
+ .article-status-notice--offer .article-status-notice__badge,
+ .article-card-ribbon--accepted-offer,
+ .article-card-offer-notice {
+@@ -14628,7 +14615,6 @@
+   border-color: var(--orange, #fc4c02) !important;
+ }
+ 
+-.article-gallery-state-badge--cart,
+ .article-status-notice--cart .article-status-notice__badge {
+   background: var(--aqua, #008e97) !important;
+   color: #fff !important;
+@@ -14662,17 +14648,6 @@
+ }
+ 
+ @media (max-width: 720px) {
+-  .article-gallery-notices {
+-    left: 8px;
+-    right: 8px;
+-    bottom: 8px;
+-  }
+-
+-  .article-gallery-state-badge {
+-    min-height: 24px;
+-    font-size: 0.7rem;
+-  }
+-
+   .article-status-notice {
+     grid-template-columns: 1fr;
+     align-items: start;

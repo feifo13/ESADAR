@@ -1,0 +1,140 @@
+--- esadar_current/frontend/src/components/FooterScrollScene.jsx	2026-05-14 14:06:24.000000000 +0000
++++ esadar_mobile_chrome_stable_work/frontend/src/components/FooterScrollScene.jsx	2026-05-14 17:16:44.713911184 +0000
+@@ -79,18 +79,12 @@
+ 
+       setFooterRevealSuppressed(false);
+ 
+-      const visualViewportHeight = window.visualViewport?.height || 0;
+       const layoutViewportHeight =
+         document.documentElement.clientHeight || window.innerHeight || 1;
+-      const activeViewportHeight = Math.max(
+-        visualViewportHeight,
+-        layoutViewportHeight,
+-        1,
+-      );
+       const footerViewportHeight = footer.getBoundingClientRect().height || 0;
+       const revealViewportHeight = Math.max(
+         footerViewportHeight,
+-        activeViewportHeight,
++        layoutViewportHeight,
+         1,
+       );
+       const isCompactViewport =
+@@ -124,9 +118,13 @@
+         "app-shell--footer-scroll-active",
+         revealProgress > 0.01,
+       );
++      const isDeepFooterReveal = isCompactViewport
++        ? revealProgress > 0.985 || remainingScroll <= 2
++        : headerHideProgress > 0.88;
++
+       appShell.classList.toggle(
+         "app-shell--footer-scroll-deep",
+-        isCompactViewport ? revealProgress > 0.93 : headerHideProgress > 0.88,
++        isDeepFooterReveal,
+       );
+     }
+ 
+@@ -190,15 +188,12 @@
+ 
+     scheduleUpdate();
+     const settleTimer = window.setTimeout(scheduleUpdate, 80);
+-    const visualViewport = window.visualViewport;
+     window.addEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
+     window.addEventListener("wheel", handleManualScrollIntent, { passive: true });
+     window.addEventListener("touchmove", handleManualScrollIntent, { passive: true });
+     window.addEventListener("keydown", handleManualScrollIntent);
+     window.addEventListener("scroll", scheduleUpdate, { passive: true });
+     window.addEventListener("resize", scheduleUpdate);
+-    visualViewport?.addEventListener("resize", scheduleUpdate, { passive: true });
+-    visualViewport?.addEventListener("scroll", scheduleUpdate, { passive: true });
+ 
+     return () => {
+       if (frameId) window.cancelAnimationFrame(frameId);
+@@ -210,8 +205,6 @@
+       window.removeEventListener("keydown", handleManualScrollIntent);
+       window.removeEventListener("scroll", scheduleUpdate);
+       window.removeEventListener("resize", scheduleUpdate);
+-      visualViewport?.removeEventListener("resize", scheduleUpdate);
+-      visualViewport?.removeEventListener("scroll", scheduleUpdate);
+       appShell.style.removeProperty("--footer-scroll-progress");
+       appShell.style.removeProperty("--header-footer-hide-progress");
+       appShell.classList.remove(
+--- esadar_current/frontend/src/index.css	2026-05-14 14:06:24.000000000 +0000
++++ esadar_mobile_chrome_stable_work/frontend/src/index.css	2026-05-14 17:16:44.721655251 +0000
+@@ -14815,9 +14815,9 @@
+ /* === ESADAR mobile/tablet loading overlays and checkout stock guard === */
+ @media (max-width: 960px) {
+   .app-shell--intro-active .site-header {
+-    opacity: 0 !important;
+-    visibility: hidden !important;
+-    pointer-events: none !important;
++    opacity: 1 !important;
++    visibility: visible !important;
++    pointer-events: auto !important;
+   }
+ 
+   .intro-splash,
+@@ -14864,51 +14864,33 @@
+ }
+ 
+ 
+-/* === ESADAR mobile footer deep-cover hardening ===
+-   On real mobile browsers the URL/status bars resize the visual viewport and can
+-   leave a visible strip of the page curtain when the fixed header disappears.
+-   Once the footer scene is deep, let the footer cover the whole mobile viewport. */
++/* === ESADAR mobile Chrome footer stability ===
++   Keep the footer in the classic behind-the-page reveal on compact viewports.
++   Avoid promoting the whole footer to a full-screen overlay because Chrome
++   mobile repaints it during browser-bar resize and can flicker over the header. */
+ @media (max-width: 960px) {
+   .app-shell--has-footer-reveal .footer-scroll-scene {
+     position: fixed !important;
+-    inset: 0 !important;
++    inset: auto 0 0 0 !important;
++    z-index: 1 !important;
+     width: 100% !important;
+-    min-height: 100dvh !important;
+-    height: 100dvh !important;
+-    overflow: hidden !important;
++    min-height: var(--esadar-footer-viewport, 100svh) !important;
++    height: var(--esadar-footer-viewport, 100svh) !important;
++    overflow: clip !important;
++    pointer-events: none !important;
+   }
+ 
+   .app-shell--has-footer-reveal .footer-scroll-scene__sticky {
+     min-height: 100% !important;
+     height: 100% !important;
+-    padding-top: max(22px, env(safe-area-inset-top)) !important;
++    padding-top: calc(var(--header-height, 74px) + 18px) !important;
+     padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+   }
+ 
+-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene {
+-    z-index: 3 !important;
+-    opacity: 1 !important;
+-    visibility: visible !important;
+-    pointer-events: auto !important;
+-  }
+-
+   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__sticky,
+   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__content,
+   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__logo-button,
+   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__copy {
+     pointer-events: auto !important;
+   }
+-
+-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .page-shell {
+-    box-shadow: none !important;
+-  }
+-}
+-
+-@supports (height: 100lvh) {
+-  @media (max-width: 960px) {
+-    .app-shell--has-footer-reveal .footer-scroll-scene {
+-      min-height: 100lvh !important;
+-      height: 100lvh !important;
+-    }
+-  }
+ }
