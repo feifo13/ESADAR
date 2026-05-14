@@ -14655,3 +14655,36 @@ dialog,
     font-size: 0.86rem;
   }
 }
+
+/* === Checkout resumen mobile/tablet: compact action only for unavailable items === */
+@media (max-width: 960px) {
+  .app-shell--checkout-view
+    .summary-item-card-list
+    .summary-item-card--unavailable
+    .summary-item-card__quantity--unavailable {
+    grid-column: 1 / -1 !important;
+    display: inline-grid !important;
+    grid-template-columns: 44px !important;
+    justify-self: start !important;
+    align-self: start !important;
+    width: 44px !important;
+    max-width: 44px !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .app-shell--checkout-view
+    .summary-item-card-list
+    .summary-item-card--unavailable
+    .summary-item-card__quantity--unavailable
+    > .summary-item-card__qty-button {
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border: 1px solid rgba(16, 43, 52, 0.26) !important;
+    background: #ffffff !important;
+    color: #102b34 !important;
+  }
+}
