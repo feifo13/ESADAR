@@ -14811,3 +14811,54 @@ dialog,
     place-items: center !important;
   }
 }
+
+/* === ESADAR mobile/tablet loading overlays and checkout stock guard === */
+@media (max-width: 960px) {
+  .app-shell--intro-active .site-header {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .intro-splash,
+  .app-loader--overlay,
+  .catalog-filter-loading-splash {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 7000 !important;
+    min-height: 100svh !important;
+    height: 100svh !important;
+    display: grid !important;
+    place-items: center !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .app-shell--route-loading .app-loader--page {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 7000 !important;
+    min-height: 100svh !important;
+    height: 100svh !important;
+    display: grid !important;
+    place-items: center !important;
+    background: #ffffff !important;
+  }
+
+  .intro-splash__logo,
+  .app-loader--overlay .app-loader__logo,
+  .app-shell--route-loading .app-loader--page .app-loader__logo,
+  .catalog-filter-loading-splash__logo {
+    width: 130px !important;
+    max-width: 130px !important;
+    filter: none !important;
+  }
+
+  .cart-unavailable-ticker {
+    z-index: 5200 !important;
+  }
+}

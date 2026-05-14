@@ -93,11 +93,12 @@ function getOfferSavings(item) {
 }
 
 function isCheckoutItemUnavailable(item) {
-  const status = String(item?.articleStatus || 'ACTIVE').toUpperCase();
-  const quantityAvailable = Number(item?.quantityAvailable ?? item?.maxQuantity ?? 0);
-  return status !== 'ACTIVE' || quantityAvailable <= 0;
+  const status = String(item?.articleStatus || "ACTIVE").toUpperCase();
+  const quantityAvailable = Number(
+    item?.quantityAvailable ?? item?.maxQuantity ?? 0,
+  );
+  return status !== "ACTIVE" || quantityAvailable <= 0;
 }
-
 
 function TrashIcon() {
   return (
@@ -122,10 +123,20 @@ function TrashIcon() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, removeItem, updateQuantity, refreshCartAvailability, flushCartSync } = useCart();
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    refreshCartAvailability,
+    flushCartSync,
+  } = useCart();
   const { user, isAuthenticated } = useAuth();
-  const { shippingMethodOptions, paymentMethodOptions, lookupError, loaded: lookupsLoaded } =
-    useLookups();
+  const {
+    shippingMethodOptions,
+    paymentMethodOptions,
+    lookupError,
+    loaded: lookupsLoaded,
+  } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifyError } = useNotification();
   const checkoutShellRef = useRef(null);
@@ -145,7 +156,11 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const cartAvailabilitySignature = useMemo(
-    () => items.map((item) => `${item.articleId}:${item.quantity}`).sort().join('|'),
+    () =>
+      items
+        .map((item) => `${item.articleId}:${item.quantity}`)
+        .sort()
+        .join("|"),
     [items],
   );
 
@@ -206,12 +221,19 @@ export default function CheckoutPage() {
     paymentMethodOptions.find((item) => item.id === paymentMethod) ||
     paymentMethodOptions[0] ||
     null;
+  const unavailableItems = useMemo(
+    () => items.filter((item) => isCheckoutItemUnavailable(item)),
+    [items],
+  );
+  const hasUnavailableItems = unavailableItems.length > 0;
+  const unavailableItemsCount = unavailableItems.length;
   const availableItems = useMemo(
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],
   );
   const subtotal = availableItems.reduce(
-    (sum, item) => sum + Number(item.lineTotal ?? item.discountedPrice * item.quantity),
+    (sum, item) =>
+      sum + Number(item.lineTotal ?? item.discountedPrice * item.quantity),
     0,
   );
   const total = subtotal + Number(shipping?.cost || 0);
@@ -219,24 +241,28 @@ export default function CheckoutPage() {
   const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
   const paymentComplete = Boolean(
     paymentMethod &&
-      paymentMethodOptions.some((item) => item.id === paymentMethod),
+    paymentMethodOptions.some((item) => item.id === paymentMethod),
   );
   const shippingComplete = Boolean(
     shippingMethodId &&
-      shippingMethodOptions.some(
-        (item) => Number(item.id) === Number(shippingMethodId),
-      ),
+    shippingMethodOptions.some(
+      (item) => Number(item.id) === Number(shippingMethodId),
+    ),
   );
 
-
+  const checkoutCanAdvanceFromSummary =
+    availableItems.length > 0 && !hasUnavailableItems;
 
   const completion = {
-    resumen: availableItems.length > 0,
+    resumen: checkoutCanAdvanceFromSummary,
     comprador: buyerComplete,
     pago: paymentComplete,
     envio: shippingComplete,
     confirmacion:
-      availableItems.length > 0 && buyerComplete && paymentComplete && shippingComplete,
+      checkoutCanAdvanceFromSummary &&
+      buyerComplete &&
+      paymentComplete &&
+      shippingComplete,
   };
 
   const maxAllowedStepIndex = useMemo(() => {
@@ -260,7 +286,10 @@ export default function CheckoutPage() {
   }, [guest, shippingMethodId, paymentMethod, notes]);
 
   useEffect(() => {
-    if (!availableItems.length && currentStepKey !== "resumen") {
+    if (
+      (!availableItems.length || hasUnavailableItems) &&
+      currentStepKey !== "resumen"
+    ) {
       navigate("/checkout/resumen", { replace: true });
       return;
     }
@@ -274,19 +303,50 @@ export default function CheckoutPage() {
     availableItems.length,
     currentStepIndex,
     currentStepKey,
+    hasUnavailableItems,
     maxAllowedStepIndex,
     navigate,
   ]);
 
   function getGuestBuyerValidationIssue() {
     const checks = [
-      { target: "checkout-guest-first-name", message: getRequiredValidationMessage(guest.firstName, "el nombre del comprador") },
-      { target: "checkout-guest-last-name", message: getRequiredValidationMessage(guest.lastName, "el apellido del comprador") },
-      { target: "checkout-guest-birth-date", message: getRequiredValidationMessage(guest.birthDate, "la fecha de nacimiento") },
-      { target: "checkout-guest-phone", message: getRequiredValidationMessage(guest.phone, "el teléfono") },
-      { target: "checkout-guest-address", message: getRequiredValidationMessage(guest.address, "la dirección") },
-      { target: "checkout-guest-email", message: getRequiredValidationMessage(guest.email, "el email") },
-      { target: "checkout-guest-email", message: getEmailValidationMessage(guest.email) },
+      {
+        target: "checkout-guest-first-name",
+        message: getRequiredValidationMessage(
+          guest.firstName,
+          "el nombre del comprador",
+        ),
+      },
+      {
+        target: "checkout-guest-last-name",
+        message: getRequiredValidationMessage(
+          guest.lastName,
+          "el apellido del comprador",
+        ),
+      },
+      {
+        target: "checkout-guest-birth-date",
+        message: getRequiredValidationMessage(
+          guest.birthDate,
+          "la fecha de nacimiento",
+        ),
+      },
+      {
+        target: "checkout-guest-phone",
+        message: getRequiredValidationMessage(guest.phone, "el teléfono"),
+      },
+      {
+        target: "checkout-guest-address",
+        message: getRequiredValidationMessage(guest.address, "la dirección"),
+      },
+      {
+        target: "checkout-guest-email",
+        message: getRequiredValidationMessage(guest.email, "el email"),
+      },
+      {
+        target: "checkout-guest-email",
+        message: getEmailValidationMessage(guest.email),
+      },
     ];
 
     return checks.find((check) => Boolean(check.message)) || null;
@@ -354,10 +414,20 @@ export default function CheckoutPage() {
       return false;
     }
 
+    if (hasUnavailableItems) {
+      showCheckoutMessage(
+        "error",
+        "Para avanzar, primero quitá todos los artículos no disponibles del carrito.",
+      );
+      return false;
+    }
+
     if (currentStepKey === "comprador" && !isAuthenticated) {
       const validationIssue = getGuestBuyerValidationIssue();
       if (validationIssue) {
-        showCheckoutMessage("error", validationIssue.message, { target: validationIssue.target });
+        showCheckoutMessage("error", validationIssue.message, {
+          target: validationIssue.target,
+        });
         return false;
       }
     }
@@ -413,6 +483,14 @@ export default function CheckoutPage() {
   }
 
   async function handleConfirmOrder() {
+    if (hasUnavailableItems) {
+      showCheckoutMessage(
+        "error",
+        "Para confirmar la orden, primero quitá todos los artículos no disponibles del carrito.",
+      );
+      return;
+    }
+
     if (!completion.confirmacion || !availableItems.length) {
       showCheckoutMessage(
         "error",
@@ -424,7 +502,9 @@ export default function CheckoutPage() {
     if (!isAuthenticated) {
       const validationIssue = getGuestBuyerValidationIssue();
       if (validationIssue) {
-        showCheckoutMessage("error", validationIssue.message, { target: validationIssue.target });
+        showCheckoutMessage("error", validationIssue.message, {
+          target: validationIssue.target,
+        });
         return;
       }
     }
@@ -577,100 +657,100 @@ export default function CheckoutPage() {
                       .filter(Boolean)
                       .join(" ");
                     return (
-                    <tr
-                      key={getCheckoutLineKey(item)}
-                      className={rowClassName || undefined}
-                    >
-                      <td>
-                        <SmartImage
-                          src={item.image}
-                          alt={item.title}
-                          fallbackLabel={item.title}
-                          className="table-thumb-image"
-                        />
-                      </td>
-                      <td className="cell-truncate">
-                        <strong title={item.title}>{item.title}</strong>
-                      </td>
-                      <td className="cell-truncate">
-                        {item.brandName || "Sin marca"}
-                      </td>
-                      <td className="cell-truncate">
-                        {item.sizeLabel || "Sin talle"}
-                      </td>
-                      <td>
-                        {isUnavailable ? (
-                          <span className="status-badge status-unavailable">
-                            No disponible
-                          </span>
-                        ) : (
-                          <input
-                            className="input input-small checkout-qty-input"
-                            type="number"
-                            min="1"
-                            max={item.maxQuantity || item.quantity}
-                            value={item.quantity}
-                            aria-label={`Cantidad de ${item.title}`}
-                            onChange={(event) => {
-                              const result = updateQuantity(
-                                getCheckoutLineKey(item),
-                                Number(event.target.value || 1),
-                              );
-                              showStockNotice(result);
-                            }}
+                      <tr
+                        key={getCheckoutLineKey(item)}
+                        className={rowClassName || undefined}
+                      >
+                        <td>
+                          <SmartImage
+                            src={item.image}
+                            alt={item.title}
+                            fallbackLabel={item.title}
+                            className="table-thumb-image"
                           />
-                        )}
-                      </td>
-                      <td>
-                        {item.acceptedOffer ? (
-                          <span className="checkout-offer-price">
-                            <span className="pill pill-offer">
-                              Oferta aceptada
+                        </td>
+                        <td className="cell-truncate">
+                          <strong title={item.title}>{item.title}</strong>
+                        </td>
+                        <td className="cell-truncate">
+                          {item.brandName || "Sin marca"}
+                        </td>
+                        <td className="cell-truncate">
+                          {item.sizeLabel || "Sin talle"}
+                        </td>
+                        <td>
+                          {isUnavailable ? (
+                            <span className="status-badge status-unavailable">
+                              No disponible
                             </span>
-                            <span className="price-old">
-                              {formatCurrency(item.salePrice)}
+                          ) : (
+                            <input
+                              className="input input-small checkout-qty-input"
+                              type="number"
+                              min="1"
+                              max={item.maxQuantity || item.quantity}
+                              value={item.quantity}
+                              aria-label={`Cantidad de ${item.title}`}
+                              onChange={(event) => {
+                                const result = updateQuantity(
+                                  getCheckoutLineKey(item),
+                                  Number(event.target.value || 1),
+                                );
+                                showStockNotice(result);
+                              }}
+                            />
+                          )}
+                        </td>
+                        <td>
+                          {item.acceptedOffer ? (
+                            <span className="checkout-offer-price">
+                              <span className="pill pill-offer">
+                                Oferta aceptada
+                              </span>
+                              <span className="price-old">
+                                {formatCurrency(item.salePrice)}
+                              </span>
+                              <strong>
+                                {formatCurrency(item.acceptedOffer.price)}
+                              </strong>
+                              <small className="muted-copy">
+                                Aplica a 1 unidad · ahorro{" "}
+                                {formatCurrency(getOfferSavings(item))}
+                              </small>
                             </span>
+                          ) : (
+                            <span className="checkout-regular-price">
+                              {/* <span className="muted-copy">Precio normal</span> */}
+                              <strong>
+                                {formatCurrency(item.discountedPrice)}
+                              </strong>
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {isUnavailable ? (
+                            <span className="muted-copy">Fuera del total</span>
+                          ) : (
                             <strong>
-                              {formatCurrency(item.acceptedOffer.price)}
+                              {formatCurrency(
+                                item.lineTotal ??
+                                  item.discountedPrice * item.quantity,
+                              )}
                             </strong>
-                            <small className="muted-copy">
-                              Aplica a 1 unidad · ahorro{" "}
-                              {formatCurrency(getOfferSavings(item))}
-                            </small>
-                          </span>
-                        ) : (
-                          <span className="checkout-regular-price">
-                            {/* <span className="muted-copy">Precio normal</span> */}
-                            <strong>
-                              {formatCurrency(item.discountedPrice)}
-                            </strong>
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {isUnavailable ? (
-                          <span className="muted-copy">Fuera del total</span>
-                        ) : (
-                          <strong>
-                            {formatCurrency(
-                              item.lineTotal ??
-                                item.discountedPrice * item.quantity,
-                            )}
-                          </strong>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="icon-action-button"
-                          onClick={() => removeItem(getCheckoutLineKey(item))}
-                          aria-label={`Quitar ${item.title}`}
-                          title="Quitar"
-                        >
-                          <TrashIcon />
-                        </button>
-                      </td>
-                    </tr>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="icon-action-button"
+                            onClick={() => removeItem(getCheckoutLineKey(item))}
+                            aria-label={`Quitar ${item.title}`}
+                            title="Quitar"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -981,7 +1061,6 @@ export default function CheckoutPage() {
     );
   }
 
-
   function renderCurrentStep() {
     if (currentStepKey === "comprador") return renderBuyerStep();
     if (currentStepKey === "pago") return renderPaymentStep();
@@ -1006,6 +1085,25 @@ export default function CheckoutPage() {
 
   return (
     <>
+      {hasUnavailableItems ? (
+        <div
+          className="cart-unavailable-ticker"
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className="cart-unavailable-ticker__content">
+            <strong>
+              {unavailableItemsCount === 1
+                ? "1 artículo no disponible"
+                : `${unavailableItemsCount} artículos no disponibles`}
+            </strong>
+            {/* <span>
+              Para avanzar con la compra, primero quitá todos los artículos agotados o no disponibles del carrito.
+            </span> */}
+          </div>
+        </div>
+      ) : null}
+
       <div className="container page-stack checkout-page-stack">
         <section ref={checkoutShellRef} className="section-card checkout-shell">
           <div className="checkout-shell-header">
@@ -1068,16 +1166,18 @@ export default function CheckoutPage() {
             previousDisabled={currentStepIndex === 0 || submitting}
             onPrevious={handleBack}
             onNext={handleNext}
-            nextSlot={currentStepKey === "confirmacion" ? (
-              <button
-                type="button"
-                className="button button-primary"
-                onClick={handleConfirmOrder}
-                disabled={submitting}
-              >
-                {submitting ? "Creando orden…" : "Confirmar orden"}
-              </button>
-            ) : undefined}
+            nextSlot={
+              currentStepKey === "confirmacion" ? (
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={handleConfirmOrder}
+                  disabled={submitting}
+                >
+                  {submitting ? "Creando orden…" : "Confirmar orden"}
+                </button>
+              ) : undefined
+            }
           />
         </section>
       </div>
