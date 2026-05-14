@@ -93,6 +93,10 @@ export default function RootLayout() {
   const isAdminView = location.pathname.startsWith("/admin");
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
+  const isFooterHiddenView = [
+    "/guia-de-compra",
+    "/terminos-y-condiciones",
+  ].includes(location.pathname);
   const showBreadcrumbs = true;
   const shouldNoIndex =
     isCheckoutView || isAdminView || isAuthView || isAccountView;
@@ -244,7 +248,7 @@ export default function RootLayout() {
   const contentReady = contentReadyKey === location.key;
   const appShellClassName = [
     "app-shell",
-    !shouldNoIndex ? "app-shell--has-footer-reveal" : "",
+    !shouldNoIndex && !isFooterHiddenView ? "app-shell--has-footer-reveal" : "",
     showIntro ? "app-shell--intro-active" : "",
     contentReady && !showIntro ? "app-shell--content-ready" : "app-shell--route-loading",
     isCheckoutView ? "app-shell--checkout-view" : "",
@@ -276,7 +280,9 @@ export default function RootLayout() {
           </div>
         </main>
       </MobileMenuProvider>
-      {!shouldNoIndex && contentReady && !showIntro ? <FooterScrollScene /> : null}
+      {!shouldNoIndex && !isFooterHiddenView && contentReady && !showIntro ? (
+        <FooterScrollScene />
+      ) : null}
       <ScrollChrome />
 
       {showIntro ? (

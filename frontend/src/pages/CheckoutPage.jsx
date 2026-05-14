@@ -545,17 +545,26 @@ export default function CheckoutPage() {
         body: payload,
       });
 
-      const orderNumber = response?.order?.orderNumber;
+      const createdOrder = response?.order || null;
+      const orderNumber = createdOrder?.orderNumber;
       if (!orderNumber) {
         throw new Error(
           "La orden fue creada, pero no se pudo obtener el número de confirmación.",
         );
       }
 
+      const completionPayload = {
+        orderNumber,
+        orderId: createdOrder?.id || null,
+        total: createdOrder?.total ?? total,
+        paymentMethod: createdOrder?.paymentMethod || paymentMethod,
+        paymentInstructions: createdOrder?.paymentInstructions || null,
+      };
+
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(
           COMPLETE_STORAGE_KEY,
-          JSON.stringify({ orderNumber }),
+          JSON.stringify(completionPayload),
         );
       }
 
@@ -570,7 +579,7 @@ export default function CheckoutPage() {
 
       navigate("/checkout/completa", {
         replace: true,
-        state: { orderNumber },
+        state: completionPayload,
       });
     } catch (err) {
       showCheckoutMessage(

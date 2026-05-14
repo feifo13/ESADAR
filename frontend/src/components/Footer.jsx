@@ -17,6 +17,9 @@ export default function Footer() {
             <Link to="/about">Sobre nosotros</Link>
             {isAdmin ? <Link to="/admin/articles">Administración</Link> : null}
             <a href="#top">Volver arriba</a>
+            <Link to="/terminos-y-condiciones" className="footer-terms-link">
+              Términos y condiciones
+            </Link>
           </div>
         </div>
 

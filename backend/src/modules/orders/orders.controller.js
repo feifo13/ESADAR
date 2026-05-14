@@ -18,6 +18,7 @@ import {
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
+import { getPaymentInstructionsForOrder } from '../collecting/collecting.service.js';
 
 function getAuditContext(req) {
   return {
@@ -32,7 +33,15 @@ function getAuditContext(req) {
 export async function createPublicOrder(req, res) {
   const input = createOrderSchema.parse(req.body);
   const order = await createOrder(input, req.auth || null, getAuditContext(req));
-  return res.status(201).json({ ok: true, order });
+  const paymentInstructions =
+    order.paymentMethod === 'BANK_TRANSFER'
+      ? await getPaymentInstructionsForOrder(order)
+      : null;
+
+  return res.status(201).json({
+    ok: true,
+    order: paymentInstructions ? { ...order, paymentInstructions } : order,
+  });
 }
 
 export async function getAdminOrders(req, res) {

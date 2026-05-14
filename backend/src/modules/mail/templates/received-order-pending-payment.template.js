@@ -187,13 +187,14 @@ export function renderReceivedOrderPendingPaymentEmail({ order } = {}) {
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
   textLines.push(...formatPaymentInstructionLines(paymentInstructions));
-  textLines.push("", "Adjuntamos la boleta de tu orden en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push("", "Los datos de pago también quedan incluidos en este correo.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
     <p style="margin:0 0 14px;">Recibimos tu orden en <strong style="color:#102b34;">ESADAR</strong>.</p>
     <p style="margin:0 0 14px;">La recepción del pago está <strong style="color:#102b34;">pendiente</strong>.</p>
     <p style="margin:0 0 18px;">Reservamos tu orden por <strong style="color:#102b34;">24 horas</strong>.</p>
+    <p style="margin:0 0 18px;">Los datos de pago también quedan incluidos en este correo. El comprobante PDF se enviará cuando la orden sea aprobada.</p>
   `;
 
   const detailsHtml = `

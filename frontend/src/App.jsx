@@ -15,6 +15,8 @@ const CheckoutCompletePage = lazy(() => import('./pages/CheckoutCompletePage.jsx
 const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
 const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
 const NewsletterPage = lazy(() => import('./pages/NewsletterPage.jsx'));
+const PurchaseGuidePage = lazy(() => import('./pages/PurchaseGuidePage.jsx'));
+const TermsAndConditionsPage = lazy(() => import('./pages/TermsAndConditionsPage.jsx'));
 const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
 const AccountOrderDetailPage = lazy(() => import('./pages/AccountOrderDetailPage.jsx'));
 const AdminArticlesPage = lazy(() => import('./pages/admin/AdminArticlesPage.jsx'));
@@ -62,6 +64,8 @@ export default function App() {
         <Route path="contact" element={<ContactPage />} />
         <Route path="about" element={<AboutPage />} />
         <Route path="avisos" element={<NewsletterPage />} />
+        <Route path="guia-de-compra" element={<PurchaseGuidePage />} />
+        <Route path="terminos-y-condiciones" element={<TermsAndConditionsPage />} />
         <Route path="cuenta" element={<AccountPage />} />
         <Route path="cuenta/perfil" element={<AccountPage />} />
         <Route path="cuenta/preferencias" element={<AccountPage />} />

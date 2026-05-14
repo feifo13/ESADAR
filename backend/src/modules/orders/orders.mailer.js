@@ -11,7 +11,7 @@ function getSafeOrderNumber(order) {
 async function buildOrderReceiptAttachment(order) {
   const pdfBuffer = await generateOrderReceiptPdf(order);
   return {
-    filename: `boleta-${getSafeOrderNumber(order)}.pdf`,
+    filename: `comprobante-compra-${getSafeOrderNumber(order)}.pdf`,
     content: pdfBuffer,
     contentType: 'application/pdf',
   };
@@ -32,24 +32,9 @@ export async function sendApprovedOrderEmail(order) {
   const toEmail = order?.customer?.email;
   if (!toEmail) return { skipped: true };
 
-  const email = renderApprovedOrderEmail({ order });
-
-  return sendBrandedEmail({
-    to: toEmail,
-    subject: email.subject,
-    text: email.text,
-    html: email.html,
-  });
-}
-
-export async function sendReceivedOrderPendingPaymentEmail(order) {
-  const toEmail = order?.customer?.email;
-  if (!toEmail) return { skipped: true };
-
-  const enrichedOrder = await withPaymentInstructions(order);
   const [email, receiptAttachment] = await Promise.all([
-    Promise.resolve(renderReceivedOrderPendingPaymentEmail({ order: enrichedOrder })),
-    buildOrderReceiptAttachment(enrichedOrder),
+    Promise.resolve(renderApprovedOrderEmail({ order })),
+    buildOrderReceiptAttachment(order),
   ]);
 
   return sendBrandedEmail({
@@ -58,5 +43,20 @@ export async function sendReceivedOrderPendingPaymentEmail(order) {
     text: email.text,
     html: email.html,
     attachments: [receiptAttachment],
+  });
+}
+
+export async function sendReceivedOrderPendingPaymentEmail(order) {
+  const toEmail = order?.customer?.email;
+  if (!toEmail) return { skipped: true };
+
+  const enrichedOrder = await withPaymentInstructions(order);
+  const email = renderReceivedOrderPendingPaymentEmail({ order: enrichedOrder });
+
+  return sendBrandedEmail({
+    to: toEmail,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
   });
 }

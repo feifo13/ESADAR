@@ -1,0 +1,85 @@
+diff -ru prev_patch_extract/ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/components/Header.jsx ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/components/Header.jsx
+--- prev_patch_extract/ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/components/Header.jsx	2026-05-14 17:55:33.000000000 +0000
++++ ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/components/Header.jsx	2026-05-14 18:10:47.693175148 +0000
+@@ -422,9 +422,17 @@
+     { key: "admin-audit", label: "Auditoria", to: "/admin/audit" },
+   ];
+ 
++  const mobileInfoLinks = [
++    { key: "purchase-guide", label: "Guía de compra", to: "/guia-de-compra" },
++    {
++      key: "terms-and-conditions",
++      label: "Términos y condiciones",
++      to: "/terminos-y-condiciones",
++    },
++  ];
++
+   const mobileMenuItems = [
+     // { key: "home", label: "Inicio", to: "/" },
+-    { key: "purchase-guide", label: "Guía de compra", to: "/guia-de-compra" },
+     {
+       key: "account",
+       label: "Mi cuenta",
+@@ -441,6 +449,7 @@
+           },
+         ]
+       : []),
++    ...mobileInfoLinks,
+     ...(isAuthenticated
+       ? [
+           {
+diff -ru prev_patch_extract/ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/index.css ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/index.css
+--- prev_patch_extract/ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/index.css	2026-05-14 17:55:34.000000000 +0000
++++ ESADAR_checkout_complete_guide_terms_pdf_patch/frontend/src/index.css	2026-05-14 18:10:57.165546094 +0000
+@@ -15068,9 +15068,23 @@
+   padding-bottom: clamp(48px, 9vw, 96px);
+ }
+ 
++.guide-page-shell,
++.terms-page-shell {
++  align-items: stretch;
++}
++
+ .guide-hero-card,
+-.terms-hero-card {
+-  max-width: 920px;
++.guide-note-card,
++.terms-hero-card,
++.terms-content-card,
++.guide-steps-grid {
++  width: 100%;
++  max-width: none;
++  justify-self: stretch;
++}
++
++.guide-step-card {
++  width: 100%;
+ }
+ 
+ .guide-steps-grid {
+@@ -15099,7 +15113,7 @@
+ }
+ 
+ .terms-content-card {
+-  max-width: 980px;
++  max-width: none;
+ }
+ 
+ .terms-content-list {
+@@ -15134,4 +15148,16 @@
+   .terms-actions .button {
+     width: 100%;
+   }
++
++  .footer-scroll-scene__copy--terms,
++  .footer-scroll-scene__copy--terms:hover,
++  .footer-scroll-scene__copy--terms:focus-visible {
++    border-color: rgba(255, 255, 255, 0.92);
++    background: #ffffff;
++    color: var(--navy) !important;
++    text-shadow: none;
++    box-shadow:
++      0 12px 28px rgba(0, 0, 0, 0.14),
++      inset 0 1px 0 rgba(255, 255, 255, 0.72);
++  }
+ }

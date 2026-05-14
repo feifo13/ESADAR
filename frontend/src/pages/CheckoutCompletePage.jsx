@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
+import { formatCurrency } from "../lib/format.js";
 
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
 
@@ -18,19 +19,57 @@ function readCompletedOrder() {
   }
 }
 
+function getInstructionField(paymentInstructions, label) {
+  const normalizedLabel = String(label || "").trim().toLowerCase();
+  return (paymentInstructions?.fields || []).find(
+    (field) => String(field.label || "").trim().toLowerCase() === normalizedLabel,
+  );
+}
+
+function getPaymentFieldValue(paymentInstructions, label) {
+  return getInstructionField(paymentInstructions, label)?.value || "";
+}
+
+function isPrexTransfer(paymentInstructions) {
+  const haystack = [
+    paymentInstructions?.label,
+    paymentInstructions?.title,
+    getPaymentFieldValue(paymentInstructions, "Banco"),
+    paymentInstructions?.instructions,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  return haystack.includes("prex");
+}
+
 export default function CheckoutCompletePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { clearCart } = useCart();
   const didCleanupRef = useRef(false);
 
-  const completedOrder = useMemo(
-    () =>
-      location.state?.orderNumber
-        ? { orderNumber: location.state.orderNumber }
-        : readCompletedOrder(),
-    [location.state?.orderNumber],
-  );
+  const completedOrder = useMemo(() => {
+    const stored = readCompletedOrder() || {};
+    return location.state?.orderNumber
+      ? { ...stored, ...location.state }
+      : stored.orderNumber
+        ? stored
+        : null;
+  }, [location.state]);
+
+  const paymentInstructions = completedOrder?.paymentInstructions || null;
+  const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
+  const showTransferDetails = isBankTransfer && paymentInstructions?.enabled;
+  const transferLabel = isPrexTransfer(paymentInstructions)
+    ? "Transferencia Prex"
+    : "Transferencia bancaria";
+  const transferReference = completedOrder?.orderNumber
+    ? `ESADAR ${completedOrder.orderNumber}`
+    : "ESADAR";
 
   useEffect(() => {
     if (!completedOrder?.orderNumber) {
@@ -67,6 +106,56 @@ export default function CheckoutCompletePage() {
     });
   }
 
+  function renderTransferDetails() {
+    if (!showTransferDetails) return null;
+
+    const fields = paymentInstructions.fields || [];
+    const amount = completedOrder?.total;
+
+    return (
+      <div className="checkout-complete-transfer-panel">
+        <p className="section-kicker">Pago pendiente</p>
+        <h2>{transferLabel}</h2>
+        <p className="checkout-complete-copy">
+          Para completar la compra, realiza la transferencia con los datos de
+          cobro configurados en ESADAR. Estos datos también serán enviados por
+          correo para que los tengas a mano.
+        </p>
+        <p className="checkout-complete-copy">
+          En referencia o comentario usa el número de orden para que podamos
+          validar el pago más rápido.
+        </p>
+
+        <div className="checkout-complete-payment-details">
+          {fields.map((field) => (
+            <div key={field.label} className="checkout-complete-payment-row">
+              <span>{field.label}</span>
+              <strong>{field.value}</strong>
+            </div>
+          ))}
+
+          {amount != null ? (
+            <div className="checkout-complete-payment-row">
+              <span>Monto</span>
+              <strong>{formatCurrency(amount)}</strong>
+            </div>
+          ) : null}
+
+          <div className="checkout-complete-payment-row">
+            <span>Referencia</span>
+            <strong>{transferReference}</strong>
+          </div>
+        </div>
+
+        {paymentInstructions.instructions ? (
+          <p className="muted-copy checkout-complete-bank-instructions">
+            {paymentInstructions.instructions}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (!completedOrder?.orderNumber) {
     return null;
   }
@@ -96,6 +185,8 @@ export default function CheckoutCompletePage() {
           <p className="checkout-complete-order">
             Orden <strong>{completedOrder.orderNumber}</strong>
           </p>
+
+          {renderTransferDetails()}
 
           <div className="checkout-complete-actions">
             <button

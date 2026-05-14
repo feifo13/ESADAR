@@ -8,6 +8,8 @@ const ROUTE_LABELS = {
   contact: "Contacto",
   about: "Nosotros",
   avisos: "Avisos",
+  "guia-de-compra": "Guía de compra",
+  "terminos-y-condiciones": "Términos y condiciones",
 };
 
 const CHECKOUT_LABELS = {

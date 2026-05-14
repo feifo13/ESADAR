@@ -89,6 +89,23 @@ function LoginIcon() {
   );
 }
 
+function HelpIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.7 9a2.4 2.4 0 0 1 4.6 1.1c0 1.8-2.3 2.1-2.3 4" />
+      <path d="M12 17.5h.01" />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg
@@ -405,6 +422,15 @@ export default function Header({ hideBrand = false }) {
     { key: "admin-audit", label: "Auditoria", to: "/admin/audit" },
   ];
 
+  const mobileInfoLinks = [
+    { key: "purchase-guide", label: "Guía de compra", to: "/guia-de-compra" },
+    {
+      key: "terms-and-conditions",
+      label: "Términos y condiciones",
+      to: "/terminos-y-condiciones",
+    },
+  ];
+
   const mobileMenuItems = [
     // { key: "home", label: "Inicio", to: "/" },
     {
@@ -423,6 +449,7 @@ export default function Header({ hideBrand = false }) {
           },
         ]
       : []),
+    ...mobileInfoLinks,
     ...(isAuthenticated
       ? [
           {
@@ -594,6 +621,12 @@ export default function Header({ hideBrand = false }) {
                   "Guardados",
                   <HeartIcon />,
                 )}
+                {renderIconNavLink(
+                  "/guia-de-compra",
+                  "Guía de compra",
+                  <HelpIcon />,
+                  "header-icon-button--help",
+                )}
                 {renderCartButton(desktopCartButtonRef)}
                 {renderIconButton(handleLogout, "Salir", <LogoutIcon />)}
               </>
@@ -604,6 +637,12 @@ export default function Header({ hideBrand = false }) {
                   "/cuenta/guardados",
                   "Guardados",
                   <HeartIcon />,
+                )}
+                {renderIconNavLink(
+                  "/guia-de-compra",
+                  "Guía de compra",
+                  <HelpIcon />,
+                  "header-icon-button--help",
                 )}
                 {renderCartButton(desktopCartButtonRef)}
               </>

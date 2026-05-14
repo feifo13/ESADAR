@@ -1,0 +1,785 @@
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/backend/src/modules/mail/templates/approved-order.template.js esadar_iter_work/backend/src/modules/mail/templates/approved-order.template.js
+--- esadar_iter_baseline/backend/src/modules/mail/templates/approved-order.template.js	2026-05-11 22:39:56.000000000 +0000
++++ esadar_iter_work/backend/src/modules/mail/templates/approved-order.template.js	2026-05-14 17:52:42.478229328 +0000
+@@ -89,12 +89,13 @@
+   ];
+   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
+   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
+-  textLines.push("", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
++  textLines.push("", "Adjuntamos el comprobante de compra en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+ 
+   const bodyHtml = `
+     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
+     <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">aprobada</strong>.</p>
+-    <p style="margin:0 0 18px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
++    <p style="margin:0 0 14px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
++    <p style="margin:0 0 18px;">Adjuntamos el comprobante de compra en PDF.</p>
+   `;
+ 
+   const detailsHtml = `
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/backend/src/modules/mail/templates/received-order-pending-payment.template.js esadar_iter_work/backend/src/modules/mail/templates/received-order-pending-payment.template.js
+--- esadar_iter_baseline/backend/src/modules/mail/templates/received-order-pending-payment.template.js	2026-05-11 22:39:56.000000000 +0000
++++ esadar_iter_work/backend/src/modules/mail/templates/received-order-pending-payment.template.js	2026-05-14 17:52:42.477776287 +0000
+@@ -187,13 +187,14 @@
+   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
+   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
+   textLines.push(...formatPaymentInstructionLines(paymentInstructions));
+-  textLines.push("", "Adjuntamos la boleta de tu orden en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
++  textLines.push("", "Los datos de pago también quedan incluidos en este correo.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+ 
+   const bodyHtml = `
+     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
+     <p style="margin:0 0 14px;">Recibimos tu orden en <strong style="color:#102b34;">ESADAR</strong>.</p>
+     <p style="margin:0 0 14px;">La recepción del pago está <strong style="color:#102b34;">pendiente</strong>.</p>
+     <p style="margin:0 0 18px;">Reservamos tu orden por <strong style="color:#102b34;">24 horas</strong>.</p>
++    <p style="margin:0 0 18px;">Los datos de pago también quedan incluidos en este correo. El comprobante PDF se enviará cuando la orden sea aprobada.</p>
+   `;
+ 
+   const detailsHtml = `
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/backend/src/modules/orders/orders.mailer.js esadar_iter_work/backend/src/modules/orders/orders.mailer.js
+--- esadar_iter_baseline/backend/src/modules/orders/orders.mailer.js	2026-05-11 22:33:34.000000000 +0000
++++ esadar_iter_work/backend/src/modules/orders/orders.mailer.js	2026-05-14 17:52:42.477382574 +0000
+@@ -11,7 +11,7 @@
+ async function buildOrderReceiptAttachment(order) {
+   const pdfBuffer = await generateOrderReceiptPdf(order);
+   return {
+-    filename: `boleta-${getSafeOrderNumber(order)}.pdf`,
++    filename: `comprobante-compra-${getSafeOrderNumber(order)}.pdf`,
+     content: pdfBuffer,
+     contentType: 'application/pdf',
+   };
+@@ -32,13 +32,17 @@
+   const toEmail = order?.customer?.email;
+   if (!toEmail) return { skipped: true };
+ 
+-  const email = renderApprovedOrderEmail({ order });
++  const [email, receiptAttachment] = await Promise.all([
++    Promise.resolve(renderApprovedOrderEmail({ order })),
++    buildOrderReceiptAttachment(order),
++  ]);
+ 
+   return sendBrandedEmail({
+     to: toEmail,
+     subject: email.subject,
+     text: email.text,
+     html: email.html,
++    attachments: [receiptAttachment],
+   });
+ }
+ 
+@@ -47,16 +51,12 @@
+   if (!toEmail) return { skipped: true };
+ 
+   const enrichedOrder = await withPaymentInstructions(order);
+-  const [email, receiptAttachment] = await Promise.all([
+-    Promise.resolve(renderReceivedOrderPendingPaymentEmail({ order: enrichedOrder })),
+-    buildOrderReceiptAttachment(enrichedOrder),
+-  ]);
++  const email = renderReceivedOrderPendingPaymentEmail({ order: enrichedOrder });
+ 
+   return sendBrandedEmail({
+     to: toEmail,
+     subject: email.subject,
+     text: email.text,
+     html: email.html,
+-    attachments: [receiptAttachment],
+   });
+ }
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/App.jsx esadar_iter_work/frontend/src/App.jsx
+--- esadar_iter_baseline/frontend/src/App.jsx	2026-05-11 22:37:54.000000000 +0000
++++ esadar_iter_work/frontend/src/App.jsx	2026-05-14 17:53:19.801386664 +0000
+@@ -15,6 +15,8 @@
+ const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
+ const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+ const NewsletterPage = lazy(() => import('./pages/NewsletterPage.jsx'));
++const PurchaseGuidePage = lazy(() => import('./pages/PurchaseGuidePage.jsx'));
++const TermsAndConditionsPage = lazy(() => import('./pages/TermsAndConditionsPage.jsx'));
+ const AccountPage = lazy(() => import('./pages/AccountPage.jsx'));
+ const AccountOrderDetailPage = lazy(() => import('./pages/AccountOrderDetailPage.jsx'));
+ const AdminArticlesPage = lazy(() => import('./pages/admin/AdminArticlesPage.jsx'));
+@@ -62,6 +64,8 @@
+         <Route path="contact" element={<ContactPage />} />
+         <Route path="about" element={<AboutPage />} />
+         <Route path="avisos" element={<NewsletterPage />} />
++        <Route path="guia-de-compra" element={<PurchaseGuidePage />} />
++        <Route path="terminos-y-condiciones" element={<TermsAndConditionsPage />} />
+         <Route path="cuenta" element={<AccountPage />} />
+         <Route path="cuenta/perfil" element={<AccountPage />} />
+         <Route path="cuenta/preferencias" element={<AccountPage />} />
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/components/Footer.jsx esadar_iter_work/frontend/src/components/Footer.jsx
+--- esadar_iter_baseline/frontend/src/components/Footer.jsx	2026-05-11 22:33:34.000000000 +0000
++++ esadar_iter_work/frontend/src/components/Footer.jsx	2026-05-14 17:53:48.938889852 +0000
+@@ -1,30 +1,33 @@
+-import { Link } from "react-router-dom";
+-import { useAuth } from "../contexts/AuthContext.jsx";
+-
+-export default function Footer() {
+-  const { user } = useAuth();
+-  const isAdmin = user?.roles?.some((role) =>
+-    ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
+-  );
+-
+-  return (
+-    <footer className="site-footer">
+-      <div className="container footer-grid footer-grid-nav">
+-        <div>
+-          <p className="footer-title">Navegación</p>
+-          <div className="footer-links">
+-            <Link to="/contact">Contacto</Link>
+-            <Link to="/about">Sobre nosotros</Link>
+-            {isAdmin ? <Link to="/admin/articles">Administración</Link> : null}
+-            <a href="#top">Volver arriba</a>
+-          </div>
+-        </div>
+-
+-        <div>
+-          <p className="footer-title">Firma</p>
+-          <p className="footer-copy">B-E-S-A-N-D-O-S-E</p>
+-        </div>
+-      </div>
+-    </footer>
+-  );
+-}
++import { Link } from "react-router-dom";
++import { useAuth } from "../contexts/AuthContext.jsx";
++
++export default function Footer() {
++  const { user } = useAuth();
++  const isAdmin = user?.roles?.some((role) =>
++    ["SUPER_ADMIN", "ADMIN", "OPERATOR"].includes(role),
++  );
++
++  return (
++    <footer className="site-footer">
++      <div className="container footer-grid footer-grid-nav">
++        <div>
++          <p className="footer-title">Navegación</p>
++          <div className="footer-links">
++            <Link to="/contact">Contacto</Link>
++            <Link to="/about">Sobre nosotros</Link>
++            {isAdmin ? <Link to="/admin/articles">Administración</Link> : null}
++            <a href="#top">Volver arriba</a>
++            <Link to="/terminos-y-condiciones" className="footer-terms-link">
++              Términos y condiciones
++            </Link>
++          </div>
++        </div>
++
++        <div>
++          <p className="footer-title">Firma</p>
++          <p className="footer-copy">B-E-S-A-N-D-O-S-E</p>
++        </div>
++      </div>
++    </footer>
++  );
++}
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/components/FooterScrollScene.jsx esadar_iter_work/frontend/src/components/FooterScrollScene.jsx
+--- esadar_iter_baseline/frontend/src/components/FooterScrollScene.jsx	2026-05-14 14:17:24.000000000 +0000
++++ esadar_iter_work/frontend/src/components/FooterScrollScene.jsx	2026-05-14 17:53:48.938540256 +0000
+@@ -254,6 +254,12 @@
+               Contacto
+             </Link>
+           </div>
++          <Link
++            to="/terminos-y-condiciones"
++            className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
++          >
++            Términos y condiciones
++          </Link>
+         </div>
+       </div>
+     </footer>
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/components/Header.jsx esadar_iter_work/frontend/src/components/Header.jsx
+--- esadar_iter_baseline/frontend/src/components/Header.jsx	2026-05-14 12:50:38.000000000 +0000
++++ esadar_iter_work/frontend/src/components/Header.jsx	2026-05-14 17:53:33.691442822 +0000
+@@ -89,6 +89,23 @@
+   );
+ }
+ 
++function HelpIcon() {
++  return (
++    <svg
++      viewBox="0 0 24 24"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth="1.9"
++      strokeLinecap="round"
++      strokeLinejoin="round"
++    >
++      <circle cx="12" cy="12" r="9" />
++      <path d="M9.7 9a2.4 2.4 0 0 1 4.6 1.1c0 1.8-2.3 2.1-2.3 4" />
++      <path d="M12 17.5h.01" />
++    </svg>
++  );
++}
++
+ function LogoutIcon() {
+   return (
+     <svg
+@@ -407,6 +424,7 @@
+ 
+   const mobileMenuItems = [
+     // { key: "home", label: "Inicio", to: "/" },
++    { key: "purchase-guide", label: "Guía de compra", to: "/guia-de-compra" },
+     {
+       key: "account",
+       label: "Mi cuenta",
+@@ -594,6 +612,12 @@
+                   "Guardados",
+                   <HeartIcon />,
+                 )}
++                {renderIconNavLink(
++                  "/guia-de-compra",
++                  "Guía de compra",
++                  <HelpIcon />,
++                  "header-icon-button--help",
++                )}
+                 {renderCartButton(desktopCartButtonRef)}
+                 {renderIconButton(handleLogout, "Salir", <LogoutIcon />)}
+               </>
+@@ -605,6 +629,12 @@
+                   "Guardados",
+                   <HeartIcon />,
+                 )}
++                {renderIconNavLink(
++                  "/guia-de-compra",
++                  "Guía de compra",
++                  <HelpIcon />,
++                  "header-icon-button--help",
++                )}
+                 {renderCartButton(desktopCartButtonRef)}
+               </>
+             )}
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/index.css esadar_iter_work/frontend/src/index.css
+--- esadar_iter_baseline/frontend/src/index.css	2026-05-14 17:35:23.659558254 +0000
++++ esadar_iter_work/frontend/src/index.css	2026-05-14 17:54:14.647370084 +0000
+@@ -15000,3 +15000,138 @@
+     width: 100%;
+   }
+ }
++
++/* Iteration: checkout complete transfer details stay inside the main complete card. */
++.checkout-complete-transfer-panel {
++  display: grid;
++  gap: 12px;
++  margin-top: 10px;
++  padding-top: 22px;
++  border-top: 1px solid var(--border-soft, rgba(7, 22, 33, 0.12));
++  text-align: left;
++}
++
++.checkout-complete-transfer-panel h2 {
++  margin: 0;
++  text-align: center;
++}
++
++.checkout-complete-transfer-panel .section-kicker,
++.checkout-complete-transfer-panel .checkout-complete-copy {
++  text-align: center;
++}
++
++.checkout-complete-transfer-panel .checkout-complete-copy {
++  max-width: 620px;
++  margin-inline: auto;
++}
++
++.checkout-complete-payment-row {
++  grid-template-columns: minmax(130px, 0.42fr) minmax(0, 1fr);
++}
++
++.checkout-complete-payment-row > span {
++  align-self: start;
++}
++
++.checkout-complete-payment-row > strong {
++  margin-top: 0;
++  text-align: right;
++}
++
++.footer-scroll-scene__copy--terms {
++  min-width: min(300px, 78vw);
++  margin-top: 2px;
++  border-color: color-mix(in srgb, var(--navy) 64%, var(--border));
++  background: linear-gradient(135deg, var(--navy), color-mix(in srgb, var(--navy) 72%, var(--aqua)));
++  box-shadow:
++    0 12px 28px color-mix(in srgb, var(--navy) 26%, transparent),
++    inset 0 1px 0 rgba(255, 255, 255, 0.2);
++}
++
++.footer-scroll-scene__copy--terms:hover,
++.footer-scroll-scene__copy--terms:focus-visible {
++  background: linear-gradient(135deg, color-mix(in srgb, var(--navy) 92%, white), var(--navy));
++  border-color: color-mix(in srgb, var(--navy) 82%, white);
++  box-shadow:
++    0 16px 34px color-mix(in srgb, var(--navy) 34%, transparent),
++    0 0 0 3px color-mix(in srgb, var(--navy) 20%, transparent);
++}
++
++.footer-terms-link {
++  margin-top: 6px;
++  font-weight: 800;
++}
++
++.guide-page-shell,
++.terms-page-shell {
++  padding-bottom: clamp(48px, 9vw, 96px);
++}
++
++.guide-hero-card,
++.terms-hero-card {
++  max-width: 920px;
++}
++
++.guide-steps-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: clamp(14px, 2vw, 22px);
++}
++
++.guide-step-card {
++  display: grid;
++  gap: 10px;
++}
++
++.guide-step-card h2,
++.guide-note-card h2,
++.terms-content-section h2 {
++  margin: 0;
++}
++
++.guide-actions,
++.terms-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px;
++  margin-top: 8px;
++}
++
++.terms-content-card {
++  max-width: 980px;
++}
++
++.terms-content-list {
++  display: grid;
++  gap: 22px;
++}
++
++.terms-content-section {
++  display: grid;
++  gap: 8px;
++  padding-bottom: 18px;
++  border-bottom: 1px solid var(--border-soft, rgba(7, 22, 33, 0.12));
++}
++
++.terms-content-section:last-child {
++  padding-bottom: 0;
++  border-bottom: 0;
++}
++
++@media (max-width: 820px) {
++  .checkout-complete-payment-row,
++  .checkout-complete-payment-row > strong {
++    grid-template-columns: 1fr;
++    text-align: left;
++  }
++
++  .guide-steps-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .guide-actions .button,
++  .terms-actions .button {
++    width: 100%;
++  }
++}
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/pages/CheckoutCompletePage.jsx esadar_iter_work/frontend/src/pages/CheckoutCompletePage.jsx
+--- esadar_iter_baseline/frontend/src/pages/CheckoutCompletePage.jsx	2026-05-14 17:35:23.637931659 +0000
++++ esadar_iter_work/frontend/src/pages/CheckoutCompletePage.jsx	2026-05-14 17:52:23.051796920 +0000
+@@ -1,11 +1,9 @@
+-import { useEffect, useMemo, useRef, useState } from "react";
++import { useEffect, useMemo, useRef } from "react";
+ import { useLocation, useNavigate } from "react-router-dom";
+ import { useCart } from "../contexts/CartContext.jsx";
+ import { formatCurrency } from "../lib/format.js";
+ 
+ const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
+-const PREX_APP_URL = "https://www.prexcard.com/abrirapp";
+-const PREX_TRANSFER_HELP_URL = "https://www.prexcard.com/cargasprex";
+ 
+ function readCompletedOrder() {
+   if (typeof window === "undefined") {
+@@ -48,18 +46,11 @@
+   return haystack.includes("prex");
+ }
+ 
+-async function copyText(value) {
+-  if (typeof navigator === "undefined" || !navigator.clipboard) return false;
+-  await navigator.clipboard.writeText(String(value || ""));
+-  return true;
+-}
+-
+ export default function CheckoutCompletePage() {
+   const navigate = useNavigate();
+   const location = useLocation();
+   const { clearCart } = useCart();
+   const didCleanupRef = useRef(false);
+-  const [copiedField, setCopiedField] = useState("");
+ 
+   const completedOrder = useMemo(() => {
+     const stored = readCompletedOrder() || {};
+@@ -72,8 +63,8 @@
+ 
+   const paymentInstructions = completedOrder?.paymentInstructions || null;
+   const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
+-  const showPrexTransfer = isBankTransfer && paymentInstructions?.enabled;
+-  const prexTransferLabel = isPrexTransfer(paymentInstructions)
++  const showTransferDetails = isBankTransfer && paymentInstructions?.enabled;
++  const transferLabel = isPrexTransfer(paymentInstructions)
+     ? "Transferencia Prex"
+     : "Transferencia bancaria";
+   const transferReference = completedOrder?.orderNumber
+@@ -98,12 +89,6 @@
+     }
+   }, [clearCart, completedOrder?.orderNumber, navigate]);
+ 
+-  useEffect(() => {
+-    if (!copiedField) return undefined;
+-    const timeoutId = window.setTimeout(() => setCopiedField(""), 1800);
+-    return () => window.clearTimeout(timeoutId);
+-  }, [copiedField]);
+-
+   function handleAccept() {
+     if (typeof window !== "undefined") {
+       window.sessionStorage.removeItem(COMPLETE_STORAGE_KEY);
+@@ -121,93 +106,44 @@
+     });
+   }
+ 
+-  async function handleCopy(label, value) {
+-    if (!value) return;
+-
+-    try {
+-      const copied = await copyText(value);
+-      if (copied) setCopiedField(label);
+-    } catch {
+-      // Copiar es una ayuda; no debe bloquear la pantalla final.
+-    }
+-  }
+-
+-  function renderCopyButton(label, value) {
+-    if (!value) return null;
+-
+-    return (
+-      <button
+-        type="button"
+-        className="button button-secondary checkout-complete-copy-button"
+-        onClick={() => void handleCopy(label, value)}
+-      >
+-        {copiedField === label ? "Copiado" : "Copiar"}
+-      </button>
+-    );
+-  }
+-
+-  function renderPrexTransferPanel() {
+-    if (!showPrexTransfer) return null;
++  function renderTransferDetails() {
++    if (!showTransferDetails) return null;
+ 
+     const fields = paymentInstructions.fields || [];
+     const amount = completedOrder?.total;
+ 
+     return (
+-      <section className="section-card checkout-complete-payment-card">
++      <div className="checkout-complete-transfer-panel">
+         <p className="section-kicker">Pago pendiente</p>
+-        <h2>{prexTransferLabel}</h2>
++        <h2>{transferLabel}</h2>
+         <p className="checkout-complete-copy">
+-          Abre Prex y usa los datos configurados en collecting para realizar la
+-          transferencia. En referencia o comentario usa el número de orden para
+-          que podamos validarla más rápido.
++          Para completar la compra, realiza la transferencia con los datos de
++          cobro configurados en ESADAR. Estos datos también serán enviados por
++          correo para que los tengas a mano.
++        </p>
++        <p className="checkout-complete-copy">
++          En referencia o comentario usa el número de orden para que podamos
++          validar el pago más rápido.
+         </p>
+-
+-        <div className="checkout-complete-transfer-actions">
+-          <a
+-            className="button button-primary"
+-            href={PREX_APP_URL}
+-            target="_blank"
+-            rel="noreferrer"
+-          >
+-            Abrir Prex y transferir
+-          </a>
+-          <a
+-            className="button button-secondary"
+-            href={PREX_TRANSFER_HELP_URL}
+-            target="_blank"
+-            rel="noreferrer"
+-          >
+-            Ver guía Prex
+-          </a>
+-        </div>
+ 
+         <div className="checkout-complete-payment-details">
+           {fields.map((field) => (
+             <div key={field.label} className="checkout-complete-payment-row">
+-              <div>
+-                <span>{field.label}</span>
+-                <strong>{field.value}</strong>
+-              </div>
+-              {renderCopyButton(field.label, field.value)}
++              <span>{field.label}</span>
++              <strong>{field.value}</strong>
+             </div>
+           ))}
+ 
+           {amount != null ? (
+             <div className="checkout-complete-payment-row">
+-              <div>
+-                <span>Monto</span>
+-                <strong>{formatCurrency(amount)}</strong>
+-              </div>
+-              {renderCopyButton("Monto", String(amount))}
++              <span>Monto</span>
++              <strong>{formatCurrency(amount)}</strong>
+             </div>
+           ) : null}
+ 
+           <div className="checkout-complete-payment-row">
+-            <div>
+-              <span>Referencia</span>
+-              <strong>{transferReference}</strong>
+-            </div>
+-            {renderCopyButton("Referencia", transferReference)}
++            <span>Referencia</span>
++            <strong>{transferReference}</strong>
+           </div>
+         </div>
+ 
+@@ -216,7 +152,7 @@
+             {paymentInstructions.instructions}
+           </p>
+         ) : null}
+-      </section>
++      </div>
+     );
+   }
+ 
+@@ -250,6 +186,8 @@
+             Orden <strong>{completedOrder.orderNumber}</strong>
+           </p>
+ 
++          {renderTransferDetails()}
++
+           <div className="checkout-complete-actions">
+             <button
+               type="button"
+@@ -260,8 +198,6 @@
+             </button>
+           </div>
+         </section>
+-
+-        {renderPrexTransferPanel()}
+       </div>
+     </div>
+   );
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/pages/PurchaseGuidePage.jsx esadar_iter_work/frontend/src/pages/PurchaseGuidePage.jsx
+--- esadar_iter_baseline/frontend/src/pages/PurchaseGuidePage.jsx	1970-01-01 00:00:00.000000000 +0000
++++ esadar_iter_work/frontend/src/pages/PurchaseGuidePage.jsx	2026-05-14 17:53:12.305969374 +0000
+@@ -0,0 +1,89 @@
++import { Link } from "react-router-dom";
++import SeoHead from "../components/SeoHead.jsx";
++import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
++import { toAbsoluteUrl } from "../lib/seo.js";
++
++const guideSteps = [
++  {
++    title: "1. Elegí tu prenda",
++    copy:
++      "Navegá el catálogo, revisá fotos, medidas reales, estado de la prenda, talle y disponibilidad antes de agregarla al carrito.",
++  },
++  {
++    title: "2. Ofertá si la prenda lo permite",
++    copy:
++      "Algunas prendas aceptan ofertas. Si tu oferta es aprobada, la vas a ver destacada en tu cuenta y podés comprarla con ese precio.",
++  },
++  {
++    title: "3. Confirmá carrito y datos",
++    copy:
++      "Antes de avanzar, revisá cantidades, precio final, medio de pago, envío o retiro. Si un artículo se agota, el sistema te pedirá quitarlo para continuar.",
++  },
++  {
++    title: "4. Pagá y esperá validación",
++    copy:
++      "Si elegís transferencia, los datos de pago quedan visibles al finalizar la compra y también se envían por correo. La orden queda reservada por 24 horas.",
++  },
++  {
++    title: "5. Recibí la confirmación",
++    copy:
++      "Cuando ESADAR valida el pago desde el backoffice, recibís el mail de orden aprobada junto con el comprobante de compra en PDF.",
++  },
++];
++
++export default function PurchaseGuidePage() {
++  const { site, pagesByRoute } = useSiteSeo();
++  const guideSeo = pagesByRoute["/guia-de-compra"] || null;
++
++  return (
++    <div className="container page-stack guide-page-shell">
++      <SeoHead
++        title={guideSeo?.title || `Guía de compra | ${site.name}`}
++        description={
++          guideSeo?.description ||
++          "Cómo comprar en ESADAR: catálogo, ofertas, carrito, pago, validación y comprobante."
++        }
++        canonical={guideSeo?.canonicalUrl || toAbsoluteUrl("/guia-de-compra", site)}
++        url={toAbsoluteUrl("/guia-de-compra", site)}
++      />
++
++      <section className="section-card page-stack guide-hero-card">
++        <p className="section-kicker">Guía de compra</p>
++        <h1>Cómo comprar en ESADAR</h1>
++        <p className="muted-copy">
++          Una guía simple para entender el flujo completo: elegir una prenda,
++          ofertar si está habilitado, confirmar la orden, pagar y recibir la
++          aprobación.
++        </p>
++      </section>
++
++      <section className="guide-steps-grid" aria-label="Pasos de compra">
++        {guideSteps.map((step) => (
++          <article className="section-card guide-step-card" key={step.title}>
++            <h2>{step.title}</h2>
++            <p className="muted-copy">{step.copy}</p>
++          </article>
++        ))}
++      </section>
++
++      <section className="section-card page-stack guide-note-card">
++        <p className="section-kicker">Importante</p>
++        <h2>Stock único y reserva por 24 horas</h2>
++        <p className="muted-copy">
++          ESADAR trabaja con prendas seleccionadas y stock limitado. Cuando
++          confirmás una orden, la prenda queda reservada por 24 horas. Si el
++          pago no se completa o no puede validarse, la orden puede cancelarse y
++          el artículo vuelve a estar disponible.
++        </p>
++        <div className="guide-actions">
++          <Link to="/articles" className="button button-primary">
++            Ver catálogo
++          </Link>
++          <Link to="/contact" className="button button-secondary">
++            Hacer una consulta
++          </Link>
++        </div>
++      </section>
++    </div>
++  );
++}
+diff -ruN '--exclude=node_modules' '--exclude=dist' esadar_iter_baseline/frontend/src/pages/TermsAndConditionsPage.jsx esadar_iter_work/frontend/src/pages/TermsAndConditionsPage.jsx
+--- esadar_iter_baseline/frontend/src/pages/TermsAndConditionsPage.jsx	1970-01-01 00:00:00.000000000 +0000
++++ esadar_iter_work/frontend/src/pages/TermsAndConditionsPage.jsx	2026-05-14 17:53:12.313714725 +0000
+@@ -0,0 +1,97 @@
++import { Link } from "react-router-dom";
++import SeoHead from "../components/SeoHead.jsx";
++import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
++import { toAbsoluteUrl } from "../lib/seo.js";
++
++const sections = [
++  {
++    title: "1. Naturaleza de las prendas",
++    copy:
++      "ESADAR comercializa prendas seleccionadas, en su mayoría de segunda mano, vintage, sportswear o piezas modernas curadas. Cada artículo puede presentar señales propias de uso, antigüedad o conservación, las cuales se informan en la publicación cuando corresponde.",
++  },
++  {
++    title: "2. Disponibilidad y stock",
++    copy:
++      "El stock es limitado y generalmente unitario. La publicación de un artículo no garantiza disponibilidad permanente. Si una prenda queda agotada, reservada o inactiva, ESADAR puede impedir la compra y mostrar alternativas relacionadas.",
++  },
++  {
++    title: "3. Precios, ofertas y promociones",
++    copy:
++      "Los precios se expresan en pesos uruguayos salvo indicación contraria. Algunas prendas pueden aceptar ofertas. La aceptación de una oferta queda sujeta a aprobación de ESADAR y puede tener vigencia limitada.",
++  },
++  {
++    title: "4. Órdenes y reserva",
++    copy:
++      "Al confirmar una compra, la orden queda registrada y puede permanecer pendiente de validación manual. Las prendas asociadas a la orden se reservan por 24 horas. Si el pago no se completa o no se puede validar dentro de ese plazo, ESADAR puede cancelar la orden.",
++  },
++  {
++    title: "5. Medios de pago",
++    copy:
++      "ESADAR puede ofrecer transferencia bancaria, Prex, Mercado Pago u otros medios configurados en el sistema. En pagos por transferencia, el cliente debe utilizar los datos informados al finalizar la compra y enviados por correo, incluyendo la referencia de la orden.",
++  },
++  {
++    title: "6. Validación del pago",
++    copy:
++      "La aprobación de una orden depende de la validación del pago. Una vez aprobada, ESADAR enviará el correo de confirmación correspondiente y el comprobante de compra en PDF.",
++  },
++  {
++    title: "7. Envíos y retiros",
++    copy:
++      "Las condiciones de envío, retiro, costos y tiempos pueden variar según la opción seleccionada y la información disponible al momento de la compra. ESADAR podrá coordinar detalles adicionales con el cliente cuando sea necesario.",
++  },
++  {
++    title: "8. Cambios y devoluciones",
++    copy:
++      "Por tratarse de prendas seleccionadas y muchas veces únicas, los cambios o devoluciones se evaluarán caso a caso. El cliente debe revisar fotos, medidas, estado y descripción antes de confirmar la compra.",
++  },
++  {
++    title: "9. Datos de contacto",
++    copy:
++      "Para consultas sobre órdenes, pagos, envíos o condiciones particulares, el cliente puede comunicarse con ESADAR desde la vista de contacto.",
++  },
++];
++
++export default function TermsAndConditionsPage() {
++  const { site, pagesByRoute } = useSiteSeo();
++  const termsSeo = pagesByRoute["/terminos-y-condiciones"] || null;
++
++  return (
++    <div className="container page-stack terms-page-shell">
++      <SeoHead
++        title={termsSeo?.title || `Términos y condiciones | ${site.name}`}
++        description={
++          termsSeo?.description ||
++          "Términos y condiciones de compra de ESADAR: stock, pagos, validación, envíos y consultas."
++        }
++        canonical={termsSeo?.canonicalUrl || toAbsoluteUrl("/terminos-y-condiciones", site)}
++        url={toAbsoluteUrl("/terminos-y-condiciones", site)}
++      />
++
++      <section className="section-card page-stack terms-hero-card">
++        <p className="section-kicker">Términos y condiciones</p>
++        <h1>Términos y condiciones de compra</h1>
++        <p className="muted-copy">
++          Al navegar, reservar o comprar en ESADAR, aceptás estas condiciones
++          generales. El objetivo es que el proceso sea claro, seguro y coherente
++          con el tipo de prendas que ofrecemos.
++        </p>
++      </section>
++
++      <section className="section-card terms-content-card">
++        <div className="terms-content-list">
++          {sections.map((section) => (
++            <article className="terms-content-section" key={section.title}>
++              <h2>{section.title}</h2>
++              <p className="muted-copy">{section.copy}</p>
++            </article>
++          ))}
++        </div>
++        <div className="terms-actions">
++          <Link to="/contact" className="button button-primary">
++            Contactar a ESADAR
++          </Link>
++        </div>
++      </section>
++    </div>
++  );
++}

@@ -89,12 +89,13 @@ export function renderApprovedOrderEmail({ order } = {}) {
   ];
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
-  textLines.push("", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push("", "Adjuntamos el comprobante de compra en PDF.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
     <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">aprobada</strong>.</p>
-    <p style="margin:0 0 18px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
+    <p style="margin:0 0 14px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
+    <p style="margin:0 0 18px;">Adjuntamos el comprobante de compra en PDF.</p>
   `;
 
   const detailsHtml = `

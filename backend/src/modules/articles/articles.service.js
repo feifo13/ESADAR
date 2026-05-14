@@ -808,7 +808,7 @@ export async function listPublicArticles({ filters, pagination }) {
 
 export async function getPublicArticleBySlugOrId(slugOrId) {
   const rows = await getArticleRows(
-    `WHERE a.status IN ('ACTIVE', 'SOLD_OUT') AND (a.slug = ? OR a.id = ?) LIMIT 1`,
+    `WHERE (a.slug = ? OR a.id = ?) LIMIT 1`,
     [slugOrId, Number(slugOrId) || 0],
   );
 
@@ -818,6 +818,8 @@ export async function getPublicArticleBySlugOrId(slugOrId) {
 
   const article = rows[0];
   article.images = await getArticleImages(article.id);
+  article.isUnavailable = !['ACTIVE', 'SOLD_OUT'].includes(article.status);
+
   return article;
 }
 

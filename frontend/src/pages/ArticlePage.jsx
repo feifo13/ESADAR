@@ -213,9 +213,13 @@ export default function ArticlePage() {
 
   const discounted = hasDiscount(article);
   const finalPrice = getDiscountedPrice(article);
+  const articleStatus = String(article.status || "ACTIVE").toUpperCase();
   const isSoldOut =
     Number(article.quantityAvailable || 0) <= 0 ||
-    article.status === "SOLD_OUT";
+    articleStatus === "SOLD_OUT";
+  const isUnavailable =
+    Boolean(article.isUnavailable) ||
+    !["ACTIVE", "SOLD_OUT"].includes(articleStatus);
   const currentCartItem = getItem(article.id);
   const articleForCart = acceptedOffer
     ? {
@@ -240,6 +244,119 @@ export default function ArticlePage() {
     },
     { name: article.title, url: canonicalUrl },
   ];
+
+  if (isUnavailable) {
+    const unavailableMessage =
+      articleStatus === "RESERVED"
+        ? "Esta prenda ya está reservada y no se puede comprar en este momento."
+        : "Esta prenda ya no está publicada o no se encuentra disponible para compra.";
+
+    return (
+      <>
+        <SeoHead
+          title={`${article.title} no disponible`}
+          description={unavailableMessage}
+          canonical={canonicalUrl}
+          url={canonicalUrl}
+          image={toAbsoluteUrl(
+            article.primaryImageDetail || article.primaryImage,
+            site,
+          )}
+          type="product"
+          jsonLd={[
+            { id: "breadcrumb", data: buildBreadcrumbJsonLd(breadcrumbItems) },
+          ]}
+        />
+
+        <div className="container article-unavailable-page page-stack">
+          <section className="section-card article-unavailable-card">
+            <div className="article-unavailable-card__media">
+              <ArticleImageGallery
+                images={article.images}
+                title={article.title}
+                fallbackImage={article}
+              />
+            </div>
+
+            <div className="article-unavailable-card__content page-stack-sm">
+              <p className="section-kicker">Artículo no disponible</p>
+              <h1>{article.title}</h1>
+              <p className="muted-copy">{unavailableMessage}</p>
+
+              <div className="detail-meta-list article-unavailable-meta">
+                <div>
+                  <span>Estado</span>
+                  <strong>No disponible</strong>
+                </div>
+                <div>
+                  <span>Marca</span>
+                  <strong>{article.brandName || "Sin marca"}</strong>
+                </div>
+                <div>
+                  <span>Talle</span>
+                  <strong>
+                    {article.sizeText || article.sizeCode || "No especificado"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="detail-actions detail-actions--stacked">
+                <Link to="/" className="button button-primary">
+                  Ver catálogo disponible
+                </Link>
+                <button
+                  type="button"
+                  className="button button-secondary article-stock-alert-button"
+                  onClick={openStockAlertForm}
+                >
+                  Avisame si entra algo similar
+                </button>
+              </div>
+
+              {alertInlineOpen ? (
+                <section
+                  ref={stockAlertPanelRef}
+                  className="section-card page-stack-sm stock-alert-inline-panel"
+                >
+                  <div>
+                    <p className="section-kicker">Seguimiento</p>
+                    <h3>Avisame si entra algo similar</h3>
+                  </div>
+                  {renderStockAlertForm({ inline: true })}
+                </section>
+              ) : null}
+            </div>
+          </section>
+
+          {relatedState.items.length ? (
+            <section className="page-stack article-related-scroll-section">
+              <div className="section-heading section-heading-wrap">
+                <div>
+                  <p className="section-kicker">Alternativas</p>
+                  <h2>Prendas similares disponibles</h2>
+                </div>
+                <ScrollRailControls
+                  targetRef={relatedTrackRef}
+                  className="scroll-rail-controls--left"
+                />
+              </div>
+
+              <div
+                ref={relatedTrackRef}
+                className="related-articles-track article-horizontal-card-track"
+              >
+                {relatedState.items.map((item) => (
+                  <div key={item.id} className="related-articles-track__item">
+                    <ArticleCard article={item} view="grid" variant="default" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      </>
+    );
+  }
 
   function isMobileViewport() {
     return (

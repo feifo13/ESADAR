@@ -1,0 +1,551 @@
+--- /tmp/articles.service.js.bak	2026-05-14 17:33:11.531800091 +0000
++++ backend/src/modules/articles/articles.service.js	2026-05-14 17:33:18.685796834 +0000
+@@ -808,7 +808,7 @@
+ 
+ export async function getPublicArticleBySlugOrId(slugOrId) {
+   const rows = await getArticleRows(
+-    `WHERE a.status IN ('ACTIVE', 'SOLD_OUT') AND (a.slug = ? OR a.id = ?) LIMIT 1`,
++    `WHERE (a.slug = ? OR a.id = ?) LIMIT 1`,
+     [slugOrId, Number(slugOrId) || 0],
+   );
+ 
+@@ -818,6 +818,8 @@
+ 
+   const article = rows[0];
+   article.images = await getArticleImages(article.id);
++  article.isUnavailable = !['ACTIVE', 'SOLD_OUT'].includes(article.status);
++
+   return article;
+ }
+ 
+--- /tmp/orders.controller.js.bak	2026-05-14 17:33:11.549829862 +0000
++++ backend/src/modules/orders/orders.controller.js	2026-05-14 17:33:26.679442197 +0000
+@@ -18,6 +18,7 @@
+ import { getPagination } from '../../utils/pagination.js';
+ import { parsePositiveIntParam } from '../../utils/request-validation.js';
+ import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
++import { getPaymentInstructionsForOrder } from '../collecting/collecting.service.js';
+ 
+ function getAuditContext(req) {
+   return {
+@@ -32,7 +33,15 @@
+ export async function createPublicOrder(req, res) {
+   const input = createOrderSchema.parse(req.body);
+   const order = await createOrder(input, req.auth || null, getAuditContext(req));
+-  return res.status(201).json({ ok: true, order });
++  const paymentInstructions =
++    order.paymentMethod === 'BANK_TRANSFER'
++      ? await getPaymentInstructionsForOrder(order)
++      : null;
++
++  return res.status(201).json({
++    ok: true,
++    order: paymentInstructions ? { ...order, paymentInstructions } : order,
++  });
+ }
+ 
+ export async function getAdminOrders(req, res) {
+--- /tmp/CheckoutPage.jsx.bak	2026-05-14 17:33:11.557672746 +0000
++++ frontend/src/pages/CheckoutPage.jsx	2026-05-14 17:33:34.909904931 +0000
+@@ -545,17 +545,26 @@
+         body: payload,
+       });
+ 
+-      const orderNumber = response?.order?.orderNumber;
++      const createdOrder = response?.order || null;
++      const orderNumber = createdOrder?.orderNumber;
+       if (!orderNumber) {
+         throw new Error(
+           "La orden fue creada, pero no se pudo obtener el número de confirmación.",
+         );
+       }
+ 
++      const completionPayload = {
++        orderNumber,
++        orderId: createdOrder?.id || null,
++        total: createdOrder?.total ?? total,
++        paymentMethod: createdOrder?.paymentMethod || paymentMethod,
++        paymentInstructions: createdOrder?.paymentInstructions || null,
++      };
++
+       if (typeof window !== "undefined") {
+         window.sessionStorage.setItem(
+           COMPLETE_STORAGE_KEY,
+-          JSON.stringify({ orderNumber }),
++          JSON.stringify(completionPayload),
+         );
+       }
+ 
+@@ -570,7 +579,7 @@
+ 
+       navigate("/checkout/completa", {
+         replace: true,
+-        state: { orderNumber },
++        state: completionPayload,
+       });
+     } catch (err) {
+       showCheckoutMessage(
+--- /tmp/CheckoutCompletePage.jsx.bak	2026-05-14 17:33:11.566440451 +0000
++++ frontend/src/pages/CheckoutCompletePage.jsx	2026-05-14 17:34:03.768072832 +0000
+@@ -1,8 +1,11 @@
+-import { useEffect, useMemo, useRef } from "react";
++import { useEffect, useMemo, useRef, useState } from "react";
+ import { useLocation, useNavigate } from "react-router-dom";
+ import { useCart } from "../contexts/CartContext.jsx";
++import { formatCurrency } from "../lib/format.js";
+ 
+ const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
++const PREX_APP_URL = "https://www.prexcard.com/abrirapp";
++const PREX_TRANSFER_HELP_URL = "https://www.prexcard.com/cargasprex";
+ 
+ function readCompletedOrder() {
+   if (typeof window === "undefined") {
+@@ -18,19 +21,64 @@
+   }
+ }
+ 
++function getInstructionField(paymentInstructions, label) {
++  const normalizedLabel = String(label || "").trim().toLowerCase();
++  return (paymentInstructions?.fields || []).find(
++    (field) => String(field.label || "").trim().toLowerCase() === normalizedLabel,
++  );
++}
++
++function getPaymentFieldValue(paymentInstructions, label) {
++  return getInstructionField(paymentInstructions, label)?.value || "";
++}
++
++function isPrexTransfer(paymentInstructions) {
++  const haystack = [
++    paymentInstructions?.label,
++    paymentInstructions?.title,
++    getPaymentFieldValue(paymentInstructions, "Banco"),
++    paymentInstructions?.instructions,
++  ]
++    .filter(Boolean)
++    .join(" ")
++    .normalize("NFD")
++    .replace(/[\u0300-\u036f]/g, "")
++    .toLowerCase();
++
++  return haystack.includes("prex");
++}
++
++async function copyText(value) {
++  if (typeof navigator === "undefined" || !navigator.clipboard) return false;
++  await navigator.clipboard.writeText(String(value || ""));
++  return true;
++}
++
+ export default function CheckoutCompletePage() {
+   const navigate = useNavigate();
+   const location = useLocation();
+   const { clearCart } = useCart();
+   const didCleanupRef = useRef(false);
++  const [copiedField, setCopiedField] = useState("");
+ 
+-  const completedOrder = useMemo(
+-    () =>
+-      location.state?.orderNumber
+-        ? { orderNumber: location.state.orderNumber }
+-        : readCompletedOrder(),
+-    [location.state?.orderNumber],
+-  );
++  const completedOrder = useMemo(() => {
++    const stored = readCompletedOrder() || {};
++    return location.state?.orderNumber
++      ? { ...stored, ...location.state }
++      : stored.orderNumber
++        ? stored
++        : null;
++  }, [location.state]);
++
++  const paymentInstructions = completedOrder?.paymentInstructions || null;
++  const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
++  const showPrexTransfer = isBankTransfer && paymentInstructions?.enabled;
++  const prexTransferLabel = isPrexTransfer(paymentInstructions)
++    ? "Transferencia Prex"
++    : "Transferencia bancaria";
++  const transferReference = completedOrder?.orderNumber
++    ? `ESADAR ${completedOrder.orderNumber}`
++    : "ESADAR";
+ 
+   useEffect(() => {
+     if (!completedOrder?.orderNumber) {
+@@ -50,6 +98,12 @@
+     }
+   }, [clearCart, completedOrder?.orderNumber, navigate]);
+ 
++  useEffect(() => {
++    if (!copiedField) return undefined;
++    const timeoutId = window.setTimeout(() => setCopiedField(""), 1800);
++    return () => window.clearTimeout(timeoutId);
++  }, [copiedField]);
++
+   function handleAccept() {
+     if (typeof window !== "undefined") {
+       window.sessionStorage.removeItem(COMPLETE_STORAGE_KEY);
+@@ -67,6 +121,105 @@
+     });
+   }
+ 
++  async function handleCopy(label, value) {
++    if (!value) return;
++
++    try {
++      const copied = await copyText(value);
++      if (copied) setCopiedField(label);
++    } catch {
++      // Copiar es una ayuda; no debe bloquear la pantalla final.
++    }
++  }
++
++  function renderCopyButton(label, value) {
++    if (!value) return null;
++
++    return (
++      <button
++        type="button"
++        className="button button-secondary checkout-complete-copy-button"
++        onClick={() => void handleCopy(label, value)}
++      >
++        {copiedField === label ? "Copiado" : "Copiar"}
++      </button>
++    );
++  }
++
++  function renderPrexTransferPanel() {
++    if (!showPrexTransfer) return null;
++
++    const fields = paymentInstructions.fields || [];
++    const amount = completedOrder?.total;
++
++    return (
++      <section className="section-card checkout-complete-payment-card">
++        <p className="section-kicker">Pago pendiente</p>
++        <h2>{prexTransferLabel}</h2>
++        <p className="checkout-complete-copy">
++          Abre Prex y usa los datos configurados en collecting para realizar la
++          transferencia. En referencia o comentario usa el número de orden para
++          que podamos validarla más rápido.
++        </p>
++
++        <div className="checkout-complete-transfer-actions">
++          <a
++            className="button button-primary"
++            href={PREX_APP_URL}
++            target="_blank"
++            rel="noreferrer"
++          >
++            Abrir Prex y transferir
++          </a>
++          <a
++            className="button button-secondary"
++            href={PREX_TRANSFER_HELP_URL}
++            target="_blank"
++            rel="noreferrer"
++          >
++            Ver guía Prex
++          </a>
++        </div>
++
++        <div className="checkout-complete-payment-details">
++          {fields.map((field) => (
++            <div key={field.label} className="checkout-complete-payment-row">
++              <div>
++                <span>{field.label}</span>
++                <strong>{field.value}</strong>
++              </div>
++              {renderCopyButton(field.label, field.value)}
++            </div>
++          ))}
++
++          {amount != null ? (
++            <div className="checkout-complete-payment-row">
++              <div>
++                <span>Monto</span>
++                <strong>{formatCurrency(amount)}</strong>
++              </div>
++              {renderCopyButton("Monto", String(amount))}
++            </div>
++          ) : null}
++
++          <div className="checkout-complete-payment-row">
++            <div>
++              <span>Referencia</span>
++              <strong>{transferReference}</strong>
++            </div>
++            {renderCopyButton("Referencia", transferReference)}
++          </div>
++        </div>
++
++        {paymentInstructions.instructions ? (
++          <p className="muted-copy checkout-complete-bank-instructions">
++            {paymentInstructions.instructions}
++          </p>
++        ) : null}
++      </section>
++    );
++  }
++
+   if (!completedOrder?.orderNumber) {
+     return null;
+   }
+@@ -107,6 +260,8 @@
+             </button>
+           </div>
+         </section>
++
++        {renderPrexTransferPanel()}
+       </div>
+     </div>
+   );
+--- /tmp/ArticlePage.jsx.bak	2026-05-14 17:33:11.540561510 +0000
++++ frontend/src/pages/ArticlePage.jsx	2026-05-14 17:34:19.579647622 +0000
+@@ -213,9 +213,13 @@
+ 
+   const discounted = hasDiscount(article);
+   const finalPrice = getDiscountedPrice(article);
++  const articleStatus = String(article.status || "ACTIVE").toUpperCase();
+   const isSoldOut =
+     Number(article.quantityAvailable || 0) <= 0 ||
+-    article.status === "SOLD_OUT";
++    articleStatus === "SOLD_OUT";
++  const isUnavailable =
++    Boolean(article.isUnavailable) ||
++    !["ACTIVE", "SOLD_OUT"].includes(articleStatus);
+   const currentCartItem = getItem(article.id);
+   const articleForCart = acceptedOffer
+     ? {
+@@ -241,6 +245,119 @@
+     { name: article.title, url: canonicalUrl },
+   ];
+ 
++  if (isUnavailable) {
++    const unavailableMessage =
++      articleStatus === "RESERVED"
++        ? "Esta prenda ya está reservada y no se puede comprar en este momento."
++        : "Esta prenda ya no está publicada o no se encuentra disponible para compra.";
++
++    return (
++      <>
++        <SeoHead
++          title={`${article.title} no disponible`}
++          description={unavailableMessage}
++          canonical={canonicalUrl}
++          url={canonicalUrl}
++          image={toAbsoluteUrl(
++            article.primaryImageDetail || article.primaryImage,
++            site,
++          )}
++          type="product"
++          jsonLd={[
++            { id: "breadcrumb", data: buildBreadcrumbJsonLd(breadcrumbItems) },
++          ]}
++        />
++
++        <div className="container article-unavailable-page page-stack">
++          <section className="section-card article-unavailable-card">
++            <div className="article-unavailable-card__media">
++              <ArticleImageGallery
++                images={article.images}
++                title={article.title}
++                fallbackImage={article}
++              />
++            </div>
++
++            <div className="article-unavailable-card__content page-stack-sm">
++              <p className="section-kicker">Artículo no disponible</p>
++              <h1>{article.title}</h1>
++              <p className="muted-copy">{unavailableMessage}</p>
++
++              <div className="detail-meta-list article-unavailable-meta">
++                <div>
++                  <span>Estado</span>
++                  <strong>No disponible</strong>
++                </div>
++                <div>
++                  <span>Marca</span>
++                  <strong>{article.brandName || "Sin marca"}</strong>
++                </div>
++                <div>
++                  <span>Talle</span>
++                  <strong>
++                    {article.sizeText || article.sizeCode || "No especificado"}
++                  </strong>
++                </div>
++              </div>
++
++              <div className="detail-actions detail-actions--stacked">
++                <Link to="/" className="button button-primary">
++                  Ver catálogo disponible
++                </Link>
++                <button
++                  type="button"
++                  className="button button-secondary article-stock-alert-button"
++                  onClick={openStockAlertForm}
++                >
++                  Avisame si entra algo similar
++                </button>
++              </div>
++
++              {alertInlineOpen ? (
++                <section
++                  ref={stockAlertPanelRef}
++                  className="section-card page-stack-sm stock-alert-inline-panel"
++                >
++                  <div>
++                    <p className="section-kicker">Seguimiento</p>
++                    <h3>Avisame si entra algo similar</h3>
++                  </div>
++                  {renderStockAlertForm({ inline: true })}
++                </section>
++              ) : null}
++            </div>
++          </section>
++
++          {relatedState.items.length ? (
++            <section className="page-stack article-related-scroll-section">
++              <div className="section-heading section-heading-wrap">
++                <div>
++                  <p className="section-kicker">Alternativas</p>
++                  <h2>Prendas similares disponibles</h2>
++                </div>
++                <ScrollRailControls
++                  targetRef={relatedTrackRef}
++                  className="scroll-rail-controls--left"
++                />
++              </div>
++
++              <div
++                ref={relatedTrackRef}
++                className="related-articles-track article-horizontal-card-track"
++              >
++                {relatedState.items.map((item) => (
++                  <div key={item.id} className="related-articles-track__item">
++                    <ArticleCard article={item} view="grid" variant="default" />
++                  </div>
++                ))}
++              </div>
++            </section>
++          ) : null}
++        </div>
++      </>
++    );
++  }
++
+   function isMobileViewport() {
+     return (
+       typeof window !== "undefined" &&
+--- /tmp/index.css.bak	2026-05-14 17:33:11.574400623 +0000
++++ frontend/src/index.css	2026-05-14 17:34:31.353796197 +0000
+@@ -14894,3 +14894,109 @@
+     pointer-events: auto !important;
+   }
+ }
++
++/* === ESADAR unavailable article view + checkout Prex transfer action === */
++.article-unavailable-page {
++  padding-top: clamp(18px, 3vw, 34px);
++}
++
++.article-unavailable-card {
++  display: grid;
++  grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.98fr);
++  gap: clamp(18px, 3vw, 38px);
++  align-items: start;
++}
++
++.article-unavailable-card__media {
++  min-width: 0;
++}
++
++.article-unavailable-card__content {
++  min-width: 0;
++  align-self: center;
++}
++
++.article-unavailable-card__content h1 {
++  margin: 0;
++}
++
++.article-unavailable-meta strong {
++  text-transform: none;
++}
++
++.checkout-complete-screen {
++  gap: clamp(16px, 3vw, 28px);
++}
++
++.checkout-complete-payment-card {
++  position: relative;
++  z-index: 1;
++  width: min(100%, 760px);
++  margin: 0 auto;
++}
++
++.checkout-complete-transfer-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px;
++  margin: 18px 0;
++}
++
++.checkout-complete-payment-details {
++  display: grid;
++  gap: 10px;
++  margin-top: 14px;
++}
++
++.checkout-complete-payment-row {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  gap: 12px;
++  align-items: center;
++  padding: 12px 0;
++  border-top: 1px solid var(--border-soft, rgba(7, 22, 33, 0.12));
++}
++
++.checkout-complete-payment-row span {
++  display: block;
++  color: var(--text-muted, #5f6b75);
++  font-size: 0.78rem;
++  font-weight: 800;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.checkout-complete-payment-row strong {
++  display: block;
++  margin-top: 4px;
++  overflow-wrap: anywhere;
++}
++
++.checkout-complete-copy-button {
++  min-width: 88px;
++  padding-inline: 12px;
++}
++
++.checkout-complete-bank-instructions {
++  margin-top: 14px;
++  white-space: pre-line;
++}
++
++@media (max-width: 960px) {
++  .article-unavailable-card {
++    grid-template-columns: 1fr;
++  }
++
++  .checkout-complete-transfer-actions,
++  .checkout-complete-transfer-actions .button {
++    width: 100%;
++  }
++
++  .checkout-complete-payment-row {
++    grid-template-columns: 1fr;
++  }
++
++  .checkout-complete-copy-button {
++    width: 100%;
++  }
++}

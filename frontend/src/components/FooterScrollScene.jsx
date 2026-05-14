@@ -254,6 +254,12 @@ export default function FooterScrollScene() {
               Contacto
             </Link>
           </div>
+          <Link
+            to="/terminos-y-condiciones"
+            className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
+          >
+            Términos y condiciones
+          </Link>
         </div>
       </div>
     </footer>
