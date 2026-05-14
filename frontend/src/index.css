@@ -14345,3 +14345,99 @@ dialog,
     max-height: 68vh !important;
   }
 }
+
+/* === ESADAR mobile/tablet footer reveal + sticky header stabilization === */
+.app-shell {
+  --esadar-footer-viewport: 100dvh;
+}
+
+.app-shell--has-footer-reveal .page-shell {
+  min-height: var(--esadar-footer-viewport) !important;
+  margin-bottom: var(--esadar-footer-viewport) !important;
+}
+
+.footer-scroll-scene {
+  min-height: var(--esadar-footer-viewport) !important;
+  height: var(--esadar-footer-viewport) !important;
+}
+
+.app-shell--footer-navigation-guard .site-header,
+.app-shell--footer-navigation-guard.app-shell--footer-scroll-active .site-header,
+.app-shell--footer-navigation-guard.app-shell--footer-scroll-deep .site-header {
+  opacity: 1 !important;
+  transform: translate3d(0, 0, 0) !important;
+  pointer-events: auto !important;
+}
+
+.app-shell--footer-navigation-guard .page-shell {
+  box-shadow: none !important;
+}
+
+.app-shell--footer-navigation-guard .footer-scroll-scene {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
+@supports (height: 100svh) {
+  @media (max-width: 960px) {
+    .app-shell {
+      --esadar-footer-viewport: 100svh;
+    }
+  }
+}
+
+@media (max-width: 960px) {
+  :root {
+    --header-height: 74px;
+  }
+
+  .site-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    min-height: var(--header-height) !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--border) !important;
+    box-shadow: 0 1px 0 rgba(16, 43, 52, 0.06) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: translate3d(0, 0, 0) !important;
+    transition: none !important;
+    will-change: auto !important;
+    backface-visibility: hidden;
+    contain: paint;
+  }
+
+  .site-header::before,
+  .site-header::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .site-header .header-inner--mobile-balanced {
+    min-height: var(--header-height) !important;
+    height: var(--header-height) !important;
+    padding-block: 0 !important;
+  }
+
+  .header-mobile-shell {
+    min-height: var(--header-height) !important;
+    align-items: center !important;
+  }
+
+  .site-header .brand-mark__logo {
+    max-height: 54px !important;
+    object-fit: contain !important;
+  }
+
+  .app-shell--footer-scroll-active .site-header,
+  .app-shell--footer-scroll-deep .site-header,
+  .app-shell--footer-reveal-suppressed .site-header {
+    opacity: 1 !important;
+    transform: translate3d(0, 0, 0) !important;
+    transition: none !important;
+    pointer-events: auto !important;
+  }
+}

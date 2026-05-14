@@ -18,6 +18,61 @@ const INTRO_REPLAY_FADE_MS = 520;
 const CART_REPLAY_VISIBLE_MS = 650;
 const CART_REPLAY_FADE_MS = 350;
 
+function isCompactViewport() {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    return window.matchMedia("(max-width: 960px)").matches;
+  }
+  return window.innerWidth <= 960;
+}
+
+function setWindowScrollTop(top) {
+  if (typeof window === "undefined") return;
+  window.scrollTo({ top, left: 0, behavior: "auto" });
+  document.documentElement.scrollTop = top;
+  document.body.scrollTop = top;
+}
+
+function guardFooterRevealDuringNavigation(durationMs) {
+  if (typeof window === "undefined") return 0;
+
+  const until = Date.now() + durationMs;
+  window.__esadarFooterSuppressUntil = Math.max(
+    Number(window.__esadarFooterSuppressUntil || 0),
+    until,
+  );
+
+  document
+    .querySelector(".app-shell")
+    ?.classList.add("app-shell--footer-navigation-guard");
+
+  window.dispatchEvent(
+    new CustomEvent("esadar:suppress-footer-reveal", {
+      detail: { untilManual: true, duration: durationMs },
+    }),
+  );
+
+  return until;
+}
+
+function releaseFooterRevealNavigationGuard() {
+  if (typeof window === "undefined") return;
+
+  const suppressUntil = Number(window.__esadarFooterSuppressUntil || 0);
+  if (suppressUntil && Date.now() < suppressUntil) return;
+
+  window.__esadarFooterSuppressUntil = 0;
+  document
+    .querySelector(".app-shell")
+    ?.classList.remove("app-shell--footer-navigation-guard");
+
+  window.dispatchEvent(
+    new CustomEvent("esadar:suppress-footer-reveal", {
+      detail: { release: true },
+    }),
+  );
+}
+
 export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -72,18 +127,36 @@ export default function RootLayout() {
       : navigationType === "POP"
         ? scrollPositionsRef.current.get(location.key) || 0
         : 0;
+    const guardMs = isCompactViewport() ? 1500 : 900;
+    const scheduledFrames = [];
+    const scheduledTimers = [];
 
-    window.dispatchEvent(
-      new CustomEvent("esadar:suppress-footer-reveal", {
-        detail: { untilManual: true, duration: 1800 },
-      }),
-    );
+    guardFooterRevealDuringNavigation(guardMs);
 
     if (!shouldPreserveScroll) {
-      window.scrollTo({ top: restoreTop, left: 0, behavior: "auto" });
+      setWindowScrollTop(restoreTop);
+
+      scheduledFrames.push(
+        window.requestAnimationFrame(() => {
+          setWindowScrollTop(restoreTop);
+          scheduledFrames.push(
+            window.requestAnimationFrame(() => setWindowScrollTop(restoreTop)),
+          );
+        }),
+      );
+
+      scheduledTimers.push(
+        window.setTimeout(
+          () => setWindowScrollTop(restoreTop),
+          isCompactViewport() ? 360 : 120,
+        ),
+      );
     }
 
     return () => {
+      scheduledFrames.forEach((frameId) => window.cancelAnimationFrame(frameId));
+      scheduledTimers.forEach((timerId) => window.clearTimeout(timerId));
+
       const appShell = document.querySelector(".app-shell");
       const footerRevealActive = appShell?.classList.contains(
         "app-shell--footer-scroll-active",
@@ -150,16 +223,21 @@ export default function RootLayout() {
       return undefined;
     }
 
-    const timer = window.setTimeout(() => {
+    let releaseTimer = 0;
+    const readyTimer = window.setTimeout(() => {
       setContentReadyKey(location.key);
-      window.dispatchEvent(
-        new CustomEvent("esadar:suppress-footer-reveal", {
-          detail: { release: true },
-        }),
-      );
+
+      const suppressUntil = Number(window.__esadarFooterSuppressUntil || 0);
+      const releaseDelay = Math.max(220, suppressUntil - Date.now() + 48);
+      releaseTimer = window.setTimeout(() => {
+        releaseFooterRevealNavigationGuard();
+      }, releaseDelay);
     }, 160);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(readyTimer);
+      if (releaseTimer) window.clearTimeout(releaseTimer);
+    };
   }, [location.key]);
 
   const showIntro = introStage !== "hidden";
