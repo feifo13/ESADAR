@@ -1,0 +1,72 @@
+--- /mnt/data/index_before_iter2.css	2026-05-14 15:24:13.891211746 +0000
++++ frontend/src/index.css	2026-05-14 15:24:25.696962945 +0000
+@@ -14520,3 +14520,69 @@
+     pointer-events: auto !important;
+   }
+ }
++
++/* === ESADAR mobile footer/header refinement ===
++   Keep the fixed solid header while browsing mobile/tablet, but remove it once
++   the footer reveal is deep enough so it does not float over the final scene. */
++@media (max-width: 960px) {
++  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header {
++    opacity: 0 !important;
++    visibility: hidden !important;
++    pointer-events: none !important;
++    transform: none !important;
++    translate: none !important;
++    transition: none !important;
++  }
++
++  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *,
++  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *::before,
++  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *::after {
++    pointer-events: none !important;
++  }
++}
++
++/* === ESADAR mobile featured rail spacing cleanup ===
++   The featured carousel should end exactly at the card edge on compact screens;
++   avoid extra reserved space/padding below the highlighted images. */
++@media (max-width: 720px) {
++  .featured-rail {
++    gap: 10px !important;
++    margin-bottom: 0 !important;
++  }
++
++  .featured-rail .section-heading {
++    margin-bottom: 0 !important;
++  }
++
++  .featured-rail .rail-scroller {
++    align-items: start !important;
++    padding-bottom: 0 !important;
++    margin-bottom: 0 !important;
++    scrollbar-gutter: auto !important;
++  }
++
++  .featured-rail .rail-item {
++    display: grid !important;
++    align-self: start !important;
++  }
++
++  .featured-rail .featured-motion-card {
++    min-height: clamp(300px, 94vw, 360px) !important;
++    height: clamp(300px, 94vw, 360px) !important;
++    contain-intrinsic-size: auto 340px !important;
++  }
++
++  .featured-rail .featured-motion-card__link,
++  .featured-rail .featured-motion-card__media,
++  .featured-rail .featured-motion-card__overlay,
++  .featured-rail .featured-motion-card__copy {
++    min-height: inherit !important;
++    height: 100% !important;
++  }
++
++  .featured-rail .featured-motion-card__media picture,
++  .featured-rail .featured-motion-card__image {
++    width: 100% !important;
++    height: 100% !important;
++  }
++}

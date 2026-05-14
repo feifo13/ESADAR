@@ -1,0 +1,85 @@
+--- /mnt/data/index_before_header_fixed.css	2026-05-14 15:01:12.167952327 +0000
++++ /mnt/data/esadar_work/frontend/src/index.css	2026-05-14 15:01:53.374773392 +0000
+@@ -14441,3 +14441,82 @@
+     pointer-events: auto !important;
+   }
+ }
++
++/* === ESADAR mobile/tablet hard header lock ===
++   Real mobile browsers can repaint sticky + transformed/backdrop headers while
++   their browser chrome collapses/expands. Keep the rich sticky treatment on
++   desktop, but use a fixed, opaque, non-transformed header on compact viewports. */
++@media (max-width: 960px) {
++  .site-header {
++    position: fixed !important;
++    inset: 0 0 auto 0 !important;
++    width: 100% !important;
++    height: var(--header-height) !important;
++    min-height: var(--header-height) !important;
++    max-height: var(--header-height) !important;
++    overflow: visible !important;
++    background: #ffffff !important;
++    background-image: none !important;
++    border-bottom: 1px solid var(--border) !important;
++    box-shadow: 0 1px 0 rgba(16, 43, 52, 0.08) !important;
++    backdrop-filter: none !important;
++    -webkit-backdrop-filter: none !important;
++    opacity: 1 !important;
++    transform: none !important;
++    translate: none !important;
++    scale: none !important;
++    rotate: none !important;
++    animation: none !important;
++    transition: none !important;
++    will-change: auto !important;
++    backface-visibility: visible !important;
++    -webkit-backface-visibility: visible !important;
++    contain: layout paint style !important;
++    isolation: isolate !important;
++  }
++
++  .site-header::before,
++  .site-header::after {
++    content: none !important;
++    display: none !important;
++  }
++
++  .site-header > *,
++  .site-header .header-inner,
++  .site-header .header-inner--mobile-balanced,
++  .site-header .header-mobile-shell,
++  .site-header .brand-mark,
++  .site-header .brand-mark__logo {
++    transform: none !important;
++    translate: none !important;
++    scale: none !important;
++    rotate: none !important;
++    animation: none !important;
++  }
++
++  .site-header .header-inner,
++  .site-header .header-inner--mobile-balanced {
++    min-height: var(--header-height) !important;
++    height: var(--header-height) !important;
++    padding-block: 0 !important;
++  }
++
++  .app-shell > .page-shell {
++    margin-top: var(--header-height) !important;
++  }
++
++  .app-shell--footer-scroll-active .site-header,
++  .app-shell--footer-scroll-deep .site-header,
++  .app-shell--footer-reveal-suppressed .site-header,
++  .app-shell--footer-navigation-guard .site-header,
++  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active .site-header,
++  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep .site-header {
++    position: fixed !important;
++    top: 0 !important;
++    opacity: 1 !important;
++    transform: none !important;
++    translate: none !important;
++    transition: none !important;
++    pointer-events: auto !important;
++  }
++}
