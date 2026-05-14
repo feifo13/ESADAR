@@ -5767,19 +5767,23 @@ a.button.button-primary {
 
 .article-card-ribbon {
   position: absolute;
-  inset: 16px auto auto -44px;
+  inset: 12px auto auto -34px;
   z-index: 2;
-  min-width: 180px;
-  padding: 10px 18px;
+  width: clamp(118px, 42%, 148px);
+  min-width: 0;
+  max-width: 148px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #d91e36, #ff725e);
   color: #ffffff;
-  font-weight: 800;
-  font-size: 0.8rem;
+  font-weight: 900;
+  font-size: clamp(0.66rem, 0.72vw, 0.76rem);
+  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.09em;
   text-align: center;
+  white-space: nowrap;
   transform: rotate(-38deg);
-  box-shadow: 0 14px 30px rgba(124, 12, 28, 0.28);
+  box-shadow: 0 10px 22px rgba(124, 12, 28, 0.24);
 }
 
 .pill-soldout {
@@ -14686,5 +14690,124 @@ dialog,
     border: 1px solid rgba(16, 43, 52, 0.26) !important;
     background: #ffffff !important;
     color: #102b34 !important;
+  }
+}
+
+/* === ESADAR article cards: compact ribbons, no accepted-offer card callout === */
+.article-card-ribbon {
+  inset: 12px auto auto -34px !important;
+  width: clamp(118px, 42%, 148px) !important;
+  min-width: 0 !important;
+  max-width: 148px !important;
+  padding: 8px 12px !important;
+  font-size: clamp(0.66rem, 0.72vw, 0.76rem) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.09em !important;
+  white-space: nowrap !important;
+  box-shadow: 0 10px 22px rgba(6, 19, 29, 0.22) !important;
+}
+
+.article-card--editorial .article-card-ribbon {
+  inset: 10px auto auto 10px !important;
+  width: auto !important;
+  max-width: calc(100% - 58px) !important;
+  padding: 6px 9px !important;
+  transform: none !important;
+}
+
+@media (max-width: 720px) {
+  .article-card-ribbon {
+    inset: 10px auto auto -30px !important;
+    width: 122px !important;
+    max-width: 122px !important;
+    padding: 7px 10px !important;
+    font-size: 0.64rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .article-card--editorial .article-card-ribbon {
+    inset: 8px auto auto 8px !important;
+    width: auto !important;
+    max-width: calc(100% - 54px) !important;
+  }
+}
+
+
+/* === ESADAR mobile/tablet header vertical centering + offer ribbon restore ===
+   Keep compact viewport header controls optically centered and allow the
+   OFERTA ribbon even when the card price comes from an accepted offer. */
+@media (max-width: 960px) {
+  .site-header {
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .site-header .header-inner,
+  .site-header .header-inner--compact.header-inner--mobile-balanced,
+  .site-header .header-inner--mobile-balanced {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: var(--header-height) !important;
+    height: var(--header-height) !important;
+    max-height: var(--header-height) !important;
+    padding-block: 0 !important;
+    margin-block: 0 !important;
+  }
+
+  .site-header .header-mobile-shell {
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) 48px !important;
+    align-items: center !important;
+    justify-items: center !important;
+    min-height: var(--header-height) !important;
+    height: var(--header-height) !important;
+    margin: 0 !important;
+  }
+
+  .site-header .header-mobile-menu-wrap,
+  .site-header .brand-mark--mobile,
+  .site-header .header-mobile-shell__cart,
+  .site-header .header-actions-mobile__menu {
+    align-self: center !important;
+    justify-self: center !important;
+    margin-block: 0 !important;
+  }
+
+  .site-header .header-actions-mobile__menu,
+  .site-header .header-mobile-shell__cart {
+    display: grid !important;
+    place-items: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 0 !important;
+  }
+
+  .site-header .brand-mark--mobile {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: var(--header-height) !important;
+    height: var(--header-height) !important;
+  }
+
+  .site-header .brand-mark__logo {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 150px !important;
+    max-height: 54px !important;
+    object-fit: contain !important;
+    margin: 0 auto !important;
+  }
+
+  .site-header .header-icon-button__icon,
+  .site-header .header-actions-mobile__menu > span {
+    display: grid !important;
+    place-items: center !important;
   }
 }

@@ -11,11 +11,7 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import SmartImage from "./SmartImage.jsx";
-import {
-  buildArticleImageSrcSet,
-  getArticleImageSizes,
-  getArticleImageSrc,
-} from "../lib/article-images.js";
+import { buildArticleImageSrcSet, getArticleImageSizes, getArticleImageSrc } from "../lib/article-images.js";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 
 const SHOW_CARD_BADGES = false;
@@ -144,13 +140,9 @@ export default function ArticleCard({
           {isSoldOut ? (
             <span className="article-card-ribbon">Agotado</span>
           ) : null}
-          {!isSoldOut && article.acceptedOffer ? (
-            <span className="article-card-ribbon article-card-ribbon--accepted-offer">
-              Oferta aceptada
-            </span>
-          ) : !isSoldOut && showOfferRibbon ? (
+          {!isSoldOut && showOfferRibbon ? (
             <span className="article-card-ribbon article-card-ribbon--offerable">
-              ¡Ofertá!
+              Oferta!
             </span>
           ) : null}
           <div className="featured-motion-card__media">
@@ -214,13 +206,9 @@ export default function ArticleCard({
           {isSoldOut ? (
             <span className="article-card-ribbon">Agotado</span>
           ) : null}
-          {!isSoldOut && article.acceptedOffer ? (
-            <span className="article-card-ribbon article-card-ribbon--accepted-offer">
-              Oferta aceptada
-            </span>
-          ) : !isSoldOut && showOfferRibbon ? (
+          {!isSoldOut && showOfferRibbon ? (
             <span className="article-card-ribbon article-card-ribbon--offerable">
-              ¡Ofertá!
+              Oferta!
             </span>
           ) : null}
           <SmartImage
@@ -256,8 +244,10 @@ export default function ArticleCard({
           {article.isFeatured ? (
             <span className="pill pill-featured">Destacado</span>
           ) : null}
-          {article.allowOffers ? (
-            <span className="pill pill-offer">¡Ofertá!</span>
+          {article.acceptedOffer ? (
+            <span className="pill pill-offer">Oferta aceptada</span>
+          ) : article.allowOffers ? (
+            <span className="pill pill-offer">¡Oferta!!</span>
           ) : null}
           {discounted ? (
             <span className="pill pill-discount">Descuento</span>
@@ -290,11 +280,6 @@ export default function ArticleCard({
               {formatCurrency(article.salePrice)}
             </span>
           ) : null}
-          {/* {article.acceptedOffer ? (
-            <span className="article-card-offer-notice">
-              Oferta aceptada · aplica a 1 unidad
-            </span>
-          ) : null} */}
         </div>
 
         <div className="article-card-actions article-card-actions--catalog">
