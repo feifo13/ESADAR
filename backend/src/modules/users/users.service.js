@@ -2,7 +2,7 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
-import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
+import { buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { hashPassword } from '../../utils/password.js';
 
@@ -203,7 +203,7 @@ async function getAdminRoleUserCount(connection) {
 async function resolveRoleIds(connection, roleCodes) {
   const normalizedCodes = [...new Set((roleCodes || []).map((role) => String(role).trim()).filter(Boolean))];
   if (!normalizedCodes.length) throw badRequest('El usuario debe tener al menos un rol.');
-  const placeholders = normalizedCodes.map(() => '?').join(', ');
+  const placeholders = buildSqlPlaceholders(normalizedCodes);
   const [rows] = await connection.execute(
     `SELECT id, code FROM roles WHERE code IN (${placeholders}) AND is_active = 1`,
     normalizedCodes,

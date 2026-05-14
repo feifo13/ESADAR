@@ -32,10 +32,10 @@ test('public article query sanitizes normal filters, pagination and search', () 
   });
 });
 
-test('public article query rejects unsafe enum, pagination and id inputs', () => {
-  assert.throws(
-    () => publicArticleListQuerySchema.parse({ sort: 'price_asc; DROP TABLE articles;' }),
-    /Invalid option/,
+test('public article query defaults unsafe sort and rejects unsafe pagination and id inputs', () => {
+  assert.equal(
+    publicArticleListQuerySchema.parse({ sort: 'price_asc; DROP TABLE articles;' }).sort,
+    undefined,
   );
   assert.throws(
     () => publicArticleListQuerySchema.parse({ page: '1 OR 1=1' }),
@@ -65,13 +65,16 @@ test('admin article query only accepts whitelisted sort fields and direction', (
   assert.equal(parsed.pageSize, 25);
 
   assert.throws(
-    () => adminArticleListQuerySchema.parse({ sortBy: 'updatedAt; DROP TABLE users;' }),
-    /Invalid option/,
+    () => adminArticleListQuerySchema.parse({ brandId: '4;DROP TABLE brands;' }),
+    /Invalid input/,
   );
-  assert.throws(
-    () => adminArticleListQuerySchema.parse({ sortDir: 'desc; DROP TABLE users;' }),
-    /Invalid option/,
-  );
+
+  const fallback = adminArticleListQuerySchema.parse({
+    sortBy: 'updatedAt; DROP TABLE users;',
+    sortDir: 'desc; DROP TABLE users;',
+  });
+  assert.equal(fallback.sortBy, undefined);
+  assert.equal(fallback.sortDir, 'desc');
 });
 
 test('related articles limit is bounded', () => {

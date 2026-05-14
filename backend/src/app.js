@@ -5,6 +5,8 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import { requestContext } from './middlewares/request-context.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
+import { createCorsOptions } from './middlewares/cors-options.js';
+import { securityHeaders } from './middlewares/security-headers.js';
 import healthRoutes from './modules/health/health.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import { adminRouter as adminArticleRoutes, publicRouter as publicArticleRoutes } from './modules/articles/articles.routes.js';
@@ -35,14 +37,14 @@ export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
-  app.use(cors({
-    origin: env.appOrigin,
-    credentials: true,
-    exposedHeaders: ['Content-Disposition', 'Content-Type', 'X-Export-Count'],
-  }));
+  if (env.trustProxy) {
+    app.set('trust proxy', 1);
+  }
+  app.use(securityHeaders);
+  app.use(requestContext);
+  app.use(cors(createCorsOptions()));
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
-  app.use(requestContext);
   app.use('/assets', express.static(publicAssetsDir));
   app.use('/uploads', express.static(env.uploadDir));
   if (path.resolve(env.bundledUploadDir) !== path.resolve(env.uploadDir)) {

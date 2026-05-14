@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/require-role.js';
+import { contactRateLimit } from '../../middlewares/sensitive-rate-limits.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createPublicContactMessage,
@@ -13,7 +14,7 @@ import {
 const publicRouter = Router();
 const adminRouter = Router();
 
-publicRouter.post('/', asyncHandler(createPublicContactMessage));
+publicRouter.post('/', contactRateLimit, asyncHandler(createPublicContactMessage));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminContactMessages));

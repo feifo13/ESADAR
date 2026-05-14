@@ -15,6 +15,23 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toBoolean(value, fallback = false) {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "boolean") return value;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "si", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return fallback;
+}
+
+function parseCsv(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function parseDurationMs(value, fallbackMs) {
   if (!value) return fallbackMs;
   const raw = String(value).trim();
@@ -45,14 +62,35 @@ function getSmtpPassword() {
   return password;
 }
 
+const nodeEnv = process.env.NODE_ENV || "development";
+const appOrigin = process.env.APP_ORIGIN || "http://localhost:5173";
+const publicSiteUrl = (
+  process.env.PUBLIC_SITE_URL || appOrigin
+).replace(/\/$/, "");
+const defaultCorsOrigins = [
+  appOrigin,
+  "http://localhost:5173",
+  "https://sandbox.esadar.com.uy",
+  "https://esadar.com.uy",
+];
+const configuredCorsOrigins = parseCsv(process.env.CORS_ORIGINS);
+
 export const env = {
-  nodeEnv: process.env.NODE_ENV || "development",
-  isProduction: (process.env.NODE_ENV || "development") === "production",
+  nodeEnv,
+  isProduction: nodeEnv === "production",
   port: toNumber(process.env.PORT, 4000),
-  appOrigin: process.env.APP_ORIGIN || "http://localhost:5173",
-  publicSiteUrl: (
-    process.env.PUBLIC_SITE_URL || process.env.APP_ORIGIN || "http://localhost:5173"
-  ).replace(/\/$/, ""),
+  appOrigin,
+  publicSiteUrl,
+  trustProxy: toBoolean(process.env.TRUST_PROXY, false),
+  cors: {
+    allowedOrigins: configuredCorsOrigins.length
+      ? configuredCorsOrigins
+      : [...new Set(defaultCorsOrigins)],
+    allowLocalhostInDevelopment: toBoolean(process.env.CORS_ALLOW_LOCALHOST_IN_DEVELOPMENT, true),
+  },
+  security: {
+    enableCsp: toBoolean(process.env.SECURITY_ENABLE_CSP, false),
+  },
   storeName: process.env.STORE_NAME || "ESADAR",
   storeDescription:
     process.env.STORE_DESCRIPTION ||

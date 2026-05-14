@@ -38,7 +38,7 @@ export function createRateLimiter({
   name,
   windowMs = DEFAULT_WINDOW_MS,
   max = 100,
-  message = 'Demasiadas solicitudes. Intentá nuevamente más tarde.',
+  message = 'Demasiadas solicitudes. Intenta nuevamente mas tarde.',
   keyGenerator,
 } = {}) {
   if (!name) {

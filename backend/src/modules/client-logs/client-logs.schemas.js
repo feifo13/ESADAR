@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalTrimmedString, pageSchema, pageSizeSchema, sortDirSchema } from '../../utils/listing.js';
+import { optionalTrimmedString, pageSchema, pageSizeSchema, sortFieldSchema, sortDirSchema } from '../../utils/listing.js';
 
 function trimmed(max) {
   return z.preprocess(
@@ -32,9 +32,6 @@ export const clientLogListQuerySchema = z.object({
   type: optionalTrimmedString(120),
   page: pageSchema,
   pageSize: pageSizeSchema(25),
-  sortBy: z.preprocess(
-    (value) => (value == null || String(value).trim() === '' ? undefined : String(value).trim()),
-    z.enum(['createdAt', 'level', 'type', 'statusCode']).default('createdAt'),
-  ),
+  sortBy: sortFieldSchema(['createdAt', 'level', 'type', 'statusCode'], 'createdAt'),
   sortDir: sortDirSchema,
 });

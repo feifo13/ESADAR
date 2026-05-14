@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/require-role.js';
+import { offerRateLimit } from '../../middlewares/sensitive-rate-limits.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
   createPublicOffer,
@@ -17,7 +18,7 @@ const adminRouter = Router();
 publicRouter.get('/mine', requireAuth, asyncHandler(getMyOffers));
 publicRouter.get('/accepted', requireAuth, asyncHandler(getAcceptedOffers));
 publicRouter.get('/article/:articleId/eligibility', requireAuth, asyncHandler(getArticleOfferEligibility));
-publicRouter.post('/', requireAuth, asyncHandler(createPublicOffer));
+publicRouter.post('/', requireAuth, offerRateLimit, asyncHandler(createPublicOffer));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOffers));

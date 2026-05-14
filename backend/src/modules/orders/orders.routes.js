@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { optionalAuth, requireAuth } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/require-role.js';
+import { checkoutRateLimit } from '../../middlewares/sensitive-rate-limits.js';
 import {
   approveAdminOrder,
   cancelAdminOrder,
@@ -17,7 +18,7 @@ import {
 const publicRouter = Router();
 const adminRouter = Router();
 
-publicRouter.post('/', optionalAuth, asyncHandler(createPublicOrder));
+publicRouter.post('/', optionalAuth, checkoutRateLimit, asyncHandler(createPublicOrder));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));

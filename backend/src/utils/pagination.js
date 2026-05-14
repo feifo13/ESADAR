@@ -1,12 +1,18 @@
-export function getPagination(query, defaults = {}) {
-  const rawPage = Number(query.page ?? defaults.page ?? 1);
-  const rawPageSize = Number(query.pageSize ?? defaults.pageSize ?? 20);
+import { normalizeSqlLimit, normalizeSqlOffset } from './sql-safety.js';
 
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
-  const pageSize = Number.isFinite(rawPageSize) && rawPageSize > 0
-    ? Math.min(100, Math.floor(rawPageSize))
-    : 20;
-  const offset = (page - 1) * pageSize;
+function normalizePositiveInt(value, fallback, max = 10000) {
+  return normalizeSqlLimit(value, fallback, max);
+}
+
+export function getPagination(query, defaults = {}) {
+  const maxPage = normalizePositiveInt(defaults.maxPage, 10000, 100000);
+  const maxPageSize = normalizeSqlLimit(defaults.maxPageSize ?? 100, 100, 500);
+  const defaultPage = normalizePositiveInt(defaults.page, 1, maxPage);
+  const defaultPageSize = normalizeSqlLimit(defaults.pageSize ?? 20, 20, maxPageSize);
+
+  const page = normalizePositiveInt(query.page, defaultPage, maxPage);
+  const pageSize = normalizeSqlLimit(query.pageSize, defaultPageSize, maxPageSize);
+  const offset = normalizeSqlOffset((page - 1) * pageSize);
 
   return { page, pageSize, offset, limit: pageSize };
 }

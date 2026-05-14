@@ -24,7 +24,7 @@ The limiter is intentionally dependency-free and safe for a single Node process.
 Configure allowed frontend origins with:
 
 ```env
-CORS_ORIGINS=https://esadar.com,https://www.esadar.com
+CORS_ORIGINS=http://localhost:5173,https://sandbox.esadar.com.uy,https://esadar.com.uy
 ```
 
 In production, only origins listed in `CORS_ORIGINS` are allowed. Requests without an `Origin` header remain allowed for server-to-server calls and tools such as curl or Mercado Pago webhooks.
@@ -64,7 +64,7 @@ npm test
 Current tests cover:
 
 - public article search/filter/pagination schema parsing;
-- rejected unsafe sort, pagination and ID inputs;
+- defaulting unsafe sort inputs and rejecting unsafe pagination/ID inputs;
 - admin article sort field/direction whitelisting;
 - bounded related-articles limit;
 - SQL limit/offset literal safety helpers;

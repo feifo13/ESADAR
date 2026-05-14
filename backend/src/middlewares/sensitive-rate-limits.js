@@ -3,51 +3,56 @@ import { createRateLimiter } from './rate-limit.js';
 const minute = 60 * 1000;
 const hour = 60 * minute;
 
+function normalizeIp(ip) {
+  return String(ip || 'unknown').replace(/^::ffff:/, '');
+}
+
 function userOrIpKey(req) {
-  const userId = req.auth?.userId ? `user:${req.auth.userId}` : `ip:${req.ip}`;
-  return `${userId}:${req.method}:${req.baseUrl}${req.route?.path || req.path}`;
+  const ip = normalizeIp(req.ip);
+  const identity = req.auth?.userId ? `user:${req.auth.userId}` : 'guest';
+  return `ip:${ip}:${identity}:${req.method}:${req.baseUrl}${req.route?.path || req.path}`;
 }
 
 export const loginRateLimit = createRateLimiter({
   name: 'auth-login',
   windowMs: 15 * minute,
   max: 10,
-  message: 'Demasiados intentos de login. Intentá nuevamente en unos minutos.',
+  message: 'Demasiados intentos de login. Intenta nuevamente en unos minutos.',
 });
 
 export const registerRateLimit = createRateLimiter({
   name: 'auth-register',
   windowMs: hour,
   max: 5,
-  message: 'Demasiados registros desde este origen. Intentá nuevamente más tarde.',
+  message: 'Demasiados registros desde este origen. Intenta nuevamente mas tarde.',
 });
 
 export const passwordResetRateLimit = createRateLimiter({
   name: 'auth-password-reset',
   windowMs: hour,
   max: 5,
-  message: 'Demasiadas solicitudes de recuperación. Intentá nuevamente más tarde.',
+  message: 'Demasiadas solicitudes de recuperacion. Intenta nuevamente mas tarde.',
 });
 
 export const contactRateLimit = createRateLimiter({
   name: 'public-contact',
   windowMs: 15 * minute,
   max: 8,
-  message: 'Demasiados mensajes enviados. Intentá nuevamente más tarde.',
+  message: 'Demasiados mensajes enviados. Intenta nuevamente mas tarde.',
 });
 
 export const leadRateLimit = createRateLimiter({
   name: 'public-leads',
   windowMs: 15 * minute,
   max: 15,
-  message: 'Demasiadas solicitudes enviadas. Intentá nuevamente más tarde.',
+  message: 'Demasiadas solicitudes enviadas. Intenta nuevamente mas tarde.',
 });
 
 export const offerRateLimit = createRateLimiter({
   name: 'public-offers',
   windowMs: 15 * minute,
   max: 20,
-  message: 'Demasiadas solicitudes de ofertas. Intentá nuevamente más tarde.',
+  message: 'Demasiadas solicitudes de ofertas. Intenta nuevamente mas tarde.',
   keyGenerator: userOrIpKey,
 });
 
@@ -55,7 +60,7 @@ export const checkoutRateLimit = createRateLimiter({
   name: 'public-checkout',
   windowMs: 15 * minute,
   max: 10,
-  message: 'Demasiados intentos de checkout. Intentá nuevamente más tarde.',
+  message: 'Demasiados intentos de checkout. Intenta nuevamente mas tarde.',
   keyGenerator: userOrIpKey,
 });
 
@@ -63,5 +68,5 @@ export const webhookRateLimit = createRateLimiter({
   name: 'webhooks',
   windowMs: minute,
   max: 120,
-  message: 'Demasiadas notificaciones recibidas. Intentá nuevamente más tarde.',
+  message: 'Demasiadas notificaciones recibidas. Intenta nuevamente mas tarde.',
 });

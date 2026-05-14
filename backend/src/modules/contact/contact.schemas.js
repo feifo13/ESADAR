@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   optionalDateString,
   optionalEnum,
+  optionalSortField,
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
@@ -32,7 +33,7 @@ export const adminContactMessageListQuerySchema = z.object({
   status: optionalEnum(['NEW', 'READ', 'REPLIED', 'ARCHIVED']),
   dateFrom: optionalDateString,
   dateTo: optionalDateString,
-  sortBy: optionalEnum(['createdAt', 'status', 'name', 'email']),
+  sortBy: optionalSortField(['createdAt', 'status', 'name', 'email']),
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),

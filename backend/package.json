@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
     "images:backfill": "node scripts/backfill-article-image-variants.mjs",
     "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run",
     "db:backup": "node scripts/backup-db.mjs"

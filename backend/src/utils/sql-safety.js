@@ -1,17 +1,29 @@
 import { badRequest } from './app-error.js';
 
+function parseStrictInteger(value) {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return null;
+    return Math.trunc(value);
+  }
+
+  const text = String(value ?? '').trim();
+  if (!/^\d+$/.test(text)) return null;
+
+  const numeric = Number(text);
+  return Number.isSafeInteger(numeric) ? numeric : null;
+}
+
 export function normalizeSqlLimit(value, fallback = 25, max = 100) {
-  const numeric = Number(value ?? fallback);
+  const numeric = parseStrictInteger(value ?? fallback);
   if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
   return Math.min(max, Math.floor(numeric));
 }
 
-export function normalizeSqlOffset(value) {
-  const numeric = Number(value ?? 0);
+export function normalizeSqlOffset(value, max = 1_000_000) {
+  const numeric = parseStrictInteger(value ?? 0);
   if (!Number.isFinite(numeric) || numeric < 0) return 0;
-  return Math.floor(numeric);
+  return Math.min(max, Math.floor(numeric));
 }
-
 
 export function buildSqlLimitClause(value, fallback = 25, max = 100) {
   return `LIMIT ${normalizeSqlLimit(value, fallback, max)}`;

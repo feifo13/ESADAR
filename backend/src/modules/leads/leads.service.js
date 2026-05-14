@@ -1003,7 +1003,14 @@ export async function listArticleEvents({ filters, pagination }) {
   );
 
   const [countRows] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM article_events ae ${where}`,
+    `
+      SELECT COUNT(*) AS total
+      FROM article_events ae
+      LEFT JOIN articles a ON a.id = ae.article_id
+      LEFT JOIN customers c ON c.id = ae.customer_id
+      LEFT JOIN potential_customers pc ON pc.id = ae.potential_customer_id
+      ${where}
+    `,
     params,
   );
 

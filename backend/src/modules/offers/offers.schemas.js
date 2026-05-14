@@ -3,6 +3,7 @@ import {
   optionalDateString,
   optionalEnum,
   optionalPositiveInt,
+  optionalSortField,
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
@@ -44,7 +45,7 @@ export const adminOfferListQuerySchema = z.object({
   brandId: optionalPositiveInt,
   dateFrom: optionalDateString,
   dateTo: optionalDateString,
-  sortBy: optionalEnum([
+  sortBy: optionalSortField([
     'createdAt',
     'offeredAmount',
     'status',

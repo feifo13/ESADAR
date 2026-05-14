@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   optionalDateString,
   optionalEnum,
+  optionalSortField,
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
@@ -15,7 +16,7 @@ export const auditListQuerySchema = z.object({
   actionCode: optionalTrimmedString(100),
   dateFrom: optionalDateString,
   dateTo: optionalDateString,
-  sortBy: optionalEnum(['createdAt', 'actionCode', 'actorLabel', 'entityType', 'source']),
+  sortBy: optionalSortField(['createdAt', 'actionCode', 'actorLabel', 'entityType', 'source']),
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),

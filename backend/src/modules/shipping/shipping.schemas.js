@@ -4,22 +4,14 @@ import {
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
+  sortFieldSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
-
-function emptyToUndefined(value) {
-  if (value == null) return undefined;
-  if (typeof value === 'string' && value.trim() === '') return undefined;
-  return value;
-}
 
 export const adminShippingListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   isActive: optionalBooleanish,
-  sortBy: z.preprocess(
-    emptyToUndefined,
-    z.enum(['description', 'baseCost', 'status', 'createdAt', 'updatedAt']).default('createdAt'),
-  ),
+  sortBy: sortFieldSchema(['description', 'baseCost', 'status', 'createdAt', 'updatedAt'], 'createdAt'),
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),

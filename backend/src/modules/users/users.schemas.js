@@ -4,6 +4,7 @@ import {
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
+  sortFieldSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
 
@@ -11,10 +12,7 @@ export const adminUserListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   isActive: optionalBooleanish,
   role: optionalTrimmedString(50),
-  sortBy: z.preprocess(
-    (value) => (value == null || String(value).trim() === '' ? undefined : String(value).trim()),
-    z.enum(['createdAt', 'updatedAt', 'lastLoginAt', 'name', 'email', 'status']).default('createdAt'),
-  ),
+  sortBy: sortFieldSchema(['createdAt', 'updatedAt', 'lastLoginAt', 'name', 'email', 'status'], 'createdAt'),
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),

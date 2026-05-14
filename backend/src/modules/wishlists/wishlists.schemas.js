@@ -5,6 +5,7 @@ import {
   optionalDateString,
   optionalEnum,
   optionalPositiveInt,
+  sortFieldSchema,
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
@@ -25,10 +26,7 @@ export const adminWishlistFiltersSchema = z.object({
 });
 
 export const adminWishlistListQuerySchema = adminWishlistFiltersSchema.extend({
-  sortBy: z.preprocess(
-    (value) => (value == null || value === '' ? undefined : value),
-    z.enum(['updatedAt', 'lastSavedAt', 'itemCount', 'ownerName', 'source']).default('updatedAt'),
-  ),
+  sortBy: sortFieldSchema(['updatedAt', 'lastSavedAt', 'itemCount', 'ownerName', 'source'], 'updatedAt'),
   sortDir: sortDirSchema,
   page: pageSchema,
   pageSize: pageSizeSchema(25),

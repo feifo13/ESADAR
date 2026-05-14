@@ -1,13 +1,8 @@
 import { withTransaction } from '../../db/transaction.js';
+import { buildSqlLimitClause } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { releaseArticleStockFromOrder } from '../articles/article-stock.service.js';
 import { restoreUsedOffersForOrder } from '../offers/offers.service.js';
-
-function normalizeLimit(limit) {
-  const numeric = Number(limit || 100);
-  if (!Number.isFinite(numeric) || numeric <= 0) return 100;
-  return Math.min(Math.floor(numeric), 500);
-}
 
 function toMysqlDateTime(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -15,8 +10,7 @@ function toMysqlDateTime(value) {
 }
 
 export async function expireReservedOrders({ now = new Date(), limit = 100, auditContext = {} } = {}) {
-  const safeLimit = normalizeLimit(limit);
-  const limitClause = `LIMIT ${safeLimit}`;
+  const limitClause = buildSqlLimitClause(limit, 100, 500);
   const nowSql = toMysqlDateTime(now);
 
   return withTransaction(async (connection) => {

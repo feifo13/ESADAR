@@ -5,6 +5,7 @@ import {
   optionalDateString,
   optionalEnum,
   optionalPositiveInt,
+  optionalSortField,
   optionalTrimmedString,
   pageSchema,
   pageSizeSchema,
@@ -181,8 +182,8 @@ export const adminArticleListQuerySchema = z.object({
   sizeId: optionalPositiveInt,
   dateFrom: optionalDateString,
   dateTo: optionalDateString,
-  sort: optionalTrimmedString(40),
-  sortBy: optionalEnum([
+  sort: optionalSortField(['price_asc', 'price_desc', 'intake_asc', 'intake_desc']),
+  sortBy: optionalSortField([
     'intakeDate',
     'title',
     'salePrice',
@@ -207,7 +208,7 @@ export const publicArticleListQuerySchema = z.object({
   featured: optionalBooleanish,
   discounted: optionalBooleanish,
   offerable: optionalBooleanish,
-  sort: optionalEnum(['price_asc', 'price_desc', 'intake_asc', 'intake_desc']),
+  sort: optionalSortField(['price_asc', 'price_desc', 'intake_asc', 'intake_desc']),
   page: pageSchema,
   pageSize: pageSizeSchema(20),
 });
