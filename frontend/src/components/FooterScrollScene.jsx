@@ -79,14 +79,23 @@ export default function FooterScrollScene() {
 
       setFooterRevealSuppressed(false);
 
+      const visualViewportHeight = window.visualViewport?.height || 0;
       const layoutViewportHeight =
         document.documentElement.clientHeight || window.innerHeight || 1;
-      const footerViewportHeight = footer.getBoundingClientRect().height || 0;
-      const revealViewportHeight = Math.max(
-        footerViewportHeight,
+      const activeViewportHeight = Math.max(
+        visualViewportHeight,
         layoutViewportHeight,
         1,
       );
+      const footerViewportHeight = footer.getBoundingClientRect().height || 0;
+      const revealViewportHeight = Math.max(
+        footerViewportHeight,
+        activeViewportHeight,
+        1,
+      );
+      const isCompactViewport =
+        window.matchMedia?.("(max-width: 960px)")?.matches ||
+        window.innerWidth <= 960;
       const scrollTop =
         window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
       const maxScroll = Math.max(
@@ -117,7 +126,7 @@ export default function FooterScrollScene() {
       );
       appShell.classList.toggle(
         "app-shell--footer-scroll-deep",
-        headerHideProgress > 0.88,
+        isCompactViewport ? revealProgress > 0.93 : headerHideProgress > 0.88,
       );
     }
 

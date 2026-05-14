@@ -14862,3 +14862,53 @@ dialog,
     z-index: 5200 !important;
   }
 }
+
+
+/* === ESADAR mobile footer deep-cover hardening ===
+   On real mobile browsers the URL/status bars resize the visual viewport and can
+   leave a visible strip of the page curtain when the fixed header disappears.
+   Once the footer scene is deep, let the footer cover the whole mobile viewport. */
+@media (max-width: 960px) {
+  .app-shell--has-footer-reveal .footer-scroll-scene {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .app-shell--has-footer-reveal .footer-scroll-scene__sticky {
+    min-height: 100% !important;
+    height: 100% !important;
+    padding-top: max(22px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene {
+    z-index: 3 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__sticky,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__content,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__logo-button,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__copy {
+    pointer-events: auto !important;
+  }
+
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .page-shell {
+    box-shadow: none !important;
+  }
+}
+
+@supports (height: 100lvh) {
+  @media (max-width: 960px) {
+    .app-shell--has-footer-reveal .footer-scroll-scene {
+      min-height: 100lvh !important;
+      height: 100lvh !important;
+    }
+  }
+}
