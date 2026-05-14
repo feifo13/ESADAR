@@ -7,7 +7,12 @@ import {
   buildLikeValue,
   resolveSortClause,
 } from "../../utils/listing.js";
-import { buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset } from "../../utils/sql-safety.js";
+import {
+  buildSqlLimitOffsetClause,
+  buildSqlPlaceholders,
+  normalizeSqlLimit,
+  normalizeSqlOffset,
+} from "../../utils/sql-safety.js";
 import { logAudit } from "../audit/audit.service.js";
 import {
   markReservedStockAsSold,
@@ -39,10 +44,14 @@ const ORDER_SORTS = {
 
 function buildOrderItemCostSnapshot(article, quantity, lineTotal) {
   const itemQuantity = Number(quantity || 0);
-  const purchasePriceItemSnapshot = Number(article.purchasePriceItem || 0) * itemQuantity;
-  const purchasePriceShippingSnapshot = Number(article.purchasePriceShipping || 0) * itemQuantity;
-  const purchasePriceCourierSnapshot = Number(article.purchasePriceCourier || 0) * itemQuantity;
-  const purchasePriceTotalSnapshot = Number(article.purchasePriceTotal || 0) * itemQuantity;
+  const purchasePriceItemSnapshot =
+    Number(article.purchasePriceItem || 0) * itemQuantity;
+  const purchasePriceShippingSnapshot =
+    Number(article.purchasePriceShipping || 0) * itemQuantity;
+  const purchasePriceCourierSnapshot =
+    Number(article.purchasePriceCourier || 0) * itemQuantity;
+  const purchasePriceTotalSnapshot =
+    Number(article.purchasePriceTotal || 0) * itemQuantity;
 
   return {
     purchasePriceItemSnapshot,
@@ -60,7 +69,8 @@ function aggregateOrderItemQuantities(items = []) {
     if (!item.articleId) continue;
     quantitiesByArticle.set(
       Number(item.articleId),
-      Number(quantitiesByArticle.get(Number(item.articleId)) || 0) + Number(item.quantity || 0),
+      Number(quantitiesByArticle.get(Number(item.articleId)) || 0) +
+        Number(item.quantity || 0),
     );
   }
 
@@ -72,7 +82,9 @@ export async function createOrder(input, actor, auditContext) {
     const owner = await resolveOrderOwner(input, actor, connection);
     await assertPaymentMethodIsAvailable(input.paymentMethod, connection);
     if (!input.shippingMethodId) {
-      throw badRequest("Selecciona un metodo de envio para confirmar la orden.");
+      throw badRequest(
+        "Selecciona un metodo de envio para confirmar la orden.",
+      );
     }
     const shipping = input.shippingMethodId
       ? await getShippingMethod(input.shippingMethodId, connection)
@@ -187,7 +199,11 @@ export async function createOrder(input, actor, auditContext) {
           );
         }
         const lineTotal = acceptedOfferPrice * offerQuantity;
-        const costSnapshot = buildOrderItemCostSnapshot(article, offerQuantity, lineTotal);
+        const costSnapshot = buildOrderItemCostSnapshot(
+          article,
+          offerQuantity,
+          lineTotal,
+        );
         subtotal += salePrice * offerQuantity;
         discountTotal += (salePrice - acceptedOfferPrice) * offerQuantity;
 
@@ -215,7 +231,11 @@ export async function createOrder(input, actor, auditContext) {
 
       if (regularQuantity > 0) {
         const lineTotal = finalUnitPrice * regularQuantity;
-        const costSnapshot = buildOrderItemCostSnapshot(article, regularQuantity, lineTotal);
+        const costSnapshot = buildOrderItemCostSnapshot(
+          article,
+          regularQuantity,
+          lineTotal,
+        );
         subtotal += salePrice * regularQuantity;
         discountTotal += perUnitDiscount * regularQuantity;
 
@@ -382,7 +402,7 @@ export async function createOrder(input, actor, auditContext) {
         quantity,
         orderId,
         auditContext,
-        reason: 'Orden creada, stock reservado',
+        reason: "Orden creada, stock reservado",
       });
     }
 
@@ -424,7 +444,9 @@ export async function createOrder(input, actor, auditContext) {
     return order;
   });
 
-  sendReceivedOrderPendingPaymentEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
+  sendReceivedOrderPendingPaymentEmail(order, {
+    publicSiteUrl: auditContext.publicSiteUrl,
+  }).catch((error) => {
     console.warn(
       "[orders] received order pending payment email failed",
       error?.message || error,
@@ -449,7 +471,12 @@ export async function listOrders({ filters, pagination }) {
   const { page, pageSize, offset } = pagination;
   const safePageSize = normalizeSqlLimit(pageSize, 25, 100);
   const safeOffset = normalizeSqlOffset(offset);
-  const limitOffsetClause = buildSqlLimitOffsetClause(safePageSize, safeOffset, 25, 100);
+  const limitOffsetClause = buildSqlLimitOffsetClause(
+    safePageSize,
+    safeOffset,
+    25,
+    100,
+  );
   const params = [];
   const clauses = [];
 
@@ -633,13 +660,15 @@ export async function approveOrder(id, auditContext) {
       [id],
     );
 
-    for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+    for (const [articleId, quantity] of aggregateOrderItemQuantities(
+      items,
+    ).entries()) {
       await markReservedStockAsSold(connection, {
         articleId,
         quantity,
         orderId: id,
         auditContext,
-        reason: 'Aprobada por administracion',
+        reason: "Aprobada por administracion",
       });
     }
 
@@ -680,8 +709,13 @@ export async function approveOrder(id, auditContext) {
     return after;
   });
 
-  sendApprovedOrderEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
-    console.warn('[orders] approved order email failed', error?.message || error);
+  sendApprovedOrderEmail(order, {
+    publicSiteUrl: auditContext.publicSiteUrl,
+  }).catch((error) => {
+    console.warn(
+      "[orders] approved order email failed",
+      error?.message || error,
+    );
   });
 
   return order;
@@ -702,14 +736,16 @@ export async function cancelOrder(id, reason, auditContext) {
       [id],
     );
 
-    for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+    for (const [articleId, quantity] of aggregateOrderItemQuantities(
+      items,
+    ).entries()) {
       await releaseArticleStockFromOrder(connection, {
         articleId,
         quantity,
         orderId: id,
         auditContext,
-        reason: reason || 'Orden cancelada',
-        movementType: 'CANCEL_ORDER',
+        reason: reason || "Orden cancelada",
+        movementType: "CANCEL_ORDER",
       });
     }
 
@@ -734,7 +770,7 @@ export async function cancelOrder(id, reason, auditContext) {
     await restoreUsedOffersForOrder(connection, {
       orderId: id,
       auditContext,
-      reason: reason || 'Orden cancelada; oferta disponible nuevamente',
+      reason: reason || "Orden cancelada; oferta disponible nuevamente",
     });
 
     await connection.execute(
@@ -810,7 +846,7 @@ export async function shipOrder(id, auditContext) {
           reason,
           changed_by,
           source
-        ) VALUES (?, ?, 'SHIPPED', 'Marked as shipped from backoffice', ?, ?)
+        ) VALUES (?, ?, 'SHIPPED', 'Enviada por ESADAR', ?, ?)
       `,
       [id, before.orderStatus, auditContext.actorUserId, auditContext.source],
     );
@@ -836,8 +872,13 @@ export async function shipOrder(id, auditContext) {
     return after;
   });
 
-  sendShippedOrderEmail(order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
-    console.warn('[orders] shipped order email failed', error?.message || error);
+  sendShippedOrderEmail(order, {
+    publicSiteUrl: auditContext.publicSiteUrl,
+  }).catch((error) => {
+    console.warn(
+      "[orders] shipped order email failed",
+      error?.message || error,
+    );
   });
 
   return order;
@@ -864,7 +905,9 @@ export async function createOrderPayment(id, input, auditContext) {
 
     const amount = Number(input.amount ?? before.total);
     if (!amountsMatch(amount, before.total)) {
-      throw badRequest("El monto del pago debe coincidir con el total de la orden.");
+      throw badRequest(
+        "El monto del pago debe coincidir con el total de la orden.",
+      );
     }
 
     const orderPaymentStatus = mapOrderPaymentStatus(input.status);
@@ -938,14 +981,16 @@ export async function createOrderPayment(id, input, auditContext) {
   });
 }
 
-
-export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {}) {
+export async function applyMercadoPagoPaymentToOrder(
+  payment,
+  auditContext = {},
+) {
   const result = await withTransaction(async (connection) => {
     const paymentId = cleanProviderReference(payment?.id);
     if (!paymentId) {
       return {
-        status: 'ignored',
-        message: 'Notificacion sin payment id.',
+        status: "ignored",
+        message: "Notificacion sin payment id.",
         order: null,
         orderId: null,
         shouldSendApprovedEmail: false,
@@ -953,11 +998,14 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
     }
 
     const orderLookup = getMercadoPagoOrderLookup(payment);
-    const orderRow = await findOrderForMercadoPagoPayment(orderLookup, connection);
+    const orderRow = await findOrderForMercadoPagoPayment(
+      orderLookup,
+      connection,
+    );
     if (!orderRow) {
       return {
-        status: 'ignored',
-        message: 'No se encontro una orden asociada al pago de Mercado Pago.',
+        status: "ignored",
+        message: "No se encontro una orden asociada al pago de Mercado Pago.",
         order: null,
         orderId: null,
         shouldSendApprovedEmail: false,
@@ -965,10 +1013,10 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
     }
 
     const before = await getOrderById(orderRow.id, connection);
-    if (before.paymentMethod !== 'MERCADO_PAGO') {
+    if (before.paymentMethod !== "MERCADO_PAGO") {
       return {
-        status: 'ignored',
-        message: 'La orden asociada no usa Mercado Pago como metodo de pago.',
+        status: "ignored",
+        message: "La orden asociada no usa Mercado Pago como metodo de pago.",
         order: before,
         orderId: before.id,
         shouldSendApprovedEmail: false,
@@ -985,49 +1033,61 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
       payment,
       paymentId,
       amount: paymentAmount,
-      currencyCode: payment?.currency_id || 'UYU',
+      currencyCode: payment?.currency_id || "UYU",
       status: mappedPaymentStatus,
       paidAt,
     });
 
-    let status = 'processed';
+    let status = "processed";
     let message = `Pago Mercado Pago ${paymentId} registrado.`;
     let shouldSendApprovedEmail = false;
 
-    if (mappedPaymentStatus === 'APPROVED') {
+    if (mappedPaymentStatus === "APPROVED") {
       if (!amountMatches) {
-        status = 'failed';
-        message = 'Pago aprobado con monto distinto al total de la orden. Requiere revision manual.';
+        status = "failed";
+        message =
+          "Pago aprobado con monto distinto al total de la orden. Requiere revision manual.";
 
         await logAudit(
           {
             actorUserId: auditContext.actorUserId || null,
             actorLabel: auditContext.actorLabel || null,
-            actionCode: 'MERCADO_PAGO_AMOUNT_MISMATCH',
-            entityType: 'orders',
+            actionCode: "MERCADO_PAGO_AMOUNT_MISMATCH",
+            entityType: "orders",
             entityId: before.id,
-            beforeJson: { total: before.total, paymentStatus: before.paymentStatus },
-            afterJson: { mercadoPagoAmount: paymentAmount, mercadoPagoStatus: payment?.status },
-            metadataJson: { paymentId, externalReference: payment?.external_reference || null },
-            source: auditContext.source || 'API',
+            beforeJson: {
+              total: before.total,
+              paymentStatus: before.paymentStatus,
+            },
+            afterJson: {
+              mercadoPagoAmount: paymentAmount,
+              mercadoPagoStatus: payment?.status,
+            },
+            metadataJson: {
+              paymentId,
+              externalReference: payment?.external_reference || null,
+            },
+            source: auditContext.source || "API",
             ipAddress: auditContext.ipAddress || null,
             userAgent: auditContext.userAgent || null,
           },
           connection,
         );
-      } else if (['RESERVED', 'PENDING'].includes(before.orderStatus)) {
+      } else if (["RESERVED", "PENDING"].includes(before.orderStatus)) {
         const [items] = await connection.execute(
-          'SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?',
+          "SELECT article_id AS articleId, quantity FROM order_items WHERE order_id = ?",
           [before.id],
         );
 
-        for (const [articleId, quantity] of aggregateOrderItemQuantities(items).entries()) {
+        for (const [articleId, quantity] of aggregateOrderItemQuantities(
+          items,
+        ).entries()) {
           await markReservedStockAsSold(connection, {
             articleId,
             quantity,
             orderId: before.id,
             auditContext,
-            reason: 'Pago aprobado automaticamente por Mercado Pago',
+            reason: "Pago aprobado automaticamente por Mercado Pago",
           });
         }
 
@@ -1046,8 +1106,8 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
         );
 
         if (!orderUpdateResult.affectedRows) {
-          status = 'ignored';
-          message = 'La orden ya fue actualizada por otro proceso.';
+          status = "ignored";
+          message = "La orden ya fue actualizada por otro proceso.";
         } else {
           await connection.execute(
             `
@@ -1060,19 +1120,23 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
                 source
               ) VALUES (?, ?, 'APPROVED', 'Pago aprobado automaticamente por Mercado Pago', NULL, ?)
             `,
-            [before.id, before.orderStatus, auditContext.source || 'API'],
+            [before.id, before.orderStatus, auditContext.source || "API"],
           );
 
           await logAudit(
             {
               actorUserId: null,
-              actorLabel: 'Mercado Pago webhook',
-              actionCode: 'ORDER_APPROVED_BY_MERCADO_PAGO',
-              entityType: 'orders',
+              actorLabel: "Mercado Pago webhook",
+              actionCode: "ORDER_APPROVED_BY_MERCADO_PAGO",
+              entityType: "orders",
               entityId: before.id,
               beforeJson: before,
-              afterJson: { orderStatus: 'APPROVED', paymentStatus: 'PAID', paymentId },
-              source: auditContext.source || 'API',
+              afterJson: {
+                orderStatus: "APPROVED",
+                paymentStatus: "PAID",
+                paymentId,
+              },
+              source: auditContext.source || "API",
               ipAddress: auditContext.ipAddress || null,
               userAgent: auditContext.userAgent || null,
             },
@@ -1080,7 +1144,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
           );
 
           shouldSendApprovedEmail = true;
-          message = 'Pago aprobado y orden aprobada automaticamente.';
+          message = "Pago aprobado y orden aprobada automaticamente.";
         }
       } else {
         await connection.execute(
@@ -1094,7 +1158,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
 
         message = `Pago aprobado registrado sobre orden en estado ${before.orderStatus}.`;
       }
-    } else if (mappedPaymentStatus === 'REFUNDED') {
+    } else if (mappedPaymentStatus === "REFUNDED") {
       await connection.execute(
         `
           UPDATE orders
@@ -1103,9 +1167,12 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
         `,
         [before.id],
       );
-      message = 'Pago Mercado Pago marcado como reembolsado.';
-    } else if (mappedPaymentStatus === 'REJECTED' || mappedPaymentStatus === 'FAILED') {
-      if (!['PAID', 'REFUNDED'].includes(before.paymentStatus)) {
+      message = "Pago Mercado Pago marcado como reembolsado.";
+    } else if (
+      mappedPaymentStatus === "REJECTED" ||
+      mappedPaymentStatus === "FAILED"
+    ) {
+      if (!["PAID", "REFUNDED"].includes(before.paymentStatus)) {
         await connection.execute(
           `
             UPDATE orders
@@ -1115,9 +1182,9 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
           [before.id],
         );
       }
-      message = 'Pago Mercado Pago rechazado/fallido registrado.';
-    } else if (mappedPaymentStatus === 'PENDING') {
-      if (!['PAID', 'REFUNDED'].includes(before.paymentStatus)) {
+      message = "Pago Mercado Pago rechazado/fallido registrado.";
+    } else if (mappedPaymentStatus === "PENDING") {
+      if (!["PAID", "REFUNDED"].includes(before.paymentStatus)) {
         await connection.execute(
           `
             UPDATE orders
@@ -1127,7 +1194,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
           [before.id],
         );
       }
-      message = 'Pago Mercado Pago pendiente registrado.';
+      message = "Pago Mercado Pago pendiente registrado.";
     }
 
     const after = await getOrderById(before.id, connection);
@@ -1135,9 +1202,9 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
     await logAudit(
       {
         actorUserId: null,
-        actorLabel: 'Mercado Pago webhook',
-        actionCode: 'MERCADO_PAGO_PAYMENT_SYNCED',
-        entityType: 'orders',
+        actorLabel: "Mercado Pago webhook",
+        actionCode: "MERCADO_PAGO_PAYMENT_SYNCED",
+        entityType: "orders",
         entityId: before.id,
         beforeJson: {
           orderStatus: before.orderStatus,
@@ -1155,7 +1222,7 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
           amountMatches,
           externalReference: payment?.external_reference || null,
         },
-        source: auditContext.source || 'API',
+        source: auditContext.source || "API",
         ipAddress: auditContext.ipAddress || null,
         userAgent: auditContext.userAgent || null,
       },
@@ -1172,8 +1239,13 @@ export async function applyMercadoPagoPaymentToOrder(payment, auditContext = {})
   });
 
   if (result.shouldSendApprovedEmail && result.order) {
-    sendApprovedOrderEmail(result.order, { publicSiteUrl: auditContext.publicSiteUrl }).catch((error) => {
-      console.warn('[orders] approved order email after Mercado Pago webhook failed', error?.message || error);
+    sendApprovedOrderEmail(result.order, {
+      publicSiteUrl: auditContext.publicSiteUrl,
+    }).catch((error) => {
+      console.warn(
+        "[orders] approved order email after Mercado Pago webhook failed",
+        error?.message || error,
+      );
     });
   }
 
@@ -1228,7 +1300,6 @@ async function getShippingMethod(id, connection) {
   return rows[0];
 }
 
-
 async function lockOrderForUpdate(id, connection) {
   const [rows] = await connection.execute(
     `
@@ -1242,7 +1313,7 @@ async function lockOrderForUpdate(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound('Orden no encontrada.');
+    throw notFound("Orden no encontrada.");
   }
 }
 
@@ -1251,18 +1322,18 @@ function amountsMatch(a, b) {
 }
 
 function hasText(value) {
-  return String(value || '').trim().length > 0;
+  return String(value || "").trim().length > 0;
 }
 
 async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
   const settings = await getCollectingSettings(connection);
 
-  if (paymentMethod === 'BANK_TRANSFER' && settings.isBankTransferEnabled) {
+  if (paymentMethod === "BANK_TRANSFER" && settings.isBankTransferEnabled) {
     return;
   }
 
   if (
-    paymentMethod === 'MERCADO_PAGO' &&
+    paymentMethod === "MERCADO_PAGO" &&
     settings.isMercadoPagoEnabled &&
     (hasText(settings.mercadoPagoAccessToken) ||
       hasText(settings.mercadoPagoCheckoutUrl))
@@ -1271,22 +1342,27 @@ async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
   }
 
   throw badRequest(
-    'El medio de pago seleccionado no esta disponible. Actualiza el checkout e intentalo nuevamente.',
+    "El medio de pago seleccionado no esta disponible. Actualiza el checkout e intentalo nuevamente.",
   );
 }
 
-async function ensureApprovedPaymentRecordForOrder(connection, order, auditContext = {}) {
+async function ensureApprovedPaymentRecordForOrder(
+  connection,
+  order,
+  auditContext = {},
+) {
   if (!order || amountsMatch(0, order.total)) return null;
 
   const approvedPayment = order.payments.find(
     (payment) =>
-      payment.status === 'APPROVED' && amountsMatch(payment.amount, order.total),
+      payment.status === "APPROVED" &&
+      amountsMatch(payment.amount, order.total),
   );
   if (approvedPayment) return approvedPayment.id;
 
   const pendingPayment = order.payments.find(
     (payment) =>
-      payment.status === 'PENDING' && amountsMatch(payment.amount, order.total),
+      payment.status === "PENDING" && amountsMatch(payment.amount, order.total),
   );
 
   if (pendingPayment) {
@@ -1302,7 +1378,7 @@ async function ensureApprovedPaymentRecordForOrder(connection, order, auditConte
         WHERE id = ?
       `,
       [
-        JSON.stringify({ origin: 'admin_manual_approval' }),
+        JSON.stringify({ origin: "admin_manual_approval" }),
         auditContext.actorUserId || null,
         pendingPayment.id,
       ],
@@ -1312,13 +1388,13 @@ async function ensureApprovedPaymentRecordForOrder(connection, order, auditConte
       {
         actorUserId: auditContext.actorUserId || null,
         actorLabel: auditContext.actorLabel || null,
-        actionCode: 'PAYMENT_APPROVED_BY_ADMIN',
-        entityType: 'payments',
+        actionCode: "PAYMENT_APPROVED_BY_ADMIN",
+        entityType: "payments",
         entityId: pendingPayment.id,
         beforeJson: pendingPayment,
         afterJson: {
           ...pendingPayment,
-          status: 'APPROVED',
+          status: "APPROVED",
           paidAt: new Date().toISOString(),
         },
         metadataJson: {
@@ -1355,7 +1431,7 @@ async function ensureApprovedPaymentRecordForOrder(connection, order, auditConte
       order.id,
       order.paymentMethod,
       Number(order.total || 0),
-      JSON.stringify({ origin: 'admin_manual_approval' }),
+      JSON.stringify({ origin: "admin_manual_approval" }),
       auditContext.actorUserId || null,
       auditContext.actorUserId || null,
     ],
@@ -1365,16 +1441,16 @@ async function ensureApprovedPaymentRecordForOrder(connection, order, auditConte
     {
       actorUserId: auditContext.actorUserId || null,
       actorLabel: auditContext.actorLabel || null,
-      actionCode: 'PAYMENT_APPROVED_BY_ADMIN',
-      entityType: 'payments',
+      actionCode: "PAYMENT_APPROVED_BY_ADMIN",
+      entityType: "payments",
       entityId: insertResult.insertId,
       afterJson: {
         orderId: order.id,
         paymentMethod: order.paymentMethod,
-        providerName: 'Admin manual approval',
+        providerName: "Admin manual approval",
         amount: Number(order.total || 0),
-        currencyCode: 'UYU',
-        status: 'APPROVED',
+        currencyCode: "UYU",
+        status: "APPROVED",
       },
       metadataJson: {
         orderId: order.id,
@@ -1518,11 +1594,24 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
-    purchasePriceItemSnapshot: row.purchasePriceItemSnapshot != null ? Number(row.purchasePriceItemSnapshot) : null,
-    purchasePriceShippingSnapshot: row.purchasePriceShippingSnapshot != null ? Number(row.purchasePriceShippingSnapshot) : null,
-    purchasePriceCourierSnapshot: row.purchasePriceCourierSnapshot != null ? Number(row.purchasePriceCourierSnapshot) : null,
-    purchasePriceTotalSnapshot: row.purchasePriceTotalSnapshot != null ? Number(row.purchasePriceTotalSnapshot) : null,
-    profitSnapshot: row.profitSnapshot != null ? Number(row.profitSnapshot) : null,
+    purchasePriceItemSnapshot:
+      row.purchasePriceItemSnapshot != null
+        ? Number(row.purchasePriceItemSnapshot)
+        : null,
+    purchasePriceShippingSnapshot:
+      row.purchasePriceShippingSnapshot != null
+        ? Number(row.purchasePriceShippingSnapshot)
+        : null,
+    purchasePriceCourierSnapshot:
+      row.purchasePriceCourierSnapshot != null
+        ? Number(row.purchasePriceCourierSnapshot)
+        : null,
+    purchasePriceTotalSnapshot:
+      row.purchasePriceTotalSnapshot != null
+        ? Number(row.purchasePriceTotalSnapshot)
+        : null,
+    profitSnapshot:
+      row.profitSnapshot != null ? Number(row.profitSnapshot) : null,
     acceptedOffer: row.acceptedOfferId
       ? {
           id: row.acceptedOfferId,
@@ -1539,9 +1628,8 @@ async function getOrderById(id, connection) {
   return order;
 }
 
-
 function cleanProviderReference(value) {
-  if (value == null) return '';
+  if (value == null) return "";
   return String(value).trim();
 }
 
@@ -1549,34 +1637,46 @@ function toMysqlDateTime(value) {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString().slice(0, 19).replace('T', ' ');
+  return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
 function getMercadoPagoOrderLookup(payment = {}) {
-  const metadata = payment.metadata && typeof payment.metadata === 'object' ? payment.metadata : {};
+  const metadata =
+    payment.metadata && typeof payment.metadata === "object"
+      ? payment.metadata
+      : {};
   const rawOrderId = metadata.order_id ?? metadata.orderId ?? null;
   const numericOrderId = Number(rawOrderId);
-  const orderId = Number.isInteger(numericOrderId) && numericOrderId > 0 ? numericOrderId : null;
+  const orderId =
+    Number.isInteger(numericOrderId) && numericOrderId > 0
+      ? numericOrderId
+      : null;
   const orderNumber = cleanProviderReference(
-    metadata.order_number || metadata.orderNumber || payment.external_reference || '',
+    metadata.order_number ||
+      metadata.orderNumber ||
+      payment.external_reference ||
+      "",
   );
 
   return { orderId, orderNumber };
 }
 
-async function findOrderForMercadoPagoPayment({ orderId, orderNumber }, connection) {
+async function findOrderForMercadoPagoPayment(
+  { orderId, orderNumber },
+  connection,
+) {
   if (!orderId && !orderNumber) return null;
 
   const clauses = [];
   const params = [];
 
   if (orderId) {
-    clauses.push('id = ?');
+    clauses.push("id = ?");
     params.push(orderId);
   }
 
   if (orderNumber) {
-    clauses.push('order_number = ?');
+    clauses.push("order_number = ?");
     params.push(orderNumber);
   }
 
@@ -1584,7 +1684,7 @@ async function findOrderForMercadoPagoPayment({ orderId, orderNumber }, connecti
     `
       SELECT id
       FROM orders
-      WHERE ${clauses.join(' OR ')}
+      WHERE ${clauses.join(" OR ")}
       ORDER BY id DESC
       LIMIT 1
       FOR UPDATE
@@ -1611,29 +1711,37 @@ function getMercadoPagoPaymentAmount(payment = {}) {
 }
 
 function getMercadoPagoPaidAt(payment = {}, mappedPaymentStatus) {
-  if (mappedPaymentStatus !== 'APPROVED') return null;
-  return toMysqlDateTime(payment.date_approved || payment.money_release_date || payment.date_last_updated || new Date());
+  if (mappedPaymentStatus !== "APPROVED") return null;
+  return toMysqlDateTime(
+    payment.date_approved ||
+      payment.money_release_date ||
+      payment.date_last_updated ||
+      new Date(),
+  );
 }
 
 function mapMercadoPagoPaymentStatus(status) {
-  const normalized = String(status || '').trim().toLowerCase();
+  const normalized = String(status || "")
+    .trim()
+    .toLowerCase();
 
-  if (normalized === 'approved' || normalized === 'accredited') return 'APPROVED';
-  if (normalized === 'refunded' || normalized === 'charged_back') return 'REFUNDED';
-  if (['rejected', 'cancelled', 'canceled'].includes(normalized)) return 'REJECTED';
-  if (['pending', 'in_process', 'authorized', 'in_mediation'].includes(normalized)) return 'PENDING';
-  return 'PENDING';
+  if (normalized === "approved" || normalized === "accredited")
+    return "APPROVED";
+  if (normalized === "refunded" || normalized === "charged_back")
+    return "REFUNDED";
+  if (["rejected", "cancelled", "canceled"].includes(normalized))
+    return "REJECTED";
+  if (
+    ["pending", "in_process", "authorized", "in_mediation"].includes(normalized)
+  )
+    return "PENDING";
+  return "PENDING";
 }
 
-async function upsertMercadoPagoPayment(connection, {
-  orderId,
-  payment,
-  paymentId,
-  amount,
-  currencyCode,
-  status,
-  paidAt,
-}) {
+async function upsertMercadoPagoPayment(
+  connection,
+  { orderId, payment, paymentId, amount, currencyCode, status, paidAt },
+) {
   const rawJson = JSON.stringify(payment || {});
   const [existingRows] = await connection.execute(
     `
@@ -1665,7 +1773,7 @@ async function upsertMercadoPagoPayment(connection, {
       [
         orderId,
         amount,
-        currencyCode || 'UYU',
+        currencyCode || "UYU",
         status,
         paidAt,
         paidAt,
@@ -1696,7 +1804,7 @@ async function upsertMercadoPagoPayment(connection, {
       orderId,
       paymentId,
       amount,
-      currencyCode || 'UYU',
+      currencyCode || "UYU",
       status,
       paidAt,
       rawJson,
