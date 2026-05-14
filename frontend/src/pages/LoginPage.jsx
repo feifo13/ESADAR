@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
@@ -14,12 +14,23 @@ import {
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const { notifyMobileStatus } = useMobileMenu();
   const [email, setEmail] = useState("admin@miamicloset.test");
   const [password, setPassword] = useState("123456");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  function getRedirectTarget() {
+    const from = location.state?.from;
+    if (!from) return "/";
+    return `${from.pathname || "/"}${from.search || ""}${from.hash || ""}`;
+  }
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
+    navigate(getRedirectTarget(), { replace: true });
+  }, [authLoading, isAuthenticated, navigate, location.state]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -40,10 +51,7 @@ export default function LoginPage() {
       setSubmitting(true);
       setError("");
       await login(email, password);
-      const redirectTarget = location.state?.from
-        ? `${location.state.from.pathname || "/"}${location.state.from.search || ""}${location.state.from.hash || ""}`
-        : "/";
-      navigate(redirectTarget, { replace: true });
+      navigate(getRedirectTarget(), { replace: true });
     } catch (err) {
       const errorMessage = getFriendlyErrorMessage(
         err,

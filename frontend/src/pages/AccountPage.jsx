@@ -125,7 +125,7 @@ const initialForm = {
 
 export default function AccountPage() {
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { addItem } = useCart();
   const {
     items: wishlistItems,
@@ -637,6 +637,14 @@ export default function AccountPage() {
             </label>
           );
         })}
+      </div>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div className="container section-card centered-card">
+        <AppLoader variant="page" label="Cargando sesión" />
       </div>
     );
   }

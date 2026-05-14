@@ -32,7 +32,7 @@ const PAYMENT_STATUS_LABELS = {
 export default function AccountOrderDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { notifyError } = useNotification();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -81,6 +81,14 @@ export default function AccountOrderDetailPage() {
     } finally {
       setReceiptLoading(false);
     }
+  }
+
+  if (authLoading) {
+    return (
+      <div className="container section-card centered-card">
+        <AppLoader variant="page" label="Cargando sesión" />
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
