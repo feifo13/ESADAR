@@ -6,16 +6,13 @@ La app usa Checkout Pro para generar un link de pago por orden cuando el cliente
 
 Desde esta version tambien existe un webhook para sincronizar el pago automaticamente: cuando Mercado Pago notifica un pago aprobado, ESADAR consulta el pago por API, registra/actualiza el pago, marca la orden como pagada y aprueba la orden vendiendo el stock reservado.
 
-## Migraciones necesarias
+## Base de datos
 
-Ejecuta estas migraciones si todavia no las corriste:
+Las migraciones historicas ya fueron consolidadas/aplicadas. Para preparar sandbox usa solamente los scripts activos de `db/scripts/`:
 
-```sql
-SOURCE db/migrations/2026-05-09-002-configure-mercado-pago.sql;
-SOURCE db/migrations/2026-05-09-003-mercado-pago-webhooks.sql;
-```
-
-La migracion `002` fue corregida para MySQL sin `ADD COLUMN IF NOT EXISTS`.
+- `01_from_scratch_superadmin_seed.sql`
+- `02_vaciado_operativo_usuarios_stock100_seed.sql`
+- `03_vaciado_operativo_solo_usuarios.sql`
 
 ## Configuracion recomendada para pruebas
 

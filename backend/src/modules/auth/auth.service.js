@@ -107,6 +107,29 @@ function buildResetUrl(token, publicSiteUrl) {
   return `${base}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
+async function ensureCustomerRole(connection) {
+  await connection.execute(
+    `
+      INSERT INTO roles (code, name, is_active)
+      VALUES ('CUSTOMER', 'Customer', 1)
+      ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        is_active = 1
+    `,
+  );
+
+  const [roleRows] = await connection.execute(
+    'SELECT id FROM roles WHERE code = ? AND is_active = 1 LIMIT 1',
+    ['CUSTOMER'],
+  );
+
+  if (!roleRows.length) {
+    throw notFound('Role CUSTOMER was not found in roles table');
+  }
+
+  return roleRows[0].id;
+}
+
 export async function registerUser(input, auditContext) {
   const existing = await getUserByEmail(input.email);
   if (existing) {
@@ -147,18 +170,11 @@ export async function registerUser(input, auditContext) {
 
     const userId = userInsert.insertId;
 
-    const [roleRows] = await connection.execute(
-      'SELECT id FROM roles WHERE code = ? LIMIT 1',
-      ['CUSTOMER'],
-    );
-
-    if (!roleRows.length) {
-      throw notFound('Role CUSTOMER was not found in roles table');
-    }
+    const customerRoleId = await ensureCustomerRole(connection);
 
     await connection.execute(
       'INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES (?, ?, ?)',
-      [userId, roleRows[0].id, auditContext.actorUserId || null],
+      [userId, customerRoleId, auditContext.actorUserId || null],
     );
 
     await connection.execute(
