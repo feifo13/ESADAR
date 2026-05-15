@@ -80,8 +80,28 @@ export default function FooterScrollScene() {
 
       setFooterRevealSuppressed(false);
 
-      const layoutViewportHeight =
-        document.documentElement.clientHeight || window.innerHeight || 1;
+      const visualViewportHeight = Number(window.visualViewport?.height || 0);
+      const layoutViewportHeight = Math.max(
+        document.documentElement.clientHeight || 0,
+        window.innerHeight || 0,
+        visualViewportHeight,
+        1,
+      );
+      const viewportHeights = [
+        document.documentElement.clientHeight,
+        window.innerHeight,
+        visualViewportHeight,
+      ].filter((height) => Number.isFinite(height) && height > 0);
+      if (!viewportHeights.length) viewportHeights.push(layoutViewportHeight);
+
+      const scrollingElement =
+        document.scrollingElement || document.documentElement;
+      const documentHeight = Math.max(
+        scrollingElement?.scrollHeight || 0,
+        document.documentElement.scrollHeight || 0,
+        document.body?.scrollHeight || 0,
+        1,
+      );
       const footerViewportHeight = footer.getBoundingClientRect().height || 0;
       const revealViewportHeight = Math.max(
         footerViewportHeight,
@@ -91,16 +111,20 @@ export default function FooterScrollScene() {
       const isCompactViewport =
         window.matchMedia?.("(max-width: 960px)")?.matches ||
         window.innerWidth <= 960;
-      const scrollTop =
-        window.scrollY ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop ||
-        0;
-      const maxScroll = Math.max(
-        0,
-        document.documentElement.scrollHeight - layoutViewportHeight,
+      const scrollTop = Math.max(
+        window.scrollY || 0,
+        scrollingElement?.scrollTop || 0,
+        document.documentElement.scrollTop || 0,
+        document.body?.scrollTop || 0,
       );
-      const remainingScroll = Math.max(0, maxScroll - scrollTop);
+      const remainingScroll = Math.max(
+        0,
+        Math.min(
+          ...viewportHeights.map(
+            (viewportHeight) => documentHeight - scrollTop - viewportHeight,
+          ),
+        ),
+      );
       const revealProgress = clamp01(
         1 - remainingScroll / Math.max(revealViewportHeight * 0.92, 1),
       );
@@ -122,8 +146,9 @@ export default function FooterScrollScene() {
         "app-shell--footer-scroll-active",
         revealProgress > 0.01,
       );
+      const compactEndThreshold = Math.max(24, layoutViewportHeight * 0.04);
       const isDeepFooterReveal = isCompactViewport
-        ? revealProgress > 0.985 || remainingScroll <= 2
+        ? revealProgress > 0.965 || remainingScroll <= compactEndThreshold
         : headerHideProgress > 0.88;
 
       appShell.classList.toggle(
@@ -206,6 +231,8 @@ export default function FooterScrollScene() {
     window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
+    window.visualViewport?.addEventListener("resize", scheduleUpdate);
+    window.visualViewport?.addEventListener("scroll", scheduleUpdate);
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
@@ -220,6 +247,8 @@ export default function FooterScrollScene() {
       window.removeEventListener("keydown", handleManualScrollIntent);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
+      window.visualViewport?.removeEventListener("resize", scheduleUpdate);
+      window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.classList.remove(

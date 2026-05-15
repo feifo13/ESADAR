@@ -63,7 +63,7 @@ export default function FeaturedMotionCards({
     );
   }
 
-  function renderFeaturedItem(article, index) {
+  function renderFeaturedItem(article, index, { enableMotion = true } = {}) {
     const price = getDiscountedPrice(article);
     const soldOut =
       Number(article.quantityAvailable || 0) <= 0 ||
@@ -95,20 +95,27 @@ export default function FeaturedMotionCards({
       allowOffers: article.allowOffers,
     };
 
+    const CardShell = enableMotion ? motion.div : "div";
+    const motionProps = enableMotion
+      ? {
+          initial: shouldReduceMotion ? false : { opacity: 0, y: 24 },
+          whileInView: shouldReduceMotion ? undefined : { opacity: 1, y: 0 },
+          viewport: { once: true, amount: 0.25 },
+          transition: {
+            type: "spring",
+            stiffness: 180,
+            damping: 24,
+            delay: index * 0.04,
+          },
+          whileHover: shouldReduceMotion ? undefined : { y: -8, scale: 1.01 },
+        }
+      : {};
+
     return (
-      <motion.div
+      <CardShell
         key={article.id}
         className={`featured-motion-card featured-motion-card--${(index % 4) + 1}`}
-        initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
-        whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.25 }}
-        transition={{
-          type: "spring",
-          stiffness: 180,
-          damping: 24,
-          delay: index * 0.04,
-        }}
-        whileHover={shouldReduceMotion ? undefined : { y: -8, scale: 1.01 }}
+        {...motionProps}
       >
         <Link
           to={`/articles/${article.slug || article.id}`}
@@ -154,7 +161,7 @@ export default function FeaturedMotionCards({
             void handleWishlistToggle(article, optimisticWishlistItem, saved)
           }
         />
-      </motion.div>
+      </CardShell>
     );
   }
 
@@ -171,7 +178,7 @@ export default function FeaturedMotionCards({
         <div ref={featuredRailRef} className="rail-scroller">
           {featuredItems.map((article, index) => (
             <div key={article.id} className="rail-item">
-              {renderFeaturedItem(article, index)}
+              {renderFeaturedItem(article, index, { enableMotion: false })}
             </div>
           ))}
         </div>
