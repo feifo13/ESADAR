@@ -1,4 +1,5 @@
 import { reportApiError } from './clientLogger.js';
+import { sanitizePublicUrl } from './seo.js';
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -28,20 +29,11 @@ function getApiErrorMessage(payload) {
   return 'Revisa los campos requeridos antes de continuar.';
 }
 
-function getStoredToken() {
-  try {
-    return JSON.parse(window.localStorage.getItem('miami-closet-token') || 'null');
-  } catch {
-    return null;
-  }
-}
-
 function getAuthHeaders(headers = {}, tokenOverride) {
   const headersInstance = new Headers(headers);
-  const token = tokenOverride ?? getStoredToken();
 
-  if (token) {
-    headersInstance.set('Authorization', `Bearer ${token}`);
+  if (tokenOverride) {
+    headersInstance.set('Authorization', `Bearer ${tokenOverride}`);
   }
 
   return headersInstance;
@@ -50,8 +42,11 @@ function getAuthHeaders(headers = {}, tokenOverride) {
 export function resolveAssetUrl(path) {
   if (!path) return '';
   const normalized = String(path).trim().replace(/\\/g, '/');
-  if (/^(https?:|data:|blob:)/i.test(normalized)) return normalized;
-  return `${API_URL}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
+  if (/^https?:/i.test(normalized)) return sanitizePublicUrl(normalized);
+  if (/^(data:|blob:)/i.test(normalized)) return normalized;
+  const safeApiUrl = sanitizePublicUrl(API_URL);
+  const safePath = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  return safeApiUrl ? `${safeApiUrl}${safePath}` : safePath;
 }
 
 export async function apiFetch(path, options = {}) {

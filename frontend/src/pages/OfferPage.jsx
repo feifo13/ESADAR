@@ -331,7 +331,7 @@ export default function OfferPage() {
                   </strong>
                 </div>
                 <div>
-                  <span>Categoria</span>
+                  <span>Categoría</span>
                   <strong>{article.categoryName || "Sin categoria"}</strong>
                 </div>
                 <div>
@@ -416,7 +416,7 @@ export default function OfferPage() {
                     />
                   </label>
                   <label className="field-group">
-                    <span>Telefono</span>
+                    <span>Teléfono</span>
                     <input
                       className="input"
                       name="phone"

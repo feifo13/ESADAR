@@ -90,7 +90,7 @@ export default function AdminOrdersPage() {
           response.pagination || { page: 1, pageSize: 25, total: 0 },
         );
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudo cargar ordenes");
+        if (!ignore) setError(err.message || "No se pudo cargar órdenes");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -148,7 +148,11 @@ export default function AdminOrdersPage() {
         method: "PATCH",
         body: { reason: "Eliminada desde administracion." },
       });
-      notifySuccess("La orden fue cancelada.");
+      notifySuccess(
+        order.hasOffers
+          ? "La orden fue cancelada y el intento de oferta quedó consumido."
+          : "La orden fue cancelada.",
+      );
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       const errorMessage = err.message || "No se pudo cancelar la orden";
@@ -177,7 +181,7 @@ export default function AdminOrdersPage() {
         </div>
 
         <ResponsiveFilterPanel
-          title="Filtros de ordenes"
+          title="Filtros de órdenes"
           description=""
           buttonLabel="Mostrar filtros"
           summary={
@@ -235,7 +239,7 @@ export default function AdminOrdersPage() {
             </label>
 
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 value={draftFilters.categoryId}
@@ -307,7 +311,7 @@ export default function AdminOrdersPage() {
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -408,6 +412,13 @@ export default function AdminOrdersPage() {
                       <div className="cell-stack">
                         <strong>{order.orderNumber}</strong>
                         <span className="muted-copy">#{order.id}</span>
+                        <span className="muted-copy">
+                          {order.totalQuantity || order.itemCount || 0} prenda
+                          {Number(order.totalQuantity || order.itemCount || 0) === 1 ? "" : "s"}
+                          {" · "}
+                          {order.itemCount || 0} línea
+                          {Number(order.itemCount || 0) === 1 ? "" : "s"}
+                        </span>
                         {order.hasOffers ? (
                           <span className="pill pill-offer">
                             {order.offerCount || 1} oferta
@@ -491,7 +502,7 @@ export default function AdminOrdersPage() {
                   <tr>
                     <td colSpan="9">
                       <p className="muted-copy">
-                        No hay ordenes para los filtros seleccionados.
+                        No hay órdenes para los filtros seleccionados.
                       </p>
                     </td>
                   </tr>

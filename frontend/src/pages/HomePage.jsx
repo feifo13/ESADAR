@@ -149,8 +149,8 @@ const initialLeadForm = {
 };
 
 const SORT_LABELS = {
-  intake_desc: "Mas reciente",
-  intake_asc: "Mas antiguo",
+  intake_desc: "Más reciente",
+  intake_asc: "Más antiguo",
   price_asc: "Precio ↑",
   price_desc: "Precio ↓",
 };
@@ -201,8 +201,8 @@ function CatalogSortControl({ value, onChange, onApplied }) {
           value={draftSort}
           onChange={(event) => setDraftSort(event.target.value)}
         >
-          <option value="intake_desc">Ingreso mas reciente</option>
-          <option value="intake_asc">Ingreso mas antiguo</option>
+          <option value="intake_desc">Ingreso más reciente</option>
+          <option value="intake_asc">Ingreso más antiguo</option>
           <option value="price_asc">Precio menor a mayor</option>
           <option value="price_desc">Precio mayor a menor</option>
         </select>
@@ -273,7 +273,11 @@ export default function HomePage() {
   const [leadError, setLeadError] = useState("");
   const [leadSuccess, setLeadSuccess] = useState("");
 
-  const homeSeo = pagesByRoute["/"] || null;
+  const pageSeo =
+    location.pathname === "/articles"
+      ? pagesByRoute["/articles"] || null
+      : pagesByRoute["/"] || null;
+  const currentSeoPath = location.pathname === "/articles" ? "/articles" : "/";
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -294,7 +298,7 @@ export default function HomePage() {
     const chips = [];
 
     if (filters.search) {
-      chips.push({ key: "search", label: `Busqueda: ${filters.search}` });
+      chips.push({ key: "search", label: `Búsqueda: ${filters.search}` });
     }
     if (filters.sort && filters.sort !== initialFilters.sort) {
       chips.push({
@@ -305,7 +309,7 @@ export default function HomePage() {
     if (filters.categoryId) {
       chips.push({
         key: "categoryId",
-        label: `Categoria: ${getLabel(categoryOptions, filters.categoryId, "Seleccionada")}`,
+        label: `Categoría: ${getLabel(categoryOptions, filters.categoryId, "Seleccionada")}`,
       });
     }
     if (filters.brandId) {
@@ -882,10 +886,10 @@ export default function HomePage() {
   return (
     <div className="home-page page-stack page-stack-wide">
       <SeoHead
-        title={homeSeo?.title || `${site.name} | Ropa`}
-        description={homeSeo?.description || site.description}
-        canonical={homeSeo?.canonicalUrl || toAbsoluteUrl("/", site)}
-        url={toAbsoluteUrl("/", site)}
+        title={pageSeo?.title || `${site.name} | Ropa`}
+        description={pageSeo?.description || site.description}
+        canonical={pageSeo?.canonicalUrl || toAbsoluteUrl(currentSeoPath, site)}
+        url={toAbsoluteUrl(currentSeoPath, site)}
         image={toAbsoluteUrl(HERO_IMAGES[0], site)}
         jsonLd={[
           { id: "organization", data: buildOrganizationJsonLd(site) },
@@ -1086,8 +1090,8 @@ export default function HomePage() {
 
           <div className="catalog-summary-row">
             <div>
-              <p className="section-kicker">Catalogo</p>
-              <h2>{pagination.total || items.length} articulos disponibles</h2>
+              <p className="section-kicker">Catálogo</p>
+              <h2>{pagination.total || items.length} artículos disponibles</h2>
             </div>
           </div>
 

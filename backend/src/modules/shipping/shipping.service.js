@@ -263,7 +263,7 @@ export async function deleteShippingMethod(id, auditContext) {
       if (!deleteResult.affectedRows) throw notFound('Metodo de envio no encontrado.');
     } catch (error) {
       if (error?.code === 'ER_ROW_IS_REFERENCED_2' || error?.errno === 1451) {
-        throw badRequest('No se puede eliminar este metodo porque ya tiene ordenes vinculadas. Puedes desactivarlo.');
+        throw badRequest('No se puede eliminar este método porque ya tiene órdenes vinculadas. Puedes desactivarlo.');
       }
       throw error;
     }

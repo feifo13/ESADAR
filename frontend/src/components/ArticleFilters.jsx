@@ -112,8 +112,8 @@ export default function ArticleFilters({
               onChange={(event) => updateField("sort", event.target.value)}
               aria-label="Ordenar catalogo"
             >
-              <option value="intake_desc">Ingreso mas reciente</option>
-              <option value="intake_asc">Ingreso mas antiguo</option>
+              <option value="intake_desc">Ingreso más reciente</option>
+              <option value="intake_asc">Ingreso más antiguo</option>
               <option value="price_asc">Precio menor a mayor</option>
               <option value="price_desc">Precio mayor a menor</option>
             </select>
@@ -147,7 +147,7 @@ export default function ArticleFilters({
 
       <div className="filters-sidebar-group">
         {/* <label className="field-label" htmlFor={`${idPrefix}-category`}>
-          Categoria
+          Categoría
         </label> */}
         <select
           id={`${idPrefix}-category`}

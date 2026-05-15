@@ -103,7 +103,7 @@ export default function AccountOrderDetailPage() {
         to="/cuenta/ordenes"
         className="ghost-button linklike account-order-detail-back"
       >
-        Volver a mis ordenes
+        Volver a mis órdenes
       </Link>
 
       {loading ? (

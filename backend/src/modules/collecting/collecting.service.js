@@ -579,7 +579,7 @@ function buildMercadoPagoDetails(settings, preference = null) {
   if (preferenceFailed && checkoutUrl) {
     fields.push({
       label: "Fallback",
-      value: "Se uso el link configurado porque la preferencia dinamica no pudo generarse.",
+      value: "Se usó el link configurado porque la preferencia dinámica no pudo generarse.",
     });
   }
 

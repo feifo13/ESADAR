@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
 import { env } from "../../../config/env.js";
+import { sanitizePublicUrl } from "../../../utils/assets.js";
 import { fileURLToPath } from "node:url";
 
 const PAGE = { width: 720, height: 960, margin: 30 };
@@ -80,11 +81,10 @@ function formatDateParts(value) {
 }
 
 function websiteLabel(url) {
-  const normalized = clean(url || "", "")
+  const normalized = clean(sanitizePublicUrl(url) || "", "")
     .replace(/^https?:\/\//i, "")
     .replace(/\/$/, "");
-  if (!normalized || /localhost|127\.0\.0\.1/i.test(normalized))
-    return "www.esadar.com.uy";
+  if (!normalized) return env.storeName;
   return normalized;
 }
 

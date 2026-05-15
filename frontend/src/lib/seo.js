@@ -1,16 +1,58 @@
 const ENV_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL || '').replace(/\/$/, '');
 
+function isLocalHostname(hostname = '') {
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return ['localhost', '127.0.0.1', '::1'].includes(normalized);
+}
+
+function isIpHostname(hostname = '') {
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized) || normalized.includes(':');
+}
+
+export function isUnsafePublicUrl(value) {
+  if (!value || !/^https?:\/\//i.test(String(value))) return false;
+
+  try {
+    const parsed = new URL(value);
+    return isIpHostname(parsed.hostname) && !isLocalHostname(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function sanitizePublicUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || isUnsafePublicUrl(raw)) return '';
+  return raw.replace(/\/$/, '');
+}
+
+function getBrowserOrigin() {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin;
+  try {
+    const parsed = new URL(origin);
+    if (isIpHostname(parsed.hostname) && !isLocalHostname(parsed.hostname)) {
+      return '';
+    }
+    return origin;
+  } catch {
+    return '';
+  }
+}
+
 export function getSiteUrl(site) {
-  if (site?.url) return String(site.url).replace(/\/$/, '');
-  if (ENV_SITE_URL) return ENV_SITE_URL;
-  if (typeof window !== 'undefined') return window.location.origin;
-  return '';
+  return (
+    sanitizePublicUrl(site?.url) ||
+    sanitizePublicUrl(ENV_SITE_URL) ||
+    getBrowserOrigin()
+  );
 }
 
 export function toAbsoluteUrl(path, site) {
   if (!path) return '';
   const normalized = String(path).trim();
-  if (/^(https?:|data:|blob:)/i.test(normalized)) return normalized;
+  if (/^(https?:|data:|blob:)/i.test(normalized)) return sanitizePublicUrl(normalized) || '';
   const baseUrl = getSiteUrl(site);
   return `${baseUrl}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
 }
@@ -58,7 +100,7 @@ export function buildProductJsonLd(article, site) {
       availability: Number(article?.quantityAvailable || 0) > 0 && article?.status === 'ACTIVE'
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
-      url: article?.canonicalUrl || toAbsoluteUrl(`/articles/${article?.slug || article?.id}`, site),
+      url: sanitizePublicUrl(article?.canonicalUrl) || toAbsoluteUrl(`/articles/${article?.slug || article?.id}`, site),
       itemCondition: 'https://schema.org/UsedCondition',
     },
   };

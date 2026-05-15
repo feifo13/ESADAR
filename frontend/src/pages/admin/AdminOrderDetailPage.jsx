@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import OrderStatusBadge from '../../components/OrderStatusBadge.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
-import SmartImage from '../../components/SmartImage.jsx';
+import SummaryItemCard from '../../components/SummaryItemCard.jsx';
 import { DownloadIcon } from '../../components/ActionIcons.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../../lib/api.js';
@@ -82,7 +82,10 @@ export default function AdminOrderDetailPage() {
 
       const response = await apiFetch(path, options);
       setOrder(response.order);
-      const successMessage = 'La orden fue actualizada correctamente.';
+      const successMessage =
+        action === 'cancel' && response.order?.hasOffers
+          ? 'La orden fue cancelada y el intento de oferta quedó consumido.'
+          : 'La orden fue actualizada correctamente.';
       setMessage(successMessage);
       notifySuccess(successMessage);
       setCancelReason('');
@@ -163,32 +166,65 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
+        <div className="admin-detail-meta account-order-detail-meta">
+          <p className="summary-line">
+            <span>Creada</span>
+            <strong>{formatDate(order.createdAt)}</strong>
+          </p>
+          <p className="summary-line">
+            <span>Pago</span>
+            <strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong>
+          </p>
+          <p className="summary-line">
+            <span>Método</span>
+            <strong>{formatPaymentMethod(order.paymentMethod)}</strong>
+          </p>
+          <p className="summary-line">
+            <span>Envío</span>
+            <strong>{order.shippingMethodDescription || order.shippingMethodName || "Sin datos"}</strong>
+          </p>
+          <p className="summary-line total">
+            <span>Total</span>
+            <strong>{formatCurrency(order.total)}</strong>
+          </p>
+        </div>
+
         <div className="order-detail-grid">
           <div className="page-stack">
             <div className="section-card nested-card">
               <h3>Cliente</h3>
               <p>{order.customer.firstName} {order.customer.lastName}</p>
-              <p className="muted-copy">{order.customer.email || 'Sin email'} - {order.customer.phone || 'Sin telefono'}</p>
-              <p className="muted-copy">{order.customer.address || 'Sin direccion'}</p>
+              <p className="muted-copy">{order.customer.email || 'Sin email'} - {order.customer.phone || 'Sin teléfono'}</p>
+              <p className="muted-copy">{order.customer.address || 'Sin dirección'}</p>
             </div>
 
-            <div className="section-card nested-card">
-              <h3>Articulos</h3>
-              <div className="admin-list compact-list">
+            <div className="section-card nested-card page-stack">
+              <div className="section-heading">
+                <div>
+                  <p className="section-kicker">Prendas</p>
+                  <h3>Resumen de la orden</h3>
+                </div>
+              </div>
+              <div className="summary-item-card-list account-order-items-card-list">
                 {order.items.map((item) => (
-                  <article key={item.id} className="admin-row-card compact-row">
-                    <SmartImage src={item.image} alt={item.articleTitle} fallbackLabel={item.articleTitle} />
-                    <div>
-                      <h4>{item.articleTitle}</h4>
-                      <p className="muted-copy">{item.brandName || 'Sin marca'} - {item.size || 'Sin talle'}</p>
-                      {item.acceptedOffer ? (
-                        <p className="muted-copy">
-                          <span className="pill pill-offer">Oferta aceptada</span> original {formatCurrency(item.salePrice)} - oferta {formatCurrency(item.acceptedOffer.price)} - ahorro {formatCurrency(Math.max(0, Number(item.salePrice || 0) - Number(item.acceptedOffer.price || 0)))} - aplica a {item.acceptedOffer.quantity || 1} unidad
-                        </p>
-                      ) : null}
-                    </div>
-                    <strong>{formatCurrency(item.lineTotal)}</strong>
-                  </article>
+                  <SummaryItemCard
+                    key={item.id}
+                    readOnly
+                    item={{
+                      articleId: item.articleId || item.id,
+                      slug: item.articleSlug || item.articleId,
+                      title: item.articleTitle,
+                      image: item.image,
+                      brandName: item.brandName,
+                      sizeLabel: item.size,
+                      quantity: item.quantity,
+                      maxQuantity: item.quantity,
+                      salePrice: item.salePrice || item.finalUnitPrice,
+                      discountedPrice: item.finalUnitPrice,
+                      lineTotal: item.lineTotal,
+                      acceptedOffer: item.acceptedOffer,
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -236,7 +272,7 @@ export default function AdminOrderDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="muted-copy">Todavia no hay pagos registrados para esta orden.</p>
+                <p className="muted-copy">Todavía no hay pagos registrados para esta orden.</p>
               )}
 
               {!order.payments.length && order.orderStatus === 'APPROVED' ? (

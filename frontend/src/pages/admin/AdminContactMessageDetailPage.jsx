@@ -133,7 +133,7 @@ export default function AdminContactMessageDetailPage() {
 
             <div className="admin-detail-meta admin-detail-meta--grid">
               <p className="summary-line"><span>Email</span><strong>{message.email || 'Sin email'}</strong></p>
-              <p className="summary-line"><span>Telefono</span><strong>{message.phone || 'Sin telefono'}</strong></p>
+              <p className="summary-line"><span>Teléfono</span><strong>{message.phone || 'Sin teléfono'}</strong></p>
               <p className="summary-line"><span>Instagram</span><strong>{message.instagram || 'Sin Instagram'}</strong></p>
               <p className="summary-line"><span>Fecha</span><strong>{formatDate(message.createdAt)}</strong></p>
               <p className="summary-line"><span>Gestionado por</span><strong>{message.handledByName || 'Sin asignar'}</strong></p>

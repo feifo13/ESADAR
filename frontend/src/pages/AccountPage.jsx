@@ -69,7 +69,7 @@ const ALERT_TYPE_LABELS = {
 
 const TAB_ITEMS = [
   { key: "perfil", label: "Mis datos", path: "/cuenta/perfil" },
-  { key: "ordenes", label: "Mis ordenes", path: "/cuenta/ordenes" },
+  { key: "ordenes", label: "Mis órdenes", path: "/cuenta/ordenes" },
   { key: "ofertas", label: "Mis ofertas", path: "/cuenta/offers" },
   { key: "guardados", label: "Mis guardados", path: "/cuenta/guardados" },
   // { key: "alertas", label: "Mis alertas", path: "/cuenta/alertas" },
@@ -602,7 +602,7 @@ export default function AccountPage() {
         <h1>Mi cuenta</h1>
         <p className="muted-copy">
           Puedes seguir guardando prendas como invitado. Para editar datos,
-          alertas y ordenes, entra con tu cuenta.
+          alertas y órdenes, entra con tu cuenta.
         </p>
         <div className="inline-action-group">
           <Link to="/login" className="button button-primary">
@@ -653,7 +653,7 @@ export default function AccountPage() {
     <div className="container page-stack account-page-shell">
       <SeoHead
         title="Mi cuenta | ESADAR"
-        description="Gestiona tus datos, guardados, alertas y ordenes en ESADAR."
+        description="Gestiona tus datos, guardados, alertas y órdenes en ESADAR."
         noindex={!isAuthenticated}
       />
 
@@ -727,7 +727,7 @@ export default function AccountPage() {
                 />
               </label>
               <label className="field-group">
-                <span>Telefono / WhatsApp</span>
+                <span>Teléfono / WhatsApp</span>
                 <input
                   className="input"
                   name="phone"
@@ -763,7 +763,7 @@ export default function AccountPage() {
                 />
               </label>
               <label className="field-group field-group-span-2">
-                <span>Direccion de envio</span>
+                <span>Dirección de envío</span>
                 <input
                   className="input"
                   name="addressLine"
@@ -868,7 +868,7 @@ export default function AccountPage() {
               </div>
               <div className="page-stack-sm">
                 <div>
-                  <strong>Categorias</strong>
+                  <strong>Categorías</strong>
                   {renderPreferencesCheckboxes(
                     "preferredCategories",
                     categoryOptions.slice(0, 12),
@@ -963,7 +963,7 @@ export default function AccountPage() {
           ) : null}
           {!wishlistLoading && !wishlistItems.length ? (
             <div className="page-stack-sm">
-              <p className="muted-copy">Todavia no guardaste prendas.</p>
+              <p className="muted-copy">Todavía no guardaste prendas.</p>
               <Link to="/" className="button button-primary">
                 Ver catalogo
               </Link>
@@ -1198,11 +1198,11 @@ export default function AccountPage() {
 
           {!isAuthenticated ? (
             <p className="muted-copy">
-              Inicia sesion para ver tus alertas guardadas.
+              Inicia sesión para ver tus alertas guardadas.
             </p>
           ) : null}
           {isAuthenticated && !alerts.length ? (
-            <p className="muted-copy">Todavia no tienes alertas activas.</p>
+            <p className="muted-copy">Todavía no tienes alertas activas.</p>
           ) : null}
           {isAuthenticated && alerts.length ? (
             <>
@@ -1375,7 +1375,7 @@ export default function AccountPage() {
 
           {!isAuthenticated ? (
             <p className="muted-copy">
-              Inicia sesion para revisar tus ofertas.
+              Inicia sesión para revisar tus ofertas.
             </p>
           ) : null}
 
@@ -1391,7 +1391,7 @@ export default function AccountPage() {
           !profileLoading &&
           !profileError &&
           !sortedOffers.length ? (
-            <p className="muted-copy">Todavia no tienes ofertas registradas.</p>
+            <p className="muted-copy">Todavía no tienes ofertas registradas.</p>
           ) : null}
 
           {isAuthenticated &&
@@ -1622,17 +1622,17 @@ export default function AccountPage() {
           <div className="section-heading">
             <div>
               <p className="section-kicker">Compras</p>
-              <h2>Mis ordenes</h2>
+              <h2>Mis órdenes</h2>
             </div>
           </div>
 
           {!isAuthenticated ? (
             <p className="muted-copy">
-              Inicia sesion para revisar tus ordenes.
+              Inicia sesión para revisar tus órdenes.
             </p>
           ) : null}
           {isAuthenticated && !orders.length ? (
-            <p className="muted-copy">Todavia no tienes ordenes asociadas.</p>
+            <p className="muted-copy">Todavía no tienes órdenes asociadas.</p>
           ) : null}
 
           {isAuthenticated && orders.length ? (

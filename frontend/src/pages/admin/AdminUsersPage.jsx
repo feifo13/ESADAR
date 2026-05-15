@@ -264,7 +264,7 @@ export default function AdminUsersPage() {
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -359,7 +359,7 @@ export default function AdminUsersPage() {
                         <div className="cell-stack">
                           <span>{user.email || "Sin email"}</span>
                           <span className="muted-copy">
-                            {user.phone || "Sin telefono"}
+                            {user.phone || "Sin teléfono"}
                           </span>
                           {user.instagram ? (
                             <span className="muted-copy">{user.instagram}</span>

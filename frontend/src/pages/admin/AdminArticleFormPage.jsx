@@ -8,7 +8,9 @@ import BulkArticleImageChecklist, {
   IMAGE_ROLE_DEFINITIONS,
 } from "../../components/admin/BulkArticleImageChecklist.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
+import { useSiteSeo } from "../../contexts/SiteSeoContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import { getSiteUrl, sanitizePublicUrl } from "../../lib/seo.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
 import AppLoader from "../../components/AppLoader.jsx";
@@ -181,7 +183,7 @@ function buildMetaDescriptionPreview(form, labels) {
   if (normalizeLabel(form.description)) {
     parts.push(normalizeLabel(form.description));
   }
-  if (labels.categoryName) parts.push(`Categoria ${labels.categoryName}.`);
+  if (labels.categoryName) parts.push(`Categoría ${labels.categoryName}.`);
   if (labels.brandName) parts.push(`Marca ${labels.brandName}.`);
   if (form.sizeText || labels.sizeName)
     parts.push(`Talle ${form.sizeText || labels.sizeName}.`);
@@ -223,6 +225,7 @@ export default function AdminArticleFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
+  const { site } = useSiteSeo();
   const { notifyMobileStatus } = useMobileMenu();
   const articleFormRef = useRef(null);
   const articleStepContentRef = useRef(null);
@@ -329,10 +332,12 @@ export default function AdminArticleFormPage() {
   );
 
   const publicUrlPreview = useMemo(() => {
-    if (normalizeLabel(form.canonicalUrl)) return form.canonicalUrl;
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const manualCanonicalUrl = sanitizePublicUrl(normalizeLabel(form.canonicalUrl));
+    if (manualCanonicalUrl) return manualCanonicalUrl;
+    const baseUrl = getSiteUrl(site);
+    if (!baseUrl || !suggestedSlug) return "";
     return `${baseUrl}/articles/${suggestedSlug}`;
-  }, [form.canonicalUrl, suggestedSlug]);
+  }, [form.canonicalUrl, site, suggestedSlug]);
 
   const metaTitlePreview = useMemo(
     () => buildMetaTitlePreview(form, labels),
@@ -560,7 +565,9 @@ export default function AdminArticleFormPage() {
         seoDescription:
           normalizeLabel(form.seoDescription) || metaDescriptionPreview || null,
         canonicalUrl:
-          normalizeLabel(form.canonicalUrl) || publicUrlPreview || null,
+          sanitizePublicUrl(normalizeLabel(form.canonicalUrl)) ||
+          publicUrlPreview ||
+          null,
         googleProductCategory:
           normalizeLabel(form.googleProductCategory) || null,
         conditionLabel: normalizeLabel(form.conditionLabel) || null,
@@ -832,8 +839,8 @@ export default function AdminArticleFormPage() {
             <h1>{isEdit ? "Editar articulo" : "Nuevo articulo"}</h1>
 
             {/* <p className="muted-copy">
-              Alta individual guiada. Si prefieres cargar varios articulos
-              juntos, usa la opcion visible en Articulos {">"} Crear multiples
+              Alta individual guiada. Si prefieres cargar varios artículos
+              juntos, usa la opción visible en Artículos {">"} Crear múltiples
               articulos.
             </p> */}
           </div>
@@ -893,7 +900,7 @@ export default function AdminArticleFormPage() {
               </label>
 
               <label className="field-group field-group--quick-lookup">
-                <span>Categoria / rubro</span>
+                <span>Categoría / rubro</span>
                 <select
                   className="input"
                   value={form.categoryId}
@@ -1137,7 +1144,7 @@ export default function AdminArticleFormPage() {
               <p className="section-kicker">Paso 2</p>
               <h2>Venta y stock</h2>
               <p className="muted-copy">
-                Disponible puede ajustarse manualmente, pero Reservado y Vendido se actualizan automaticamente segun ordenes.
+                Disponible puede ajustarse manualmente, pero Reservado y Vendido se actualizan automáticamente según órdenes.
               </p>
             </div>
 
@@ -1311,7 +1318,7 @@ export default function AdminArticleFormPage() {
             >
               <summary>Avanzado</summary>
               <p className="field-helper">
-                Campos tecnicos generados automaticamente o usados para costos y
+                Campos técnicos generados automáticamente o usados para costos y
                 estados internos.
               </p>
               <div className="form-grid-two">
@@ -1336,7 +1343,7 @@ export default function AdminArticleFormPage() {
                     readOnly
                   />
                   <span className="field-helper">
-                    Reservado y vendido se actualizan automaticamente por ordenes.
+                    Reservado y vendido se actualizan automáticamente por órdenes.
                   </span>
                 </label>
                 <label className="field-group">
@@ -1349,7 +1356,7 @@ export default function AdminArticleFormPage() {
                     readOnly
                   />
                   <span className="field-helper">
-                    Reservado y vendido se actualizan automaticamente por ordenes.
+                    Reservado y vendido se actualizan automáticamente por órdenes.
                   </span>
                 </label>
                 <label className="field-group">
@@ -1531,7 +1538,7 @@ export default function AdminArticleFormPage() {
             ) : (
               <div className="centered-card nested-card image-manager-empty">
                 <p className="muted-copy">
-                  Todavia no hay imagenes cargadas para este articulo.
+                  Todavía no hay imágenes cargadas para este artículo.
                 </p>
               </div>
             )}
@@ -1539,7 +1546,7 @@ export default function AdminArticleFormPage() {
             <div className="page-stack-sm">
               <h3>Imagenes nuevas</h3>
               {/* <p className="field-helper">
-                Carga las mismas tarjetas guiadas que en crear multiples
+                Carga las mismas tarjetas guiadas que en crear múltiples
                 articulos: frente, espalda, etiqueta, textura y detalles. Las
                 imagenes se suben al guardar el articulo.
               </p> */}
@@ -1596,7 +1603,7 @@ export default function AdminArticleFormPage() {
             >
               <summary>Editar manualmente</summary>
               <p className="field-helper">
-                Campos tecnicos generados automaticamente. Solo cambialos si ya
+                Campos técnicos generados automáticamente. Solo cambialos si ya
                 sabes que necesitas otro valor.
               </p>
               <div className="form-grid-two">

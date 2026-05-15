@@ -26,9 +26,11 @@ import { useNotification } from "../contexts/NotificationContext.jsx";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
+  sanitizePublicUrl,
   toAbsoluteUrl,
 } from "../lib/seo.js";
 import { getPublicSessionToken } from "../lib/publicSession.js";
+import { trackPublicPageVisit } from "../lib/pageVisits.js";
 import {
   focusValidationTarget,
   getEmailValidationMessage,
@@ -118,6 +120,11 @@ export default function ArticlePage() {
         if (ignore) return;
         setArticle(response.article);
         setAcceptedOffer(null);
+        trackPublicPageVisit({
+          pageType: "ARTICLE_DETAIL",
+          route: `/articles/${response.article.slug || response.article.id}`,
+          articleId: response.article.id,
+        });
 
         const relatedResponse = await apiFetch(
           `/api/public/articles/${slugOrId}/related?limit=4`,
@@ -234,12 +241,12 @@ export default function ArticlePage() {
   const savedInWishlist = isSaved(article.id);
   const wishlistPending = pendingIds.includes(Number(article.id));
   const canonicalUrl =
-    article.canonicalUrl ||
+    sanitizePublicUrl(article.canonicalUrl) ||
     toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
   const breadcrumbItems = [
     { name: "Inicio", url: toAbsoluteUrl("/", site) },
     {
-      name: article.categoryName || article.category?.name || "Categoria",
+      name: article.categoryName || article.category?.name || "Categoría",
       url: toAbsoluteUrl("/", site),
     },
     { name: article.title, url: canonicalUrl },
@@ -424,6 +431,11 @@ export default function ArticlePage() {
   }
 
   async function handleShare() {
+    if (!canonicalUrl) {
+      notifyError("No pudimos generar un enlace público para compartir.");
+      return;
+    }
+
     const shareData = {
       title: article.title,
       text: article.seoDescription || article.description || article.title,
@@ -436,6 +448,8 @@ export default function ArticlePage() {
       } else if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(canonicalUrl);
         notifyInfo("Copiamos el enlace para compartir.");
+      } else {
+        notifyInfo("Selecciona y copia el enlace desde la barra del navegador.");
       }
 
       await apiFetch("/api/public/article-events", {
@@ -663,7 +677,7 @@ export default function ArticlePage() {
           <Link to="/">Inicio</Link>
           <span>/</span>
           <span>
-            {article.categoryName || article.category?.name || "Categoria"}
+            {article.categoryName || article.category?.name || "Categoría"}
           </span>
           <span>/</span>
           <strong>{article.title}</strong>
@@ -862,7 +876,7 @@ export default function ArticlePage() {
             {/* <div className="section-card page-stack-sm article-side-note article-info-accordion">
               <details>
                 <summary>
-                  <span className="section-kicker">Como comprar</span>
+                  <span className="section-kicker">Cómo comprar</span>
                   <span aria-hidden="true">+</span>
                 </summary>
                 <ol className="article-steps-list">

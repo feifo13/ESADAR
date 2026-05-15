@@ -113,7 +113,7 @@ export default function BulkArticleFormBlock({
             <h3>Caracteristicas</h3>
             <div className="admin-filter-grid">
               <label className="field-group field-group--quick-lookup">
-                <span>Categoria</span>
+                <span>Categoría</span>
                 <input
                   className="input"
                   list={`bulk-category-${index}`}
@@ -304,7 +304,7 @@ export default function BulkArticleFormBlock({
           <details className="section-card bulk-advanced-panel">
             <summary>Avanzado</summary>
             <p className="field-helper">
-              Campos tecnicos generados automaticamente.
+              Campos técnicos generados automáticamente.
             </p>
             <div className="admin-filter-grid">
               <label className="field-group">

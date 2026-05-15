@@ -197,7 +197,7 @@ export default function AdminOffersPage() {
             </label>
 
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 value={draftFilters.categoryId}
@@ -268,7 +268,7 @@ export default function AdminOffersPage() {
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -393,7 +393,7 @@ export default function AdminOffersPage() {
                             {offer.contact.email || "Sin email"}
                           </span>
                           <span className="muted-copy">
-                            {offer.contact.phone || "Sin telefono"}
+                            {offer.contact.phone || "Sin teléfono"}
                           </span>
                         </div>
                       </td>

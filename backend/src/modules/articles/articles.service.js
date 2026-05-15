@@ -6,6 +6,7 @@ import { badRequest, notFound } from '../../utils/app-error.js';
 import {
   buildArticleUploadPublicPath,
   normalizePublicAssetPath,
+  sanitizePublicUrl,
 } from '../../utils/assets.js';
 import { appendDateRangeFilters, buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { buildSqlLimitClause, buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset, resolveAllowedSqlIdentifier } from '../../utils/sql-safety.js';
@@ -362,7 +363,7 @@ async function ensureDefaultCategoryId(connection, actorUserId = null) {
         is_active,
         created_by,
         updated_by
-      ) VALUES ('Sin categoría', 'sin-categoria', 'Categoria generada automaticamente para articulos sin clasificar.', 1, ?, ?)
+      ) VALUES ('Sin categoría', 'sin-categoria', 'Categoría generada automáticamente para artículos sin clasificar.', 1, ?, ?)
     `,
     [actorUserId || null, actorUserId || null],
   );
@@ -550,7 +551,7 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     gender: input.gender || null,
     ageGroup: input.ageGroup || null,
     imageAltOverride: input.imageAltOverride || null,
-    canonicalUrl: input.canonicalUrl || null,
+    canonicalUrl: sanitizePublicUrl(input.canonicalUrl) || null,
     categoryId: await resolveArticleCategoryId(input, connection, auditContext),
     brandId: await resolveArticleBrandId(input, connection, auditContext),
     sizeId: await resolveArticleSizeId(input, connection, auditContext),
@@ -593,7 +594,7 @@ function normalizeArticleRow(row) {
     title: row.title,
     seoTitle: row.seoTitle || null,
     seoDescription: row.seoDescription || null,
-    canonicalUrl: row.canonicalUrl || null,
+    canonicalUrl: sanitizePublicUrl(row.canonicalUrl) || null,
     googleProductCategory: row.googleProductCategory || null,
     conditionLabel: row.conditionLabel || null,
     color: row.color || null,
@@ -1862,7 +1863,7 @@ export async function deleteArticle(id, auditContext) {
     const before = await getAdminArticleByIdWithConnection(id, connection);
 
     const referenceQueries = [
-      ['ordenes', 'SELECT COUNT(*) AS total FROM order_items WHERE article_id = ?', true],
+      ['órdenes', 'SELECT COUNT(*) AS total FROM order_items WHERE article_id = ?', true],
       ['ofertas', 'SELECT COUNT(*) AS total FROM offers WHERE article_id = ?', true],
       ['movimientos de stock', 'SELECT COUNT(*) AS total FROM article_stock_movements WHERE article_id = ?', true],
       ['carritos', 'SELECT COUNT(*) AS total FROM cart_items WHERE article_id = ?', false],
@@ -1876,7 +1877,7 @@ export async function deleteArticle(id, auditContext) {
     }
 
     if (blockers.length) {
-      throw badRequest(`No se puede eliminar porque tiene registros historicos vinculados (${blockers.join(', ')}). Se recomienda desactivarlo.`);
+      throw badRequest(`No se puede eliminar porque tiene registros históricos vinculados (${blockers.join(', ')}). Se recomienda desactivarlo.`);
     }
 
     await connection.execute('DELETE FROM cart_items WHERE article_id = ?', [id]);
@@ -1887,7 +1888,7 @@ export async function deleteArticle(id, auditContext) {
       if (!deleteResult.affectedRows) throw notFound('Article not found');
     } catch (error) {
       if (error?.code === 'ER_ROW_IS_REFERENCED_2' || error?.errno === 1451) {
-        throw badRequest('No se puede eliminar porque tiene movimientos, ordenes u ofertas asociadas. Se recomienda desactivarlo.');
+        throw badRequest('No se puede eliminar porque tiene movimientos, órdenes u ofertas asociadas. Se recomienda desactivarlo.');
       }
       throw error;
     }

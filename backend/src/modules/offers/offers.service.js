@@ -24,7 +24,7 @@ const OFFER_SORTS = {
 
 export async function createOffer(input, actor, auditContext) {
   if (!actor?.userId) {
-    throw unauthorized('Debes iniciar sesion para enviar una oferta.');
+    throw unauthorized('Debes iniciar sesión para enviar una oferta.');
   }
 
   return withTransaction(async (connection) => {
@@ -389,7 +389,7 @@ export async function changeOfferStatus(id, input, auditContext) {
 
     const [updateResult] = await connection.execute(sql, [input.status, auditContext.actorUserId, id]);
     if (!updateResult.affectedRows) {
-      throw badRequest('La oferta ya fue respondida o no esta disponible.');
+      throw badRequest('La oferta ya fue respondida o no está disponible.');
     }
 
     await connection.execute(
@@ -623,7 +623,7 @@ async function assertArticleCanStillAcceptOffer(articleId, connection) {
   }
 
   if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
-    throw badRequest('Esta prenda ya no esta disponible para aceptar ofertas.');
+    throw badRequest('Esta prenda ya no está disponible para aceptar ofertas.');
   }
 }
 
@@ -656,7 +656,7 @@ async function getOfferableArticle(articleId, connection) {
   }
 
   if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
-    throw badRequest('Esta prenda no esta disponible para ofertas en este momento.');
+    throw badRequest('Esta prenda no está disponible para ofertas en este momento.');
   }
 
   return article;
@@ -875,6 +875,90 @@ export async function restoreUsedOffersForOrder(connection, { orderId, auditCont
   };
 }
 
+export async function markUsedOffersConsumedByCancelledOrder(
+  connection,
+  { orderId, auditContext = {}, reason = 'Orden cancelada; intento de oferta consumido' } = {},
+) {
+  if (!orderId) return { consumedCount: 0, offerIds: [] };
+
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        o.id,
+        o.status,
+        o.consumed_at AS consumedAt,
+        o.consumed_order_id AS consumedOrderId
+      FROM offers o
+      WHERE o.consumed_order_id = ?
+        AND o.status = 'USED'
+        AND o.consumed_at IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM order_items oi
+          WHERE oi.order_id = ?
+            AND oi.accepted_offer_id = o.id
+        )
+      FOR UPDATE
+    `,
+    [orderId, orderId],
+  );
+
+  const consumedOfferIds = [];
+
+  for (const row of rows) {
+    await connection.execute(
+      `
+        INSERT INTO offer_status_history (
+          offer_id,
+          from_status,
+          to_status,
+          reason,
+          changed_by,
+          source
+        ) VALUES (?, 'USED', 'USED', ?, ?, ?)
+      `,
+      [
+        row.id,
+        reason,
+        auditContext.actorUserId || null,
+        auditContext.source || 'SYSTEM',
+      ],
+    );
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'OFFER_ATTEMPT_CONSUMED_AFTER_ORDER_CANCEL',
+        entityType: 'offers',
+        entityId: row.id,
+        beforeJson: {
+          status: row.status,
+          consumedAt: row.consumedAt,
+          consumedOrderId: row.consumedOrderId,
+        },
+        afterJson: {
+          status: row.status,
+          consumedAt: row.consumedAt,
+          consumedOrderId: row.consumedOrderId,
+        },
+        metadataJson: { orderId, reason },
+        source: auditContext.source || 'SYSTEM',
+        ipAddress: auditContext.ipAddress || null,
+        userAgent: auditContext.userAgent || null,
+      },
+      connection,
+    );
+
+    consumedOfferIds.push(Number(row.id));
+  }
+
+  return {
+    consumedCount: consumedOfferIds.length,
+    offerIds: consumedOfferIds,
+  };
+}
+
 export function getOfferPagination(query, defaults = {}) {
   return getPagination(query, defaults);
 }
@@ -884,7 +968,7 @@ function assertOfferedAmountIsValid(offeredAmount, article) {
   const publishedPrice = Number(article?.salePrice || article?.discountedPrice || 0);
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    throw badRequest('Ingresa un monto de oferta valido.');
+    throw badRequest('Ingresa un monto de oferta válido.');
   }
 
   if (publishedPrice > 0 && amount > publishedPrice) {

@@ -1,5 +1,6 @@
 import { ZodError } from 'zod';
 import { AppError } from '../utils/app-error.js';
+import { env } from '../config/env.js';
 
 export function notFoundHandler(req, res) {
   return res.status(404).json({
@@ -28,10 +29,18 @@ export function errorHandler(error, req, res, _next) {
   }
 
   if (error instanceof AppError) {
+    if (error.statusCode >= 500) {
+      console.error(`[${req.requestId}]`, error);
+    }
+
     return res.status(error.statusCode).json({
       ok: false,
-      message: error.message,
-      details: error.details,
+      message: env.isProduction && error.statusCode >= 500
+        ? 'Internal server error'
+        : error.message,
+      details: env.isProduction && error.statusCode >= 500
+        ? null
+        : error.details,
       requestId: req.requestId,
     });
   }

@@ -243,7 +243,7 @@ export default function AdminContactMessagesPage() {
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -342,7 +342,7 @@ export default function AdminContactMessagesPage() {
                       <div className="cell-stack">
                         <span>{item.email || "Sin email"}</span>
                         <span className="muted-copy">
-                          {item.phone || "Sin telefono"}
+                          {item.phone || "Sin teléfono"}
                         </span>
                         <span className="muted-copy">
                           {item.instagram || "Sin Instagram"}

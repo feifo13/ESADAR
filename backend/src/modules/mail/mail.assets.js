@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { env } from "../../config/env.js";
-import { normalizePublicAssetPath } from "../../utils/assets.js";
+import { normalizePublicAssetPath, sanitizePublicUrl } from "../../utils/assets.js";
 import { resolveMailSiteUrl } from "./mail.url-context.js";
 
 function getAssetBaseUrl(options = {}) {
@@ -11,7 +11,7 @@ function getAssetBaseUrl(options = {}) {
 export function absoluteEmailUrl(pathname, options = {}) {
   if (!pathname) return "";
   const raw = String(pathname || "").trim();
-  if (/^https?:/i.test(raw)) return raw;
+  if (/^https?:/i.test(raw)) return sanitizePublicUrl(raw);
   const normalized = normalizePublicAssetPath(raw);
   if (!normalized) return "";
   return `${getAssetBaseUrl(options)}${normalized}`;
@@ -22,13 +22,15 @@ export function getEmailLogoUrl(options = {}) {
     process.env.EMAIL_LOGO_URL || process.env.PUBLIC_LOGO_URL;
   if (configuredLogo) return absoluteEmailUrl(configuredLogo, options);
 
-  return `${getAssetBaseUrl(options) || env.publicSiteUrl}/assets/esadar-logo.png`;
+  const baseUrl = getAssetBaseUrl(options) || sanitizePublicUrl(env.publicSiteUrl);
+  return baseUrl ? `${baseUrl}/assets/esadar-logo.png` : "/assets/esadar-logo.png";
 }
 
 export function getArticleEmailImageUrl(articleOrImageOrPath, options = {}) {
-  if (!articleOrImageOrPath) return "";
+  const fallbackUrl = absoluteEmailUrl("/assets/article-image-fallback.png", options);
+  if (!articleOrImageOrPath) return fallbackUrl;
   if (typeof articleOrImageOrPath === "string") {
-    return absoluteEmailUrl(articleOrImageOrPath, options);
+    return absoluteEmailUrl(articleOrImageOrPath, options) || fallbackUrl;
   }
 
   const candidate =
@@ -45,7 +47,7 @@ export function getArticleEmailImageUrl(articleOrImageOrPath, options = {}) {
     articleOrImageOrPath.previewImage ||
     "";
 
-  return candidate ? absoluteEmailUrl(candidate, options) : "";
+  return candidate ? absoluteEmailUrl(candidate, options) || fallbackUrl : fallbackUrl;
 }
 
 export function getEmailBrandGradientUrl(options = {}) {
@@ -55,7 +57,8 @@ export function getEmailBrandGradientUrl(options = {}) {
 
   if (configuredGradient) return absoluteEmailUrl(configuredGradient, options);
 
-  return `${getAssetBaseUrl(options) || env.publicSiteUrl}/assets/email-brand-gradient.png`;
+  const baseUrl = getAssetBaseUrl(options) || sanitizePublicUrl(env.publicSiteUrl);
+  return baseUrl ? `${baseUrl}/assets/email-brand-gradient.png` : "/assets/email-brand-gradient.png";
 }
 
 

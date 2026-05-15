@@ -222,7 +222,7 @@ export default function AdminWishlistsPage() {
               />
             </label>
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 value={draftFilters.categoryId}
@@ -311,7 +311,7 @@ export default function AdminWishlistsPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}

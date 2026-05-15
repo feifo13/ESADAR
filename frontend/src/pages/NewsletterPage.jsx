@@ -178,7 +178,7 @@ export default function NewsletterPage() {
               />
             </label>
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 name="preferredCategory"

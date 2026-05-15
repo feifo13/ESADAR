@@ -29,7 +29,7 @@ import {
   createPotentialCustomerFromInput,
   findCustomerByUserId,
 } from "../customers/customer-helpers.js";
-import { restoreUsedOffersForOrder } from "../offers/offers.service.js";
+import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
 import { getCollectingSettings } from "../collecting/collecting.service.js";
 
 const ORDER_SORTS = {
@@ -83,7 +83,7 @@ export async function createOrder(input, actor, auditContext) {
     await assertPaymentMethodIsAvailable(input.paymentMethod, connection);
     if (!input.shippingMethodId) {
       throw badRequest(
-        "Selecciona un metodo de envio para confirmar la orden.",
+        "Selecciona un método de envío para confirmar la orden.",
       );
     }
     const shipping = input.shippingMethodId
@@ -150,7 +150,7 @@ export async function createOrder(input, actor, auditContext) {
       }
       if (article.status !== "ACTIVE") {
         throw badRequest(
-          `La prenda ${article.id} no esta disponible para comprar.`,
+          `La prenda ${article.id} no está disponible para comprar.`,
         );
       }
       if (Number(article.quantityAvailable) < quantity) {
@@ -376,7 +376,7 @@ export async function createOrder(input, actor, auditContext) {
 
         if (!offerUpdateResult.affectedRows) {
           throw badRequest(
-            "La oferta aceptada ya fue usada o no esta disponible.",
+            "La oferta aceptada ya fue usada o no está disponible.",
           );
         }
 
@@ -573,6 +573,11 @@ export async function listOrders({ filters, pagination }) {
           WHERE oi.order_id = o.id
         ) AS itemCount,
         (
+          SELECT COALESCE(SUM(oi.quantity), 0)
+          FROM order_items oi
+          WHERE oi.order_id = o.id
+        ) AS totalQuantity,
+        (
           SELECT oi.image_snapshot
           FROM order_items oi
           WHERE oi.order_id = o.id
@@ -633,7 +638,7 @@ export async function approveOrder(id, auditContext) {
     const before = await getOrderById(id, connection);
     if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
       throw badRequest(
-        "Solo se pueden aprobar ordenes reservadas o pendientes.",
+        "Solo se pueden aprobar órdenes reservadas o pendientes.",
       );
     }
 
@@ -727,7 +732,7 @@ export async function cancelOrder(id, reason, auditContext) {
     const before = await getOrderById(id, connection);
     if (!["RESERVED", "PENDING"].includes(before.orderStatus)) {
       throw badRequest(
-        "Solo se pueden cancelar ordenes reservadas o pendientes.",
+        "Solo se pueden cancelar órdenes reservadas o pendientes.",
       );
     }
 
@@ -767,10 +772,10 @@ export async function cancelOrder(id, reason, auditContext) {
       throw badRequest("La orden ya fue actualizada por otro proceso.");
     }
 
-    await restoreUsedOffersForOrder(connection, {
+    const consumedOffers = await markUsedOffersConsumedByCancelledOrder(connection, {
       orderId: id,
       auditContext,
-      reason: reason || "Orden cancelada; oferta disponible nuevamente",
+      reason: reason || "Orden cancelada; intento de oferta consumido",
     });
 
     await connection.execute(
@@ -804,7 +809,11 @@ export async function cancelOrder(id, reason, auditContext) {
         entityId: id,
         beforeJson: before,
         afterJson: after,
-        metadataJson: { reason },
+        metadataJson: {
+          reason,
+          consumedOfferAttemptCount: consumedOffers.consumedCount,
+          consumedOfferIds: consumedOffers.offerIds,
+        },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,
@@ -821,7 +830,7 @@ export async function shipOrder(id, auditContext) {
     const before = await getOrderById(id, connection);
     if (before.orderStatus !== "APPROVED") {
       throw badRequest(
-        "Solo se pueden marcar como enviadas las ordenes aprobadas.",
+        "Solo se pueden marcar como enviadas las órdenes aprobadas.",
       );
     }
 
@@ -890,7 +899,7 @@ export async function createOrderPayment(id, input, auditContext) {
     const before = await getOrderById(id, connection);
 
     if (!["RESERVED", "PENDING", "APPROVED"].includes(before.orderStatus)) {
-      throw badRequest("Solo se pueden registrar pagos en ordenes vigentes.");
+      throw badRequest("Solo se pueden registrar pagos en órdenes vigentes.");
     }
 
     if (before.payments.length) {
@@ -1016,7 +1025,7 @@ export async function applyMercadoPagoPaymentToOrder(
     if (before.paymentMethod !== "MERCADO_PAGO") {
       return {
         status: "ignored",
-        message: "La orden asociada no usa Mercado Pago como metodo de pago.",
+        message: "La orden asociada no usa Mercado Pago como método de pago.",
         order: before,
         orderId: before.id,
         shouldSendApprovedEmail: false,
@@ -1087,7 +1096,7 @@ export async function applyMercadoPagoPaymentToOrder(
             quantity,
             orderId: before.id,
             auditContext,
-            reason: "Pago aprobado automaticamente por Mercado Pago",
+            reason: "Pago aprobado automáticamente por Mercado Pago",
           });
         }
 
@@ -1118,7 +1127,7 @@ export async function applyMercadoPagoPaymentToOrder(
                 reason,
                 changed_by,
                 source
-              ) VALUES (?, ?, 'APPROVED', 'Pago aprobado automaticamente por Mercado Pago', NULL, ?)
+              ) VALUES (?, ?, 'APPROVED', 'Pago aprobado automáticamente por Mercado Pago', NULL, ?)
             `,
             [before.id, before.orderStatus, auditContext.source || "API"],
           );
@@ -1144,7 +1153,7 @@ export async function applyMercadoPagoPaymentToOrder(
           );
 
           shouldSendApprovedEmail = true;
-          message = "Pago aprobado y orden aprobada automaticamente.";
+          message = "Pago aprobado y orden aprobada automáticamente.";
         }
       } else {
         await connection.execute(
@@ -1342,7 +1351,7 @@ async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
   }
 
   throw badRequest(
-    "El medio de pago seleccionado no esta disponible. Actualiza el checkout e intentalo nuevamente.",
+    "El medio de pago seleccionado no está disponible. Actualiza el checkout e inténtalo nuevamente.",
   );
 }
 
@@ -1839,6 +1848,7 @@ function normalizeOrderListRow(row) {
     cancelledAt: row.cancelledAt,
     shippedAt: row.shippedAt,
     itemCount: Number(row.itemCount),
+    totalQuantity: Number(row.totalQuantity || 0),
     previewImage: row.previewImage,
     previewTitle: row.previewTitle,
     offerCount: Number(row.offerCount || 0),
@@ -1915,7 +1925,7 @@ async function getAcceptedOfferForOrder(
   );
 
   if (!rows.length) {
-    throw badRequest("La oferta aceptada ya fue usada o no esta disponible.");
+    throw badRequest("La oferta aceptada ya fue usada o no está disponible.");
   }
 
   return {

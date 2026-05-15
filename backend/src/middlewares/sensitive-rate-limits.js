@@ -24,35 +24,35 @@ export const registerRateLimit = createRateLimiter({
   name: 'auth-register',
   windowMs: hour,
   max: 5,
-  message: 'Demasiados registros desde este origen. Intenta nuevamente mas tarde.',
+  message: 'Demasiados registros desde este origen. Intenta nuevamente más tarde.',
 });
 
 export const passwordResetRateLimit = createRateLimiter({
   name: 'auth-password-reset',
   windowMs: hour,
   max: 5,
-  message: 'Demasiadas solicitudes de recuperacion. Intenta nuevamente mas tarde.',
+  message: 'Demasiadas solicitudes de recuperación. Intenta nuevamente más tarde.',
 });
 
 export const contactRateLimit = createRateLimiter({
   name: 'public-contact',
   windowMs: 15 * minute,
   max: 8,
-  message: 'Demasiados mensajes enviados. Intenta nuevamente mas tarde.',
+  message: 'Demasiados mensajes enviados. Intenta nuevamente más tarde.',
 });
 
 export const leadRateLimit = createRateLimiter({
   name: 'public-leads',
   windowMs: 15 * minute,
   max: 15,
-  message: 'Demasiadas solicitudes enviadas. Intenta nuevamente mas tarde.',
+  message: 'Demasiadas solicitudes enviadas. Intenta nuevamente más tarde.',
 });
 
 export const offerRateLimit = createRateLimiter({
   name: 'public-offers',
   windowMs: 15 * minute,
   max: 20,
-  message: 'Demasiadas solicitudes de ofertas. Intenta nuevamente mas tarde.',
+  message: 'Demasiadas solicitudes de ofertas. Intenta nuevamente más tarde.',
   keyGenerator: userOrIpKey,
 });
 
@@ -60,7 +60,7 @@ export const checkoutRateLimit = createRateLimiter({
   name: 'public-checkout',
   windowMs: 15 * minute,
   max: 10,
-  message: 'Demasiados intentos de checkout. Intenta nuevamente mas tarde.',
+  message: 'Demasiados intentos de checkout. Intenta nuevamente más tarde.',
   keyGenerator: userOrIpKey,
 });
 
@@ -68,5 +68,5 @@ export const webhookRateLimit = createRateLimiter({
   name: 'webhooks',
   windowMs: minute,
   max: 120,
-  message: 'Demasiadas notificaciones recibidas. Intenta nuevamente mas tarde.',
+  message: 'Demasiadas notificaciones recibidas. Intenta nuevamente más tarde.',
 });

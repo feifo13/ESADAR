@@ -1,17 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { cachedApiFetch } from "../lib/api.js";
+import { sanitizePublicUrl } from "../lib/seo.js";
 
 const SiteSeoContext = createContext(null);
 const ENV_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 
 function getDefaultSiteUrl() {
-  if (ENV_SITE_URL) return ENV_SITE_URL;
+  const envSiteUrl = sanitizePublicUrl(ENV_SITE_URL);
+  if (envSiteUrl) return envSiteUrl;
 
   if (typeof window === "undefined") {
     return "";
   }
 
-  return window.location.origin;
+  return sanitizePublicUrl(window.location.origin);
 }
 
 const fallbackValue = {

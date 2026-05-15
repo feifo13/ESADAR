@@ -306,7 +306,7 @@ export default function AdminStatisticsPage() {
               />
             </label>
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 value={draftFilters.categoryId}
@@ -491,7 +491,7 @@ export default function AdminStatisticsPage() {
             <strong>{summary.topArticle?.title || "Sin datos"}</strong>
           </article>
           <article className="stats-kpi-card">
-            <span>Categoria mas vendida</span>
+            <span>Categoría más vendida</span>
             <strong>{summary.topCategory?.categoryName || "Sin datos"}</strong>
           </article>
           <article className="stats-kpi-card">
@@ -535,7 +535,7 @@ export default function AdminStatisticsPage() {
               formatter={(value, item) =>
                 `${value} uds · ${formatCurrency(item.revenue)}`
               }
-              emptyLabel="Todavia no hay ventas suficientes para calcular esta estadistica."
+              emptyLabel="Todavía no hay ventas suficientes para calcular esta estadística."
             />
           </section>
 
@@ -551,16 +551,16 @@ export default function AdminStatisticsPage() {
               valueKey="totalSpent"
               labelKey="customerName"
               formatter={(value, item) =>
-                `${formatCurrency(value)} · ${item.ordersCount} ordenes`
+                `${formatCurrency(value)} · ${item.ordersCount} órdenes`
               }
-              emptyLabel="Todavia no hay ventas suficientes para calcular esta estadistica."
+              emptyLabel="Todavía no hay ventas suficientes para calcular esta estadística."
             />
           </section>
 
           <section className="section-card page-stack">
             <div className="section-heading">
               <div>
-                <p className="section-kicker">Categorias</p>
+                <p className="section-kicker">Categorías</p>
                 <h2>Tipos de prendas mas vendidas</h2>
               </div>
             </div>

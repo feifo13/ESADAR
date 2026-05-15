@@ -451,7 +451,7 @@ export default function CheckoutPage() {
       if (!shippingMethodOptions.length) {
         showCheckoutMessage(
           "error",
-          "No hay metodos de envio disponibles en este momento. Contacta a ESADAR para coordinar la entrega.",
+          "No hay métodos de envío disponibles en este momento. Contacta a ESADAR para coordinar la entrega.",
         );
         return false;
       }
@@ -986,7 +986,7 @@ export default function CheckoutPage() {
         {lookupError ? <p className="muted-copy">{lookupError}</p> : null}
         {lookupsLoaded && !shippingMethodOptions.length ? (
           <p className="error-copy">
-            No hay metodos de envio disponibles en este momento.
+            No hay métodos de envío disponibles en este momento.
           </p>
         ) : null}
         <div className="stack-gap-sm">

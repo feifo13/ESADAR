@@ -371,7 +371,7 @@ export default function Header({ hideBrand = false }) {
 
   const accountMenuChildren = isAuthenticated
     ? [
-        { key: "account-orders", label: "Mis ordenes", to: "/cuenta/ordenes" },
+        { key: "account-orders", label: "Mis órdenes", to: "/cuenta/ordenes" },
         { key: "account-offers", label: "Ofertas", to: "/cuenta/offers" },
         { key: "account-saved", label: "Guardados", to: "/cuenta/guardados" },
         { key: "account-profile", label: "Perfil", to: "/cuenta/perfil" },

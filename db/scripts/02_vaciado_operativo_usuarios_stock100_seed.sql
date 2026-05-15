@@ -37,6 +37,7 @@ DELETE FROM carts;
 DELETE FROM wishlist_items;
 DELETE FROM wishlists;
 DELETE FROM article_events;
+DELETE FROM public_page_visits;
 DELETE FROM article_interest_alerts;
 DELETE FROM lead_preferences;
 DELETE FROM contact_messages;
@@ -72,6 +73,7 @@ ALTER TABLE carts AUTO_INCREMENT = 1;
 ALTER TABLE wishlist_items AUTO_INCREMENT = 1;
 ALTER TABLE wishlists AUTO_INCREMENT = 1;
 ALTER TABLE article_events AUTO_INCREMENT = 1;
+ALTER TABLE public_page_visits AUTO_INCREMENT = 1;
 ALTER TABLE article_interest_alerts AUTO_INCREMENT = 1;
 ALTER TABLE lead_preferences AUTO_INCREMENT = 1;
 ALTER TABLE contact_messages AUTO_INCREMENT = 1;
@@ -235,7 +237,7 @@ SELECT 'Cadeteria Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Mont
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadeteria Montevideo');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
-SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas habiles posteriores a la aprobacion.', 1, @admin_user_id, @admin_user_id
+SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'DAC interior');
 
 INSERT INTO company_collecting_settings (
@@ -265,10 +267,11 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
   ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1),
-  ('/guia-de-compra', 'Guia de compra | ESADAR', 'Como comprar en ESADAR, medios de pago, envios y aprobacion de ordenes.', NULL, NULL, 1),
-  ('/terminos-y-condiciones', 'Terminos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)
+  ('/guia-de-compra', 'Guía de compra | ESADAR', 'Cómo comprar en ESADAR, medios de pago, envíos y aprobación de órdenes.', NULL, NULL, 1),
+  ('/terminos-y-condiciones', 'Términos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
   description = VALUES(description),

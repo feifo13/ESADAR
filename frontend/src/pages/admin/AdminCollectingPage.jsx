@@ -111,7 +111,7 @@ export default function AdminCollectingPage() {
             <p className="section-kicker">Administracion</p>
             <h1>Cobros</h1>
             <p className="muted-copy">
-              Estos datos se usan en el correo de confirmacion de orden segun el metodo de pago elegido.
+              Estos datos se usan en el correo de confirmación de orden según el método de pago elegido.
             </p>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function AdminCollectingPage() {
                   <input className="input" placeholder="Caja de ahorro / Cuenta corriente" value={form.bankAccountType} onChange={(event) => updateField("bankAccountType", event.target.value)} />
                 </label>
                 <label className="field-group">
-                  <span>Numero de cuenta</span>
+                  <span>Número de cuenta</span>
                   <input className="input" value={form.bankAccountNumber} onChange={(event) => updateField("bankAccountNumber", event.target.value)} />
                 </label>
                 <label className="field-group">
@@ -181,7 +181,7 @@ export default function AdminCollectingPage() {
               <div className="section-heading section-heading-wrap">
                 <div>
                   <p className="section-kicker">Mercado Pago</p>
-                  <h2>Datos de integracion y pago</h2>
+                  <h2>Datos de integración y pago</h2>
                   <p className="muted-copy">
                     Para las credenciales de prueba, selecciona ambiente Prueba y pega la public key, access token completo y user ID del panel de Mercado Pago.
                     El access token y la firma secreta del webhook quedan guardados en el backend y no se vuelven a mostrar.
@@ -202,7 +202,7 @@ export default function AdminCollectingPage() {
                   <span>Ambiente</span>
                   <select className="input" value={form.mercadoPagoEnvironment} onChange={(event) => updateField("mercadoPagoEnvironment", event.target.value)}>
                     <option value="test">Prueba</option>
-                    <option value="production">Produccion</option>
+                    <option value="production">Producción</option>
                   </select>
                 </label>
                 <label className="field-group">
@@ -225,10 +225,10 @@ export default function AdminCollectingPage() {
                 </label>
                 <label className="field-group">
                   <span>Link de pago fallback</span>
-                  <input className="input" placeholder="Opcional: se usa si falla la preferencia dinamica" value={form.mercadoPagoCheckoutUrl} onChange={(event) => updateField("mercadoPagoCheckoutUrl", event.target.value)} />
+                  <input className="input" placeholder="Opcional: se usa si falla la preferencia dinámica" value={form.mercadoPagoCheckoutUrl} onChange={(event) => updateField("mercadoPagoCheckoutUrl", event.target.value)} />
                 </label>
                 <label className="field-group field-group-span-2">
-                  <span>URL de notificacion / webhook</span>
+                  <span>URL de notificación / webhook</span>
                   <input className="input" placeholder="https://tu-dominio.com/api/webhooks/mercado-pago?source_news=webhooks" value={form.mercadoPagoNotificationUrl} onChange={(event) => updateField("mercadoPagoNotificationUrl", event.target.value)} />
                 </label>
                 <label className="field-group field-group-span-2">
@@ -254,7 +254,7 @@ export default function AdminCollectingPage() {
 
             <div className="inline-action-group">
               <button type="submit" className="button button-primary" disabled={saving}>
-                {saving ? "Guardando..." : "Guardar configuracion"}
+                {saving ? "Guardando..." : "Guardar configuración"}
               </button>
             </div>
           </form>

@@ -288,7 +288,7 @@ export default function AdminLeadsPage() {
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}

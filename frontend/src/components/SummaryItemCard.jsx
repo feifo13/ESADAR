@@ -58,6 +58,9 @@ function CheckoutSummaryItemCard({
   const offerSavings = hasAcceptedOffer
     ? Math.max(0, originalPrice - offerPrice)
     : 0;
+  const offerQuantity = hasAcceptedOffer
+    ? Math.max(1, Number(item.acceptedOffer.quantity || item.acceptedOffer.appliedQuantity || 1))
+    : 1;
   const displayUnitPrice = hasAcceptedOffer ? offerPrice : unitPrice;
   const hasDiscount = originalPrice > displayUnitPrice;
   const articlePath = `/articles/${encodeURIComponent(String(item.slug || item.articleId))}`;
@@ -124,7 +127,7 @@ function CheckoutSummaryItemCard({
         )}
         {hasAcceptedOffer ? (
           <p className="summary-item-card__meta">
-            La oferta aplica a <strong>1</strong> unidad.
+            La oferta aplica a <strong>{offerQuantity}</strong> unidad{offerQuantity === 1 ? "" : "es"}.
           </p>
         ) : null}
       </div>

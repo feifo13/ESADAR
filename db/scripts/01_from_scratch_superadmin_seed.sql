@@ -879,6 +879,19 @@ CREATE TABLE article_events (
   CONSTRAINT fk_article_events_potential_customer FOREIGN KEY (potential_customer_id) REFERENCES potential_customers(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE public_page_visits (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  page_type ENUM('HOME','CATALOG','ARTICLE_DETAIL','PURCHASE_GUIDE','TERMS','CONTACT') NOT NULL,
+  route VARCHAR(255) NOT NULL,
+  article_id BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_public_page_visits_page_created (page_type, created_at),
+  KEY idx_public_page_visits_route_created (route, created_at),
+  KEY idx_public_page_visits_article_created (article_id, created_at),
+  CONSTRAINT fk_public_page_visits_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- =========================================================
 -- 11) SEO / site pages
 -- =========================================================
@@ -972,6 +985,7 @@ ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(s
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
   ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
@@ -1191,7 +1205,7 @@ SELECT 'Cadeteria Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Mont
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadeteria Montevideo');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
-SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas habiles posteriores a la aprobacion.', 1, @admin_user_id, @admin_user_id
+SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'DAC interior');
 
 INSERT INTO company_collecting_settings (
@@ -1221,10 +1235,11 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
   ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1),
-  ('/guia-de-compra', 'Guia de compra | ESADAR', 'Como comprar en ESADAR, medios de pago, envios y aprobacion de ordenes.', NULL, NULL, 1),
-  ('/terminos-y-condiciones', 'Terminos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)
+  ('/guia-de-compra', 'Guía de compra | ESADAR', 'Cómo comprar en ESADAR, medios de pago, envíos y aprobación de órdenes.', NULL, NULL, 1),
+  ('/terminos-y-condiciones', 'Términos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
   description = VALUES(description),

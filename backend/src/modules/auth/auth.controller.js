@@ -16,14 +16,14 @@ export async function register(req, res) {
   const input = registerSchema.parse(req.body);
   const result = await registerUser(input, getAuditContext(req));
   setAuthCookie(res, result.token);
-  return res.status(201).json({ ok: true, ...result });
+  return res.status(201).json({ ok: true, user: result.user });
 }
 
 export async function login(req, res) {
   const input = loginSchema.parse(req.body);
   const result = await loginUser(input, getAuditContext(req));
   setAuthCookie(res, result.token);
-  return res.json({ ok: true, ...result });
+  return res.json({ ok: true, user: result.user });
 }
 
 export async function logout(_req, res) {

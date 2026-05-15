@@ -87,7 +87,7 @@ export default function ContactPage() {
           <label className="field-group"><span>Nombre</span><input className="input" value={form.firstName} onChange={(event) => update('firstName', event.target.value)} required /></label>
           <label className="field-group"><span>Apellido</span><input className="input" value={form.lastName} onChange={(event) => update('lastName', event.target.value)} required /></label>
           <label className="field-group"><span>Fecha de nacimiento</span><input className="input" type="date" value={form.birthDate} onChange={(event) => update('birthDate', event.target.value)} /></label>
-          <label className="field-group"><span>Telefono</span><input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} /></label>
+          <label className="field-group"><span>Teléfono</span><input className="input" value={form.phone} onChange={(event) => update('phone', event.target.value)} /></label>
           <label className="field-group"><span>Instagram</span><input className="input" value={form.instagram} onChange={(event) => update('instagram', event.target.value)} /></label>
           <label className="field-group"><span>Email</span><input className="input" type="email" name="email" data-validation-field="contact-email" value={form.email} onChange={(event) => update('email', event.target.value)} required /></label>
           <label className="field-group form-grid-span-two"><span>Consulta</span><textarea className="input textarea" value={form.message} onChange={(event) => update('message', event.target.value)} required /></label>

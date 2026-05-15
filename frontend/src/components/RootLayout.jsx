@@ -10,6 +10,7 @@ import AppSnackbar from "./AppSnackbar.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
 import AppLoader from "./AppLoader.jsx";
+import { trackPublicPageVisit } from "../lib/pageVisits.js";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
@@ -73,6 +74,23 @@ function releaseFooterRevealNavigationGuard() {
   );
 }
 
+function getPublicPageVisitForPath(pathname) {
+  switch (pathname) {
+    case "/":
+      return { pageType: "HOME", route: "/" };
+    case "/articles":
+      return { pageType: "CATALOG", route: "/articles" };
+    case "/guia-de-compra":
+      return { pageType: "PURCHASE_GUIDE", route: "/guia-de-compra" };
+    case "/terminos-y-condiciones":
+      return { pageType: "TERMS", route: "/terminos-y-condiciones" };
+    case "/contact":
+      return { pageType: "CONTACT", route: "/contact" };
+    default:
+      return null;
+  }
+}
+
 export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -126,6 +144,12 @@ export default function RootLayout() {
     if (typeof window === "undefined") return undefined;
 
     const shouldPreserveScroll = Boolean(location.state?.preserveScroll);
+    const shouldRouteControlScroll = Boolean(
+      location.state?.scrollToCatalog ||
+        location.state?.source === "header-search" ||
+        location.state?.source === "catalog-action" ||
+        (location.pathname === "/articles" && location.search),
+    );
     const restoreTop = shouldPreserveScroll
       ? window.scrollY || document.documentElement.scrollTop || 0
       : navigationType === "POP"
@@ -137,7 +161,7 @@ export default function RootLayout() {
 
     guardFooterRevealDuringNavigation(guardMs);
 
-    if (!shouldPreserveScroll) {
+    if (!shouldPreserveScroll && !shouldRouteControlScroll) {
       setWindowScrollTop(restoreTop);
 
       scheduledFrames.push(
@@ -219,6 +243,11 @@ export default function RootLayout() {
       window.clearTimeout(hideTimer);
     };
   }, [location.key, location.state]);
+
+  useEffect(() => {
+    const visit = getPublicPageVisitForPath(location.pathname);
+    if (visit) trackPublicPageVisit(visit);
+  }, [location.pathname]);
 
 
   useEffect(() => {

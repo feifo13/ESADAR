@@ -162,7 +162,7 @@ export default function AdminArticleStockPage() {
                 <p className="section-kicker">Stock</p>
                 <h2>Movimiento manual</h2>
                 <p className="muted-copy">
-                  Reservado y vendido se actualizan automaticamente por ordenes.
+                  Reservado y vendido se actualizan automáticamente por órdenes.
                 </p>
               </div>
 
@@ -246,7 +246,7 @@ export default function AdminArticleStockPage() {
 
               {article.status === "INACTIVE" ? (
                 <div className="inline-note">
-                  Este articulo esta inactivo. Ajustar stock no lo activa automaticamente.
+                  Este artículo está inactivo. Ajustar stock no lo activa automáticamente.
                 </div>
               ) : null}
 

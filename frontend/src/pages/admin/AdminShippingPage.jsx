@@ -92,7 +92,7 @@ export default function AdminShippingPage() {
       } catch (err) {
         if (!ignore) {
           const message =
-            err.message || "No se pudieron cargar los metodos de envio.";
+            err.message || "No se pudieron cargar los métodos de envío.";
           setError(message);
           notifyError(message);
         }
@@ -145,7 +145,7 @@ export default function AdminShippingPage() {
     event.preventDefault();
 
     if (!form.description.trim()) {
-      notifyError("Ingresa una descripcion para el metodo de envio.");
+      notifyError("Ingresa una descripción para el método de envío.");
       return;
     }
 
@@ -169,7 +169,7 @@ export default function AdminShippingPage() {
       setForm(emptyForm);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      const message = err.message || "No se pudo guardar el metodo de envio.";
+      const message = err.message || "No se pudo guardar el método de envío.";
       setError(message);
       notifyError(message);
     } finally {
@@ -197,7 +197,7 @@ export default function AdminShippingPage() {
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       const message =
-        err.message || "No se pudo actualizar el metodo de envio.";
+        err.message || "No se pudo actualizar el método de envío.";
       setError(message);
       notifyError(message);
     } finally {
@@ -207,7 +207,7 @@ export default function AdminShippingPage() {
 
   async function handleDelete(method) {
     const confirmed = window.confirm(
-      `¿Seguro que quieres eliminar ${method.description}? Si ya tiene ordenes vinculadas, deberas desactivarlo.`,
+      `¿Seguro que quieres eliminar ${method.description}? Si ya tiene órdenes vinculadas, deberás desactivarlo.`,
     );
     if (!confirmed) return;
 
@@ -219,7 +219,7 @@ export default function AdminShippingPage() {
       if (form.id === method.id) setForm(emptyForm);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
-      const message = err.message || "No se pudo eliminar el metodo de envio.";
+      const message = err.message || "No se pudo eliminar el método de envío.";
       setError(message);
       notifyError(message);
     } finally {
@@ -245,7 +245,7 @@ export default function AdminShippingPage() {
           <div className="section-heading section-heading-wrap">
             <div>
               <p className="section-kicker">{form.id ? "Editar" : "Nuevo"}</p>
-              <h2>{form.id ? "Editar metodo" : "Crear metodo"}</h2>
+              <h2>{form.id ? "Editar método" : "Crear método"}</h2>
             </div>
             {form.id ? (
               <button
@@ -315,7 +315,7 @@ export default function AdminShippingPage() {
                 ? "Guardando..."
                 : form.id
                   ? "Guardar cambios"
-                  : "Crear metodo"}
+                  : "Crear método"}
             </button>
           </div>
         </form>
@@ -372,7 +372,7 @@ export default function AdminShippingPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -541,7 +541,7 @@ export default function AdminShippingPage() {
                   <tr>
                     <td colSpan="6">
                       <p className="muted-copy">
-                        No hay metodos de envio para mostrar.
+                        No hay métodos de envío para mostrar.
                       </p>
                     </td>
                   </tr>

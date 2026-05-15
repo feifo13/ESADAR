@@ -3,7 +3,11 @@ import { pool } from "../../db/pool.js";
 import { buildSqlPlaceholders } from "../../utils/sql-safety.js";
 import { withTransaction } from "../../db/transaction.js";
 import { notFound } from "../../utils/app-error.js";
-import { joinPublicSiteUrl, toAbsoluteSiteUrl } from "../../utils/assets.js";
+import {
+  joinPublicSiteUrl,
+  sanitizePublicUrl,
+  toAbsoluteSiteUrl,
+} from "../../utils/assets.js";
 import { logAudit } from "../audit/audit.service.js";
 import { getPublicArticleBySlugOrId } from "../articles/articles.service.js";
 
@@ -35,10 +39,37 @@ function buildSiteFallbackPages() {
       isIndexable: true,
     },
     {
+      route: "/articles",
+      title: `Catálogo | ${env.storeName}`,
+      description:
+        "Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.",
+      canonicalUrl: null,
+      ogImage: null,
+      isIndexable: true,
+    },
+    {
       route: "/about",
       title: `Sobre ${env.storeName} | Curaduría`,
       description:
         "Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.",
+      canonicalUrl: null,
+      ogImage: null,
+      isIndexable: true,
+    },
+    {
+      route: "/guia-de-compra",
+      title: `Guía de compra | ${env.storeName}`,
+      description:
+        "Cómo comprar en ESADAR: catálogo, ofertas, carrito, pago, validación y comprobante.",
+      canonicalUrl: null,
+      ogImage: null,
+      isIndexable: true,
+    },
+    {
+      route: "/terminos-y-condiciones",
+      title: `Términos y condiciones | ${env.storeName}`,
+      description:
+        "Términos y condiciones de compra de ESADAR: stock, pagos, validación, envíos y consultas.",
       canonicalUrl: null,
       ogImage: null,
       isIndexable: true,
@@ -93,9 +124,13 @@ export async function getPublicSiteSeo() {
     site: {
       name: env.storeName,
       description: env.storeDescription,
-      url: env.publicSiteUrl,
+      url: sanitizePublicUrl(env.publicSiteUrl),
     },
-    pages: [...pageMap.values()],
+    pages: [...pageMap.values()].map((page) => ({
+      ...page,
+      canonicalUrl: sanitizePublicUrl(page.canonicalUrl) || null,
+      ogImage: sanitizePublicUrl(page.ogImage) || null,
+    })),
   };
 }
 
@@ -149,7 +184,14 @@ async function listIndexableArticles() {
 export async function buildSitemapXml() {
   const pages = await getPublicSiteSeo();
   const articles = await listIndexableArticles();
-  const staticUrls = ["/", "/about", "/contact"];
+  const staticUrls = [
+    "/",
+    "/articles",
+    "/about",
+    "/guia-de-compra",
+    "/terminos-y-condiciones",
+    "/contact",
+  ];
   const pageOverrides = new Map(
     (pages.pages || []).map((page) => [page.route, page]),
   );
@@ -159,7 +201,7 @@ export async function buildSitemapXml() {
       const page = pageOverrides.get(route);
       return `
   <url>
-    <loc>${escapeXml(page?.canonicalUrl || joinPublicSiteUrl(route))}</loc>
+    <loc>${escapeXml(sanitizePublicUrl(page?.canonicalUrl) || joinPublicSiteUrl(route))}</loc>
     <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>
   </url>`;
     }),
@@ -285,7 +327,7 @@ export async function buildGoogleProductsFeedXml() {
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
     <title>${escapeXml(env.storeName)}</title>
-    <link>${escapeXml(env.publicSiteUrl)}</link>
+    <link>${escapeXml(joinPublicSiteUrl("/"))}</link>
     <description>${escapeXml(env.storeDescription)}</description>
 ${items.join("\n")}
   </channel>
@@ -334,8 +376,8 @@ export async function updateSeoPage(id, input, auditContext) {
       [
         input.title,
         input.description,
-        input.canonicalUrl || null,
-        input.ogImage || null,
+        sanitizePublicUrl(input.canonicalUrl) || null,
+        sanitizePublicUrl(input.ogImage) || null,
         input.isIndexable ? 1 : 0,
         id,
       ],

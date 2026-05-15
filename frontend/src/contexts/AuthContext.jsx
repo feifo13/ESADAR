@@ -3,9 +3,9 @@ import { apiFetch } from '../lib/api.js';
 import { storage } from '../lib/storage.js';
 
 const AuthContext = createContext(null);
+const LEGACY_TOKEN_STORAGE_KEY = 'miami-closet-token';
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => storage.get('miami-closet-token', null));
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -21,21 +21,20 @@ export function AuthProvider({ children }) {
 
       try {
         setLoading(true);
-        const response = await apiFetch('/api/auth/me', token ? { token } : {});
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+        const response = await apiFetch('/api/auth/me');
         if (!ignore) {
           if (response.user) {
             setUser(response.user);
           } else {
-            setToken(null);
             setUser(null);
-            storage.remove('miami-closet-token');
+            storage.remove(LEGACY_TOKEN_STORAGE_KEY);
           }
         }
       } catch {
         if (!ignore) {
-          setToken(null);
           setUser(null);
-          storage.remove('miami-closet-token');
+          storage.remove(LEGACY_TOKEN_STORAGE_KEY);
         }
       } finally {
         if (!ignore) setLoading(false);
@@ -46,11 +45,11 @@ export function AuthProvider({ children }) {
     return () => {
       ignore = true;
     };
-  }, [loggingOut, token]);
+  }, [loggingOut]);
 
   const value = useMemo(
     () => ({
-      token,
+      token: null,
       user,
       loading,
       isAuthenticated: Boolean(user),
@@ -59,9 +58,8 @@ export function AuthProvider({ children }) {
           method: 'POST',
           body: { email, password },
         });
-        storage.set('miami-closet-token', response.token);
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
         setLoggingOut(false);
-        setToken(response.token);
         setUser(response.user);
         return response.user;
       },
@@ -70,22 +68,20 @@ export function AuthProvider({ children }) {
           method: 'POST',
           body: payload,
         });
-        storage.set('miami-closet-token', response.token);
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
         setLoggingOut(false);
-        setToken(response.token);
         setUser(response.user);
         return response.user;
       },
       logout() {
         setLoggingOut(true);
-        storage.remove('miami-closet-token');
-        setToken(null);
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
         setUser(null);
         setLoading(false);
         void apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
       },
     }),
-    [token, user, loading],
+    [user, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

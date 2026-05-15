@@ -1,12 +1,43 @@
 import path from 'node:path';
 import { env } from '../config/env.js';
 
+function isLocalHostname(hostname = '') {
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return ['localhost', '127.0.0.1', '::1'].includes(normalized);
+}
+
+function isIpHostname(hostname = '') {
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized) || normalized.includes(':');
+}
+
+export function isUnsafePublicUrl(value) {
+  if (!value || !/^https?:\/\//i.test(String(value))) return false;
+
+  try {
+    const parsed = new URL(value);
+    return isIpHostname(parsed.hostname) && !isLocalHostname(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function sanitizePublicUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || isUnsafePublicUrl(raw)) return '';
+  return raw.replace(/\/$/, '');
+}
+
 export function normalizePublicAssetPath(filePath) {
   if (!filePath) return '';
 
   const normalized = String(filePath).trim().replace(/\\/g, '/');
 
-  if (/^(https?:|data:|blob:)/i.test(normalized)) {
+  if (/^https?:/i.test(normalized)) {
+    return sanitizePublicUrl(normalized);
+  }
+
+  if (/^(data:|blob:)/i.test(normalized)) {
     return normalized;
   }
 
@@ -43,15 +74,17 @@ export function buildSiblingUploadPublicPath(originalPublicPath, fileName) {
 export function toAbsoluteSiteUrl(value) {
   const normalized = normalizePublicAssetPath(value);
   if (!normalized) return '';
-  if (/^https?:/i.test(normalized)) return normalized;
-  return `${env.publicSiteUrl}${normalized}`;
+  if (/^https?:/i.test(normalized)) return sanitizePublicUrl(normalized);
+  const baseUrl = sanitizePublicUrl(env.publicSiteUrl);
+  return baseUrl ? `${baseUrl}${normalized}` : normalized;
 }
 
 export function joinPublicSiteUrl(pathname = '/') {
   const safePath = String(pathname || '/').startsWith('/')
     ? String(pathname || '/')
     : `/${pathname}`;
-  return `${env.publicSiteUrl}${safePath}`;
+  const baseUrl = sanitizePublicUrl(env.publicSiteUrl);
+  return baseUrl ? `${baseUrl}${safePath}` : safePath;
 }
 
 export function isManagedUploadPath(filePath) {

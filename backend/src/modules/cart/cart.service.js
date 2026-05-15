@@ -525,7 +525,7 @@ async function getArticleForCart(articleId, connection) {
   const article = rows[0];
 
   if (article.status !== 'ACTIVE') {
-    throw badRequest('Esta prenda no esta disponible para agregar al carrito.');
+    throw badRequest('Esta prenda no está disponible para agregar al carrito.');
   }
 
   return {

@@ -250,7 +250,7 @@ export default function BulkArticleCreatePage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>Crear multiples articulos</h1>
+            <h1>Crear múltiples artículos</h1>
             <p className="muted-copy">Para carga rapida solo necesitas titulo y precio. El resto se completa con valores seguros.</p>
           </div>
           <div className="inline-action-group">

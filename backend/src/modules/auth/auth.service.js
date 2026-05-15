@@ -7,6 +7,7 @@ import { badRequest, notFound, unauthorized } from '../../utils/app-error.js';
 import { logAudit } from '../audit/audit.service.js';
 import { assertPasswordResetMailerReady, sendPasswordResetEmail, sendWelcomeUserEmail } from './auth.mailer.js';
 import { env } from '../../config/env.js';
+import { sanitizePublicUrl } from '../../utils/assets.js';
 
 async function getUserByEmail(email, connection = pool) {
   const [rows] = await connection.execute(
@@ -103,7 +104,11 @@ function hashResetToken(token) {
 }
 
 function buildResetUrl(token, publicSiteUrl) {
-  const base = (publicSiteUrl || env.publicSiteUrl || env.appOrigin || 'http://localhost:5173').replace(/\/$/, '');
+  const base =
+    sanitizePublicUrl(publicSiteUrl) ||
+    sanitizePublicUrl(env.publicSiteUrl) ||
+    sanitizePublicUrl(env.appOrigin) ||
+    'http://localhost:5173';
   return `${base}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
@@ -365,7 +370,7 @@ export async function resetUserPassword(input, auditContext) {
     );
 
     if (!rows.length || !rows[0].isActive) {
-      throw badRequest('El link de recuperacion no es valido o ya vencio.');
+      throw badRequest('El link de recuperación no es válido o ya venció.');
     }
 
     const row = rows[0];

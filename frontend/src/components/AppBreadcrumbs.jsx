@@ -28,7 +28,7 @@ const ACCOUNT_LABELS = {
   offers: "Ofertas",
   ofertas: "Ofertas",
   alertas: "Alertas",
-  ordenes: "Ordenes",
+  ordenes: "Órdenes",
 };
 
 const ADMIN_LABELS = {
@@ -68,7 +68,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
       titleizePathSegment(parts[1]) ||
       "Articulo";
     const crumbs = [
-      { label: "Catalogo", to: "/articles" },
+      { label: "Catálogo", to: "/articles" },
       { label: articleLabel, to: parts[1] ? articlePathname : undefined },
     ];
 
@@ -93,7 +93,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
     if (parts[0] === "account") {
       return [
         { label: "Mi cuenta", to: "/cuenta/perfil" },
-        { label: "Ordenes", to: "/cuenta/ordenes" },
+        { label: "Órdenes", to: "/cuenta/ordenes" },
         { label: detailLabel("Orden", parts[2]) },
       ];
     }

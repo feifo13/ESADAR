@@ -878,16 +878,16 @@ export async function exportStatisticsReport(filters = {}, type = 'full') {
   } else if (type === 'top_customers') {
     appendSheet(workbook, 'Top clientes', await getStatisticsTopCustomers(filters, 50));
   } else if (type === 'categories') {
-    appendSheet(workbook, 'Categorias', await getStatisticsTopCategories(filters, 50));
+    appendSheet(workbook, 'Categorías', await getStatisticsTopCategories(filters, 50));
   } else if (type === 'wishlist') {
     const wishlist = await getStatisticsWishlist(filters);
     appendSheet(workbook, 'Resumen wishlist', [wishlist.summary]);
     appendSheet(workbook, 'Top guardados', wishlist.topArticles);
     appendSheet(workbook, 'Top usuarios', wishlist.topUsers);
-    appendSheet(workbook, 'Categorias guardadas', wishlist.topCategories);
+    appendSheet(workbook, 'Categorías guardadas', wishlist.topCategories);
   } else if (type === 'market_study') {
     const market = await getStatisticsMarketStudy(filters);
-    appendSheet(workbook, 'Categorias demanda', market.categoryDemand);
+    appendSheet(workbook, 'Categorías demanda', market.categoryDemand);
     appendSheet(workbook, 'Marcas demanda', market.brandDemand);
     appendSheet(workbook, 'Talles demanda', market.sizeDemand);
     appendSheet(workbook, 'Colores', market.colors);
@@ -911,7 +911,7 @@ export async function exportStatisticsReport(filters = {}, type = 'full') {
     appendSheet(workbook, 'Ventas por periodo', sales);
     appendSheet(workbook, 'Articulos vendidos', topArticles);
     appendSheet(workbook, 'Top clientes', topCustomers);
-    appendSheet(workbook, 'Categorias vendidas', topCategories);
+    appendSheet(workbook, 'Categorías vendidas', topCategories);
     appendSheet(workbook, 'Ganancias', [profit]);
     appendSheet(workbook, 'Top ganancia', profit.topProfitableArticles || []);
     appendSheet(workbook, 'Wishlist resumen', [wishlist.summary]);

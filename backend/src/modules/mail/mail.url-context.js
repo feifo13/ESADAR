@@ -1,15 +1,13 @@
 import { env } from '../../config/env.js';
 
-const DEFAULT_SITE_URL = 'https://esadar.com.uy';
-
-const CANONICAL_HOSTS = new Map([
-  ['sandbox.esadar.com.uy', 'https://sandbox.esadar.com.uy'],
-  ['esadar.com.uy', 'https://esadar.com.uy'],
-  ['www.esadar.com.uy', 'https://esadar.com.uy'],
-]);
-
 function isLocalHostname(hostname = '') {
-  return ['localhost', '127.0.0.1', '::1'].includes(String(hostname).toLowerCase());
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return ['localhost', '127.0.0.1', '::1'].includes(normalized);
+}
+
+function isIpHostname(hostname = '') {
+  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized) || normalized.includes(':');
 }
 
 function toUrlCandidate(value) {
@@ -22,7 +20,7 @@ function toUrlCandidate(value) {
     return `http://${raw}`;
   }
 
-  if (/^(sandbox\.)?esadar\.com\.uy(\/.*)?$/i.test(raw) || /^www\.esadar\.com\.uy(\/.*)?$/i.test(raw)) {
+  if (/^[a-z0-9.-]+(?::\d+)?(\/.*)?$/i.test(raw)) {
     return `https://${raw}`;
   }
 
@@ -37,11 +35,7 @@ function normalizeMailSiteUrl(value) {
     const parsed = new URL(candidate);
     const hostname = parsed.hostname.toLowerCase();
 
-    if (CANONICAL_HOSTS.has(hostname)) {
-      return CANONICAL_HOSTS.get(hostname);
-    }
-
-    if (isLocalHostname(hostname)) {
+    if (isLocalHostname(hostname) || !isIpHostname(hostname)) {
       return `${parsed.protocol}//${parsed.host}`.replace(/\/+$/, '');
     }
   } catch {
@@ -57,7 +51,6 @@ export function resolveMailSiteUrl(...values) {
     ...flattened,
     env.publicSiteUrl,
     env.appOrigin,
-    DEFAULT_SITE_URL,
   ];
 
   for (const candidate of candidates) {
@@ -65,7 +58,7 @@ export function resolveMailSiteUrl(...values) {
     if (normalized) return normalized;
   }
 
-  return DEFAULT_SITE_URL;
+  return '';
 }
 
 export function resolveMailSiteUrlFromRequest(req) {

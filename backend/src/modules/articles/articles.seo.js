@@ -1,5 +1,5 @@
 import { env } from '../../config/env.js';
-import { joinPublicSiteUrl } from '../../utils/assets.js';
+import { joinPublicSiteUrl, sanitizePublicUrl } from '../../utils/assets.js';
 
 function trimToLength(value, max) {
   const normalized = String(value || '').replace(/\s+/g, ' ').trim();
@@ -44,8 +44,9 @@ export function buildArticleSeoDescription(article) {
 }
 
 export function buildArticleCanonicalUrl(article) {
-  if (article?.canonicalUrl) {
-    return article.canonicalUrl;
+  const storedCanonicalUrl = sanitizePublicUrl(article?.canonicalUrl);
+  if (storedCanonicalUrl) {
+    return storedCanonicalUrl;
   }
 
   return joinPublicSiteUrl(`/articles/${article?.slug || article?.id}`);

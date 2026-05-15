@@ -520,7 +520,7 @@ export default function AdminArticlesPage() {
               to="/admin/articles/bulk-create"
               className="button button-secondary"
             >
-              Crear multiples articulos desde UI
+              Crear múltiples artículos desde UI
             </Link> */}
             <Link to="/admin/articles/new" className="button button-primary">
               Nuevo articulo
@@ -598,7 +598,7 @@ export default function AdminArticlesPage() {
             </label>
 
             <label className="field-group">
-              <span>Categoria</span>
+              <span>Categoría</span>
               <select
                 className="input"
                 value={draftFilters.categoryId}
@@ -683,14 +683,14 @@ export default function AdminArticlesPage() {
                 <option value="salePrice">Precio base</option>
                 <option value="quantityAvailable">Stock disponible</option>
                 <option value="status">Estado</option>
-                <option value="categoryName">Categoria</option>
+                <option value="categoryName">Categoría</option>
                 <option value="brandName">Marca</option>
                 <option value="updatedAt">Actualizacion</option>
               </select>
             </label>
 
             <label className="field-group">
-              <span>Direccion</span>
+              <span>Dirección</span>
               <select
                 className="input"
                 value={draftFilters.sortDir}
@@ -949,7 +949,7 @@ export default function AdminArticlesPage() {
                       sort={{ key: filters.sortBy, direction: filters.sortDir }}
                       onSort={changeSort}
                     >
-                      Categoria
+                      Categoría
                     </SortableTh>
                     <SortableTh
                       sortKey="brandName"
