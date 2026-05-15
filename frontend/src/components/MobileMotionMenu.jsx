@@ -85,6 +85,7 @@ export default function MobileMotionMenu({
   filtersCount = 0,
   sortActive = false,
   items = [],
+  footerItems = [],
 }) {
   const shouldReduceMotion = useReducedMotion();
   const location = useLocation();
@@ -305,7 +306,7 @@ export default function MobileMotionMenu({
 
             <motion.nav
               className="mobile-nav-sheet__links"
-        aria-label="Navegación principal"
+              aria-label="Navegación principal"
               variants={activeListVariants}
             >
               {searchContent ? (
@@ -408,6 +409,19 @@ export default function MobileMotionMenu({
                 </motion.div>
               ))}
             </motion.nav>
+            {footerItems.length > 0 ? (
+              <motion.nav
+                className="mobile-motion-menu__footer"
+                aria-label="Navegacion secundaria"
+                variants={activeListVariants}
+              >
+                {footerItems.map((item) => (
+                  <motion.div key={item.key} variants={activeItemVariants}>
+                    {renderItem(item)}
+                  </motion.div>
+                ))}
+              </motion.nav>
+            ) : null}
           </motion.aside>
         </motion.div>
       ) : null}

@@ -449,6 +449,9 @@ export default function Header({ hideBrand = false }) {
           },
         ]
       : []),
+  ];
+
+  const mobileMenuFooterItems = [
     ...mobileInfoLinks,
     ...(isAuthenticated
       ? [
@@ -687,6 +690,7 @@ export default function Header({ hideBrand = false }) {
         filtersCount={catalogFiltersCount}
         sortActive={catalogSortActive}
         items={mobileMenuItems}
+        footerItems={mobileMenuFooterItems}
       />
 
       {flyFx ? (

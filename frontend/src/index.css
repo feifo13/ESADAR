@@ -9436,12 +9436,22 @@ textarea,
 
 .mobile-nav-sheet__links {
   gap: 0 !important;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .mobile-nav-sheet__search {
   padding-bottom: 12px;
   margin-bottom: 4px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+}
+
+.mobile-motion-menu__footer {
+  display: grid;
+  gap: 0;
+  margin-top: auto;
+  padding-top: 12px;
+  flex-shrink: 0;
 }
 
 .mobile-menu-search {
@@ -10054,6 +10064,7 @@ textarea,
   }
 
   .mobile-nav-sheet__links {
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -14366,7 +14377,8 @@ dialog,
 }
 
 .app-shell--footer-navigation-guard .site-header,
-.app-shell--footer-navigation-guard.app-shell--footer-scroll-active .site-header,
+.app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+  .site-header,
 .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep .site-header {
   opacity: 1 !important;
   transform: translate3d(0, 0, 0) !important;
@@ -14513,8 +14525,10 @@ dialog,
   .app-shell--footer-scroll-deep .site-header,
   .app-shell--footer-reveal-suppressed .site-header,
   .app-shell--footer-navigation-guard .site-header,
-  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active .site-header,
-  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep .site-header {
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+    .site-header,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep
+    .site-header {
     position: fixed !important;
     top: 0 !important;
     opacity: 1 !important;
@@ -14529,7 +14543,8 @@ dialog,
    Keep the fixed solid header while browsing mobile/tablet, but remove it once
    the footer reveal is deep enough so it does not float over the final scene. */
 @media (max-width: 960px) {
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header {
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .site-header {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -14538,9 +14553,15 @@ dialog,
     transition: none !important;
   }
 
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *::before,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .site-header *::after {
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .site-header
+    *,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .site-header
+    *::before,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .site-header
+    *::after {
     pointer-events: none !important;
   }
 }
@@ -14732,7 +14753,6 @@ dialog,
   }
 }
 
-
 /* === ESADAR mobile/tablet header vertical centering + offer ribbon restore ===
    Keep compact viewport header controls optically centered and allow the
    OFERTA ribbon even when the card price comes from an accepted offer. */
@@ -14858,11 +14878,15 @@ dialog,
     filter: none !important;
   }
 
+  .intro-splash__logo {
+    width: 313px !important;
+    max-width: 313px !important;
+  }
+
   .cart-unavailable-ticker {
     z-index: 5200 !important;
   }
 }
-
 
 /* === ESADAR mobile Chrome footer stability ===
    Keep the footer in the classic behind-the-page reveal on compact viewports.
@@ -14887,10 +14911,14 @@ dialog,
     padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
   }
 
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__sticky,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__content,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__logo-button,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard) .footer-scroll-scene__copy {
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .footer-scroll-scene__sticky,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .footer-scroll-scene__content,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .footer-scroll-scene__logo-button,
+  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
+    .footer-scroll-scene__copy {
     pointer-events: auto !important;
   }
 }
@@ -15043,7 +15071,11 @@ dialog,
   min-width: min(300px, 78vw);
   margin-top: 2px;
   border-color: color-mix(in srgb, var(--navy) 64%, var(--border));
-  background: linear-gradient(135deg, var(--navy), color-mix(in srgb, var(--navy) 72%, var(--aqua)));
+  background: linear-gradient(
+    135deg,
+    var(--navy),
+    color-mix(in srgb, var(--navy) 72%, var(--aqua))
+  );
   box-shadow:
     0 12px 28px color-mix(in srgb, var(--navy) 26%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -15051,7 +15083,11 @@ dialog,
 
 .footer-scroll-scene__copy--terms:hover,
 .footer-scroll-scene__copy--terms:focus-visible {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--navy) 92%, white), var(--navy));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--navy) 92%, white),
+    var(--navy)
+  );
   border-color: color-mix(in srgb, var(--navy) 82%, white);
   box-shadow:
     0 16px 34px color-mix(in srgb, var(--navy) 34%, transparent),
@@ -15104,7 +15140,9 @@ dialog,
   overflow-wrap: anywhere;
 }
 
-.admin-wishlists-page .history-row > div:not(.history-row__media):not(.history-row__meta),
+.admin-wishlists-page
+  .history-row
+  > div:not(.history-row__media):not(.history-row__meta),
 .admin-statistics-page .stats-bar-copy {
   min-width: 0;
 }
