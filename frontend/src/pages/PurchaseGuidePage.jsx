@@ -6,28 +6,23 @@ import { toAbsoluteUrl } from "../lib/seo.js";
 const guideSteps = [
   {
     title: "1. Elegí tu prenda",
-    copy:
-      "Navegá el catálogo, revisá fotos, medidas reales, estado de la prenda, talle y disponibilidad antes de agregarla al carrito.",
+    copy: "Navegá el catálogo, revisá fotos, medidas reales, estado de la prenda, talle y disponibilidad antes de agregarla al carrito.",
   },
   {
     title: "2. Ofertá si la prenda lo permite",
-    copy:
-      "Algunas prendas aceptan ofertas. Si tu oferta es aprobada, la vas a ver destacada en tu cuenta y podés comprarla con ese precio.",
+    copy: "Algunas prendas aceptan ofertas. Si tu oferta es aprobada, la vas a ver destacada en tu cuenta y podés comprarla con ese precio.",
   },
   {
     title: "3. Confirmá carrito y datos",
-    copy:
-      "Antes de avanzar, revisá cantidades, precio final, medio de pago, envío o retiro. Si un artículo se agota, el sistema te pedirá quitarlo para continuar.",
+    copy: "Antes de avanzar, revisá cantidades, precio final, medio de pago y envío. Si un artículo se agota, el sistema te pedirá quitarlo para continuar.",
   },
   {
     title: "4. Pagá y esperá validación",
-    copy:
-      "Si elegís transferencia, los datos de pago quedan visibles al finalizar la compra y también se envían por correo. La orden queda reservada por 24 horas.",
+    copy: "Si elegís transferencia, los datos de pago quedan visibles al finalizar la compra y también se envían por correo. La orden queda reservada por 24 horas.",
   },
   {
     title: "5. Recibí la confirmación",
-    copy:
-      "Cuando ESADAR valida el pago desde el backoffice, recibís el mail de orden aprobada junto con el comprobante de compra en PDF.",
+    copy: "Cuando la Administración de ESADAR valida el pago, recibís el mail de orden aprobada junto con el comprobante de compra en PDF.",
   },
 ];
 
@@ -43,7 +38,9 @@ export default function PurchaseGuidePage() {
           guideSeo?.description ||
           "Cómo comprar en ESADAR: catálogo, ofertas, carrito, pago, validación y comprobante."
         }
-        canonical={guideSeo?.canonicalUrl || toAbsoluteUrl("/guia-de-compra", site)}
+        canonical={
+          guideSeo?.canonicalUrl || toAbsoluteUrl("/guia-de-compra", site)
+        }
         url={toAbsoluteUrl("/guia-de-compra", site)}
       />
 
