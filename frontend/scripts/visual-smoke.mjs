@@ -359,6 +359,63 @@ try {
   screenshots.push(await screenshot(client, sessionId, 'mobile-articles-snackbar'));
 
   await setViewport(client, sessionId, { width: 390, height: 844, mobile: true });
+  await navigate(client, sessionId, `${server.baseUrl}/`);
+  await waitForExpression(
+    client,
+    sessionId,
+    `Boolean(document.querySelector('.footer-scroll-scene') && document.querySelector('.app-shell--content-ready'))`,
+    'Mobile home footer reveal did not become ready.',
+    7000,
+  );
+  const mobileFooterCurtain = await evaluate(
+    client,
+    sessionId,
+    `new Promise((resolve) => {
+      const scrollToEnd = () => {
+        const scroller = document.scrollingElement || document.documentElement;
+        window.scrollTo(0, scroller.scrollHeight);
+      };
+
+      scrollToEnd();
+      requestAnimationFrame(() => {
+        scrollToEnd();
+        setTimeout(() => {
+          scrollToEnd();
+          setTimeout(() => {
+            const app = document.querySelector('.app-shell');
+            const header = document.querySelector('.site-header');
+            const footer = document.querySelector('.footer-scroll-scene');
+            const coverStyle = app ? getComputedStyle(app, '::before') : null;
+            const headerStyle = header ? getComputedStyle(header) : null;
+            const footerRect = footer?.getBoundingClientRect();
+
+            resolve({
+              active: Boolean(app?.classList.contains('app-shell--footer-scroll-active')),
+              deep: Boolean(app?.classList.contains('app-shell--footer-scroll-deep')),
+              curtainCover: Boolean(app?.classList.contains('app-shell--footer-curtain-cover')),
+              coverContent: coverStyle?.content,
+              coverOpacity: Number(coverStyle?.opacity || 0),
+              coverTransform: coverStyle?.transform || '',
+              headerDisplay: headerStyle?.display || '',
+              extraLift: getComputedStyle(app).getPropertyValue('--esadar-footer-extra-lift').trim(),
+              footerCoversViewport: Boolean(footerRect && footerRect.top <= 2 && footerRect.bottom >= window.innerHeight - 2),
+            });
+          }, 300);
+        }, 650);
+      });
+    })`,
+  );
+  const footerCurtainDebug = JSON.stringify(mobileFooterCurtain);
+  assert(mobileFooterCurtain.active, `Mobile home footer reveal did not activate at page end: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.curtainCover, `Mobile footer curtain cover class is missing: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.coverContent !== 'none', `Mobile footer curtain cover pseudo-element is missing: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.coverOpacity > 0.92, `Mobile footer curtain cover is not fully covering the header zone: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.headerDisplay !== 'none', `Mobile header is still being removed abruptly: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.extraLift !== '0px', `Mobile footer reveal does not have extra lift: ${footerCurtainDebug}`);
+  assert(mobileFooterCurtain.footerCoversViewport, `Mobile footer scene does not cover the viewport at page end: ${footerCurtainDebug}`);
+  screenshots.push(await screenshot(client, sessionId, 'mobile-home-footer-curtain'));
+
+  await setViewport(client, sessionId, { width: 390, height: 844, mobile: true });
   await evaluate(
     client,
     sessionId,

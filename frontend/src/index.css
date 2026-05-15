@@ -12150,6 +12150,9 @@ textarea,
 .app-shell {
   --footer-scroll-progress: 0;
   --header-footer-hide-progress: 0;
+  --footer-header-cover-progress: 0;
+  --footer-header-cover-offset: -140px;
+  --esadar-footer-extra-lift: 0px;
 }
 
 .app-shell--footer-scroll-active .site-header {
@@ -14368,7 +14371,9 @@ dialog,
 
 .app-shell--has-footer-reveal .page-shell {
   min-height: var(--esadar-footer-viewport) !important;
-  margin-bottom: var(--esadar-footer-viewport) !important;
+  margin-bottom: calc(
+    var(--esadar-footer-viewport) + var(--esadar-footer-extra-lift, 0px)
+  ) !important;
 }
 
 .footer-scroll-scene {
@@ -14407,6 +14412,10 @@ dialog,
 @media (max-width: 960px) {
   :root {
     --header-height: 74px;
+  }
+
+  .app-shell {
+    --esadar-footer-extra-lift: calc(var(--header-height, 74px) + 32px);
   }
 
   .site-header {
@@ -14540,53 +14549,29 @@ dialog,
 }
 
 /* === ESADAR mobile footer/header refinement ===
-   Keep the fixed solid header while browsing mobile/tablet, but remove it as
-   soon as the footer curtain starts so browser viewport rounding cannot leave
-   it floating over the final scene. */
+   Stretch the final curtain and slide a matching cap over the fixed header.
+   This keeps the header stable while making it feel covered by the reveal,
+   instead of abruptly disappearing or relying on the exact final scroll pixel.
+   Mobile keeps a plain white footer background so the cap blends away. */
 @media (max-width: 960px) {
-  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header,
-  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
-    .site-header {
-    display: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    transform: none !important;
-    translate: none !important;
-    transition: none !important;
+  .app-shell--footer-curtain-cover:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 1800;
+    height: calc(var(--header-height, 74px) + 54px);
+    pointer-events: none;
+    opacity: var(--footer-header-cover-progress, 0);
+    transform: translate3d(0, var(--footer-header-cover-offset, -140px), 0);
+    background: #ffffff;
+    border-bottom: 0;
+    box-shadow: none;
+    will-change: opacity, transform;
   }
 
-  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *,
-  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *::before,
-  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *::after,
-  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *,
-  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *::before,
-  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
-    .site-header
-    *::after,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
-    .site-header
-    *,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
-    .site-header
-    *::before,
-  .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
-    .site-header
-    *::after {
-    pointer-events: none !important;
+  .app-shell--footer-navigation-guard::before,
+  .app-shell--footer-reveal-suppressed::before {
+    content: none !important;
   }
 }
 
@@ -14926,6 +14911,8 @@ dialog,
     height: var(--esadar-footer-viewport, 100svh) !important;
     overflow: clip !important;
     pointer-events: none !important;
+    background: #ffffff !important;
+    background-image: none !important;
   }
 
   .app-shell--has-footer-reveal .footer-scroll-scene__sticky {
@@ -14933,6 +14920,8 @@ dialog,
     height: 100% !important;
     padding-top: calc(var(--header-height, 74px) + 18px) !important;
     padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+    background: #ffffff !important;
+    background-image: none !important;
   }
 
   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)

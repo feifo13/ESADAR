@@ -28,10 +28,12 @@ export default function FooterScrollScene() {
 
     appShell.style.setProperty("--footer-scroll-progress", "0");
     appShell.style.setProperty("--header-footer-hide-progress", "0");
+    appShell.style.setProperty("--footer-header-cover-progress", "0");
+    appShell.style.setProperty("--footer-header-cover-offset", "-140px");
     appShell.classList.remove(
       "app-shell--footer-scroll-active",
       "app-shell--footer-scroll-deep",
-      "app-shell--footer-header-hidden",
+      "app-shell--footer-curtain-cover",
       "app-shell--footer-reveal-suppressed",
     );
   }, [location.key]);
@@ -56,10 +58,12 @@ export default function FooterScrollScene() {
     function resetFooterReveal() {
       appShell.style.setProperty("--footer-scroll-progress", "0");
       appShell.style.setProperty("--header-footer-hide-progress", "0");
+      appShell.style.setProperty("--footer-header-cover-progress", "0");
+      appShell.style.setProperty("--footer-header-cover-offset", "-140px");
       appShell.classList.remove(
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
-        "app-shell--footer-header-hidden",
+        "app-shell--footer-curtain-cover",
       );
     }
 
@@ -113,14 +117,8 @@ export default function FooterScrollScene() {
       const isCompactViewport =
         window.matchMedia?.("(max-width: 960px)")?.matches ||
         window.innerWidth <= 960;
-      const pageShell = document.querySelector(".page-shell");
       const header = document.querySelector(".site-header");
       const headerHeight = Math.max(header?.offsetHeight || 0, 74);
-      const pageShellBottom = pageShell?.getBoundingClientRect().bottom;
-      const shouldHideMobileHeader =
-        isCompactViewport &&
-        Number.isFinite(pageShellBottom) &&
-        pageShellBottom <= layoutViewportHeight + headerHeight + 12;
       const scrollTop = Math.max(
         window.scrollY || 0,
         scrollingElement?.scrollTop || 0,
@@ -143,6 +141,27 @@ export default function FooterScrollScene() {
           ? 1
           : 0
         : clamp01((revealProgress - 0.44) / 0.28);
+      const browserChromeHint = Math.max(
+        0,
+        (window.innerHeight || 0) - visualViewportHeight,
+      );
+      const coverStartDistance = Math.max(
+        headerHeight + 96,
+        browserChromeHint + headerHeight + 64,
+      );
+      const coverFullDistance = Math.max(18, browserChromeHint + 18);
+      const rawHeaderCoverProgress = isCompactViewport
+        ? clamp01(
+            (coverStartDistance - remainingScroll) /
+              Math.max(coverStartDistance - coverFullDistance, 1),
+          )
+        : 0;
+      const headerCoverProgress = isCompactViewport
+        ? rawHeaderCoverProgress *
+          rawHeaderCoverProgress *
+          (3 - 2 * rawHeaderCoverProgress)
+        : 0;
+      const headerCoverTravel = headerHeight + 42;
 
       appShell.style.setProperty(
         "--footer-scroll-progress",
@@ -152,13 +171,21 @@ export default function FooterScrollScene() {
         "--header-footer-hide-progress",
         String(headerHideProgress),
       );
+      appShell.style.setProperty(
+        "--footer-header-cover-progress",
+        String(headerCoverProgress),
+      );
+      appShell.style.setProperty(
+        "--footer-header-cover-offset",
+        `${-headerCoverTravel * (1 - headerCoverProgress)}px`,
+      );
       appShell.classList.toggle(
         "app-shell--footer-scroll-active",
         revealProgress > 0.01,
       );
       appShell.classList.toggle(
-        "app-shell--footer-header-hidden",
-        shouldHideMobileHeader || (isCompactViewport && revealProgress > 0.01),
+        "app-shell--footer-curtain-cover",
+        headerCoverProgress > 0.001,
       );
       const compactEndThreshold = Math.max(24, layoutViewportHeight * 0.04);
       const isDeepFooterReveal = isCompactViewport
@@ -265,10 +292,12 @@ export default function FooterScrollScene() {
       window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
+      appShell.style.removeProperty("--footer-header-cover-progress");
+      appShell.style.removeProperty("--footer-header-cover-offset");
       appShell.classList.remove(
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
-        "app-shell--footer-header-hidden",
+        "app-shell--footer-curtain-cover",
         "app-shell--footer-reveal-suppressed",
       );
     };
