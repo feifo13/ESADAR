@@ -14540,11 +14540,17 @@ dialog,
 }
 
 /* === ESADAR mobile footer/header refinement ===
-   Keep the fixed solid header while browsing mobile/tablet, but remove it once
-   the footer reveal is deep enough so it does not float over the final scene. */
+   Keep the fixed solid header while browsing mobile/tablet, but remove it as
+   soon as the footer curtain starts so browser viewport rounding cannot leave
+   it floating over the final scene. */
 @media (max-width: 960px) {
+  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header,
+  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header,
   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
     .site-header {
+    display: none !important;
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -14553,6 +14559,24 @@ dialog,
     transition: none !important;
   }
 
+  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *,
+  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *::before,
+  .app-shell--footer-header-hidden:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *::after,
+  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *,
+  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *::before,
+  .app-shell--footer-scroll-active:not(.app-shell--footer-navigation-guard):not(.app-shell--footer-reveal-suppressed)
+    .site-header
+    *::after,
   .app-shell--footer-scroll-deep:not(.app-shell--footer-navigation-guard)
     .site-header
     *,

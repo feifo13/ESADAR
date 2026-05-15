@@ -31,6 +31,7 @@ export default function FooterScrollScene() {
     appShell.classList.remove(
       "app-shell--footer-scroll-active",
       "app-shell--footer-scroll-deep",
+      "app-shell--footer-header-hidden",
       "app-shell--footer-reveal-suppressed",
     );
   }, [location.key]);
@@ -58,6 +59,7 @@ export default function FooterScrollScene() {
       appShell.classList.remove(
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
+        "app-shell--footer-header-hidden",
       );
     }
 
@@ -111,6 +113,14 @@ export default function FooterScrollScene() {
       const isCompactViewport =
         window.matchMedia?.("(max-width: 960px)")?.matches ||
         window.innerWidth <= 960;
+      const pageShell = document.querySelector(".page-shell");
+      const header = document.querySelector(".site-header");
+      const headerHeight = Math.max(header?.offsetHeight || 0, 74);
+      const pageShellBottom = pageShell?.getBoundingClientRect().bottom;
+      const shouldHideMobileHeader =
+        isCompactViewport &&
+        Number.isFinite(pageShellBottom) &&
+        pageShellBottom <= layoutViewportHeight + headerHeight + 12;
       const scrollTop = Math.max(
         window.scrollY || 0,
         scrollingElement?.scrollTop || 0,
@@ -145,6 +155,10 @@ export default function FooterScrollScene() {
       appShell.classList.toggle(
         "app-shell--footer-scroll-active",
         revealProgress > 0.01,
+      );
+      appShell.classList.toggle(
+        "app-shell--footer-header-hidden",
+        shouldHideMobileHeader || (isCompactViewport && revealProgress > 0.01),
       );
       const compactEndThreshold = Math.max(24, layoutViewportHeight * 0.04);
       const isDeepFooterReveal = isCompactViewport
@@ -254,6 +268,7 @@ export default function FooterScrollScene() {
       appShell.classList.remove(
         "app-shell--footer-scroll-active",
         "app-shell--footer-scroll-deep",
+        "app-shell--footer-header-hidden",
         "app-shell--footer-reveal-suppressed",
       );
     };
