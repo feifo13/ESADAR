@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { resolveAssetUrl } from '../lib/api.js';
-import fallbackArticleImage from '../assets/article-image-fallback.png';
+import fallbackArticleImage from '../assets/article-image-fallback.webp';
 
 function resolveSrcSet(value) {
   if (!value) return '';
