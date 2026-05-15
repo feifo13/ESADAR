@@ -125,13 +125,13 @@ export default function AdminAuditPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>Auditoria</h1>
+            <h1>Auditoría</h1>
           </div>
           <p className="muted-copy">{pagination.total || 0} eventos</p>
         </div>
 
         <ResponsiveFilterPanel
-          title="Filtros de auditoria"
+          title="Filtros de auditoría"
           description=""
           buttonLabel="Mostrar filtros"
           summary={

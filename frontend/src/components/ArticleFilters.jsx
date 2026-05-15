@@ -100,7 +100,7 @@ export default function ArticleFilters({
   }
 
   return (
-    <aside className="filters-sidebar" aria-label="Filtros y ordenamiento del catalogo">
+    <aside className="filters-sidebar" aria-label="Filtros y ordenamiento del catálogo">
       {showSort ? (
         <div className="filters-sidebar-section filters-sidebar-section--sort">
           <p className="section-kicker">Ordenamiento</p>
@@ -110,7 +110,7 @@ export default function ArticleFilters({
               className="input"
               value={draftFilters.sort}
               onChange={(event) => updateField("sort", event.target.value)}
-              aria-label="Ordenar catalogo"
+              aria-label="Ordenar catálogo"
             >
               <option value="intake_desc">Ingreso más reciente</option>
               <option value="intake_asc">Ingreso más antiguo</option>
@@ -155,7 +155,7 @@ export default function ArticleFilters({
           value={draftFilters.categoryId}
           onChange={(event) => updateField("categoryId", event.target.value)}
         >
-          <option value="">Todas las categorias</option>
+          <option value="">Todas las categorías</option>
           {categoryOptions.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}

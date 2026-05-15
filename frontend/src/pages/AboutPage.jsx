@@ -60,7 +60,7 @@ export default function AboutPage() {
         </p>
         <p className="muted-copy">
           No hay stock infinito ni referencias repetidas. Esa es parte de la
-          gracia: el catalogo cambia, las prendas vuelan y cada pieza entra
+          gracia: el catálogo cambia, las prendas vuelan y cada pieza entra
           porque vale la pena.
         </p> */}
       </section>

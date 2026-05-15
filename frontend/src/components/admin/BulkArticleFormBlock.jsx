@@ -31,7 +31,7 @@ export default function BulkArticleFormBlock({
       <div className="section-heading section-heading-wrap">
         <div>
           <p className="section-kicker">Carga multiple</p>
-          <h2>Articulo {index + 1}</h2>
+          <h2>Artículo {index + 1}</h2>
           <p className="muted-copy">
             {isReady ? "Listo para subir" : "Faltan datos obligatorios"}
           </p>
@@ -67,7 +67,7 @@ export default function BulkArticleFormBlock({
             <h3>Datos basicos</h3>
             <div className="admin-filter-grid">
               <label className="field-group field-group-span-2">
-                <span>Titulo *</span>
+              <span>Título *</span>
                 <input
                   className="input"
                   name={`bulk-title-${article.id}`}
@@ -221,10 +221,10 @@ export default function BulkArticleFormBlock({
           </div>
 
           <div className="page-stack-sm">
-            <h3>Descripcion y medidas</h3>
+          <h3>Descripción y medidas</h3>
             <div className="admin-filter-grid">
               <label className="field-group field-group-span-2">
-                <span>Descripcion visible</span>
+              <span>Descripción visible</span>
                 <textarea
                   className="input textarea"
                   rows="4"
@@ -246,7 +246,7 @@ export default function BulkArticleFormBlock({
                 />
               </label>
               <label className="field-group">
-                <span>Precio compra articulo</span>
+              <span>Precio compra artículo</span>
                 <input
                   className="input"
                   type="number"
@@ -308,7 +308,7 @@ export default function BulkArticleFormBlock({
             </p>
             <div className="admin-filter-grid">
               <label className="field-group">
-                <span>Codigo interno manual</span>
+              <span>Código interno manual</span>
                 <input
                   className="input"
                   value={article.internalCode}

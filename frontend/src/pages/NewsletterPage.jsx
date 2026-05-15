@@ -257,7 +257,7 @@ export default function NewsletterPage() {
               {leadSubmitting ? "Guardando…" : "Avisarme"}
             </button>
             <Link className="button button-secondary" to="/articles">
-              Volver al catalogo
+              Volver al catálogo
             </Link>
           </div>
         </form>

@@ -185,7 +185,7 @@ export default function AdminContactMessagesPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Nombre, email, telefono, mensaje"
+                placeholder="Nombre, email, teléfono, mensaje"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -200,7 +200,7 @@ export default function AdminContactMessagesPage() {
               >
                 <option value="">Todos</option>
                 <option value="NEW">Nuevos</option>
-                <option value="READ">Leidos</option>
+                <option value="READ">Leídos</option>
                 <option value="REPLIED">Respondidos</option>
                 <option value="ARCHIVED">Archivados</option>
               </select>

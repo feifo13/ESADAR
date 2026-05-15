@@ -176,7 +176,7 @@ export default function AdminOrdersPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>Ordenes</h1>
+            <h1>Órdenes</h1>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export default function AdminOrdersPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Numero, cliente, email, articulo"
+                placeholder="Número, cliente, email, artículo"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -302,7 +302,7 @@ export default function AdminOrdersPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="createdAt">Fecha</option>
-                <option value="orderNumber">Numero</option>
+                <option value="orderNumber">Número</option>
                 <option value="total">Total</option>
                 <option value="orderStatus">Estado de orden</option>
                 <option value="paymentStatus">Estado de pago</option>
@@ -323,7 +323,7 @@ export default function AdminOrdersPage() {
             </label>
 
             <label className="field-group">
-              <span>Tamano de pagina</span>
+              <span>Tamaño de página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}

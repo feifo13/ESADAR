@@ -15058,9 +15058,80 @@ dialog,
     0 0 0 3px color-mix(in srgb, var(--navy) 20%, transparent);
 }
 
+@media (min-width: 821px) {
+  .footer-scroll-scene__copy--terms,
+  .footer-scroll-scene__copy--terms:hover,
+  .footer-scroll-scene__copy--terms:focus-visible {
+    border-color: rgba(255, 255, 255, 0.92);
+    background: #ffffff;
+    color: var(--navy) !important;
+    text-shadow: none;
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+}
+
 .footer-terms-link {
   margin-top: 6px;
   font-weight: 800;
+}
+
+/* ESADAR admin analytics/list consistency */
+.admin-statistics-page,
+.admin-wishlists-page {
+  min-width: 0;
+}
+
+.admin-statistics-page .stats-kpi-grid,
+.admin-wishlists-page .stats-kpi-grid,
+.admin-statistics-page .admin-detail-grid,
+.admin-wishlists-page .admin-detail-grid,
+.admin-statistics-page .table-stack,
+.admin-wishlists-page .table-stack {
+  min-width: 0;
+}
+
+.admin-statistics-page .stats-kpi-card,
+.admin-wishlists-page .stats-kpi-card {
+  min-width: 0;
+}
+
+.admin-statistics-page .stats-kpi-card strong,
+.admin-wishlists-page .stats-kpi-card strong,
+.admin-wishlists-page .history-row strong,
+.admin-wishlists-page .history-row .muted-copy {
+  overflow-wrap: anywhere;
+}
+
+.admin-wishlists-page .history-row > div:not(.history-row__media):not(.history-row__meta),
+.admin-statistics-page .stats-bar-copy {
+  min-width: 0;
+}
+
+.admin-empty-state {
+  padding: 14px 16px;
+  border: 1px dashed color-mix(in srgb, var(--border) 86%, var(--muted));
+  background: color-mix(in srgb, var(--surface) 94%, var(--surface-soft));
+}
+
+@media (max-width: 720px) {
+  .admin-wishlists-page .history-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-wishlists-page .history-row:not(.history-row--with-image) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-wishlists-page .history-row__meta {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-items: start;
+    text-align: left;
+  }
 }
 
 .guide-page-shell,

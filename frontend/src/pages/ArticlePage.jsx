@@ -897,7 +897,7 @@ export default function ArticlePage() {
                 <p className="section-kicker">Estado de la prenda</p>
                 <p className="muted-copy">
                   {article.originNotes ||
-                    "La pieza fue revisada y curada para el catalogo de ESADAR."}
+                    "La pieza fue revisada y curada para el catálogo de ESADAR."}
                 </p>
               </div>
             </div> */}

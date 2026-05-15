@@ -223,7 +223,7 @@ export default function AdminArticlesPage() {
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      const errorMessage = err.message || "No se pudo exportar el catalogo";
+      const errorMessage = err.message || "No se pudo exportar el catálogo";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
@@ -487,7 +487,7 @@ export default function AdminArticlesPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>Articulos</h1>
+            <h1>Artículos</h1>
           </div>
 
           <div className="toolbar-inline toolbar-inline-end">
@@ -529,7 +529,7 @@ export default function AdminArticlesPage() {
         </div>
 
         <ResponsiveFilterPanel
-          title="Filtros de articulos"
+          title="Filtros de artículos"
           description=""
           buttonLabel="Mostrar filtros"
           summary={
@@ -546,7 +546,7 @@ export default function AdminArticlesPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Titulo, codigo, categoria, marca"
+                placeholder="Título, código, categoría, marca"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -677,15 +677,15 @@ export default function AdminArticlesPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="intakeDate">Ingreso</option>
-                <option value="title">Titulo</option>
-                <option value="internalCode">Codigo</option>
+                <option value="title">Título</option>
+                <option value="internalCode">Código</option>
                 <option value="discountedPrice">Precio final</option>
                 <option value="salePrice">Precio base</option>
                 <option value="quantityAvailable">Stock disponible</option>
                 <option value="status">Estado</option>
                 <option value="categoryName">Categoría</option>
                 <option value="brandName">Marca</option>
-                <option value="updatedAt">Actualizacion</option>
+                <option value="updatedAt">Actualización</option>
               </select>
             </label>
 
@@ -702,7 +702,7 @@ export default function AdminArticlesPage() {
             </label>
 
             <label className="field-group">
-              <span>Por pagina</span>
+              <span>Por página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -721,7 +721,7 @@ export default function AdminArticlesPage() {
             <div className="section-heading section-heading-wrap">
               <div>
                 <p className="section-kicker">Batch</p>
-                <h2>Importar articulos</h2>
+            <h2>Importar artículos</h2>
                 <p className="muted-copy">
                   Para carga rapida solo necesitas titulo y precio. El resto se
                   completa con valores seguros.
@@ -811,7 +811,7 @@ export default function AdminArticlesPage() {
                       setUpdateExisting(event.target.checked)
                     }
                   />
-                  <span>Actualizar por codigo si ya existe</span>
+                      <span>Actualizar por código si ya existe</span>
                 </label>
 
                 <label className="field-group checkbox-field checkbox-field-compact">
@@ -822,7 +822,7 @@ export default function AdminArticlesPage() {
                       setCreateMissingLookups(event.target.checked)
                     }
                   />
-                  <span>Crear categorias, marcas y talles faltantes</span>
+                      <span>Crear categorías, marcas y talles faltantes</span>
                 </label>
               </div>
             </div>
@@ -887,8 +887,8 @@ export default function AdminArticlesPage() {
                       <tr>
                         <th>Fila</th>
                         <th>Accion</th>
-                        <th>Codigo</th>
-                        <th>Titulo</th>
+                        <th>Código</th>
+                        <th>Título</th>
                         <th>Errores</th>
                         <th>Advertencias</th>
                       </tr>
@@ -996,7 +996,7 @@ export default function AdminArticlesPage() {
                     const categoryName =
                       article.category?.name ||
                       article.categoryName ||
-                      "Sin categoria";
+                      "Sin categoría";
                     const brandName =
                       article.brand?.name || article.brandName || "Sin marca";
                     const sizeName =
@@ -1034,7 +1034,7 @@ export default function AdminArticlesPage() {
                               {article.title}
                             </Link>
                             <span className="muted-copy">
-                              Codigo: {article.internalCode || "Sin codigo"}
+                              Código: {article.internalCode || "Sin código"}
                             </span>
                           </div>
                         </td>

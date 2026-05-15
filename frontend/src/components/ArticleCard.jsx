@@ -34,7 +34,7 @@ export default function ArticleCard({
     Number(article.quantityAvailable || 0) <= 0 ||
     article.status === "SOLD_OUT";
   const categoryName =
-    article.category?.name || article.categoryName || "Sin categoria";
+    article.category?.name || article.categoryName || "Sin categoría";
   const brandName = article.brand?.name || article.brandName || "";
   const sizeLabel =
     article.sizeText ||

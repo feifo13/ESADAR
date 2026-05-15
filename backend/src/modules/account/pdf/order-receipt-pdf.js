@@ -3,6 +3,7 @@ import path from "node:path";
 import PDFDocument from "pdfkit";
 import { env } from "../../../config/env.js";
 import { sanitizePublicUrl } from "../../../utils/assets.js";
+import { formatDateTimePartsInTimeZone } from "../../../utils/date-format.js";
 import { fileURLToPath } from "node:url";
 
 const PAGE = { width: 720, height: 960, margin: 30 };
@@ -64,20 +65,6 @@ function formatCurrency(value) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(asNumber(value));
-}
-
-function pad(value) {
-  return String(value).padStart(2, "0");
-}
-
-function formatDateParts(value) {
-  if (!value) return { date: "-", time: "-" };
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { date: "-", time: "-" };
-  return {
-    date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())} hs`,
-  };
 }
 
 function websiteLabel(url) {
@@ -368,7 +355,7 @@ function drawFieldRow(doc, config) {
 function drawHeader(doc, order) {
   const left = PAGE.margin;
   const top = 26;
-  const { date, time } = formatDateParts(order.createdAt);
+  const { date, time } = formatDateTimePartsInTimeZone(order.createdAt);
 
   if (fs.existsSync(LOGO_PATH)) {
     doc.image(LOGO_PATH, left, top + 2, {

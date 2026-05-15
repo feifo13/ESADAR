@@ -210,7 +210,7 @@ export default function AdminLeadsPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Nombre, email, telefono, Instagram"
+                placeholder="Nombre, email, teléfono, Instagram"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -280,7 +280,7 @@ export default function AdminLeadsPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="createdAt">Alta</option>
-                <option value="updatedAt">Actualizacion</option>
+                <option value="updatedAt">Actualización</option>
                 <option value="source">Origen</option>
                 <option value="leadStatus">Estado</option>
                 <option value="name">Nombre</option>

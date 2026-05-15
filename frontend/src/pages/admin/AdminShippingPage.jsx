@@ -260,7 +260,7 @@ export default function AdminShippingPage() {
 
           <div className="form-grid-two">
             <label className="field-group">
-              <span>Descripcion</span>
+                  <span>Descripción</span>
               <input
                 className="input"
                 value={form.description}
@@ -338,7 +338,7 @@ export default function AdminShippingPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Descripcion o instrucciones"
+                placeholder="Descripción o instrucciones"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -365,8 +365,8 @@ export default function AdminShippingPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="createdAt">Fecha de alta</option>
-                <option value="updatedAt">Ultima actualizacion</option>
-                <option value="description">Descripcion</option>
+                <option value="updatedAt">Última actualización</option>
+                <option value="description">Descripción</option>
                 <option value="baseCost">Costo</option>
                 <option value="status">Estado</option>
               </select>
@@ -383,7 +383,7 @@ export default function AdminShippingPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Tamano de pagina</span>
+              <span>Tamaño de página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -476,7 +476,7 @@ export default function AdminShippingPage() {
                       </td>
                       <td data-label="Uso">
                         <span className="muted-copy">
-                          Ordenes: {method.orderCount}
+                          Órdenes: {method.orderCount}
                         </span>
                       </td>
                       <td data-label="Actualizado">

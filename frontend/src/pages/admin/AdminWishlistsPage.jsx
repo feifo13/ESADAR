@@ -187,13 +187,13 @@ export default function AdminWishlistsPage() {
   }
 
   return (
-    <div className="container page-stack admin-page-shell">
+    <div className="container page-stack admin-page-shell admin-wishlists-page">
       <AdminToolbar />
 
       <section className="section-card page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Administracion</p>
+            <p className="section-kicker">Administración</p>
             <h1>Wishlists</h1>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function AdminWishlistsPage() {
                 className="input"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
-                placeholder="Nombre, contacto o articulo"
+                placeholder="Nombre, contacto o artículo"
               />
             </label>
             <label className="field-group">
@@ -254,7 +254,7 @@ export default function AdminWishlistsPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Estado articulo</span>
+              <span>Estado artículo</span>
               <select
                 className="input"
                 value={draftFilters.status}
@@ -304,7 +304,7 @@ export default function AdminWishlistsPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="updatedAt">Actividad</option>
-                <option value="lastSavedAt">Ultimo guardado</option>
+                <option value="lastSavedAt">Último guardado</option>
                 <option value="itemCount">Cantidad</option>
                 <option value="ownerName">Usuario</option>
                 <option value="source">Origen</option>
@@ -322,7 +322,7 @@ export default function AdminWishlistsPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Page size</span>
+              <span>Tamaño de página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -343,7 +343,7 @@ export default function AdminWishlistsPage() {
               <strong>{summary.totalWishlists}</strong>
             </article>
             <article className="stats-kpi-card">
-              <span>Articulos guardados</span>
+              <span>Artículos guardados</span>
               <strong>{summary.totalSavedItems}</strong>
             </article>
             <article className="stats-kpi-card">
@@ -355,7 +355,7 @@ export default function AdminWishlistsPage() {
               <strong>{summary.averageItemsPerWishlist}</strong>
             </article>
             <article className="stats-kpi-card">
-              <span>Articulo mas guardado</span>
+              <span>Artículo más guardado</span>
               <strong>{summary.topArticle?.title || "Sin datos"}</strong>
             </article>
             <article className="stats-kpi-card">
@@ -372,6 +372,8 @@ export default function AdminWishlistsPage() {
         {loading ? (
           <AppLoader variant="inline" label="Cargando analítica de guardados" />
         ) : null}
+
+        {error ? <p className="error-copy">{error}</p> : null}
       </section>
 
       <section className="admin-detail-grid">
@@ -380,11 +382,11 @@ export default function AdminWishlistsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Ranking</p>
-                <h2>Articulos mas guardados</h2>
+                <h2>Artículos más guardados</h2>
               </div>
             </div>
             <div className="table-stack">
-              {topArticles.map((item) => (
+              {topArticles.length ? topArticles.map((item) => (
                 <div
                   key={item.id}
                   className="history-row history-row--with-image"
@@ -400,7 +402,7 @@ export default function AdminWishlistsPage() {
                   <div>
                     <strong>{item.title}</strong>
                     <p className="muted-copy">
-                      {item.categoryName || "Sin categoria"} ·{" "}
+                      {item.categoryName || "Sin categoría"} ·{" "}
                       {item.brandName || "Sin marca"} ·{" "}
                       {item.sizeLabel || "Sin talle"}
                     </p>
@@ -414,13 +416,17 @@ export default function AdminWishlistsPage() {
                       to={articlePath(item)}
                       className="icon-action-button"
                       aria-label={`Ver ${item.title}`}
-                      title="Ver articulo"
+                      title="Ver artículo"
                     >
                       <EyeIcon />
                     </Link>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="muted-copy admin-empty-state">
+                  No hay artículos guardados para los filtros seleccionados.
+                </p>
+              )}
             </div>
           </section>
 
@@ -428,11 +434,11 @@ export default function AdminWishlistsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Usuarios</p>
-                <h2>Quien guarda mas prendas</h2>
+                <h2>Quién guarda más prendas</h2>
               </div>
             </div>
             <div className="table-stack">
-              {topUsers.map((item) => (
+              {topUsers.length ? topUsers.map((item) => (
                 <button
                   type="button"
                   key={item.id}
@@ -466,7 +472,11 @@ export default function AdminWishlistsPage() {
                     </span>
                   </div>
                 </button>
-              ))}
+              )) : (
+                <p className="muted-copy admin-empty-state">
+                  No hay usuarios con guardados en este período.
+                </p>
+              )}
             </div>
           </section>
 
@@ -478,7 +488,7 @@ export default function AdminWishlistsPage() {
               </div>
             </div>
             <div className="table-stack">
-              {items.map((item) => (
+              {items.length ? items.map((item) => (
                 <button
                   type="button"
                   key={item.id}
@@ -499,7 +509,7 @@ export default function AdminWishlistsPage() {
                         "Sin contacto"}
                     </p>
                     <p className="muted-copy">
-                      Ultimo articulo: {item.lastArticleTitle || "Sin prendas"}
+                      Último artículo: {item.lastArticleTitle || "Sin prendas"}
                     </p>
                   </div>
                   <div className="history-row__meta">
@@ -512,7 +522,11 @@ export default function AdminWishlistsPage() {
                     <span>{item.source || "Sin origen"}</span>
                   </div>
                 </button>
-              ))}
+              )) : (
+                <p className="muted-copy admin-empty-state">
+                  No hay wishlists para mostrar con estos filtros.
+                </p>
+              )}
             </div>
             <AdminPagination
               page={pagination.page}
@@ -526,7 +540,7 @@ export default function AdminWishlistsPage() {
           <div className="section-heading">
             <div>
               <p className="section-kicker">Detalle</p>
-              <h2>{selectedWishlist?.name || "Selecciona una wishlist"}</h2>
+              <h2>{selectedWishlist?.name || "Seleccioná una wishlist"}</h2>
             </div>
           </div>
 
@@ -549,7 +563,7 @@ export default function AdminWishlistsPage() {
                   {selectedWishlist.source || "Sin origen"}
                 </span>
                 <span>
-                  <strong>Ultima actividad:</strong>{" "}
+                  <strong>Última actividad:</strong>{" "}
                   {formatDate(selectedWishlist.updatedAt)}
                 </span>
               </div>
@@ -582,7 +596,7 @@ export default function AdminWishlistsPage() {
                         ·{" "}
                         {item.wasPurchasedByOwner
                           ? "Ya fue comprada"
-                          : "Aun no comprada"}
+                          : "Aún no comprada"}
                       </p>
                     </div>
                     <div className="history-row__meta">
@@ -594,7 +608,7 @@ export default function AdminWishlistsPage() {
                         to={articlePath(item)}
                         className="icon-action-button"
                         aria-label={`Ver ${item.title}`}
-                        title="Ver articulo"
+                        title="Ver artículo"
                       >
                         <EyeIcon />
                       </Link>
@@ -632,7 +646,7 @@ export default function AdminWishlistsPage() {
                     <div key={event.id} className="history-row">
                       <div>
                         <strong>
-                          {event.articleTitle || "Interaccion general"}
+                          {event.articleTitle || "Interacción general"}
                         </strong>
                         <p className="muted-copy">{event.eventType}</p>
                       </div>
@@ -646,7 +660,7 @@ export default function AdminWishlistsPage() {
             </>
           ) : (
             <p className="muted-copy">
-              Selecciona una wishlist para ver el detalle completo.
+              Seleccioná una wishlist para ver el detalle completo.
             </p>
           )}
         </aside>

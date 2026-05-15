@@ -391,10 +391,10 @@ export default function Header({ hideBrand = false }) {
   }
 
   const adminMenuChildren = [
-    { key: "admin-articles", label: "Articulos", to: "/admin/articles" },
+    { key: "admin-articles", label: "Artículos", to: "/admin/articles" },
     {
       key: "admin-article-new",
-      label: "Nuevo articulo",
+      label: "Nuevo artículo",
       to: "/admin/articles/new",
     },
     // {
@@ -402,7 +402,7 @@ export default function Header({ hideBrand = false }) {
     //   label: "Crear multiples",
     //   to: "/admin/articles/bulk-create",
     // },
-    { key: "admin-orders", label: "Ordenes", to: "/admin/orders" },
+    { key: "admin-orders", label: "Órdenes", to: "/admin/orders" },
     { key: "admin-offers", label: "Ofertas", to: "/admin/offers" },
     {
       key: "admin-contacts",
@@ -417,9 +417,9 @@ export default function Header({ hideBrand = false }) {
           { key: "admin-collecting", label: "Cobros", to: "/admin/collecting" },
         ]
       : []),
-    { key: "admin-shipping", label: "Envios", to: "/admin/shipping" },
-    { key: "admin-statistics", label: "Estadisticas", to: "/admin/statistics" },
-    { key: "admin-audit", label: "Auditoria", to: "/admin/audit" },
+    { key: "admin-shipping", label: "Envíos", to: "/admin/shipping" },
+    { key: "admin-statistics", label: "Estadísticas", to: "/admin/statistics" },
+    { key: "admin-audit", label: "Auditoría", to: "/admin/audit" },
   ];
 
   const mobileInfoLinks = [
@@ -541,7 +541,7 @@ export default function Header({ hideBrand = false }) {
           type="search"
           value={mobileSearch}
           onChange={(event) => setMobileSearch(event.target.value)}
-          placeholder="Buscar por titulo, marca o categoria"
+          placeholder="Buscar por título, marca o categoría"
         />
       </div>
       <button

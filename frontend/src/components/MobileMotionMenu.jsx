@@ -305,7 +305,7 @@ export default function MobileMotionMenu({
 
             <motion.nav
               className="mobile-nav-sheet__links"
-              aria-label="Navegacion principal"
+        aria-label="Navegación principal"
               variants={activeListVariants}
             >
               {searchContent ? (

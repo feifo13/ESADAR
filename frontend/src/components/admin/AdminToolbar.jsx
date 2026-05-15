@@ -2,8 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
 const leftLinks = [
-  { to: '/admin/articles', label: 'Articulos', end: true },
-  { to: '/admin/orders', label: 'Ordenes' },
+  { to: '/admin/articles', label: 'Artículos', end: true },
+  { to: '/admin/orders', label: 'Órdenes' },
   { to: '/admin/offers', label: 'Ofertas' },
   { to: '/admin/contact-messages', label: 'Contactos' },
   { to: '/admin/leads', label: 'Leads' },
@@ -13,9 +13,9 @@ const leftLinks = [
 const rightLinks = [
   { to: '/admin/users', label: 'Usuarios', adminOnly: true },
   { to: '/admin/collecting', label: 'Cobros', adminOnly: true },
-  { to: '/admin/shipping', label: 'Envios' },
-  { to: '/admin/statistics', label: 'Estadisticas' },
-  { to: '/admin/audit', label: 'Auditoria' },
+  { to: '/admin/shipping', label: 'Envíos' },
+  { to: '/admin/statistics', label: 'Estadísticas' },
+  { to: '/admin/audit', label: 'Auditoría' },
 ];
 
 function AdminTab({ to, label, end }) {
@@ -32,7 +32,7 @@ export default function AdminToolbar() {
   const visibleRightLinks = rightLinks.filter((link) => !link.adminOnly || canManageUsers);
 
   return (
-    <div className="admin-toolbar" aria-label="Navegacion de administracion">
+    <div className="admin-toolbar" aria-label="Navegación de administración">
       <div className="admin-toolbar__group admin-toolbar__group--left">
         {leftLinks.map((link) => (
           <AdminTab key={link.to} {...link} />

@@ -32,14 +32,14 @@ const ACCOUNT_LABELS = {
 };
 
 const ADMIN_LABELS = {
-  articles: "Articulos",
-  orders: "Ordenes",
+  articles: "Artículos",
+  orders: "Órdenes",
   offers: "Ofertas",
   "contact-messages": "Contactos",
   wishlists: "Wishlists",
-  audit: "Auditoria",
+  audit: "Auditoría",
   leads: "Leads",
-  statistics: "Estadisticas",
+  statistics: "Estadísticas",
 };
 
 function detailLabel(prefix, value) {
@@ -123,10 +123,10 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
     }
 
     if (section === "articles") {
-      if (parts[2] === "new") crumbs.push({ label: "Nuevo articulo" });
+    if (parts[2] === "new") crumbs.push({ label: "Nuevo artículo" });
       if (parts[2] === "bulk-create") crumbs.push({ label: "Carga masiva" });
       if (parts[3] === "edit")
-        crumbs.push({ label: detailLabel("Editar articulo", parts[2]) });
+        crumbs.push({ label: detailLabel("Editar artículo", parts[2]) });
       if (parts[3] === "stock")
         crumbs.push({ label: detailLabel("Ajustar stock", parts[2]) });
     } else if (section === "orders" && parts[2]) {
@@ -153,7 +153,7 @@ export default function AppBreadcrumbs({ labelOverrides = {} }) {
   const items = [{ label: "Inicio", to: "/" }, ...crumbs];
 
   return (
-    <nav className="app-breadcrumbs" aria-label="Ruta de navegacion">
+    <nav className="app-breadcrumbs" aria-label="Ruta de navegación">
       <ol className="app-breadcrumbs__list">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;

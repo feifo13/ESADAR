@@ -268,7 +268,7 @@ export default function BulkArticleCreatePage() {
 
         <label className="checkbox-field">
           <input type="checkbox" checked={createMissingLookups} onChange={(event) => setCreateMissingLookups(event.target.checked)} />
-          <span>Crear categorias, marcas y talles faltantes</span>
+          <span>Crear categorías, marcas y talles faltantes</span>
         </label>
 
       </section>

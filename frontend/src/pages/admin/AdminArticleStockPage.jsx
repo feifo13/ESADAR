@@ -138,7 +138,7 @@ export default function AdminArticleStockPage() {
             <h1>Ajustar stock</h1>
             {article ? (
               <p className="muted-copy">
-                {article.title} · {article.internalCode || "Sin codigo"}
+                {article.title} · {article.internalCode || "Sin código"}
               </p>
             ) : null}
           </div>
@@ -282,7 +282,7 @@ export default function AdminArticleStockPage() {
               <div className="cell-stack admin-stock-summary-copy">
                 <strong>{article.title}</strong>
                 <span className="muted-copy">
-                  Codigo: {article.internalCode || "Sin codigo"}
+                  Código: {article.internalCode || "Sin código"}
                 </span>
                 <StatusBadge
                   status={article.status}

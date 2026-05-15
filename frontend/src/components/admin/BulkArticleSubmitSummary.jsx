@@ -24,7 +24,7 @@ export default function BulkArticleSubmitSummary({ result }) {
             <div key={`${item.rowNumber}-${item.articleId}`} className="history-row">
               <div>
                 <strong>Articulo {item.rowNumber}: {item.title}</strong>
-                <p className="muted-copy">ID {item.articleId} · Codigo {item.internalCode}</p>
+                <p className="muted-copy">ID {item.articleId} · Código {item.internalCode}</p>
               </div>
               <span>{(item.warnings || []).length ? `${item.warnings.length} warnings` : 'OK'}</span>
             </div>

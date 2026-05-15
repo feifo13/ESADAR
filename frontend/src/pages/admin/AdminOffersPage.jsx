@@ -173,7 +173,7 @@ export default function AdminOffersPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Articulo, codigo, contacto, email"
+                placeholder="Artículo, código, contacto, email"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -262,7 +262,7 @@ export default function AdminOffersPage() {
                 <option value="createdAt">Fecha</option>
                 <option value="offeredAmount">Monto</option>
                 <option value="status">Estado</option>
-                <option value="articleTitle">Articulo</option>
+                <option value="articleTitle">Artículo</option>
                 <option value="contactName">Contacto</option>
               </select>
             </label>
@@ -280,7 +280,7 @@ export default function AdminOffersPage() {
             </label>
 
             <label className="field-group">
-              <span>Tamano de pagina</span>
+              <span>Tamaño de página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -379,7 +379,7 @@ export default function AdminOffersPage() {
                               `#${offer.article.id}`}
                           </span>
                           <span className="muted-copy">
-                            {offer.article.categoryName || "Sin categoria"} -{" "}
+                            {offer.article.categoryName || "Sin categoría"} -{" "}
                             {offer.article.brandName || "Sin marca"}
                           </span>
                         </div>

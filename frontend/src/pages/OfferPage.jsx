@@ -332,7 +332,7 @@ export default function OfferPage() {
                 </div>
                 <div>
                   <span>Categoría</span>
-                  <strong>{article.categoryName || "Sin categoria"}</strong>
+                  <strong>{article.categoryName || "Sin categoría"}</strong>
                 </div>
                 <div>
                   <span>Talle</span>
@@ -515,7 +515,7 @@ export default function OfferPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">También permiten oferta</p>
-            <h2>Más articulos ofertables</h2>
+            <h2>Más artículos ofertables</h2>
           </div>
           <ScrollRailControls
             targetRef={relatedTrackRef}

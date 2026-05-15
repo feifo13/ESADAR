@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
               <span>Buscar</span>
               <input
                 className="input"
-                placeholder="Nombre, email, telefono, rol"
+                placeholder="Nombre, email, teléfono, rol"
                 value={draftFilters.q}
                 onChange={(event) => updateDraft("q", event.target.value)}
               />
@@ -255,8 +255,8 @@ export default function AdminUsersPage() {
                 onChange={(event) => updateDraft("sortBy", event.target.value)}
               >
                 <option value="createdAt">Fecha de alta</option>
-                <option value="updatedAt">Ultima actualizacion</option>
-                <option value="lastLoginAt">Ultimo ingreso</option>
+                <option value="updatedAt">Última actualización</option>
+                <option value="lastLoginAt">Último ingreso</option>
                 <option value="name">Nombre</option>
                 <option value="email">Email</option>
                 <option value="status">Estado</option>
@@ -276,7 +276,7 @@ export default function AdminUsersPage() {
             </label>
 
             <label className="field-group">
-              <span>Tamano de pagina</span>
+              <span>Tamaño de página</span>
               <select
                 className="input"
                 value={draftFilters.pageSize}
@@ -388,13 +388,13 @@ export default function AdminUsersPage() {
                       <td data-label="Actividad">
                         <div className="cell-stack">
                           <span className="muted-copy">
-                            Ordenes: {user.orderCount}
+                            Órdenes: {user.orderCount}
                           </span>
                           <span className="muted-copy">
                             Ofertas: {user.offerCount}
                           </span>
                           <span className="muted-copy">
-                            Ultimo ingreso:{" "}
+                            Último ingreso:{" "}
                             {user.lastLoginAt
                               ? formatDate(user.lastLoginAt)
                               : "Sin ingresos"}

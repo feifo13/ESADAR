@@ -260,19 +260,19 @@ export default function AdminStatisticsPage() {
   }
 
   return (
-    <div className="container page-stack admin-page-shell">
+    <div className="container page-stack admin-page-shell admin-statistics-page">
       <AdminToolbar />
 
       <section className="section-card page-stack">
         <div className="section-heading">
           <div>
-            <p className="section-kicker">Administracion</p>
-            <h1>Estadisticas</h1>
+            <p className="section-kicker">Administración</p>
+            <h1>Estadísticas</h1>
           </div>
         </div>
 
         <ResponsiveFilterPanel
-          title="Filtros de estadisticas"
+          title="Filtros de estadísticas"
           description=""
           buttonLabel="Mostrar filtros"
           summary={
@@ -371,7 +371,7 @@ export default function AdminStatisticsPage() {
               </select>
             </label>
             <label className="field-group">
-              <span>Envio</span>
+              <span>Envío</span>
               <select
                 className="input"
                 value={draftFilters.shippingMethod}
@@ -394,10 +394,10 @@ export default function AdminStatisticsPage() {
                 value={draftFilters.groupBy}
                 onChange={(event) => updateDraft("groupBy", event.target.value)}
               >
-                <option value="day">Dia</option>
+                <option value="day">Día</option>
                 <option value="week">Semana</option>
                 <option value="month">Mes</option>
-                <option value="year">Ano</option>
+                <option value="year">Año</option>
               </select>
             </label>
           </div>
@@ -453,59 +453,75 @@ export default function AdminStatisticsPage() {
       </section>
 
       {loading ? (
-        <div className="section-card"><AppLoader variant="card" label="Cargando estadísticas" /></div>
+        <section className="section-card">
+          <AppLoader variant="card" label="Cargando estadísticas" />
+        </section>
+      ) : null}
+
+      {error ? (
+        <section className="section-card admin-empty-state">
+          <p className="error-copy">{error}</p>
+        </section>
       ) : null}
 
       {summary ? (
-        <section className="stats-kpi-grid">
-          <article className="stats-kpi-card">
-            <span>Ventas totales</span>
-            <strong>{summary.totalOrders}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Ingresos brutos</span>
-            <strong>{formatCurrency(summary.grossRevenue)}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Ganancia estimada</span>
-            <strong>{formatCurrency(summary.estimatedProfit)}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Margen promedio</span>
-            <strong>{summary.averageMargin}%</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Articulos vendidos</span>
-            <strong>{summary.itemsSold}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Ticket promedio</span>
-            <strong>{formatCurrency(summary.averageTicket)}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Cliente que mas compro</span>
-            <strong>{summary.topCustomer?.customerName || "Sin datos"}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Prenda mas vendida</span>
-            <strong>{summary.topArticle?.title || "Sin datos"}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Categoría más vendida</span>
-            <strong>{summary.topCategory?.categoryName || "Sin datos"}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Wishlist destacada</span>
-            <strong>{summary.topWishlistArticle?.title || "Sin datos"}</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Conversion wishlist</span>
-            <strong>{summary.wishlistConversionRate}%</strong>
-          </article>
-          <article className="stats-kpi-card">
-            <span>Costos incompletos</span>
-            <strong>{summary.incompleteCostRows}</strong>
-          </article>
+        <section className="section-card page-stack">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Resumen</p>
+              <h2>Indicadores principales</h2>
+            </div>
+          </div>
+          <div className="stats-kpi-grid">
+            <article className="stats-kpi-card">
+              <span>Ventas totales</span>
+              <strong>{summary.totalOrders}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Ingresos brutos</span>
+              <strong>{formatCurrency(summary.grossRevenue)}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Ganancia estimada</span>
+              <strong>{formatCurrency(summary.estimatedProfit)}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Margen promedio</span>
+              <strong>{summary.averageMargin}%</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Artículos vendidos</span>
+              <strong>{summary.itemsSold}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Ticket promedio</span>
+              <strong>{formatCurrency(summary.averageTicket)}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Cliente que más compró</span>
+              <strong>{summary.topCustomer?.customerName || "Sin datos"}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Prenda más vendida</span>
+              <strong>{summary.topArticle?.title || "Sin datos"}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Categoría más vendida</span>
+              <strong>{summary.topCategory?.categoryName || "Sin datos"}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Wishlist destacada</span>
+              <strong>{summary.topWishlistArticle?.title || "Sin datos"}</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Conversión wishlist</span>
+              <strong>{summary.wishlistConversionRate}%</strong>
+            </article>
+            <article className="stats-kpi-card">
+              <span>Costos incompletos</span>
+              <strong>{summary.incompleteCostRows}</strong>
+            </article>
+          </div>
         </section>
       ) : null}
 
@@ -515,7 +531,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Tendencia</p>
-                <h2>Cuando se vendio mas</h2>
+                <h2>Cuándo se vendió más</h2>
               </div>
             </div>
             <LineChart items={salesOverTime} valueKey="revenue" />
@@ -525,7 +541,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Prendas</p>
-                <h2>Items mas comprados</h2>
+                <h2>Ítems más comprados</h2>
               </div>
             </div>
             <HorizontalBars
@@ -543,7 +559,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Clientes</p>
-                <h2>Top 10 usuarios que mas compran</h2>
+                <h2>Top 10 usuarios que más compran</h2>
               </div>
             </div>
             <HorizontalBars
@@ -561,7 +577,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Categorías</p>
-                <h2>Tipos de prendas mas vendidas</h2>
+                <h2>Tipos de prendas más vendidas</h2>
               </div>
             </div>
             <HorizontalBars
@@ -586,7 +602,7 @@ export default function AdminStatisticsPage() {
             {profit ? (
               <>
                 <p className="muted-copy">
-                  La ganancia es estimada si faltan costos de compra, envio o
+                  La ganancia es estimada si faltan costos de compra, envío o
                   courier.
                 </p>
                 <div className="stats-kpi-grid stats-kpi-grid--compact">
@@ -621,7 +637,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Wishlist / Guardados</p>
-                <h2>Intencion de compra</h2>
+                <h2>Intención de compra</h2>
               </div>
             </div>
             {wishlist ? (
@@ -636,11 +652,11 @@ export default function AdminStatisticsPage() {
                     <strong>{wishlist.summary?.totalSavedItems || 0}</strong>
                   </article>
                   <article className="stats-kpi-card">
-                    <span>Conversion</span>
+                    <span>Conversión</span>
                     <strong>{wishlist.summary?.conversionRate || 0}%</strong>
                   </article>
                   <article className="stats-kpi-card">
-                    <span>Ultima actividad</span>
+                    <span>Última actividad</span>
                     <strong>
                       {wishlist.summary?.lastActivity
                         ? formatDate(wishlist.summary.lastActivity)
@@ -662,7 +678,7 @@ export default function AdminStatisticsPage() {
             <div className="section-heading">
               <div>
                 <p className="section-kicker">Estudio de mercado</p>
-                <h2>Interes y rotacion</h2>
+                <h2>Interés y rotación</h2>
               </div>
             </div>
 
@@ -674,7 +690,7 @@ export default function AdminStatisticsPage() {
               <div className="page-stack">
                 <div className="market-study-grid">
                   <div>
-                    <h3>Demanda por categoria</h3>
+                    <h3>Demanda por categoría</h3>
                     <HorizontalBars
                       items={marketStudy.categoryDemand || []}
                       valueKey="soldCount"
@@ -728,7 +744,7 @@ export default function AdminStatisticsPage() {
                 </div>
 
                 <div>
-                  <h3>Articulos con alto interes y baja conversion</h3>
+                  <h3>Artículos con alto interés y baja conversión</h3>
                   <HorizontalBars
                     items={marketStudy.highInterestLowConversion || []}
                     valueKey="savesCount"
@@ -740,7 +756,7 @@ export default function AdminStatisticsPage() {
                 </div>
 
                 <div>
-                  <h3>Baja rotacion</h3>
+                  <h3>Baja rotación</h3>
                   <HorizontalBars
                     items={marketStudy.lowRotation || []}
                     valueKey="daysPublished"

@@ -392,7 +392,7 @@ export default function AdminArticleFormPage() {
 
     if (stepIndex === 0 && isCreateNewLookup(form.categoryId) && !normalizeLabel(form.categoryName)) {
       return {
-        message: "Ingresa el nombre de la nueva categoria.",
+        message: "Ingresá el nombre de la nueva categoría.",
         target: "article-category-name",
         stepIndex,
       };
@@ -836,7 +836,7 @@ export default function AdminArticleFormPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>{isEdit ? "Editar articulo" : "Nuevo articulo"}</h1>
+              <h1>{isEdit ? "Editar artículo" : "Nuevo artículo"}</h1>
 
             {/* <p className="muted-copy">
               Alta individual guiada. Si prefieres cargar varios artículos
@@ -913,7 +913,7 @@ export default function AdminArticleFormPage() {
                     }));
                   }}
                 >
-                  <option value="">Sin categoria / default</option>
+                  <option value="">Sin categoría / default</option>
                   {categoryOptions.map((option) => (
                     <option key={option.id} value={option.id}>
                       {option.label}
@@ -925,13 +925,13 @@ export default function AdminArticleFormPage() {
                   form.categoryName ? (
                     <option value={form.categoryId}>{form.categoryName}</option>
                   ) : null}
-                  <option value={NEW_LOOKUP_VALUE}>Crear nueva categoria...</option>
+                  <option value={NEW_LOOKUP_VALUE}>Crear nueva categoría...</option>
                 </select>
               </label>
 
               {isCreateNewLookup(form.categoryId) ? (
                 <label className="field-group field-group--quick-lookup field-group--quick-lookup-new">
-                  <span>Nueva categoria / rubro</span>
+                  <span>Nueva categoría / rubro</span>
                   <input
                     className="input"
                     name="article-category-name"
@@ -1112,7 +1112,7 @@ export default function AdminArticleFormPage() {
               </label>
 
               <label className="field-group form-grid-span-two">
-                <span>Descripcion</span>
+                <span>Descripción</span>
                 <textarea
                   className="input textarea"
                   value={form.description}
@@ -1305,7 +1305,7 @@ export default function AdminArticleFormPage() {
                     update("isFeatured", event.target.checked)
                   }
                 />
-                <span>Destacado en catalogo</span>
+                <span>Destacado en catálogo</span>
               </label>
             </div>
 
@@ -1360,7 +1360,7 @@ export default function AdminArticleFormPage() {
                   </span>
                 </label>
                 <label className="field-group">
-                  <span>Precio compra articulo</span>
+                  <span>Precio compra artículo</span>
                   <input
                     className="input"
                     type="number"
@@ -1461,7 +1461,7 @@ export default function AdminArticleFormPage() {
                               event.target.value,
                             )
                           }
-                          placeholder="Descripcion util para Google Images y accesibilidad"
+                          placeholder="Descripción útil para Google Images y accesibilidad"
                         />
                       </label>
 
@@ -1608,7 +1608,7 @@ export default function AdminArticleFormPage() {
               </p>
               <div className="form-grid-two">
                 <label className="field-group">
-                  <span>Codigo interno manual</span>
+                    <span>Código interno manual</span>
                   <input
                     className="input"
                     value={form.internalCode}

@@ -133,7 +133,7 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
   return (
     <div className={normalized.length > 1 ? 'article-gallery-layout' : 'article-gallery-layout article-gallery-layout--single'}>
       {normalized.length >= 1 ? (
-        <div className="article-gallery-thumbs" tabIndex={0} aria-label="Miniaturas del articulo">
+        <div className="article-gallery-thumbs" tabIndex={0} aria-label="Miniaturas del artículo">
           {normalized.map((image, index) => (
             <button
               type="button"

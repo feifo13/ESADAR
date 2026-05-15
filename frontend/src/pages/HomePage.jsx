@@ -682,7 +682,7 @@ export default function HomePage() {
         setItems((current) => [...current, ...nextItems]);
       } catch (err) {
         if (!ignore) {
-          const message = err.message || "No se pudo cargar el catalogo";
+          const message = err.message || "No se pudo cargar el catálogo";
           setError(message);
           notifyMobileStatus({ type: "error", icon: "error", message });
         }
@@ -1008,7 +1008,7 @@ export default function HomePage() {
 
       {/* <section
         className="mobile-catalog-filter-shell container"
-        aria-label="Filtros del catalogo"
+        aria-label="Filtros del catálogo"
       >
         <button
           type="button"
@@ -1099,7 +1099,7 @@ export default function HomePage() {
 
           {/* <div
             className="catalog-quick-actions"
-            aria-label="Acciones rapidas del catalogo"
+            aria-label="Acciones rápidas del catálogo"
           >
             <button
               type="button"

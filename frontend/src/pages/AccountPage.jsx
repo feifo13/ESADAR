@@ -802,7 +802,7 @@ export default function AccountPage() {
                 />
               </label>
               <label className="field-group">
-                <span>Codigo postal</span>
+                <span>Código postal</span>
                 <input
                   className="input"
                   name="postalCode"
@@ -965,7 +965,7 @@ export default function AccountPage() {
             <div className="page-stack-sm">
               <p className="muted-copy">Todavía no guardaste prendas.</p>
               <Link to="/" className="button button-primary">
-                Ver catalogo
+                Ver catálogo
               </Link>
             </div>
           ) : null}
