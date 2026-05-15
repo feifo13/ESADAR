@@ -15321,20 +15321,20 @@ dialog,
   }
 
   .site-header .header-mobile-shell {
-    grid-template-columns: 55px minmax(0, 1fr) 55px !important;
+    grid-template-columns: 48px minmax(0, 1fr) 48px !important;
   }
 
   .site-header .header-actions-mobile__menu {
-    width: 55px !important;
-    height: 55px !important;
-    min-width: 55px !important;
-    min-height: 55px !important;
-    max-height: 55px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
   }
 
   .site-header .header-actions-mobile__menu > span,
   .site-header .header-actions-mobile__menu svg.menu-glyph {
-    width: 25px !important;
-    height: 25px !important;
+    width: 22px !important;
+    height: 22px !important;
   }
 }

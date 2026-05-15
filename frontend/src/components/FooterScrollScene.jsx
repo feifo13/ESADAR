@@ -45,7 +45,6 @@ export default function FooterScrollScene() {
     let frameId = 0;
     let suppressTimerId = 0;
 
-
     function setFooterRevealSuppressed(isSuppressed) {
       appShell.classList.toggle(
         "app-shell--footer-reveal-suppressed",
@@ -65,7 +64,9 @@ export default function FooterScrollScene() {
     function update() {
       frameId = 0;
 
-      const globalSuppressUntil = Number(window.__esadarFooterSuppressUntil || 0);
+      const globalSuppressUntil = Number(
+        window.__esadarFooterSuppressUntil || 0,
+      );
       if (
         suppressRevealUntilManualRef.current ||
         Date.now() < suppressRevealUntilRef.current ||
@@ -91,7 +92,10 @@ export default function FooterScrollScene() {
         window.matchMedia?.("(max-width: 960px)")?.matches ||
         window.innerWidth <= 960;
       const scrollTop =
-        window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
       const maxScroll = Math.max(
         0,
         document.documentElement.scrollHeight - layoutViewportHeight,
@@ -144,7 +148,8 @@ export default function FooterScrollScene() {
       }
 
       const duration = Number(event.detail?.duration || 0);
-      const suppressMs = Number.isFinite(duration) && duration > 0 ? duration : 1200;
+      const suppressMs =
+        Number.isFinite(duration) && duration > 0 ? duration : 1200;
       const untilManual = Boolean(event.detail?.untilManual);
 
       suppressRevealUntilRef.current = Math.max(
@@ -188,9 +193,16 @@ export default function FooterScrollScene() {
 
     scheduleUpdate();
     const settleTimer = window.setTimeout(scheduleUpdate, 80);
-    window.addEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
-    window.addEventListener("wheel", handleManualScrollIntent, { passive: true });
-    window.addEventListener("touchmove", handleManualScrollIntent, { passive: true });
+    window.addEventListener(
+      "esadar:suppress-footer-reveal",
+      handleSuppressFooterReveal,
+    );
+    window.addEventListener("wheel", handleManualScrollIntent, {
+      passive: true,
+    });
+    window.addEventListener("touchmove", handleManualScrollIntent, {
+      passive: true,
+    });
     window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
@@ -199,7 +211,10 @@ export default function FooterScrollScene() {
       if (frameId) window.cancelAnimationFrame(frameId);
       if (suppressTimerId) window.clearTimeout(suppressTimerId);
       window.clearTimeout(settleTimer);
-      window.removeEventListener("esadar:suppress-footer-reveal", handleSuppressFooterReveal);
+      window.removeEventListener(
+        "esadar:suppress-footer-reveal",
+        handleSuppressFooterReveal,
+      );
       window.removeEventListener("wheel", handleManualScrollIntent);
       window.removeEventListener("touchmove", handleManualScrollIntent);
       window.removeEventListener("keydown", handleManualScrollIntent);
@@ -222,10 +237,7 @@ export default function FooterScrollScene() {
       aria-label="Cierre visual ESADAR"
     >
       <div className="footer-scroll-scene__sticky">
-        <div
-          className="footer-scroll-scene__ring"
-          aria-hidden="true"
-        />
+        <div className="footer-scroll-scene__ring" aria-hidden="true" />
         <div className="footer-scroll-scene__content">
           <button
             type="button"
@@ -240,7 +252,10 @@ export default function FooterScrollScene() {
               decoding="async"
             />
           </button>
-          <div className="footer-scroll-scene__actions" aria-label="Acciones del footer">
+          <div
+            className="footer-scroll-scene__actions"
+            aria-label="Acciones del footer"
+          >
             <Link
               to="/about"
               className="button footer-scroll-scene__copy footer-scroll-scene__copy--about"
@@ -253,13 +268,13 @@ export default function FooterScrollScene() {
             >
               Contacto
             </Link>
+            <Link
+              to="/terminos-y-condiciones"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
+            >
+              Términos y condiciones
+            </Link>
           </div>
-          <Link
-            to="/terminos-y-condiciones"
-            className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
-          >
-            Términos y condiciones
-          </Link>
         </div>
       </div>
     </footer>
