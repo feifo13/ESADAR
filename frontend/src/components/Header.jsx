@@ -1,6 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useCart } from "../contexts/CartContext.jsx";
 import MobileMotionMenu from "./MobileMotionMenu.jsx";
@@ -204,7 +203,6 @@ export default function Header({ hideBrand = false }) {
     clearCatalogFilters,
     clearCatalogSort,
   } = useMobileMenu();
-  const shouldReduceMotion = useReducedMotion();
   const [cartPulse, setCartPulse] = useState(false);
   const [flyFx, setFlyFx] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -468,29 +466,18 @@ export default function Header({ hideBrand = false }) {
   function renderMenuButton() {
     return (
       <span className="header-mobile-menu-wrap">
-        <motion.button
+        <button
           type="button"
           className="ghost-button header-actions-mobile__menu"
           aria-controls={mobileMenuId}
           aria-expanded={mobileMenuOpen}
           aria-label={mobileMenuOpen ? "Cerrar menu" : "Abrir menu"}
           onClick={() => setMobileMenuOpen((current) => !current)}
-          initial={false}
-          whileTap={shouldReduceMotion ? undefined : { scale: 0.95 }}
         >
-          <motion.span
-            animate={
-              mobileMenuOpen
-                ? { rotate: -3, scale: 0.95 }
-                : { rotate: 0, scale: 1 }
-            }
-            transition={
-              shouldReduceMotion ? { duration: 0 } : { duration: 0.12 }
-            }
-          >
+          <span>
             <MenuGlyph />
-          </motion.span>
-        </motion.button>
+          </span>
+        </button>
         <span
           className="mobile-catalog-indicators"
           aria-hidden={

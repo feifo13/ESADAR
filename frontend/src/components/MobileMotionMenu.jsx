@@ -1,64 +1,47 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+
+const instantTransition = { duration: 0 };
 
 const overlayVariants = {
-  closed: { opacity: 0 },
+  closed: {
+    opacity: 0,
+    transition: { duration: 0.14, ease: "easeInOut" },
+  },
   open: {
     opacity: 1,
-    transition: {
-      duration: 0.16,
-      ease: "easeOut",
-    },
+    transition: { duration: 0.18, ease: "easeOut" },
   },
 };
 
 const panelVariants = {
   closed: {
     x: "-100%",
-    transition: {
-      type: "spring",
-      stiffness: 420,
-      damping: 38,
-      mass: 0.82,
-      when: "afterChildren",
-    },
+    transition: { duration: 0.22, ease: [0.4, 0, 1, 1] },
   },
   open: {
     x: 0,
-    transition: {
-      type: "spring",
-      stiffness: 420,
-      damping: 36,
-      mass: 0.82,
-      when: "beforeChildren",
-      staggerChildren: 0.035,
-      delayChildren: 0.015,
-    },
+    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
 const itemVariants = {
   closed: {
-    opacity: 0,
-    x: -14,
-    transition: { duration: 0.1, ease: "easeIn" },
+    opacity: 1,
+    x: 0,
+    transition: instantTransition,
   },
   open: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.14, ease: "easeOut" },
+    transition: instantTransition,
   },
 };
 
 const listVariants = {
   closed: {},
-  open: {
-    transition: {
-      staggerChildren: 0.035,
-      delayChildren: 0.015,
-    },
-  },
+  open: {},
 };
 
 function AccordionIndicator({ open }) {
@@ -87,7 +70,6 @@ export default function MobileMotionMenu({
   items = [],
   footerItems = [],
 }) {
-  const shouldReduceMotion = useReducedMotion();
   const location = useLocation();
   const panelRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -125,24 +107,6 @@ export default function MobileMotionMenu({
     setSortOpen(false);
     setOpenGroups({});
   }, [open]);
-
-  const activePanelVariants = shouldReduceMotion
-    ? {
-        closed: { x: "-100%" },
-        open: { x: 0, transition: { duration: 0.12 } },
-      }
-    : panelVariants;
-
-  const activeItemVariants = shouldReduceMotion
-    ? {
-        closed: { opacity: 0 },
-        open: { opacity: 1, transition: { duration: 0.12 } },
-      }
-    : itemVariants;
-
-  const activeListVariants = shouldReduceMotion
-    ? { closed: {}, open: {} }
-    : listVariants;
 
   function matchesCurrentPath(to) {
     if (!to) return false;
@@ -278,7 +242,7 @@ export default function MobileMotionMenu({
             aria-modal="true"
             aria-label={title}
             tabIndex={-1}
-            variants={activePanelVariants}
+            variants={panelVariants}
           >
             <div className="mobile-motion-menu__header">
               {headerContent ? (
@@ -307,11 +271,11 @@ export default function MobileMotionMenu({
             <motion.nav
               className="mobile-nav-sheet__links"
               aria-label="Navegación principal"
-              variants={activeListVariants}
+              variants={listVariants}
             >
               {searchContent ? (
                 <motion.div
-                  variants={activeItemVariants}
+                  variants={itemVariants}
                   className="mobile-nav-sheet__search"
                 >
                   {searchContent}
@@ -319,7 +283,7 @@ export default function MobileMotionMenu({
               ) : null}
               {filtersContent ? (
                 <motion.div
-                  variants={activeItemVariants}
+                  variants={itemVariants}
                   className="mobile-nav-sheet__filters"
                 >
                   <button
@@ -362,7 +326,7 @@ export default function MobileMotionMenu({
               ) : null}
               {sortContent ? (
                 <motion.div
-                  variants={activeItemVariants}
+                  variants={itemVariants}
                   className="mobile-nav-sheet__sort"
                 >
                   <button
@@ -404,7 +368,7 @@ export default function MobileMotionMenu({
                 </motion.div>
               ) : null}
               {items.map((item) => (
-                <motion.div key={item.key} variants={activeItemVariants}>
+                <motion.div key={item.key} variants={itemVariants}>
                   {renderItem(item)}
                 </motion.div>
               ))}
@@ -413,10 +377,10 @@ export default function MobileMotionMenu({
               <motion.nav
                 className="mobile-motion-menu__footer"
                 aria-label="Navegacion secundaria"
-                variants={activeListVariants}
+                variants={listVariants}
               >
                 {footerItems.map((item) => (
-                  <motion.div key={item.key} variants={activeItemVariants}>
+                  <motion.div key={item.key} variants={itemVariants}>
                     {renderItem(item)}
                   </motion.div>
                 ))}
