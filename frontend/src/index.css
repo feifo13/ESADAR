@@ -15232,3 +15232,71 @@ dialog,
       inset 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 }
+
+/* === ESADAR header/menu layering + 15% brand scale ===
+   The compact header is fixed with a high z-index; keep the mobile/tablet
+   navigation sheet above it and enlarge only the header/menu branding controls. */
+.site-header .brand-mark__logo {
+  transform: scale(1.15) !important;
+  transform-origin: left center !important;
+}
+
+.site-header .brand-mark--mobile .brand-mark__logo {
+  transform-origin: center center !important;
+}
+
+@media (min-width: 961px) {
+  .site-header .brand-mark {
+    min-width: 400px !important;
+    width: 400px !important;
+  }
+
+  .site-header .brand-mark__logo {
+    max-height: 78px !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .mobile-motion-menu {
+    z-index: 9000 !important;
+  }
+
+  .mobile-motion-menu__overlay,
+  .mobile-motion-menu__panel {
+    z-index: 9001 !important;
+  }
+
+  .site-header .brand-mark__logo {
+    max-width: 173px !important;
+    max-height: 62px !important;
+  }
+
+  .mobile-motion-menu__brand-wrap {
+    min-height: 48px !important;
+  }
+
+  .mobile-motion-menu__brand {
+    max-width: 152px !important;
+    max-height: 72px !important;
+    transform: scale(1.15) !important;
+    transform-origin: left center !important;
+  }
+
+  .site-header .header-mobile-shell {
+    grid-template-columns: 55px minmax(0, 1fr) 55px !important;
+  }
+
+  .site-header .header-actions-mobile__menu {
+    width: 55px !important;
+    height: 55px !important;
+    min-width: 55px !important;
+    min-height: 55px !important;
+    max-height: 55px !important;
+  }
+
+  .site-header .header-actions-mobile__menu > span,
+  .site-header .header-actions-mobile__menu svg.menu-glyph {
+    width: 25px !important;
+    height: 25px !important;
+  }
+}
