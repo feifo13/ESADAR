@@ -230,8 +230,7 @@ export default function ArticlePage() {
   const finalPrice = getDiscountedPrice(article);
   const articleStatus = String(article.status || "ACTIVE").toUpperCase();
   const isSoldOut =
-    Number(article.quantityAvailable || 0) <= 0 ||
-    articleStatus === "SOLD_OUT";
+    Number(article.quantityAvailable || 0) <= 0 || articleStatus === "SOLD_OUT";
   const isUnavailable =
     Boolean(article.isUnavailable) ||
     !["ACTIVE", "SOLD_OUT"].includes(articleStatus);
@@ -251,7 +250,10 @@ export default function ArticlePage() {
   const canonicalUrl =
     sanitizePublicUrl(article.canonicalUrl) ||
     toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
-  const socialShareDescription = buildArticleShareDescription(article, finalPrice);
+  const socialShareDescription = buildArticleShareDescription(
+    article,
+    finalPrice,
+  );
   const socialShareImage = toAbsoluteUrl(SOCIAL_SHARE_IMAGE_PATH, site);
   const breadcrumbItems = [
     { name: "Inicio", url: toAbsoluteUrl("/", site) },
@@ -446,12 +448,23 @@ export default function ArticlePage() {
       return;
     }
 
-    const shareMessage = buildArticleShareMessage(article, finalPrice, canonicalUrl);
-    const shareData = buildArticleWebShareData(article, finalPrice, canonicalUrl);
+    const shareMessage = buildArticleShareMessage(
+      article,
+      finalPrice,
+      canonicalUrl,
+    );
+    const shareData = buildArticleWebShareData(
+      article,
+      finalPrice,
+      canonicalUrl,
+    );
 
     const copyShareMessage = () => {
       if (!navigator.clipboard?.writeText) return Promise.resolve(false);
-      return navigator.clipboard.writeText(shareMessage).then(() => true).catch(() => false);
+      return navigator.clipboard
+        .writeText(shareMessage)
+        .then(() => true)
+        .catch(() => false);
     };
 
     const trackShareIntent = () =>
@@ -478,7 +491,9 @@ export default function ArticlePage() {
     }
 
     if (copied) {
-      notifyInfo("Copiamos el mensaje. Ahora compartimos solo el enlace limpio.");
+      notifyInfo(
+        "Copiamos el mensaje. Ahora compartimos solo el enlace limpio.",
+      );
     }
 
     const nativeShare = navigator
@@ -755,7 +770,6 @@ export default function ArticlePage() {
               labelInactive="Guardar articulo"
               onToggle={() => void handleWishlistToggle()}
             />
-
           </div>
 
           <aside className="ebay-article-layout__sidebar section-card">
@@ -830,17 +844,25 @@ export default function ArticlePage() {
             </div> */}
 
             {acceptedOffer ? (
-              <div className="article-status-notice article-status-notice--offer" role="status">
-                <span className="article-status-notice__badge">Oferta aceptada</span>
+              <div
+                className="article-status-notice article-status-notice--offer"
+                role="status"
+              >
+                <span className="article-status-notice__badge">
+                  Oferta aceptada
+                </span>
                 <span>
-                  Precio aceptado: {formatCurrency(acceptedOffer.offeredAmount)}.
-                  Aplica a 1 unidad.
+                  Precio aceptado: {formatCurrency(acceptedOffer.offeredAmount)}
+                  . Aplica a 1 unidad.
                 </span>
               </div>
             ) : null}
 
             {currentCartItem ? (
-              <div className="article-status-notice article-status-notice--cart" role="status">
+              <div
+                className="article-status-notice article-status-notice--cart"
+                role="status"
+              >
                 <span className="article-status-notice__badge">En carrito</span>
                 <span>
                   Ya tienes {currentCartItem.quantity} unidad
@@ -927,35 +949,6 @@ export default function ArticlePage() {
                 {renderStockAlertForm({ inline: true })}
               </section>
             ) : null}
-
-            {/* <div className="section-card page-stack-sm article-side-note article-info-accordion">
-              <details>
-                <summary>
-                  <span className="section-kicker">Cómo comprar</span>
-                  <span aria-hidden="true">+</span>
-                </summary>
-                <ol className="article-steps-list">
-                  <li>Agregas la prenda al carrito.</li>
-                  <li>Completas tus datos.</li>
-                  <li>Elegis pago y envio.</li>
-                  <li>Confirmamos tu orden.</li>
-                </ol>
-              </details>
-              <div>
-                <p className="section-kicker">Medidas reales</p>
-                <p className="muted-copy">
-                  {article.measurementsText ||
-                    "Si quieres una medida adicional, escribenos por contacto o Instagram."}
-                </p>
-              </div>
-              <div>
-                <p className="section-kicker">Estado de la prenda</p>
-                <p className="muted-copy">
-                  {article.originNotes ||
-                    "La pieza fue revisada y curada para el catálogo de ESADAR."}
-                </p>
-              </div>
-            </div> */}
           </aside>
         </section>
 

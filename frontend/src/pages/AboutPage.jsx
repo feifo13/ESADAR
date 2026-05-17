@@ -9,7 +9,7 @@ export default function AboutPage() {
   return (
     <div className="container page-stack">
       <SeoHead
-        title={aboutSeo?.title || `Sobre ${site.name} | Curaduria`}
+        title={aboutSeo?.title || `Sobre ${site.name} | Selección`}
         description={
           aboutSeo?.description ||
           "Prendas unicas, sportswear, vintage y ropa moderna elegida una por una."
@@ -38,8 +38,7 @@ export default function AboutPage() {
             Cada prenda es elegida con cuidado, pensando no solo en cómo se ve,
             sino también en lo que transmite. Porque para nosotros vestir no es
             solamente usar ropa: es conectar con una historia, apropiarse de
-            ella y darle un lugar en la tuya. Gracias por elegir piezas con
-            identidad, carácter y darle una nueva oportunidad.
+            ella y darle un lugar en la tuya.
           </p>
           <p className="muted-copy">
             Gracias por elegir piezas con identidad, carácter y darle una nueva

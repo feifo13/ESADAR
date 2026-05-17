@@ -11,26 +11,30 @@ import {
 import { logAudit } from "../audit/audit.service.js";
 import { getPublicArticleBySlugOrId } from "../articles/articles.service.js";
 
-
-const SOCIAL_SHARE_TITLE = 'ESADAR | Tienda de ropa';
-const ARTICLE_OFFER_SHARE_LINE = 'ESADAR acepta ofertas sobre este artículo!';
-const SOCIAL_SHARE_IMAGE_PATH = '/social-share-isotipo.png';
+const SOCIAL_SHARE_TITLE = "ESADAR | Tienda de ropa";
+const ARTICLE_OFFER_SHARE_LINE = "ESADAR acepta ofertas sobre este artículo!";
+const SOCIAL_SHARE_IMAGE_PATH = "/social-share-isotipo.png";
 
 function getSocialShareImageUrl() {
   return joinPublicSiteUrl(SOCIAL_SHARE_IMAGE_PATH);
 }
 
-function normalizeSharePart(value, fallback = '') {
-  const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+function normalizeSharePart(value, fallback = "") {
+  const normalized = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
   return normalized || fallback;
 }
 
 function formatSharePrice(value) {
-  return new Intl.NumberFormat('es-UY', {
-    style: 'currency',
-    currency: 'UYU',
+  return new Intl.NumberFormat("es-UY", {
+    style: "currency",
+    currency: "UYU",
     maximumFractionDigits: 0,
-  }).format(Number(value || 0)).replace(/\s+/g, ' ').trim();
+  })
+    .format(Number(value || 0))
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function getArticleFinalPrice(article) {
@@ -38,11 +42,15 @@ function getArticleFinalPrice(article) {
 
   const salePrice = Number(article?.salePrice || 0);
   const discountValue = Number(article?.discountValue || 0);
-  if (!article?.discountType || article.discountType === 'NONE' || discountValue <= 0) {
+  if (
+    !article?.discountType ||
+    article.discountType === "NONE" ||
+    discountValue <= 0
+  ) {
     return salePrice;
   }
 
-  if (article.discountType === 'PERCENT') {
+  if (article.discountType === "PERCENT") {
     return Math.max(0, salePrice - salePrice * (discountValue / 100));
   }
 
@@ -51,10 +59,13 @@ function getArticleFinalPrice(article) {
 
 function buildArticleShareDescription(article) {
   const summary = [
-    normalizeSharePart(article?.title, 'Prenda ESADAR'),
-    normalizeSharePart(article?.sizeText || article?.sizeCode, 'Talle sin especificar'),
+    normalizeSharePart(article?.title, "Prenda ESADAR"),
+    normalizeSharePart(
+      article?.sizeText || article?.sizeCode,
+      "Talle sin especificar",
+    ),
     formatSharePrice(getArticleFinalPrice(article)),
-  ].join(' · ');
+  ].join(" · ");
 
   if (Boolean(article?.allowOffers)) {
     return `${ARTICLE_OFFER_SHARE_LINE}\n${summary}`;
@@ -66,7 +77,7 @@ function buildArticleShareDescription(article) {
 function buildArticleShareMessage(article) {
   return [buildArticleShareDescription(article), article?.canonicalUrl]
     .filter(Boolean)
-    .join('\n');
+    .join("\n");
 }
 
 function escapeXml(value) {
@@ -107,7 +118,7 @@ function buildSiteFallbackPages() {
     },
     {
       route: "/about",
-      title: `Sobre ${env.storeName} | Curaduría`,
+      title: `Sobre ${env.storeName} | Selección`,
       description:
         "Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.",
       canonicalUrl: null,
