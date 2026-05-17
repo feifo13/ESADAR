@@ -127,6 +127,10 @@ export default function SeoHead({
       property: 'og:image:alt',
       content: normalizedImage ? 'Isotipo de ESADAR' : '',
     });
+    upsertMetaTag('meta[property="og:image:type"]', {
+      property: 'og:image:type',
+      content: normalizedImage ? 'image/png' : '',
+    });
     upsertMetaTag('meta[property="og:url"]', {
       property: 'og:url',
       content: canonical || url || '',

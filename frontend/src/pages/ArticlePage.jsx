@@ -465,7 +465,7 @@ export default function ArticlePage() {
         copyPromise.then((copied) => {
           if (copied) {
             notifyInfo(
-              "Copiamos el mensaje para que puedas pegarlo si Instagram o Facebook lo solicitan.",
+              "Copiamos el mensaje. Compartimos el enlace limpio para que Instagram/Facebook no lo rechacen.",
             );
           }
         });
@@ -489,7 +489,7 @@ export default function ArticlePage() {
       if (err?.name === "AbortError") return;
       if (copyCompleted || (await copyShareMessage())) {
         notifyInfo(
-          "Copiamos el mensaje. Pegalo manualmente si la app no acepta compartir directo.",
+          "Copiamos el mensaje. Pegalo manualmente si la app no acepta el enlace directo.",
         );
         return;
       }
