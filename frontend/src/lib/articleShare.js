@@ -37,3 +37,13 @@ export function buildArticleShareMessage(article, finalPrice, canonicalUrl) {
     .filter(Boolean)
     .join("\n");
 }
+export function buildArticleWebShareData(article, finalPrice, canonicalUrl) {
+  const description = buildArticleShareDescription(article, finalPrice);
+
+  return {
+    title: ARTICLE_SHARE_TITLE,
+    text: description,
+    url: canonicalUrl,
+  };
+}
+

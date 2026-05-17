@@ -21,6 +21,7 @@ import {
   ARTICLE_SHARE_TITLE,
   buildArticleShareDescription,
   buildArticleShareMessage,
+  buildArticleWebShareData,
 } from "../lib/articleShare.js";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -446,10 +447,7 @@ export default function ArticlePage() {
     }
 
     const shareMessage = buildArticleShareMessage(article, finalPrice, canonicalUrl);
-    const shareData = {
-      title: ARTICLE_SHARE_TITLE,
-      text: shareMessage,
-    };
+    const shareData = buildArticleWebShareData(article, finalPrice, canonicalUrl);
 
     try {
       if (navigator.share) {
