@@ -1,12 +1,14 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   BRAND_OPTIONS,
   CATEGORY_OPTIONS,
   SIZE_OPTIONS,
 } from '../constants/lookups.js';
-import { cachedApiFetch } from '../lib/api.js';
+import { cachedApiFetch, listenPublicCacheInvalidation } from '../lib/api.js';
 
 const LookupsContext = createContext(null);
+
+const PUBLIC_LOOKUPS_CACHE_KEY = '/api/public/lookups';
 
 const HIDDEN_PUBLIC_SHIPPING_METHOD_LABELS = new Set([
   'retiro en punto acordado',
@@ -81,43 +83,69 @@ function mapPaymentMethodOptions(items) {
   }));
 }
 
+function shouldRefreshLookupsAfterInvalidation(match = '') {
+  const normalizedMatch = String(match || '');
+  return (
+    !normalizedMatch ||
+    PUBLIC_LOOKUPS_CACHE_KEY.startsWith(normalizedMatch) ||
+    normalizedMatch.startsWith(PUBLIC_LOOKUPS_CACHE_KEY)
+  );
+}
+
 export function LookupsProvider({ children }) {
   const [value, setValue] = useState(fallbackValue);
+
+  const loadLookups = useCallback(async ({ force = false } = {}) => {
+    try {
+      const response = await cachedApiFetch(PUBLIC_LOOKUPS_CACHE_KEY, {
+        ttlMs: 900000,
+        cacheKey: PUBLIC_LOOKUPS_CACHE_KEY,
+        force,
+      });
+
+      setValue({
+        categoryOptions: mapCategoryOptions(response.categories || []),
+        brandOptions: mapBrandOptions(response.brands || []),
+        catalogBrandOptions: mapBrandOptions(response.availableBrands || response.brands || []),
+        sizeOptions: mapSizeOptions(response.sizes || []),
+        shippingMethodOptions: mapShippingMethodOptions(response.shippingMethods || []),
+        paymentMethodOptions: mapPaymentMethodOptions(response.paymentMethods || []),
+        loaded: true,
+        lookupError: '',
+      });
+    } catch (_error) {
+      setValue((current) => ({
+        ...current,
+        loaded: true,
+        lookupError: 'No se pudieron actualizar los lookups remotos. Se mantiene el fallback local.',
+      }));
+    }
+  }, []);
 
   useEffect(() => {
     let ignore = false;
 
-    async function loadLookups() {
-      try {
-        const response = await cachedApiFetch('/api/public/lookups', { ttlMs: 900000 });
-        if (ignore) return;
-
-        setValue({
-          categoryOptions: mapCategoryOptions(response.categories || []),
-          brandOptions: mapBrandOptions(response.brands || []),
-          catalogBrandOptions: mapBrandOptions(response.availableBrands || response.brands || []),
-          sizeOptions: mapSizeOptions(response.sizes || []),
-          shippingMethodOptions: mapShippingMethodOptions(response.shippingMethods || []),
-          paymentMethodOptions: mapPaymentMethodOptions(response.paymentMethods || []),
-          loaded: true,
-          lookupError: '',
-        });
-      } catch (_error) {
-        if (ignore) return;
-        setValue((current) => ({
-          ...current,
-          loaded: true,
-          lookupError: 'No se pudieron actualizar los lookups remotos. Se mantiene el fallback local.',
-        }));
-      }
+    async function loadInitialLookups() {
+      await loadLookups();
     }
 
-    loadLookups();
+    if (!ignore) {
+      loadInitialLookups();
+    }
 
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [loadLookups]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    return listenPublicCacheInvalidation(({ match } = {}) => {
+      if (ignore || !shouldRefreshLookupsAfterInvalidation(match)) return;
+      void loadLookups({ force: true });
+    });
+  }, [loadLookups]);
 
   const memoizedValue = useMemo(() => value, [value]);
 

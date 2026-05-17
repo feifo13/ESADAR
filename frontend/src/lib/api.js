@@ -185,8 +185,14 @@ export function invalidatePublicCache(match = '') {
 function maybeInvalidatePublicCacheAfterMutation(path, method) {
   if (String(method || 'GET').toUpperCase() === 'GET') return;
 
-  if (String(path || '').startsWith('/api/admin/articles')) {
+  const normalizedPath = String(path || '');
+
+  if (normalizedPath.startsWith('/api/admin/articles')) {
     invalidatePublicCache('/api/public/articles');
+  }
+
+  if (normalizedPath.startsWith('/api/admin/shipping')) {
+    invalidatePublicCache('/api/public/lookups');
   }
 }
 
