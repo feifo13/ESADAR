@@ -56,8 +56,10 @@ export default function AboutPage() {
           <p>Gracias por elegir Esadar y confiar en nuestra selección.</p>
 
           <p>
-            <strong>ESADAR: </strong>
-            selecciones por y para{" "}
+            <strong>ESADAR </strong>
+          </p>
+          <p>
+            <span className="checkbox-row-accent">SELECCIONES POR Y PARA</span>
             <strong className="checkbox-row-accent">HUMANOS/AS</strong>.
           </p>
         </div>
