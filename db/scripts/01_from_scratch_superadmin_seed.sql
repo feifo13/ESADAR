@@ -986,7 +986,7 @@ ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(s
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Selección', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
@@ -1236,7 +1236,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Curaduria', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Selección', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1),
   ('/guia-de-compra', 'Guía de compra | ESADAR', 'Cómo comprar en ESADAR, medios de pago, envíos y aprobación de órdenes.', NULL, NULL, 1),
   ('/terminos-y-condiciones', 'Términos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)
