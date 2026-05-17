@@ -14,6 +14,11 @@ import { getPublicArticleBySlugOrId } from "../articles/articles.service.js";
 
 const SOCIAL_SHARE_TITLE = 'ESADAR | Tienda de ropa';
 const ARTICLE_OFFER_SHARE_LINE = 'ESADAR acepta ofertas sobre este artículo!';
+const SOCIAL_SHARE_IMAGE_PATH = '/social-share-isotipo.png';
+
+function getSocialShareImageUrl() {
+  return joinPublicSiteUrl(SOCIAL_SHARE_IMAGE_PATH);
+}
 
 function normalizeSharePart(value, fallback = '') {
   const normalized = String(value || '').replace(/\s+/g, ' ').trim();
@@ -88,7 +93,7 @@ function buildSiteFallbackPages() {
       description:
         "Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
     {
@@ -97,7 +102,7 @@ function buildSiteFallbackPages() {
       description:
         "Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
     {
@@ -106,7 +111,7 @@ function buildSiteFallbackPages() {
       description:
         "Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
     {
@@ -115,7 +120,7 @@ function buildSiteFallbackPages() {
       description:
         "Cómo comprar en ESADAR: catálogo, ofertas, carrito, pago, validación y comprobante.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
     {
@@ -124,7 +129,7 @@ function buildSiteFallbackPages() {
       description:
         "Términos y condiciones de compra de ESADAR: stock, pagos, validación, envíos y consultas.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
     {
@@ -133,7 +138,7 @@ function buildSiteFallbackPages() {
       description:
         "Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.",
       canonicalUrl: null,
-      ogImage: null,
+      ogImage: getSocialShareImageUrl(),
       isIndexable: true,
     },
   ];
@@ -182,7 +187,7 @@ export async function getPublicSiteSeo() {
     pages: [...pageMap.values()].map((page) => ({
       ...page,
       canonicalUrl: sanitizePublicUrl(page.canonicalUrl) || null,
-      ogImage: sanitizePublicUrl(page.ogImage) || null,
+      ogImage: sanitizePublicUrl(page.ogImage) || getSocialShareImageUrl(),
     })),
   };
 }
@@ -199,9 +204,7 @@ export async function getPublicArticleSeo(slugOrId) {
     shareTitle: SOCIAL_SHARE_TITLE,
     shareText: buildArticleShareMessage(article),
     canonicalUrl: article.canonicalUrl,
-    image: toAbsoluteSiteUrl(
-      article.primaryImageDetail || article.primaryImage,
-    ),
+    image: getSocialShareImageUrl(),
     images: (article.images || [])
       .map((image) => toAbsoluteSiteUrl(image.detailFilePath || image.filePath))
       .filter(Boolean),

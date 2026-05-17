@@ -2,6 +2,7 @@ import { formatCurrency } from "./format.js";
 
 export const ARTICLE_SHARE_TITLE = "ESADAR | Tienda de ropa";
 export const ARTICLE_OFFER_SHARE_LINE = "ESADAR acepta ofertas sobre este artículo!";
+export const SOCIAL_SHARE_IMAGE_PATH = "/social-share-isotipo.png";
 
 function normalizeSharePart(value, fallback = "") {
   const normalized = String(value || "").replace(/\s+/g, " ").trim();
@@ -37,6 +38,7 @@ export function buildArticleShareMessage(article, finalPrice, canonicalUrl) {
     .filter(Boolean)
     .join("\n");
 }
+
 export function buildArticleWebShareData(article, finalPrice, canonicalUrl) {
   const description = buildArticleShareDescription(article, finalPrice);
 
@@ -46,4 +48,3 @@ export function buildArticleWebShareData(article, finalPrice, canonicalUrl) {
     url: canonicalUrl,
   };
 }
-

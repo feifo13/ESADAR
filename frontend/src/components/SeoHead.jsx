@@ -3,6 +3,16 @@ import { useEffect, useMemo, useRef } from 'react';
 const DEFAULT_SHARE_TITLE = 'ESADAR | Tienda de ropa';
 const DEFAULT_SITE_NAME = 'ESADAR';
 const DEFAULT_OG_LOCALE = 'es_UY';
+const DEFAULT_SOCIAL_IMAGE_PATH = '/social-share-isotipo.png';
+
+function getDefaultSocialImageUrl() {
+  if (typeof window === 'undefined') return DEFAULT_SOCIAL_IMAGE_PATH;
+  try {
+    return new URL(DEFAULT_SOCIAL_IMAGE_PATH, window.location.origin).href;
+  } catch {
+    return DEFAULT_SOCIAL_IMAGE_PATH;
+  }
+}
 
 function upsertMetaTag(selector, attributes) {
   let element = document.head.querySelector(selector);
@@ -68,6 +78,7 @@ export default function SeoHead({
     const normalizedOgDescription = ogDescription || description || '';
     const normalizedTwitterTitle = twitterTitle || normalizedOgTitle;
     const normalizedTwitterDescription = twitterDescription || normalizedOgDescription;
+    const normalizedImage = image || getDefaultSocialImageUrl();
 
     if (title) {
       document.title = title;
@@ -98,7 +109,23 @@ export default function SeoHead({
     });
     upsertMetaTag('meta[property="og:image"]', {
       property: 'og:image',
-      content: image || '',
+      content: normalizedImage,
+    });
+    upsertMetaTag('meta[property="og:image:secure_url"]', {
+      property: 'og:image:secure_url',
+      content: normalizedImage,
+    });
+    upsertMetaTag('meta[property="og:image:width"]', {
+      property: 'og:image:width',
+      content: normalizedImage ? '1200' : '',
+    });
+    upsertMetaTag('meta[property="og:image:height"]', {
+      property: 'og:image:height',
+      content: normalizedImage ? '630' : '',
+    });
+    upsertMetaTag('meta[property="og:image:alt"]', {
+      property: 'og:image:alt',
+      content: normalizedImage ? 'Isotipo de ESADAR' : '',
     });
     upsertMetaTag('meta[property="og:url"]', {
       property: 'og:url',
@@ -119,7 +146,7 @@ export default function SeoHead({
 
     upsertMetaTag('meta[name="twitter:card"]', {
       name: 'twitter:card',
-      content: image ? 'summary_large_image' : 'summary',
+      content: normalizedImage ? 'summary_large_image' : 'summary',
     });
     upsertMetaTag('meta[name="twitter:title"]', {
       name: 'twitter:title',
@@ -131,7 +158,7 @@ export default function SeoHead({
     });
     upsertMetaTag('meta[name="twitter:image"]', {
       name: 'twitter:image',
-      content: image || '',
+      content: normalizedImage,
     });
 
     const owner = ownerRef.current;

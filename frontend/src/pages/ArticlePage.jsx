@@ -19,6 +19,7 @@ import {
 import { articleOfferPath } from "../lib/routes.js";
 import {
   ARTICLE_SHARE_TITLE,
+  SOCIAL_SHARE_IMAGE_PATH,
   buildArticleShareDescription,
   buildArticleShareMessage,
   buildArticleWebShareData,
@@ -250,6 +251,7 @@ export default function ArticlePage() {
     sanitizePublicUrl(article.canonicalUrl) ||
     toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
   const socialShareDescription = buildArticleShareDescription(article, finalPrice);
+  const socialShareImage = toAbsoluteUrl(SOCIAL_SHARE_IMAGE_PATH, site);
   const breadcrumbItems = [
     { name: "Inicio", url: toAbsoluteUrl("/", site) },
     {
@@ -275,10 +277,7 @@ export default function ArticlePage() {
           twitterDescription={socialShareDescription}
           canonical={canonicalUrl}
           url={canonicalUrl}
-          image={toAbsoluteUrl(
-            article.primaryImageDetail || article.primaryImage,
-            site,
-          )}
+          image={socialShareImage}
           type="product"
           jsonLd={[
             { id: "breadcrumb", data: buildBreadcrumbJsonLd(breadcrumbItems) },
@@ -448,12 +447,31 @@ export default function ArticlePage() {
 
     const shareMessage = buildArticleShareMessage(article, finalPrice, canonicalUrl);
     const shareData = buildArticleWebShareData(article, finalPrice, canonicalUrl);
+    let copyCompleted = false;
+    const copyShareMessage = () => {
+      if (!navigator.clipboard?.writeText) return Promise.resolve(false);
+      return navigator.clipboard
+        .writeText(shareMessage)
+        .then(() => {
+          copyCompleted = true;
+          return true;
+        })
+        .catch(() => false);
+    };
 
     try {
       if (navigator.share) {
+        const copyPromise = copyShareMessage();
+        copyPromise.then((copied) => {
+          if (copied) {
+            notifyInfo(
+              "Copiamos el mensaje para que puedas pegarlo si Instagram o Facebook lo solicitan.",
+            );
+          }
+        });
         await navigator.share(shareData);
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareMessage);
+        await copyPromise.catch(() => false);
+      } else if (await copyShareMessage()) {
         notifyInfo("Copiamos el texto para compartir.");
       } else {
         notifyInfo("Selecciona y copia el enlace desde la barra del navegador.");
@@ -469,6 +487,12 @@ export default function ArticlePage() {
       }).catch(() => undefined);
     } catch (err) {
       if (err?.name === "AbortError") return;
+      if (copyCompleted || (await copyShareMessage())) {
+        notifyInfo(
+          "Copiamos el mensaje. Pegalo manualmente si la app no acepta compartir directo.",
+        );
+        return;
+      }
       notifyError("No pudimos compartir el enlace ahora.");
     }
   }
@@ -672,10 +696,7 @@ export default function ArticlePage() {
         twitterDescription={socialShareDescription}
         canonical={canonicalUrl}
         url={canonicalUrl}
-        image={toAbsoluteUrl(
-          article.primaryImageDetail || article.primaryImage,
-          site,
-        )}
+        image={socialShareImage}
         type="product"
         jsonLd={[
           { id: "product", data: buildProductJsonLd(article, site) },
