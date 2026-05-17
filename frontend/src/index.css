@@ -15822,3 +15822,55 @@ dialog,
     width: 100%;
   }
 }
+
+/* Iteration: keep /admin/orders/:id side panel compact instead of stretching to match the item list height. */
+.admin-order-detail-grid {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+}
+
+.admin-order-detail-sidebar {
+  align-self: start;
+  align-content: start;
+  gap: clamp(14px, 1.6vw, 18px);
+}
+
+.admin-order-detail-sidebar > .admin-order-side-card {
+  align-self: start;
+  min-height: 0;
+  margin-top: 0 !important;
+}
+
+.admin-order-summary-card {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-order-summary-card .summary-line.total {
+  margin-top: 2px;
+}
+
+.admin-order-actions-card .button {
+  width: 100%;
+}
+
+.admin-order-actions-card .textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+@media (max-width: 1080px) {
+  .admin-order-detail-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .admin-order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-order-detail-sidebar {
+    gap: 14px;
+  }
+}

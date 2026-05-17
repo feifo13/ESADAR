@@ -189,8 +189,8 @@ export default function AdminOrderDetailPage() {
           </p>
         </div>
 
-        <div className="order-detail-grid">
-          <div className="page-stack">
+        <div className="order-detail-grid admin-order-detail-grid">
+          <div className="page-stack admin-order-detail-main">
             <div className="section-card nested-card">
               <h3>Cliente</h3>
               <p>{order.customer.firstName} {order.customer.lastName}</p>
@@ -243,8 +243,8 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
-          <aside className="page-stack">
-            <div className="section-card nested-card">
+          <aside className="page-stack admin-order-detail-sidebar" aria-label="Resumen y acciones de la orden">
+            <div className="section-card nested-card admin-order-side-card admin-order-summary-card">
               <h3>Resumen</h3>
               <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(order.subtotal)}</strong></p>
               <p className="summary-line"><span>Descuento</span><strong>{formatCurrency(order.discountTotal)}</strong></p>
@@ -258,7 +258,7 @@ export default function AdminOrderDetailPage() {
               <p className="muted-copy">Estado de pago: <strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>
             </div>
 
-            <div className="section-card nested-card stack-gap-sm">
+            <div className="section-card nested-card stack-gap-sm admin-order-side-card">
               <h3>Pagos</h3>
               {order.payments.length ? (
                 <div className="history-list">
@@ -282,7 +282,7 @@ export default function AdminOrderDetailPage() {
               ) : null}
             </div>
 
-            <div className="section-card nested-card stack-gap-sm">
+            <div className="section-card nested-card stack-gap-sm admin-order-side-card admin-order-actions-card">
               <h3>Acciones</h3>
               {['RESERVED', 'PENDING'].includes(order.orderStatus) ? (
                 <>
