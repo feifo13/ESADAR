@@ -2,6 +2,49 @@ import { Link, useLocation } from "react-router-dom";
 import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
+import { ESADAR_SOCIAL_LINKS, handleMobileSocialLink } from "../lib/socialLinks.js";
+
+
+function FacebookIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M14.2 8.28h2.38V4.36A30.77 30.77 0 0 0 13.1 4c-3.45 0-5.82 2.04-5.82 5.78v3.22H3.38v4.38h3.9V28h4.78V17.38h3.74l.6-4.38h-4.34V10.2c0-1.27.35-1.92 2.14-1.92Z"
+        transform="scale(.75)"
+      />
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="24"
+      height="24"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M7.75 2h8.5A5.76 5.76 0 0 1 22 7.75v8.5A5.76 5.76 0 0 1 16.25 22h-8.5A5.76 5.76 0 0 1 2 16.25v-8.5A5.76 5.76 0 0 1 7.75 2Zm0 2A3.75 3.75 0 0 0 4 7.75v8.5A3.75 3.75 0 0 0 7.75 20h8.5A3.75 3.75 0 0 0 20 16.25v-8.5A3.75 3.75 0 0 0 16.25 4h-8.5Zm8.75 2.35a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
+      />
+    </svg>
+  );
+}
+
+function SocialIcon({ type }) {
+  if (type === "facebook") return <FacebookIcon />;
+  if (type === "instagram") return <InstagramIcon />;
+  return null;
+}
 
 function clamp01(value) {
   if (!Number.isFinite(value)) return 0;
@@ -341,13 +384,40 @@ export default function FooterScrollScene() {
             >
               Contacto
             </Link>
-            <Link
-              to="/terminos-y-condiciones"
-              className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
-            >
-              Términos y condiciones
-            </Link>
           </div>
+          <div
+            className="footer-scroll-scene__socials"
+            aria-label="Redes sociales de ESADAR"
+          >
+            <div className="footer-scroll-scene__social-heading" aria-hidden="true">
+              <span className="footer-scroll-scene__social-heading-line" />
+              <span className="footer-scroll-scene__social-heading-text">Seguinos</span>
+              <span className="footer-scroll-scene__social-heading-line" />
+            </div>
+            <div className="footer-scroll-scene__social-list">
+              {ESADAR_SOCIAL_LINKS.map((socialLink) => (
+                <a
+                  key={socialLink.key}
+                  href={socialLink.webUrl}
+                  className={`footer-scroll-scene__social-link footer-scroll-scene__social-link--${socialLink.key}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Abrir perfil ${socialLink.label} en ${socialLink.platformLabel}`}
+                  title={`${socialLink.platformLabel}: ${socialLink.label}`}
+                  onClick={(event) => handleMobileSocialLink(event, socialLink)}
+                >
+                  <SocialIcon type={socialLink.key} />
+                  <span>{socialLink.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+          <Link
+            to="/terminos-y-condiciones"
+            className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
+          >
+            Términos y condiciones
+          </Link>
         </div>
       </div>
     </footer>

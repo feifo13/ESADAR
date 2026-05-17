@@ -426,6 +426,7 @@ export default function Header({ hideBrand = false }) {
       key: "terms-and-conditions",
       label: "Términos y condiciones",
       to: "/terminos-y-condiciones",
+      className: "mobile-motion-menu__item--terms",
     },
   ];
 
