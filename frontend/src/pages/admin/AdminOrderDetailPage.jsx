@@ -144,13 +144,14 @@ export default function AdminOrderDetailPage() {
   return (
     <div className="container page-stack admin-page-shell">
       <AdminToolbar />
-      <section className="section-card page-stack">
-        <div className="section-heading">
+      <section className="section-card page-stack admin-order-detail-shell">
+        <div className="section-card nested-card page-stack admin-order-detail-hero-card">
+          <div className="section-heading admin-order-detail-titlebar">
           <div>
             <p className="section-kicker">Orden</p>
             <h1>{order.orderNumber}</h1>
           </div>
-          <div className="stack-gap-xs align-end">
+          <div className="inline-action-group admin-order-hero-actions">
             {order.hasOffers ? <span className="pill pill-offer">{order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}</span> : null}
             <OrderStatusBadge status={order.orderStatus} />
             <button
@@ -164,9 +165,9 @@ export default function AdminOrderDetailPage() {
             </button>
             <Link to="/admin/orders" className="ghost-button linklike">Volver</Link>
           </div>
-        </div>
+          </div>
 
-        <div className="admin-detail-meta account-order-detail-meta">
+          <div className="admin-detail-meta account-order-detail-meta admin-order-detail-meta">
           <p className="summary-line">
             <span>Creada</span>
             <strong>{formatDate(order.createdAt)}</strong>
@@ -187,17 +188,11 @@ export default function AdminOrderDetailPage() {
             <span>Total</span>
             <strong>{formatCurrency(order.total)}</strong>
           </p>
+          </div>
         </div>
 
         <div className="order-detail-grid admin-order-detail-grid">
           <div className="page-stack admin-order-detail-main">
-            <div className="section-card nested-card">
-              <h3>Cliente</h3>
-              <p>{order.customer.firstName} {order.customer.lastName}</p>
-              <p className="muted-copy">{order.customer.email || 'Sin email'} - {order.customer.phone || 'Sin teléfono'}</p>
-              <p className="muted-copy">{order.customer.address || 'Sin dirección'}</p>
-            </div>
-
             <div className="section-card nested-card page-stack">
               <div className="section-heading">
                 <div>
@@ -243,7 +238,14 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
-          <aside className="page-stack admin-order-detail-sidebar" aria-label="Resumen y acciones de la orden">
+          <aside className="page-stack admin-order-detail-sidebar" aria-label="Cliente, resumen y acciones de la orden">
+            <div className="section-card nested-card admin-order-side-card admin-order-client-card">
+              <h3>Cliente</h3>
+              <p>{order.customer.firstName} {order.customer.lastName}</p>
+              <p className="muted-copy">{order.customer.email || 'Sin email'} - {order.customer.phone || 'Sin teléfono'}</p>
+              <p className="muted-copy">{order.customer.address || 'Sin dirección'}</p>
+            </div>
+
             <div className="section-card nested-card admin-order-side-card admin-order-summary-card">
               <h3>Resumen</h3>
               <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(order.subtotal)}</strong></p>

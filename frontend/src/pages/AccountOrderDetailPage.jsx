@@ -99,13 +99,6 @@ export default function AccountOrderDetailPage() {
     <div className="container page-stack account-page-shell account-order-detail-page">
       <SeoHead title="Detalle de orden | ESADAR" noindex />
 
-      <Link
-        to="/cuenta/ordenes"
-        className="ghost-button linklike account-order-detail-back"
-      >
-        Volver a mis órdenes
-      </Link>
-
       {loading ? (
         <section className="section-card">
           <AppLoader variant="card" label="Cargando orden" />
@@ -120,28 +113,28 @@ export default function AccountOrderDetailPage() {
 
       {order ? (
         <>
-          <section className="section-card page-stack account-order-detail-hero">
-            <div className="section-heading section-heading-wrap">
+          <section className="section-card page-stack account-order-detail-hero account-order-detail-hero-card">
+            <div className="section-heading section-heading-wrap account-order-detail-titlebar">
               <div>
                 <p className="section-kicker">Orden</p>
                 <h1>{order.orderNumber}</h1>
               </div>
-              <div className="inline-action-group">
-                {/* <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={() => void downloadReceipt()}
-                  disabled={receiptLoading}
-                >
-                  {receiptLoading ? 'Generando...' : 'Descargar boleta PDF'}
-                </button> */}
+              <div className="inline-action-group account-order-hero-actions">
                 {order.hasOffers ? (
-                  <span className="pill pill-offer">Con oferta</span>
+                  <span className="pill pill-offer">
+                    {order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}
+                  </span>
                 ) : null}
                 <OrderStatusBadge status={order.orderStatus} />
+                <Link
+                  to="/cuenta/ordenes"
+                  className="ghost-button linklike"
+                >
+                  Volver a mis órdenes
+                </Link>
               </div>
             </div>
-            <div className="admin-detail-meta account-order-detail-meta">
+            <div className="admin-detail-meta account-order-detail-meta account-order-detail-meta--wide">
               <p className="summary-line">
                 <span>Creada</span>
                 <strong>{formatDate(order.createdAt)}</strong>
