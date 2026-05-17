@@ -39,12 +39,46 @@ import {
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 import AppLoader from "../components/AppLoader.jsx";
 
+const ARTICLE_SHARE_TITLE = "ESADAR | Tienda de ropa";
+
 const initialAlertForm = {
   firstName: "",
   email: "",
   phone: "",
   instagram: "",
 };
+
+function normalizeSharePart(value, fallback = "") {
+  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  return normalized || fallback;
+}
+
+function formatSharePrice(value) {
+  return formatCurrency(value).replace(/\s+/g, " ").trim();
+}
+
+function buildArticleShareSummary(article, finalPrice) {
+  const articleName = normalizeSharePart(article?.title, "Prenda ESADAR");
+  const sizeLabel = normalizeSharePart(
+    article?.sizeText || article?.sizeCode,
+    "Talle sin especificar",
+  );
+  return `${articleName} · ${sizeLabel} · ${formatSharePrice(finalPrice)}`;
+}
+
+function buildArticleShareText(article, finalPrice) {
+  const summary = buildArticleShareSummary(article, finalPrice);
+
+  if (Boolean(article?.allowOffers)) {
+    return `ESADAR acepta ofertas sobre este artículo!\n${summary}`;
+  }
+
+  return summary;
+}
+
+function buildArticleShareClipboardText(article, finalPrice, canonicalUrl) {
+  return `${buildArticleShareText(article, finalPrice)}\n${canonicalUrl}`;
+}
 
 export default function ArticlePage() {
   const { slugOrId } = useParams();
@@ -262,6 +296,7 @@ export default function ArticlePage() {
       <>
         <SeoHead
           title={`${article.title} no disponible`}
+          ogTitle={ARTICLE_SHARE_TITLE}
           description={unavailableMessage}
           canonical={canonicalUrl}
           url={canonicalUrl}
@@ -436,9 +471,10 @@ export default function ArticlePage() {
       return;
     }
 
+    const shareText = buildArticleShareText(article, finalPrice);
     const shareData = {
-      title: article.title,
-      text: article.seoDescription || article.description || article.title,
+      title: ARTICLE_SHARE_TITLE,
+      text: `${shareText}\n`,
       url: canonicalUrl,
     };
 
@@ -446,8 +482,10 @@ export default function ArticlePage() {
       if (navigator.share) {
         await navigator.share(shareData);
       } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(canonicalUrl);
-        notifyInfo("Copiamos el enlace para compartir.");
+        await navigator.clipboard.writeText(
+          buildArticleShareClipboardText(article, finalPrice, canonicalUrl),
+        );
+        notifyInfo("Copiamos el texto para compartir.");
       } else {
         notifyInfo("Selecciona y copia el enlace desde la barra del navegador.");
       }
@@ -460,7 +498,8 @@ export default function ArticlePage() {
           sessionToken: getPublicSessionToken(),
         },
       }).catch(() => undefined);
-    } catch {
+    } catch (err) {
+      if (err?.name === "AbortError") return;
       notifyError("No pudimos compartir el enlace ahora.");
     }
   }
@@ -658,6 +697,7 @@ export default function ArticlePage() {
     <>
       <SeoHead
         title={article.seoTitle}
+        ogTitle={ARTICLE_SHARE_TITLE}
         description={article.seoDescription}
         canonical={canonicalUrl}
         url={canonicalUrl}

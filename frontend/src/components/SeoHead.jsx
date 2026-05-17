@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 
+const DEFAULT_SHARE_TITLE = 'ESADAR | Tienda de ropa';
+
 function upsertMetaTag(selector, attributes) {
   let element = document.head.querySelector(selector);
   if (!element) {
@@ -45,6 +47,10 @@ export default function SeoHead({
   type = 'website',
   noindex = false,
   jsonLd = [],
+  ogTitle,
+  ogDescription,
+  twitterTitle,
+  twitterDescription,
 }) {
   const ownerRef = useRef(`seo-head-${Math.random().toString(36).slice(2)}`);
 
@@ -54,6 +60,11 @@ export default function SeoHead({
   }, [jsonLd]);
 
   useEffect(() => {
+    const normalizedOgTitle = ogTitle || DEFAULT_SHARE_TITLE;
+    const normalizedOgDescription = ogDescription || description || '';
+    const normalizedTwitterTitle = twitterTitle || normalizedOgTitle;
+    const normalizedTwitterDescription = twitterDescription || normalizedOgDescription;
+
     if (title) {
       document.title = title;
     }
@@ -75,11 +86,11 @@ export default function SeoHead({
 
     upsertMetaTag('meta[property="og:title"]', {
       property: 'og:title',
-      content: title || '',
+      content: normalizedOgTitle,
     });
     upsertMetaTag('meta[property="og:description"]', {
       property: 'og:description',
-      content: description || '',
+      content: normalizedOgDescription,
     });
     upsertMetaTag('meta[property="og:image"]', {
       property: 'og:image',
@@ -100,11 +111,11 @@ export default function SeoHead({
     });
     upsertMetaTag('meta[name="twitter:title"]', {
       name: 'twitter:title',
-      content: title || '',
+      content: normalizedTwitterTitle,
     });
     upsertMetaTag('meta[name="twitter:description"]', {
       name: 'twitter:description',
-      content: description || '',
+      content: normalizedTwitterDescription,
     });
     upsertMetaTag('meta[name="twitter:image"]', {
       name: 'twitter:image',
@@ -127,7 +138,20 @@ export default function SeoHead({
     return () => {
       [...document.head.querySelectorAll(`script[data-seo-owner="${owner}"]`)].forEach((node) => node.remove());
     };
-  }, [canonical, description, image, noindex, normalizedJsonLd, title, type, url]);
+  }, [
+    canonical,
+    description,
+    image,
+    noindex,
+    normalizedJsonLd,
+    ogDescription,
+    ogTitle,
+    title,
+    twitterDescription,
+    twitterTitle,
+    type,
+    url,
+  ]);
 
   return null;
 }
