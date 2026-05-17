@@ -91,7 +91,7 @@ export function renderEmailShell({
             </tr>
             <tr>
               <td align="center" style="padding:22px 20px 0;">
-                <p style="margin:0 0 8px; color:#56737a; font-size:13px; line-height:1.5;">ESADAR · Selección de prendas</p>
+                
                 <p style="margin:0; color:#7b9399; font-size:12px; line-height:1.5;">Recibiste este correo porque tenés una cuenta, orden, consulta u operación asociada a ESADAR.</p>
               </td>
             </tr>
