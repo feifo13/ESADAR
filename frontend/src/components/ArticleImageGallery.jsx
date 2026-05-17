@@ -1,8 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArticleImageZoom from './ArticleImageZoom.jsx';
 import PreviousNextControls from './PreviousNextControls.jsx';
 import SmartImage from './SmartImage.jsx';
 import { getArticleImageSizes } from '../lib/article-images.js';
+
+
+function GalleryArrowIcon({ direction }) {
+  const path = direction === 'previous' ? 'M15 5 8 12l7 7' : 'M9 5l7 7-7 7';
+
+  return (
+    <svg
+      className="article-gallery-desktop-arrow-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
 
 export default function ArticleImageGallery({ images = [], title, fallbackImage = null }) {
   const normalized = useMemo(() => {
@@ -105,7 +126,15 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const swipeStartRef = useRef(null);
   const active = normalized[activeIndex] || normalized[0];
+  const hasMultipleImages = normalized.length > 1;
+
+  const moveImage = useCallback((delta) => {
+    if (!normalized.length) return;
+
+    setActiveIndex((current) => (current + delta + normalized.length) % normalized.length);
+  }, [normalized.length]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -117,18 +146,62 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         setLightboxOpen(false);
       }
 
+      if (!hasMultipleImages) return;
+
       if (event.key === 'ArrowLeft') {
-        setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length);
+        event.preventDefault();
+        moveImage(-1);
       }
 
       if (event.key === 'ArrowRight') {
-        setActiveIndex((current) => (current + 1) % normalized.length);
+        event.preventDefault();
+        moveImage(1);
       }
     }
 
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [normalized.length]);
+  }, [hasMultipleImages, moveImage]);
+
+  function isTouchNavigationViewport() {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 1024px)').matches
+    );
+  }
+
+  function handleSwipeStart(event) {
+    if (!hasMultipleImages || !isTouchNavigationViewport()) return;
+
+    const touch = event.touches?.[0];
+    if (!touch) return;
+
+    swipeStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  }
+
+  function handleSwipeEnd(event) {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+
+    if (!start || !hasMultipleImages || !isTouchNavigationViewport()) return;
+
+    const touch = event.changedTouches?.[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (horizontalDistance < 44 || horizontalDistance < verticalDistance * 1.25) {
+      return;
+    }
+
+    moveImage(deltaX < 0 ? 1 : -1);
+  }
 
   return (
     <div className={normalized.length > 1 ? 'article-gallery-layout' : 'article-gallery-layout article-gallery-layout--single'}>
@@ -154,9 +227,26 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         </div>
       ) : null}
 
-      <div className="article-gallery-main">
+      <div
+        className={hasMultipleImages ? 'article-gallery-main article-gallery-main--navigable' : 'article-gallery-main'}
+        onTouchStart={handleSwipeStart}
+        onTouchEnd={handleSwipeEnd}
+      >
         <div className="gallery-count" aria-live="polite">{activeIndex + 1} / {normalized.length}</div>
         <ArticleImageZoom image={active} title={title} />
+        {hasMultipleImages ? (
+          <PreviousNextControls
+            className="article-gallery-desktop-arrows"
+            previousContent={<GalleryArrowIcon direction="previous" />}
+            nextContent={<GalleryArrowIcon direction="next" />}
+            previousClassName="article-gallery-desktop-arrow article-gallery-desktop-arrow--previous"
+            nextClassName="article-gallery-desktop-arrow article-gallery-desktop-arrow--next"
+            previousAriaLabel="Imagen anterior"
+            nextAriaLabel="Imagen siguiente"
+            onPrevious={() => moveImage(-1)}
+            onNext={() => moveImage(1)}
+          />
+        ) : null}
       </div>
 
       {lightboxOpen ? (
@@ -172,11 +262,11 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
               loading="eager"
               fetchPriority="high"
             />
-            {normalized.length > 1 ? (
+            {hasMultipleImages ? (
               <PreviousNextControls
                 className="gallery-zoom-nav"
-                onPrevious={() => setActiveIndex((current) => (current - 1 + normalized.length) % normalized.length)}
-                onNext={() => setActiveIndex((current) => (current + 1) % normalized.length)}
+                onPrevious={() => moveImage(-1)}
+                onNext={() => moveImage(1)}
               />
             ) : null}
           </div>

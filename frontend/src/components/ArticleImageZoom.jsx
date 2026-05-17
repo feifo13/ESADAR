@@ -46,7 +46,7 @@ export default function ArticleImageZoom({ image, title }) {
         zoomSrc={resolvedZoomSrc}
         zoomType="hover"
         moveType="pan"
-        zoomScale={1.65}
+        zoomScale={1.15}
         zoomPreload={false}
         fullscreenOnMobile={true}
         mobileBreakpoint={960}

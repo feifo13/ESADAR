@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import SmartImage from './SmartImage.jsx';
 import { resolveAssetUrl } from '../lib/api.js';
 
-const ZOOM_SCALE = 1.9;
+const ZOOM_SCALE = 1.33;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
