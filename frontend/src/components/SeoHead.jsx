@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 const DEFAULT_SHARE_TITLE = 'ESADAR | Tienda de ropa';
+const DEFAULT_SITE_NAME = 'ESADAR';
+const DEFAULT_OG_LOCALE = 'es_UY';
 
 function upsertMetaTag(selector, attributes) {
   let element = document.head.querySelector(selector);
@@ -51,6 +53,8 @@ export default function SeoHead({
   ogDescription,
   twitterTitle,
   twitterDescription,
+  siteName = DEFAULT_SITE_NAME,
+  locale = DEFAULT_OG_LOCALE,
 }) {
   const ownerRef = useRef(`seo-head-${Math.random().toString(36).slice(2)}`);
 
@@ -104,6 +108,14 @@ export default function SeoHead({
       property: 'og:type',
       content: type,
     });
+    upsertMetaTag('meta[property="og:site_name"]', {
+      property: 'og:site_name',
+      content: siteName || DEFAULT_SITE_NAME,
+    });
+    upsertMetaTag('meta[property="og:locale"]', {
+      property: 'og:locale',
+      content: locale || DEFAULT_OG_LOCALE,
+    });
 
     upsertMetaTag('meta[name="twitter:card"]', {
       name: 'twitter:card',
@@ -148,6 +160,8 @@ export default function SeoHead({
     ogTitle,
     title,
     twitterDescription,
+    siteName,
+    locale,
     twitterTitle,
     type,
     url,

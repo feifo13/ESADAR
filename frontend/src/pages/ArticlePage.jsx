@@ -17,6 +17,11 @@ import {
   hasDiscount,
 } from "../lib/format.js";
 import { articleOfferPath } from "../lib/routes.js";
+import {
+  ARTICLE_SHARE_TITLE,
+  buildArticleShareDescription,
+  buildArticleShareMessage,
+} from "../lib/articleShare.js";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
@@ -39,46 +44,12 @@ import {
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 import AppLoader from "../components/AppLoader.jsx";
 
-const ARTICLE_SHARE_TITLE = "ESADAR | Tienda de ropa";
-
 const initialAlertForm = {
   firstName: "",
   email: "",
   phone: "",
   instagram: "",
 };
-
-function normalizeSharePart(value, fallback = "") {
-  const normalized = String(value || "").replace(/\s+/g, " ").trim();
-  return normalized || fallback;
-}
-
-function formatSharePrice(value) {
-  return formatCurrency(value).replace(/\s+/g, " ").trim();
-}
-
-function buildArticleShareSummary(article, finalPrice) {
-  const articleName = normalizeSharePart(article?.title, "Prenda ESADAR");
-  const sizeLabel = normalizeSharePart(
-    article?.sizeText || article?.sizeCode,
-    "Talle sin especificar",
-  );
-  return `${articleName} · ${sizeLabel} · ${formatSharePrice(finalPrice)}`;
-}
-
-function buildArticleShareText(article, finalPrice) {
-  const summary = buildArticleShareSummary(article, finalPrice);
-
-  if (Boolean(article?.allowOffers)) {
-    return `ESADAR acepta ofertas sobre este artículo!\n${summary}`;
-  }
-
-  return summary;
-}
-
-function buildArticleShareClipboardText(article, finalPrice, canonicalUrl) {
-  return `${buildArticleShareText(article, finalPrice)}\n${canonicalUrl}`;
-}
 
 export default function ArticlePage() {
   const { slugOrId } = useParams();
@@ -277,6 +248,7 @@ export default function ArticlePage() {
   const canonicalUrl =
     sanitizePublicUrl(article.canonicalUrl) ||
     toAbsoluteUrl(`/articles/${article.slug || article.id}`, site);
+  const socialShareDescription = buildArticleShareDescription(article, finalPrice);
   const breadcrumbItems = [
     { name: "Inicio", url: toAbsoluteUrl("/", site) },
     {
@@ -298,6 +270,8 @@ export default function ArticlePage() {
           title={`${article.title} no disponible`}
           ogTitle={ARTICLE_SHARE_TITLE}
           description={unavailableMessage}
+          ogDescription={socialShareDescription}
+          twitterDescription={socialShareDescription}
           canonical={canonicalUrl}
           url={canonicalUrl}
           image={toAbsoluteUrl(
@@ -471,20 +445,17 @@ export default function ArticlePage() {
       return;
     }
 
-    const shareText = buildArticleShareText(article, finalPrice);
+    const shareMessage = buildArticleShareMessage(article, finalPrice, canonicalUrl);
     const shareData = {
       title: ARTICLE_SHARE_TITLE,
-      text: `${shareText}\n`,
-      url: canonicalUrl,
+      text: shareMessage,
     };
 
     try {
       if (navigator.share) {
         await navigator.share(shareData);
       } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(
-          buildArticleShareClipboardText(article, finalPrice, canonicalUrl),
-        );
+        await navigator.clipboard.writeText(shareMessage);
         notifyInfo("Copiamos el texto para compartir.");
       } else {
         notifyInfo("Selecciona y copia el enlace desde la barra del navegador.");
@@ -698,7 +669,9 @@ export default function ArticlePage() {
       <SeoHead
         title={article.seoTitle}
         ogTitle={ARTICLE_SHARE_TITLE}
-        description={article.seoDescription}
+        description={socialShareDescription || article.seoDescription}
+        ogDescription={socialShareDescription}
+        twitterDescription={socialShareDescription}
         canonical={canonicalUrl}
         url={canonicalUrl}
         image={toAbsoluteUrl(

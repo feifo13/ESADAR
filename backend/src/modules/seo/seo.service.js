@@ -11,6 +11,59 @@ import {
 import { logAudit } from "../audit/audit.service.js";
 import { getPublicArticleBySlugOrId } from "../articles/articles.service.js";
 
+
+const SOCIAL_SHARE_TITLE = 'ESADAR | Tienda de ropa';
+const ARTICLE_OFFER_SHARE_LINE = 'ESADAR acepta ofertas sobre este artículo!';
+
+function normalizeSharePart(value, fallback = '') {
+  const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+  return normalized || fallback;
+}
+
+function formatSharePrice(value) {
+  return new Intl.NumberFormat('es-UY', {
+    style: 'currency',
+    currency: 'UYU',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0)).replace(/\s+/g, ' ').trim();
+}
+
+function getArticleFinalPrice(article) {
+  if (article?.discountedPrice != null) return Number(article.discountedPrice);
+
+  const salePrice = Number(article?.salePrice || 0);
+  const discountValue = Number(article?.discountValue || 0);
+  if (!article?.discountType || article.discountType === 'NONE' || discountValue <= 0) {
+    return salePrice;
+  }
+
+  if (article.discountType === 'PERCENT') {
+    return Math.max(0, salePrice - salePrice * (discountValue / 100));
+  }
+
+  return Math.max(0, salePrice - discountValue);
+}
+
+function buildArticleShareDescription(article) {
+  const summary = [
+    normalizeSharePart(article?.title, 'Prenda ESADAR'),
+    normalizeSharePart(article?.sizeText || article?.sizeCode, 'Talle sin especificar'),
+    formatSharePrice(getArticleFinalPrice(article)),
+  ].join(' · ');
+
+  if (Boolean(article?.allowOffers)) {
+    return `${ARTICLE_OFFER_SHARE_LINE}\n${summary}`;
+  }
+
+  return summary;
+}
+
+function buildArticleShareMessage(article) {
+  return [buildArticleShareDescription(article), article?.canonicalUrl]
+    .filter(Boolean)
+    .join('\n');
+}
+
 function escapeXml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -136,11 +189,15 @@ export async function getPublicSiteSeo() {
 
 export async function getPublicArticleSeo(slugOrId) {
   const article = await getPublicArticleBySlugOrId(slugOrId);
+  const shareDescription = buildArticleShareDescription(article);
+
   return {
     articleId: article.id,
     slug: article.slug,
-    title: article.seoTitle,
-    description: article.seoDescription,
+    title: SOCIAL_SHARE_TITLE,
+    description: shareDescription,
+    shareTitle: SOCIAL_SHARE_TITLE,
+    shareText: buildArticleShareMessage(article),
     canonicalUrl: article.canonicalUrl,
     image: toAbsoluteSiteUrl(
       article.primaryImageDetail || article.primaryImage,
