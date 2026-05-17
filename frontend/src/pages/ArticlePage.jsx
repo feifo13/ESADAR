@@ -23,6 +23,7 @@ import {
   buildArticleShareDescription,
   buildArticleShareMessage,
   buildArticleWebShareData,
+  shouldUseNativeArticleShare,
 } from "../lib/articleShare.js";
 import { useCart } from "../contexts/CartContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -447,37 +448,14 @@ export default function ArticlePage() {
 
     const shareMessage = buildArticleShareMessage(article, finalPrice, canonicalUrl);
     const shareData = buildArticleWebShareData(article, finalPrice, canonicalUrl);
-    let copyCompleted = false;
+
     const copyShareMessage = () => {
       if (!navigator.clipboard?.writeText) return Promise.resolve(false);
-      return navigator.clipboard
-        .writeText(shareMessage)
-        .then(() => {
-          copyCompleted = true;
-          return true;
-        })
-        .catch(() => false);
+      return navigator.clipboard.writeText(shareMessage).then(() => true).catch(() => false);
     };
 
-    try {
-      if (navigator.share) {
-        const copyPromise = copyShareMessage();
-        copyPromise.then((copied) => {
-          if (copied) {
-            notifyInfo(
-              "Copiamos el mensaje. Compartimos el enlace limpio para que Instagram/Facebook no lo rechacen.",
-            );
-          }
-        });
-        await navigator.share(shareData);
-        await copyPromise.catch(() => false);
-      } else if (await copyShareMessage()) {
-        notifyInfo("Copiamos el texto para compartir.");
-      } else {
-        notifyInfo("Selecciona y copia el enlace desde la barra del navegador.");
-      }
-
-      await apiFetch("/api/public/article-events", {
+    const trackShareIntent = () =>
+      apiFetch("/api/public/article-events", {
         method: "POST",
         body: {
           articleId: article.id,
@@ -485,16 +463,61 @@ export default function ArticlePage() {
           sessionToken: getPublicSessionToken(),
         },
       }).catch(() => undefined);
-    } catch (err) {
-      if (err?.name === "AbortError") return;
-      if (copyCompleted || (await copyShareMessage())) {
-        notifyInfo(
-          "Copiamos el mensaje. Pegalo manualmente si la app no acepta el enlace directo.",
-        );
-        return;
-      }
-      notifyError("No pudimos compartir el enlace ahora.");
+
+    const copied = await copyShareMessage();
+
+    if (!shouldUseNativeArticleShare()) {
+      notifyInfo(
+        copied
+          ? "Copiamos el mensaje. Pegalo en Instagram, WhatsApp o Facebook."
+          : "No pudimos copiar automáticamente. Copiá el enlace desde la barra del navegador.",
+        { duration: 5200 },
+      );
+      await trackShareIntent();
+      return;
     }
+
+    if (copied) {
+      notifyInfo("Copiamos el mensaje. Ahora compartimos solo el enlace limpio.");
+    }
+
+    const nativeShare = navigator
+      .share(shareData)
+      .then(() => ({ status: "shared" }))
+      .catch((err) => ({ status: "error", error: err }));
+
+    const result = await Promise.race([
+      nativeShare,
+      new Promise((resolve) => {
+        window.setTimeout(() => resolve({ status: "timeout" }), 4200);
+      }),
+    ]);
+
+    if (result.status === "timeout") {
+      notifyInfo(
+        copied
+          ? "El mensaje ya quedó copiado. Si la app se queda esperando, volvé y pegalo manualmente."
+          : "Si la app se queda esperando, volvé y copiá el enlace desde el navegador.",
+        { duration: 6200 },
+      );
+      await trackShareIntent();
+      return;
+    }
+
+    if (result.status === "error") {
+      if (result.error?.name !== "AbortError") {
+        notifyInfo(
+          copied
+            ? "Copiamos el mensaje. Pegalo manualmente si la app no acepta compartir directo."
+            : "No pudimos compartir directo. Copiá el enlace desde la barra del navegador.",
+          { duration: 5200 },
+        );
+      }
+      await trackShareIntent();
+      return;
+    }
+
+    await trackShareIntent();
   }
 
   async function handleStockAlertSubmit(event) {
