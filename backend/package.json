@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "node --test",
+    "test": "node --import ./tests/setup-env.js --test",
     "test:watch": "node --test --watch",
     "images:backfill": "node scripts/backfill-article-image-variants.mjs",
     "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run",
@@ -19,6 +19,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
@@ -26,7 +27,6 @@
     "nodemailer": "^8.0.7",
     "pdfkit": "^0.18.0",
     "sharp": "^0.34.5",
-    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   }
 }

@@ -40,6 +40,13 @@ export const cancelOrderSchema = z.object({
   reason: z.string().trim().min(2).max(500),
 });
 
+export const batchOrderActionSchema = z.object({
+  action: z.enum(['APPROVE', 'CANCEL', 'SHIP']),
+  ids: z.array(z.coerce.number().int().positive()).min(1).max(100)
+    .transform((ids) => Array.from(new Set(ids))),
+  reason: z.string().trim().max(500).optional().nullable(),
+});
+
 export const createOrderPaymentSchema = z.object({
   amount: z.coerce.number().positive().optional(),
   providerName: z.string().trim().max(100).optional().nullable(),

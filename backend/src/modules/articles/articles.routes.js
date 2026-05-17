@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
+  batchAdminArticles,
   createAdminBulkArticles,
   createAdminArticle,
   deleteAdminArticle,
@@ -50,6 +51,7 @@ adminRouter.post(
   uploadArticleImportFile.single('file'),
   asyncHandler(importAdminArticles),
 );
+adminRouter.patch('/batch', requireRole('SUPER_ADMIN'), asyncHandler(batchAdminArticles));
 adminRouter.get('/:id', asyncHandler(getAdminArticle));
 adminRouter.post('/', asyncHandler(createAdminArticle));
 adminRouter.put('/:id', asyncHandler(updateAdminArticle));

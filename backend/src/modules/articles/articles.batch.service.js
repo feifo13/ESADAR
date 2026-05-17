@@ -1,9 +1,9 @@
 import path from 'node:path';
-import * as XLSX from 'xlsx';
 import { pool } from '../../db/pool.js';
 import { buildSqlPlaceholders } from '../../utils/sql-safety.js';
 import { badRequest } from '../../utils/app-error.js';
 import { normalizePublicAssetPath } from '../../utils/assets.js';
+import { rowsToCsvBuffer, rowsToXlsxBuffer } from '../../utils/export-files.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
   createArticle,
@@ -196,8 +196,7 @@ function parseBooleanCell(value, fallback = false) {
 function detectBatchType(fileName) {
   const extension = path.extname(String(fileName || '')).toLowerCase();
   if (extension === '.csv') return 'CSV';
-  if (extension === '.xlsx' || extension === '.xls') return 'XLSX';
-  throw badRequest('Solo se permiten archivos CSV o XLSX');
+  throw badRequest('Solo se permiten archivos CSV para importar. La exportación XLSX sigue disponible.');
 }
 
 function normalizeImportedRow(rawRow) {
@@ -369,39 +368,121 @@ function validateImportRow(row, referenceData) {
   return errors;
 }
 
-function parseImportFile(file) {
-  if (!file?.buffer?.length) {
-    throw badRequest('El archivo de importación está vacío o es inválido');
+function countDelimiterOutsideQuotes(line, delimiter) {
+  let count = 0;
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (!inQuotes && char === delimiter) {
+      count += 1;
+    }
   }
 
-  const workbook = XLSX.read(file.buffer, {
-    type: 'buffer',
-    cellDates: true,
-    raw: false,
-    dateNF: 'yyyy-mm-dd',
+  return count;
+}
+
+function detectCsvDelimiter(text) {
+  const firstDataLine = String(text || '')
+    .split(/\r?\n/)
+    .find((line) => line.trim().length > 0) || '';
+
+  const semicolonCount = countDelimiterOutsideQuotes(firstDataLine, ';');
+  const commaCount = countDelimiterOutsideQuotes(firstDataLine, ',');
+  return semicolonCount > commaCount ? ';' : ',';
+}
+
+function parseCsvRows(text, delimiter) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      row.push(cell);
+      cell = '';
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && next === '\n') index += 1;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+      continue;
+    }
+
+    cell += char;
+  }
+
+  if (cell.length || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function parseCsvFile(file) {
+  const text = file.buffer.toString('utf8').replace(/^\uFEFF/, '');
+  const delimiter = detectCsvDelimiter(text);
+  const csvRows = parseCsvRows(text, delimiter).filter((row) =>
+    row.some((cell) => String(cell || '').trim().length > 0),
+  );
+
+  if (csvRows.length < 2) {
+    throw badRequest('El archivo CSV no tiene filas para importar');
+  }
+
+  const headers = csvRows[0].map((header) => String(header || '').trim());
+  const rows = csvRows.slice(1).map((cells) => {
+    const rawRow = {};
+
+    headers.forEach((header, index) => {
+      if (!header) return;
+      rawRow[header] = cells[index] ?? '';
+    });
+
+    return rawRow;
   });
-
-  const firstSheetName = workbook.SheetNames[0];
-  if (!firstSheetName) {
-    throw badRequest('No se encontró ninguna hoja para importar');
-  }
-
-  const sheet = workbook.Sheets[firstSheetName];
-  const rows = XLSX.utils.sheet_to_json(sheet, {
-    defval: undefined,
-    raw: false,
-    dateNF: 'yyyy-mm-dd',
-  });
-
-  if (!rows.length) {
-    throw badRequest('El archivo no tiene filas para importar');
-  }
 
   return rows.map((rawRow, index) => ({
     rowNumber: index + 2,
     rawRow,
     normalizedRow: normalizeImportedRow(rawRow),
   }));
+}
+
+function parseImportFile(file) {
+  if (!file?.buffer?.length) {
+    throw badRequest('El archivo de importación está vacío o es inválido');
+  }
+
+  detectBatchType(file.originalname);
+  return parseCsvFile(file);
 }
 
 async function prepareImportRows(file, { updateExisting = false, createMissingLookups = false } = {}) {
@@ -1093,28 +1174,15 @@ function buildTemplateRows(type) {
   }];
 }
 
-export async function buildArticleImportTemplate({ format, type }) {
-  const safeFormat = format === 'csv' ? 'csv' : 'xlsx';
+export async function buildArticleImportTemplate({ type }) {
   const rows = buildTemplateRows(type);
   const columns = type === 'full' ? FULL_EXPORT_COLUMNS : SIMPLE_TEMPLATE_COLUMNS;
-  const worksheet = XLSX.utils.json_to_sheet(rows, { header: columns });
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, type === 'full' ? 'template_full' : 'template_simple');
-  const fileName = `esadar-plantilla-${type}.${safeFormat}`;
-
-  if (safeFormat === 'csv') {
-    const csv = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
-    return {
-      contentType: 'text/csv; charset=utf-8',
-      fileName,
-      payload: Buffer.from(`\uFEFF${csv}`, 'utf8'),
-    };
-  }
+  const fileName = `esadar-plantilla-${type}.csv`;
 
   return {
-    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    contentType: 'text/csv; charset=utf-8',
     fileName,
-    payload: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }),
+    payload: rowsToCsvBuffer(rows, columns),
   };
 }
 
@@ -1164,12 +1232,6 @@ export async function buildArticleExport({ filters, format, auditContext }) {
     additionalImages: row.additionalImages || '',
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(exportRows, {
-    header: FULL_EXPORT_COLUMNS,
-  });
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'articles');
-
   const today = new Date().toISOString().slice(0, 10);
   const safeFormat = format === 'csv' ? 'csv' : 'xlsx';
   const fileName = `esadar-articulos-${today}.${safeFormat}`;
@@ -1190,11 +1252,10 @@ export async function buildArticleExport({ filters, format, auditContext }) {
   });
 
   if (safeFormat === 'csv') {
-    const csv = XLSX.utils.sheet_to_csv(worksheet, { FS: ',', RS: '\n' });
     return {
       contentType: 'text/csv; charset=utf-8',
       fileName,
-      payload: Buffer.from(`\uFEFF${csv}`, 'utf8'),
+      payload: rowsToCsvBuffer(exportRows, FULL_EXPORT_COLUMNS),
       itemCount: exportRows.length,
     };
   }
@@ -1202,7 +1263,7 @@ export async function buildArticleExport({ filters, format, auditContext }) {
   return {
     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     fileName,
-    payload: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }),
+    payload: await rowsToXlsxBuffer(exportRows, 'articles', FULL_EXPORT_COLUMNS),
     itemCount: exportRows.length,
   };
 }

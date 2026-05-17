@@ -35,15 +35,19 @@ function importFileFilter(_req, file, cb) {
   const allowedMimeTypes = [
     'text/csv',
     'application/csv',
+    'text/plain',
     'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   ];
 
   const fileName = String(file.originalname || '').toLowerCase();
-  const hasAllowedExtension = ['.csv', '.xlsx', '.xls'].some((extension) => fileName.endsWith(extension));
+  const hasAllowedExtension = fileName.endsWith('.csv');
 
   if (!allowedMimeTypes.includes(file.mimetype) && !hasAllowedExtension) {
-    return cb(new Error('Only csv, xls and xlsx files are allowed'));
+    return cb(new Error('Only csv files are allowed for import'));
+  }
+
+  if (!hasAllowedExtension) {
+    return cb(new Error('Only .csv files are allowed for import'));
   }
 
   return cb(null, true);

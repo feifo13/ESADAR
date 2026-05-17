@@ -22,6 +22,56 @@ const OFFER_SORTS = {
   contactName: (direction) => `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
 };
 
+
+
+function normalizeBatchError(error) {
+  return error?.message || 'No se pudo procesar el elemento.';
+}
+
+export async function batchUpdateOffers(input, auditContext) {
+  const nextStatus = input.action === 'ACCEPT' ? 'ACCEPTED' : 'CANCELLED';
+  const actionLabels = {
+    ACCEPT: 'aceptada',
+    CANCEL: 'cancelada',
+  };
+  const results = [];
+
+  for (const id of input.ids) {
+    try {
+      const offer = await changeOfferStatus(
+        id,
+        {
+          status: nextStatus,
+          reason: input.reason || `Oferta ${actionLabels[input.action]} en lote por super admin.`,
+        },
+        auditContext,
+      );
+
+      results.push({
+        id,
+        ok: true,
+        status: offer.status,
+        articleTitle: offer.article?.title || null,
+        message: `Oferta ${actionLabels[input.action] || 'actualizada'}.`,
+      });
+    } catch (error) {
+      results.push({
+        id,
+        ok: false,
+        message: normalizeBatchError(error),
+      });
+    }
+  }
+
+  return {
+    action: input.action,
+    total: results.length,
+    succeeded: results.filter((result) => result.ok).length,
+    failed: results.filter((result) => !result.ok).length,
+    results,
+  };
+}
+
 export async function createOffer(input, actor, auditContext) {
   if (!actor?.userId) {
     throw unauthorized('Debes iniciar sesión para enviar una oferta.');

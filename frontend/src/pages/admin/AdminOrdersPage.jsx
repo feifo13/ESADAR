@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
+import AdminBatchSnackbar from "../../components/admin/AdminBatchSnackbar.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import OrderStatusBadge from "../../components/OrderStatusBadge.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
@@ -10,7 +11,10 @@ import {
   DownloadIcon,
   EyeIcon,
   ArchiveIcon,
+  CheckIcon,
+  BanIcon,
 } from "../../components/ActionIcons.jsx";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
@@ -18,6 +22,8 @@ import { formatCurrency, formatDate } from "../../lib/format.js";
 import { formatPaymentMethod } from "../../lib/paymentMethods.js";
 import { buildQueryString } from "../../lib/query.js";
 import AppLoader from "../../components/AppLoader.jsx";
+
+const BATCH_ORDER_STATUSES = ["PENDING", "RESERVED", "APPROVED"];
 
 const PAYMENT_STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -43,8 +49,9 @@ const initialFilters = {
 };
 
 export default function AdminOrdersPage() {
+  const { user } = useAuth();
   const { categoryOptions, brandOptions } = useLookups();
-  const { notifyError, notifySuccess } = useNotification();
+  const { notifyError, notifySuccess, notifyWarning } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [orders, setOrders] = useState([]);
@@ -56,7 +63,10 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+  const [batchBusy, setBatchBusy] = useState(false);
 
+  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN");
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
     1,
@@ -75,6 +85,22 @@ export default function AdminOrdersPage() {
       filters.dateTo,
     ].filter(Boolean).length +
     (filters.pageSize !== initialFilters.pageSize ? 1 : 0);
+
+  const selectedOrderIdSet = useMemo(
+    () => new Set(selectedOrderIds),
+    [selectedOrderIds],
+  );
+  const selectableOrderIds = useMemo(
+    () =>
+      orders
+        .filter((order) => BATCH_ORDER_STATUSES.includes(order.orderStatus))
+        .map((order) => order.id),
+    [orders],
+  );
+  const allSelectableOrdersChecked =
+    selectableOrderIds.length > 0 &&
+    selectableOrderIds.every((id) => selectedOrderIdSet.has(id));
+
 
   useEffect(() => {
     let ignore = false;
@@ -103,6 +129,12 @@ export default function AdminOrdersPage() {
     };
   }, [query, refreshNonce]);
 
+  useEffect(() => {
+    setSelectedOrderIds((current) =>
+      current.filter((id) => orders.some((order) => order.id === id)),
+    );
+  }, [orders]);
+
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
   }
@@ -124,6 +156,75 @@ export default function AdminOrdersPage() {
     const numericSize = Number(nextPageSize) || 25;
     setDraftFilters((current) => ({ ...current, pageSize: numericSize }));
     setFilters((current) => ({ ...current, pageSize: numericSize, page: 1 }));
+  }
+
+  function toggleOrderSelection(orderId) {
+    setSelectedOrderIds((current) =>
+      current.includes(orderId)
+        ? current.filter((id) => id !== orderId)
+        : [...current, orderId],
+    );
+  }
+
+  function toggleAllSelectableOrders() {
+    setSelectedOrderIds((current) => {
+      if (selectableOrderIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !selectableOrderIds.includes(id));
+      }
+      return Array.from(new Set([...current, ...selectableOrderIds]));
+    });
+  }
+
+  function clearSelection() {
+    setSelectedOrderIds([]);
+  }
+
+  async function handleBatchOrders(action) {
+    if (!selectedOrderIds.length) return;
+
+    const actionLabels = {
+      APPROVE: "aprobar",
+      CANCEL: "cancelar",
+      SHIP: "marcar como enviadas",
+    };
+
+    const confirmed = window.confirm(
+      `Vas a ${actionLabels[action] || "actualizar"} ${selectedOrderIds.length} orden(es). ¿Continuar?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBatchBusy(true);
+      setError("");
+      const response = await apiFetch("/api/admin/orders/batch", {
+        method: "PATCH",
+        body: {
+          action,
+          ids: selectedOrderIds,
+          reason:
+            action === "CANCEL"
+              ? "Orden cancelada en lote desde administración."
+              : undefined,
+        },
+      });
+
+      const message = `${response.succeeded || 0} orden(es) procesada(s).${
+        response.failed ? ` ${response.failed} con error.` : ""
+      }`;
+      if (response.failed) {
+        notifyWarning(message);
+      } else {
+        notifySuccess(message);
+      }
+      clearSelection();
+      setRefreshNonce((current) => current + 1);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo ejecutar la acción batch";
+      notifyError(errorMessage);
+      clearSelection();
+    } finally {
+      setBatchBusy(false);
+    }
   }
 
   async function handleDownloadPdf(order) {
@@ -179,6 +280,40 @@ export default function AdminOrdersPage() {
             <h1>Órdenes</h1>
           </div>
         </div>
+
+        {error ? <p className="error-copy">{error}</p> : null}
+
+        {isSuperAdmin ? (
+          <AdminBatchSnackbar
+            selectedCount={selectedOrderIds.length}
+            entityLabel="orden"
+            entityPluralLabel="órdenes"
+            busy={batchBusy}
+            onClear={clearSelection}
+            actions={[
+              {
+                key: "approve",
+                label: "Aprobar",
+                icon: CheckIcon,
+                variant: "success",
+                onClick: () => handleBatchOrders("APPROVE"),
+              },
+              {
+                key: "ship",
+                label: "Enviar",
+                icon: ArchiveIcon,
+                onClick: () => handleBatchOrders("SHIP"),
+              },
+              {
+                key: "cancel",
+                label: "Cancelar",
+                icon: BanIcon,
+                variant: "danger",
+                onClick: () => handleBatchOrders("CANCEL"),
+              },
+            ]}
+          />
+        ) : null}
 
         <ResponsiveFilterPanel
           title="Filtros de órdenes"
@@ -358,6 +493,18 @@ export default function AdminOrdersPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  {isSuperAdmin ? (
+                    <th className="batch-select-cell">
+                      <input
+                        type="checkbox"
+                        className="batch-select-checkbox"
+                        checked={allSelectableOrdersChecked}
+                        disabled={!selectableOrderIds.length || batchBusy}
+                        onChange={toggleAllSelectableOrders}
+                        aria-label="Seleccionar órdenes accionables"
+                      />
+                    </th>
+                  ) : null}
                   <SortableTh
                     sortKey="orderNumber"
                     sort={{ key: filters.sortBy, direction: filters.sortDir }}
@@ -406,9 +553,23 @@ export default function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td>
+                {orders.map((order) => {
+                  const isBatchSelectable = BATCH_ORDER_STATUSES.includes(order.orderStatus);
+                  return (
+                    <tr key={order.id}>
+                      {isSuperAdmin ? (
+                        <td className="batch-select-cell" data-label="Seleccionar">
+                          <input
+                            type="checkbox"
+                            className="batch-select-checkbox"
+                            checked={selectedOrderIdSet.has(order.id)}
+                            disabled={!isBatchSelectable || batchBusy}
+                            onChange={() => toggleOrderSelection(order.id)}
+                            aria-label={`Seleccionar orden ${order.orderNumber}`}
+                          />
+                        </td>
+                      ) : null}
+                      <td>
                       <div className="cell-stack">
                         <strong>{order.orderNumber}</strong>
                         <span className="muted-copy">#{order.id}</span>
@@ -495,12 +656,13 @@ export default function AdminOrdersPage() {
                         ) : null}
                       </div>
                     </td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
 
                 {!orders.length ? (
                   <tr>
-                    <td colSpan="9">
+                    <td colSpan={isSuperAdmin ? 10 : 9}>
                       <p className="muted-copy">
                         No hay órdenes para los filtros seleccionados.
                       </p>

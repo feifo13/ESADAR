@@ -4,6 +4,7 @@ import { requireRole } from '../../middlewares/require-role.js';
 import { offerRateLimit } from '../../middlewares/sensitive-rate-limits.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import {
+  batchAdminOffers,
   createPublicOffer,
   getAcceptedOffers,
   getArticleOfferEligibility,
@@ -22,6 +23,7 @@ publicRouter.post('/', requireAuth, offerRateLimit, asyncHandler(createPublicOff
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOffers));
+adminRouter.patch('/batch', requireRole('SUPER_ADMIN'), asyncHandler(batchAdminOffers));
 adminRouter.patch('/:id/status', asyncHandler(updateAdminOfferStatus));
 
 export { adminRouter, publicRouter };

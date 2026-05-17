@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
+import AdminBatchSnackbar from "../../components/admin/AdminBatchSnackbar.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import { BanIcon, CheckIcon, XIcon } from "../../components/ActionIcons.jsx";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
@@ -37,8 +39,9 @@ const initialFilters = {
 };
 
 export default function AdminOffersPage() {
+  const { user } = useAuth();
   const { categoryOptions, brandOptions } = useLookups();
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifySuccess, notifyError, notifyWarning } = useNotification();
   const [draftFilters, setDraftFilters] = useState(initialFilters);
   const [filters, setFilters] = useState(initialFilters);
   const [offers, setOffers] = useState([]);
@@ -50,7 +53,10 @@ export default function AdminOffersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [selectedOfferIds, setSelectedOfferIds] = useState([]);
+  const [batchBusy, setBatchBusy] = useState(false);
 
+  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN");
   const query = useMemo(() => buildQueryString(filters), [filters]);
   const totalPages = Math.max(
     1,
@@ -68,6 +74,19 @@ export default function AdminOffersPage() {
       filters.dateTo,
     ].filter(Boolean).length +
     (filters.pageSize !== initialFilters.pageSize ? 1 : 0);
+
+  const selectedOfferIdSet = useMemo(
+    () => new Set(selectedOfferIds),
+    [selectedOfferIds],
+  );
+  const selectableOfferIds = useMemo(
+    () => offers.filter((offer) => offer.status === "PENDING").map((offer) => offer.id),
+    [offers],
+  );
+  const allSelectableOffersChecked =
+    selectableOfferIds.length > 0 &&
+    selectableOfferIds.every((id) => selectedOfferIdSet.has(id));
+
 
   useEffect(() => {
     let ignore = false;
@@ -95,6 +114,12 @@ export default function AdminOffersPage() {
       ignore = true;
     };
   }, [query, refreshNonce]);
+
+  useEffect(() => {
+    setSelectedOfferIds((current) =>
+      current.filter((id) => offers.some((offer) => offer.id === id)),
+    );
+  }, [offers]);
 
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
@@ -126,6 +151,74 @@ export default function AdminOffersPage() {
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
   }
 
+  function toggleOfferSelection(offerId) {
+    setSelectedOfferIds((current) =>
+      current.includes(offerId)
+        ? current.filter((id) => id !== offerId)
+        : [...current, offerId],
+    );
+  }
+
+  function toggleAllSelectableOffers() {
+    setSelectedOfferIds((current) => {
+      if (selectableOfferIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !selectableOfferIds.includes(id));
+      }
+      return Array.from(new Set([...current, ...selectableOfferIds]));
+    });
+  }
+
+  function clearSelection() {
+    setSelectedOfferIds([]);
+  }
+
+  async function handleBatchOffers(action) {
+    if (!selectedOfferIds.length) return;
+
+    const actionLabels = {
+      ACCEPT: "aceptar",
+      CANCEL: "cancelar",
+    };
+
+    const confirmed = window.confirm(
+      `Vas a ${actionLabels[action] || "actualizar"} ${selectedOfferIds.length} oferta(s). ¿Continuar?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBatchBusy(true);
+      setError("");
+      const response = await apiFetch("/api/admin/offers/batch", {
+        method: "PATCH",
+        body: {
+          action,
+          ids: selectedOfferIds,
+          reason:
+            action === "CANCEL"
+              ? "Oferta cancelada en lote desde administración."
+              : undefined,
+        },
+      });
+
+      const message = `${response.succeeded || 0} oferta(s) procesada(s).${
+        response.failed ? ` ${response.failed} con error.` : ""
+      }`;
+      if (response.failed) {
+        notifyWarning(message);
+      } else {
+        notifySuccess(message);
+      }
+      clearSelection();
+      setRefreshNonce((current) => current + 1);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo ejecutar la acción batch";
+      notifyError(errorMessage);
+      clearSelection();
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
   async function handleStatusChange(offerId, nextStatus) {
     try {
       setError("");
@@ -154,6 +247,32 @@ export default function AdminOffersPage() {
         </div>
 
         {error ? <p className="error-copy">{error}</p> : null}
+
+        {isSuperAdmin ? (
+          <AdminBatchSnackbar
+            selectedCount={selectedOfferIds.length}
+            entityLabel="oferta"
+            entityPluralLabel="ofertas"
+            busy={batchBusy}
+            onClear={clearSelection}
+            actions={[
+              {
+                key: "accept",
+                label: "Aprobar",
+                icon: CheckIcon,
+                variant: "success",
+                onClick: () => handleBatchOffers("ACCEPT"),
+              },
+              {
+                key: "cancel",
+                label: "Cancelar",
+                icon: BanIcon,
+                variant: "danger",
+                onClick: () => handleBatchOffers("CANCEL"),
+              },
+            ]}
+          />
+        ) : null}
 
         <ResponsiveFilterPanel
           title="Filtros de ofertas"
@@ -315,6 +434,18 @@ export default function AdminOffersPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  {isSuperAdmin ? (
+                    <th className="batch-select-cell">
+                      <input
+                        type="checkbox"
+                        className="batch-select-checkbox"
+                        checked={allSelectableOffersChecked}
+                        disabled={!selectableOfferIds.length || batchBusy}
+                        onChange={toggleAllSelectableOffers}
+                        aria-label="Seleccionar ofertas pendientes"
+                      />
+                    </th>
+                  ) : null}
                   <th>Imagen</th>
                   <SortableTh
                     sortKey="createdAt"
@@ -360,8 +491,21 @@ export default function AdminOffersPage() {
                     offer.consumedAt || offer.status === "USED"
                       ? "USED"
                       : offer.status;
+                  const isBatchSelectable = offer.status === "PENDING";
                   return (
                     <tr key={offer.id}>
+                      {isSuperAdmin ? (
+                        <td className="batch-select-cell" data-label="Seleccionar">
+                          <input
+                            type="checkbox"
+                            className="batch-select-checkbox"
+                            checked={selectedOfferIdSet.has(offer.id)}
+                            disabled={!isBatchSelectable || batchBusy}
+                            onChange={() => toggleOfferSelection(offer.id)}
+                            aria-label={`Seleccionar oferta #${offer.id}`}
+                          />
+                        </td>
+                      ) : null}
                       <td>
                         <SmartImage
                           src={offer.article.image}
@@ -481,7 +625,7 @@ export default function AdminOffersPage() {
 
                 {!offers.length ? (
                   <tr>
-                    <td colSpan="6">
+                    <td colSpan={isSuperAdmin ? 7 : 6}>
                       <p className="muted-copy">No hay ofertas para mostrar.</p>
                     </td>
                   </tr>

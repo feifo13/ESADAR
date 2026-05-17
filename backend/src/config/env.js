@@ -74,6 +74,10 @@ const defaultCorsOrigins = [
   "https://esadar.com.uy",
 ];
 const configuredCorsOrigins = parseCsv(process.env.CORS_ORIGINS);
+const resolvedCorsOrigins = configuredCorsOrigins.length
+  ? configuredCorsOrigins
+  : [...new Set(defaultCorsOrigins)];
+const configuredMailAllowedSiteUrls = parseCsv(process.env.MAIL_ALLOWED_SITE_URLS);
 
 export const env = {
   nodeEnv,
@@ -83,9 +87,7 @@ export const env = {
   publicSiteUrl,
   trustProxy: toBoolean(process.env.TRUST_PROXY, false),
   cors: {
-    allowedOrigins: configuredCorsOrigins.length
-      ? configuredCorsOrigins
-      : [...new Set(defaultCorsOrigins)],
+    allowedOrigins: resolvedCorsOrigins,
     allowLocalhostInDevelopment: toBoolean(process.env.CORS_ALLOW_LOCALHOST_IN_DEVELOPMENT, true),
   },
   security: {
@@ -120,6 +122,9 @@ export const env = {
   bundledUploadDir: path.resolve(process.cwd(), "public", "uploads"),
   maxUploadBytes: toNumber(process.env.MAX_UPLOAD_MB, 10) * 1024 * 1024,
   mail: {
+    allowedSiteOrigins: configuredMailAllowedSiteUrls.length
+      ? configuredMailAllowedSiteUrls
+      : [...new Set([publicSiteUrl, appOrigin, ...resolvedCorsOrigins])],
     host: process.env.SMTP_HOST || "",
     port: toNumber(process.env.SMTP_PORT, 587),
     secure: String(process.env.SMTP_SECURE || "").toLowerCase() === "true",

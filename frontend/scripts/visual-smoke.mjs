@@ -171,6 +171,8 @@ async function launchBrowser() {
       `--remote-debugging-port=${port}`,
       `--user-data-dir=${userDataDir}`,
       '--disable-gpu',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
       '--hide-scrollbars=false',
       '--no-first-run',
       '--no-default-browser-check',

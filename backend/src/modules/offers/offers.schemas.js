@@ -38,6 +38,13 @@ export const updateOfferStatusSchema = z.object({
   reason: z.string().trim().max(1000).optional().nullable(),
 });
 
+export const batchOfferActionSchema = z.object({
+  action: z.enum(['ACCEPT', 'CANCEL']),
+  ids: z.array(z.coerce.number().int().positive()).min(1).max(100)
+    .transform((ids) => Array.from(new Set(ids))),
+  reason: z.string().trim().max(1000).optional().nullable(),
+});
+
 export const adminOfferListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   status: optionalEnum(['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED', 'EXPIRED', 'USED']),

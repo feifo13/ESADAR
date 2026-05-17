@@ -632,6 +632,61 @@ export async function getOrderDetail(id) {
   return getOrderById(id, pool);
 }
 
+
+function normalizeBatchError(error) {
+  return error?.message || 'No se pudo procesar el elemento.';
+}
+
+export async function batchUpdateOrders(input, auditContext) {
+  const actionLabels = {
+    APPROVE: 'aprobada',
+    CANCEL: 'cancelada',
+    SHIP: 'enviada',
+  };
+  const results = [];
+
+  for (const id of input.ids) {
+    try {
+      let order;
+      if (input.action === 'APPROVE') {
+        order = await approveOrder(id, auditContext);
+      } else if (input.action === 'CANCEL') {
+        order = await cancelOrder(
+          id,
+          input.reason || 'Orden cancelada en lote por super admin.',
+          auditContext,
+        );
+      } else if (input.action === 'SHIP') {
+        order = await shipOrder(id, auditContext);
+      } else {
+        throw badRequest('Acción de lote no permitida para órdenes.');
+      }
+
+      results.push({
+        id,
+        ok: true,
+        status: order.orderStatus,
+        orderNumber: order.orderNumber,
+        message: `Orden ${actionLabels[input.action] || 'actualizada'}.`,
+      });
+    } catch (error) {
+      results.push({
+        id,
+        ok: false,
+        message: normalizeBatchError(error),
+      });
+    }
+  }
+
+  return {
+    action: input.action,
+    total: results.length,
+    succeeded: results.filter((result) => result.ok).length,
+    failed: results.filter((result) => !result.ok).length,
+    results,
+  };
+}
+
 export async function approveOrder(id, auditContext) {
   const order = await withTransaction(async (connection) => {
     await lockOrderForUpdate(id, connection);

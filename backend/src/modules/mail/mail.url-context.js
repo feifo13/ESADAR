@@ -1,15 +1,5 @@
 import { env } from '../../config/env.js';
 
-function isLocalHostname(hostname = '') {
-  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
-  return ['localhost', '127.0.0.1', '::1'].includes(normalized);
-}
-
-function isIpHostname(hostname = '') {
-  const normalized = String(hostname).toLowerCase().replace(/^\[|\]$/g, '');
-  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(normalized) || normalized.includes(':');
-}
-
 function toUrlCandidate(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
@@ -27,22 +17,33 @@ function toUrlCandidate(value) {
   return null;
 }
 
-function normalizeMailSiteUrl(value) {
+function normalizeOrigin(value) {
   const candidate = toUrlCandidate(value);
   if (!candidate) return null;
 
   try {
     const parsed = new URL(candidate);
-    const hostname = parsed.hostname.toLowerCase();
-
-    if (isLocalHostname(hostname) || !isIpHostname(hostname)) {
-      return `${parsed.protocol}//${parsed.host}`.replace(/\/+$/, '');
-    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return parsed.origin.replace(/\/+$/, '');
   } catch {
     return null;
   }
+}
 
-  return null;
+function getAllowedMailSiteOrigins() {
+  return new Set(
+    (env.mail.allowedSiteOrigins || [])
+      .map(normalizeOrigin)
+      .filter(Boolean),
+  );
+}
+
+function normalizeAllowedMailSiteUrl(value) {
+  const normalized = normalizeOrigin(value);
+  if (!normalized) return null;
+
+  const allowedOrigins = getAllowedMailSiteOrigins();
+  return allowedOrigins.has(normalized) ? normalized : null;
 }
 
 export function resolveMailSiteUrl(...values) {
@@ -54,7 +55,7 @@ export function resolveMailSiteUrl(...values) {
   ];
 
   for (const candidate of candidates) {
-    const normalized = normalizeMailSiteUrl(candidate);
+    const normalized = normalizeAllowedMailSiteUrl(candidate);
     if (normalized) return normalized;
   }
 

@@ -1,5 +1,6 @@
 import {
   approveOrder,
+  batchUpdateOrders,
   cancelOrder,
   createOrder,
   createOrderPayment,
@@ -12,6 +13,7 @@ import {
   createOrderPaymentSchema,
   createOrderSchema,
   cancelOrderSchema,
+  batchOrderActionSchema,
   adminOrderListQuerySchema,
   expireReservationsSchema,
 } from './orders.schemas.js';
@@ -55,6 +57,13 @@ export async function getAdminOrders(req, res) {
 export async function getAdminOrder(req, res) {
   const order = await getOrderDetail(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, order });
+}
+
+
+export async function batchAdminOrders(req, res) {
+  const input = batchOrderActionSchema.parse(req.body);
+  const result = await batchUpdateOrders(input, getAuditContext(req));
+  return res.json({ ok: result.failed === 0, ...result });
 }
 
 

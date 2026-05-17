@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { appendRowsSheet, createWorkbook, workbookToXlsxBuffer } from '../../utils/export-files.js';
 import { pool } from '../../db/pool.js';
 import { appendDateRangeFilters, buildLikeValue } from '../../utils/listing.js';
 import { buildSqlLimitClause } from '../../utils/sql-safety.js';
@@ -857,13 +857,11 @@ export async function getStatisticsSummary(filters = {}) {
 }
 
 function appendSheet(workbook, name, rows) {
-  const safeRows = Array.isArray(rows) && rows.length ? rows : [{ estado: 'Sin datos' }];
-  const worksheet = XLSX.utils.json_to_sheet(safeRows);
-  XLSX.utils.book_append_sheet(workbook, worksheet, name.slice(0, 31));
+  appendRowsSheet(workbook, name, rows);
 }
 
 export async function exportStatisticsReport(filters = {}, type = 'full') {
-  const workbook = XLSX.utils.book_new();
+  const workbook = createWorkbook();
 
   if (type === 'summary') {
     appendSheet(workbook, 'Resumen', [await getStatisticsSummary(filters)]);
@@ -926,6 +924,6 @@ export async function exportStatisticsReport(filters = {}, type = 'full') {
   return {
     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     fileName: `esadar-estadisticas-${type}-${today}.xlsx`,
-    payload: XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }),
+    payload: await workbookToXlsxBuffer(workbook),
   };
 }

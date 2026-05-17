@@ -226,7 +226,7 @@ export const articleImportOptionsSchema = z.object({
 });
 
 export const articleImportTemplateQuerySchema = z.object({
-  format: z.enum(['csv', 'xlsx']).default('xlsx'),
+  format: z.enum(['csv']).default('csv'),
   type: z.enum(['simple', 'full']).default('simple'),
 });
 
@@ -278,6 +278,19 @@ export const bulkArticleRowSchema = z.object({
 export const adminBulkArticleCreateSchema = z.object({
   createMissingLookups: z.coerce.boolean().default(false),
   articles: z.array(bulkArticleRowSchema).min(1).max(100),
+});
+
+export const adminArticleBatchActionSchema = z.object({
+  action: z.enum([
+    'ACTIVATE',
+    'DEACTIVATE',
+    'FEATURE',
+    'UNFEATURE',
+    'ALLOW_OFFERS',
+    'DISALLOW_OFFERS',
+  ]),
+  ids: z.array(z.coerce.number().int().positive()).min(1).max(100)
+    .transform((ids) => Array.from(new Set(ids))),
 });
 
 function quantityTotalIsInvalid(total, available, reserved, sold) {

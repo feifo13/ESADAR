@@ -5,6 +5,7 @@ import { requireRole } from '../../middlewares/require-role.js';
 import { checkoutRateLimit } from '../../middlewares/sensitive-rate-limits.js';
 import {
   approveAdminOrder,
+  batchAdminOrders,
   cancelAdminOrder,
   createAdminOrderPayment,
   createPublicOrder,
@@ -22,6 +23,7 @@ publicRouter.post('/', optionalAuth, checkoutRateLimit, asyncHandler(createPubli
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));
+adminRouter.patch('/batch', requireRole('SUPER_ADMIN'), asyncHandler(batchAdminOrders));
 adminRouter.post('/expire-reservations', asyncHandler(expireAdminOrderReservations));
 adminRouter.get('/:id/receipt.pdf', asyncHandler(getAdminOrderReceiptPdf));
 adminRouter.get('/:id', asyncHandler(getAdminOrder));

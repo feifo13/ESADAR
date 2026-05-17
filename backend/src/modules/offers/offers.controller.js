@@ -2,10 +2,12 @@ import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   adminOfferListQuerySchema,
+  batchOfferActionSchema,
   createOfferSchema,
   updateOfferStatusSchema,
 } from './offers.schemas.js';
 import {
+  batchUpdateOffers,
   changeOfferStatus,
   createOffer,
   getOfferEligibilityForUser,
@@ -54,6 +56,13 @@ export async function getAdminOffers(req, res) {
   const pagination = getPagination(filters, { pageSize: 25 });
   const result = await listOffers({ filters, pagination });
   return res.json({ ok: true, ...result });
+}
+
+
+export async function batchAdminOffers(req, res) {
+  const input = batchOfferActionSchema.parse(req.body);
+  const result = await batchUpdateOffers(input, getAuditContext(req));
+  return res.json({ ok: result.failed === 0, ...result });
 }
 
 export async function updateAdminOfferStatus(req, res) {

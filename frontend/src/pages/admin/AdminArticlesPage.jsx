@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
+import AdminBatchSnackbar from "../../components/admin/AdminBatchSnackbar.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
-import { ArchiveIcon, EditIcon, StockIcon, XIcon } from "../../components/ActionIcons.jsx";
+import {
+  ArchiveIcon,
+  BanIcon,
+  CheckIcon,
+  EditIcon,
+  EyeIcon,
+  StockIcon,
+  XIcon,
+} from "../../components/ActionIcons.jsx";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
@@ -93,6 +103,7 @@ function QuickToggle({ checked, label, onText, offText, onClick, disabled = fals
 }
 
 export default function AdminArticlesPage() {
+  const { user } = useAuth();
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifySuccess, notifyError } = useNotification();
@@ -119,6 +130,10 @@ export default function AdminArticlesPage() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [importPanelOpen, setImportPanelOpen] = useState(false);
   const [pendingToggles, setPendingToggles] = useState({});
+  const [selectedArticleIds, setSelectedArticleIds] = useState([]);
+  const [batchBusy, setBatchBusy] = useState(false);
+
+  const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN");
 
   const totalPages = Math.max(
     1,
@@ -142,6 +157,18 @@ export default function AdminArticlesPage() {
       filters.dateTo,
     ].filter(Boolean).length +
     (filters.pageSize !== initialFilters.pageSize ? 1 : 0);
+
+  const selectedArticleIdSet = useMemo(
+    () => new Set(selectedArticleIds),
+    [selectedArticleIds],
+  );
+  const selectableArticleIds = useMemo(
+    () => items.map((article) => article.id),
+    [items],
+  );
+  const allSelectableArticlesChecked =
+    selectableArticleIds.length > 0 &&
+    selectableArticleIds.every((id) => selectedArticleIdSet.has(id));
 
   useEffect(() => {
     let ignore = false;
@@ -173,6 +200,12 @@ export default function AdminArticlesPage() {
       ignore = true;
     };
   }, [activeQuery, refreshNonce]);
+
+  useEffect(() => {
+    setSelectedArticleIds((current) =>
+      current.filter((id) => items.some((article) => article.id === id)),
+    );
+  }, [items]);
 
   function updateDraft(name, value) {
     setDraftFilters((current) => ({ ...current, [name]: value }));
@@ -206,6 +239,72 @@ export default function AdminArticlesPage() {
       filters.sortBy === sortBy && filters.sortDir === "asc" ? "desc" : "asc";
     setDraftFilters((current) => ({ ...current, sortBy, sortDir }));
     setFilters((current) => ({ ...current, sortBy, sortDir, page: 1 }));
+  }
+
+  function toggleArticleSelection(articleId) {
+    setSelectedArticleIds((current) =>
+      current.includes(articleId)
+        ? current.filter((id) => id !== articleId)
+        : [...current, articleId],
+    );
+  }
+
+  function toggleAllSelectableArticles() {
+    setSelectedArticleIds((current) => {
+      if (selectableArticleIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !selectableArticleIds.includes(id));
+      }
+      return Array.from(new Set([...current, ...selectableArticleIds]));
+    });
+  }
+
+  function clearSelection() {
+    setSelectedArticleIds([]);
+  }
+
+  async function handleBatchArticles(action) {
+    if (!selectedArticleIds.length) return;
+
+    const actionLabels = {
+      ACTIVATE: "activar",
+      DEACTIVATE: "desactivar",
+      FEATURE: "marcar como destacados",
+      UNFEATURE: "quitar de destacados",
+      ALLOW_OFFERS: "habilitar ofertas",
+      DISALLOW_OFFERS: "deshabilitar ofertas",
+    };
+
+    const confirmed = window.confirm(
+      `Vas a ${actionLabels[action] || "actualizar"} ${selectedArticleIds.length} artículo(s). ¿Continuar?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBatchBusy(true);
+      setError("");
+      setMessage("");
+      const response = await apiFetch("/api/admin/articles/batch", {
+        method: "PATCH",
+        body: { action, ids: selectedArticleIds },
+      });
+
+      const successMessage = `${response.succeeded || 0} artículo(s) procesado(s).${
+        response.failed ? ` ${response.failed} con error.` : ""
+      }`;
+      if (response.failed) {
+        notifyError(successMessage);
+      } else {
+        notifySuccess(successMessage);
+      }
+      clearSelection();
+      setRefreshNonce((current) => current + 1);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo ejecutar la acción batch";
+      notifyError(errorMessage);
+      clearSelection();
+    } finally {
+      setBatchBusy(false);
+    }
   }
 
   async function handleExport(format) {
@@ -260,7 +359,7 @@ export default function AdminArticlesPage() {
   async function handlePreviewImport() {
     if (!importFile) {
       const errorMessage =
-        "Selecciona un archivo CSV o XLSX antes de previsualizar.";
+        "Selecciona un archivo CSV antes de previsualizar.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       focusValidationTarget("articles-import-file");
@@ -296,7 +395,7 @@ export default function AdminArticlesPage() {
   async function handleRunImport() {
     if (!importFile) {
       const errorMessage =
-        "Selecciona un archivo CSV o XLSX antes de importar.";
+        "Selecciona un archivo CSV antes de importar.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
       focusValidationTarget("articles-import-file");
@@ -496,7 +595,7 @@ export default function AdminArticlesPage() {
               className="button button-secondary"
               onClick={() => setImportPanelOpen((current) => !current)}
             >
-              {importPanelOpen ? "Ocultar importacion" : "Importar CSV/XLSX"}
+              {importPanelOpen ? "Ocultar importacion" : "Importar CSV"}
             </button>
             <button
               type="button"
@@ -527,6 +626,56 @@ export default function AdminArticlesPage() {
             </Link>
           </div>
         </div>
+
+        {isSuperAdmin ? (
+          <AdminBatchSnackbar
+            selectedCount={selectedArticleIds.length}
+            entityLabel="artículo"
+            entityPluralLabel="artículos"
+            busy={batchBusy}
+            onClear={clearSelection}
+            actions={[
+              {
+                key: "activate",
+                label: "Activar",
+                icon: CheckIcon,
+                variant: "success",
+                onClick: () => handleBatchArticles("ACTIVATE"),
+              },
+              {
+                key: "deactivate",
+                label: "Desactivar",
+                icon: ArchiveIcon,
+                onClick: () => handleBatchArticles("DEACTIVATE"),
+              },
+              {
+                key: "feature",
+                label: "Destacar",
+                icon: EyeIcon,
+                onClick: () => handleBatchArticles("FEATURE"),
+              },
+              {
+                key: "unfeature",
+                label: "Quitar destacado",
+                icon: BanIcon,
+                onClick: () => handleBatchArticles("UNFEATURE"),
+              },
+              {
+                key: "allow-offers",
+                label: "Aceptar ofertas",
+                icon: StockIcon,
+                onClick: () => handleBatchArticles("ALLOW_OFFERS"),
+              },
+              {
+                key: "disallow-offers",
+                label: "No aceptar ofertas",
+                icon: XIcon,
+                variant: "danger",
+                onClick: () => handleBatchArticles("DISALLOW_OFFERS"),
+              },
+            ]}
+          />
+        ) : null}
 
         <ResponsiveFilterPanel
           title="Filtros de artículos"
@@ -721,7 +870,7 @@ export default function AdminArticlesPage() {
             <div className="section-heading section-heading-wrap">
               <div>
                 <p className="section-kicker">Batch</p>
-            <h2>Importar artículos</h2>
+                <h2>Importar artículos</h2>
                 <p className="muted-copy">
                   Para carga rapida solo necesitas titulo y precio. El resto se
                   completa con valores seguros.
@@ -740,32 +889,12 @@ export default function AdminArticlesPage() {
               <button
                 type="button"
                 className="button button-secondary"
-                onClick={() => handleDownloadTemplate("xlsx", "simple")}
-                disabled={downloadingTemplate === "simple-xlsx"}
-              >
-                {downloadingTemplate === "simple-xlsx"
-                  ? "Descargando..."
-                  : "Descargar plantilla simple XLSX"}
-              </button>
-              <button
-                type="button"
-                className="button button-secondary"
                 onClick={() => handleDownloadTemplate("csv", "simple")}
                 disabled={downloadingTemplate === "simple-csv"}
               >
                 {downloadingTemplate === "simple-csv"
                   ? "Descargando..."
                   : "Descargar plantilla simple CSV"}
-              </button>
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={() => handleDownloadTemplate("xlsx", "full")}
-                disabled={downloadingTemplate === "full-xlsx"}
-              >
-                {downloadingTemplate === "full-xlsx"
-                  ? "Descargando..."
-                  : "Descargar plantilla completa XLSX"}
               </button>
               <button
                 type="button"
@@ -788,7 +917,7 @@ export default function AdminArticlesPage() {
                   name="articles-import-file"
                   data-validation-field="articles-import-file"
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,text/csv"
                   onChange={(event) => {
                     const nextFile = event.target.files?.[0] || null;
                     setImportFile(nextFile);
@@ -798,7 +927,7 @@ export default function AdminArticlesPage() {
                 <span className="field-helper">
                   {importFile
                     ? `Seleccionado: ${importFile.name}`
-                    : "CSV o XLSX con columnas simples o completas."}
+                    : "CSV con columnas simples o completas."}
                 </span>
               </label>
 
@@ -811,7 +940,7 @@ export default function AdminArticlesPage() {
                       setUpdateExisting(event.target.checked)
                     }
                   />
-                      <span>Actualizar por código si ya existe</span>
+                  <span>Actualizar por código si ya existe</span>
                 </label>
 
                 <label className="field-group checkbox-field checkbox-field-compact">
@@ -822,7 +951,7 @@ export default function AdminArticlesPage() {
                       setCreateMissingLookups(event.target.checked)
                     }
                   />
-                      <span>Crear categorías, marcas y talles faltantes</span>
+                  <span>Crear categorías, marcas y talles faltantes</span>
                 </label>
               </div>
             </div>
@@ -936,6 +1065,18 @@ export default function AdminArticlesPage() {
               <table className="data-table admin-articles-table">
                 <thead>
                   <tr>
+                    {isSuperAdmin ? (
+                      <th className="batch-select-cell">
+                        <input
+                          type="checkbox"
+                          className="batch-select-checkbox"
+                          checked={allSelectableArticlesChecked}
+                          disabled={!selectableArticleIds.length || batchBusy}
+                          onChange={toggleAllSelectableArticles}
+                          aria-label="Seleccionar artículos visibles"
+                        />
+                      </th>
+                    ) : null}
                     <th>Imagen</th>
                     <SortableTh
                       sortKey="title"
@@ -1007,6 +1148,18 @@ export default function AdminArticlesPage() {
 
                     return (
                       <tr key={article.id}>
+                        {isSuperAdmin ? (
+                          <td className="batch-select-cell" data-label="Seleccionar">
+                            <input
+                              type="checkbox"
+                              className="batch-select-checkbox"
+                              checked={selectedArticleIdSet.has(article.id)}
+                              disabled={batchBusy}
+                              onChange={() => toggleArticleSelection(article.id)}
+                              aria-label={`Seleccionar artículo ${article.title}`}
+                            />
+                          </td>
+                        ) : null}
                         <td>
                           <Link
                             to={`/admin/articles/${article.id}/edit`}

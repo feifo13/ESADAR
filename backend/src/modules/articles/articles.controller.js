@@ -4,6 +4,7 @@ import { badRequest } from '../../utils/app-error.js';
 import {
   addArticleImages,
   adjustArticleStock,
+  batchUpdateArticles,
   changeArticleStatus,
   createArticle,
   deleteArticle,
@@ -29,6 +30,7 @@ import {
   articleImageUpdateSchema,
   articleImportOptionsSchema,
   articleImportTemplateQuerySchema,
+  adminArticleBatchActionSchema,
   articleQuickFlagsSchema,
   articleStatusSchema,
   articleStockAdjustmentSchema,
@@ -100,7 +102,7 @@ export async function getAdminArticle(req, res) {
 
 export async function previewAdminArticleImport(req, res) {
   if (!req.file) {
-    throw badRequest('Debes adjuntar un archivo CSV o XLSX');
+    throw badRequest('Debes adjuntar un archivo CSV');
   }
 
   const options = articleImportOptionsSchema.parse(req.body);
@@ -117,7 +119,7 @@ export async function previewAdminArticleImport(req, res) {
 
 export async function importAdminArticles(req, res) {
   if (!req.file) {
-    throw badRequest('Debes adjuntar un archivo CSV o XLSX');
+    throw badRequest('Debes adjuntar un archivo CSV');
   }
 
   const options = articleImportOptionsSchema.parse(req.body);
@@ -219,6 +221,17 @@ export async function updateAdminArticleStatus(req, res) {
     getAuditContext(req),
   );
   return res.json({ ok: true, article });
+}
+
+export async function batchAdminArticles(req, res) {
+  const input = adminArticleBatchActionSchema.parse(req.body);
+  const result = await batchUpdateArticles({
+    ids: input.ids,
+    action: input.action,
+    auditContext: getAuditContext(req),
+  });
+
+  return res.json({ ok: true, ...result });
 }
 
 export async function updateAdminArticleQuickFlags(req, res) {

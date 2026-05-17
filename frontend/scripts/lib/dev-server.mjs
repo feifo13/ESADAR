@@ -19,7 +19,7 @@ export async function waitForHttp(url, { timeoutMs = 12000 } = {}) {
 }
 
 export async function ensureViteServer({
-  baseUrl = process.env.ESADAR_SMOKE_BASE_URL || 'http://localhost:5173',
+  baseUrl = process.env.ESADAR_SMOKE_BASE_URL || 'http://127.0.0.1:5173',
 } = {}) {
   try {
     await waitForHttp(baseUrl, { timeoutMs: 1200 });

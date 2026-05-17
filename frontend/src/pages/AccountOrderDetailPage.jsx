@@ -174,64 +174,66 @@ export default function AccountOrderDetailPage() {
             </div>
           </section>
 
-          <section className="section-card page-stack">
-            <div className="section-heading">
-              <div>
-                <p className="section-kicker">Prendas</p>
-                <h2>Resumen de la orden</h2>
+          <div className="account-order-detail-content-grid">
+            <section className="section-card page-stack account-order-items-section">
+              <div className="section-heading">
+                <div>
+                  <p className="section-kicker">Prendas</p>
+                  <h2>Resumen de la orden</h2>
+                </div>
               </div>
-            </div>
-            <div className="summary-item-card-list account-order-items-card-list">
-              {(order.items || []).map((item) => (
-                <SummaryItemCard
-                  key={item.id}
-                  readOnly
-                  item={{
-                    articleId: item.articleId || item.id,
-                    slug: item.articleSlug || item.articleId,
-                    title: item.articleTitle,
-                    image: item.image,
-                    brandName: item.brandName,
-                    sizeLabel: item.size,
-                    quantity: item.quantity,
-                    maxQuantity: item.quantity,
-                    salePrice: item.salePrice || item.finalUnitPrice,
-                    discountedPrice: item.finalUnitPrice,
-                    acceptedOffer: item.acceptedOffer,
-                  }}
-                />
-              ))}
-            </div>
-          </section>
+              <div className="summary-item-card-list account-order-items-card-list">
+                {(order.items || []).map((item) => (
+                  <SummaryItemCard
+                    key={item.id}
+                    readOnly
+                    item={{
+                      articleId: item.articleId || item.id,
+                      slug: item.articleSlug || item.articleId,
+                      title: item.articleTitle,
+                      image: item.image,
+                      brandName: item.brandName,
+                      sizeLabel: item.size,
+                      quantity: item.quantity,
+                      maxQuantity: item.quantity,
+                      salePrice: item.salePrice || item.finalUnitPrice,
+                      discountedPrice: item.finalUnitPrice,
+                      acceptedOffer: item.acceptedOffer,
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
 
-          <section className="section-card page-stack account-order-history">
-            <div>
-              <p className="section-kicker">Historial</p>
-              <h2>Seguimiento</h2>
-            </div>
-            <div className="history-list">
-              {(order.history || []).length ? (
-                order.history.map((entry) => (
-                  <article key={entry.id} className="history-row">
-                    <div>
-                      <StatusBadge
-                        status={entry.toStatus}
-                        labels={ORDER_STATUS_LABELS}
-                      />
-                      <p className="muted-copy">
-                        {entry.reason || "Sin comentario adicional"}
-                      </p>
-                    </div>
-                    <span>{formatDate(entry.changedAt)}</span>
-                  </article>
-                ))
-              ) : (
-                <p className="muted-copy">
-                  Todavía no hay cambios registrados.
-                </p>
-              )}
-            </div>
-          </section>
+            <section className="section-card page-stack account-order-history">
+              <div>
+                <p className="section-kicker">Historial</p>
+                <h2>Seguimiento</h2>
+              </div>
+              <div className="history-list">
+                {(order.history || []).length ? (
+                  order.history.map((entry) => (
+                    <article key={entry.id} className="history-row">
+                      <div>
+                        <StatusBadge
+                          status={entry.toStatus}
+                          labels={ORDER_STATUS_LABELS}
+                        />
+                        <p className="muted-copy">
+                          {entry.reason || "Sin comentario adicional"}
+                        </p>
+                      </div>
+                      <span>{formatDate(entry.changedAt)}</span>
+                    </article>
+                  ))
+                ) : (
+                  <p className="muted-copy">
+                    Todavía no hay cambios registrados.
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
         </>
       ) : null}
     </div>

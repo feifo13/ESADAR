@@ -1,0 +1,9 @@
+process.env.NODE_ENV ||= 'test';
+process.env.DB_HOST ||= '127.0.0.1';
+process.env.DB_USER ||= 'test';
+process.env.DB_NAME ||= 'esadar_test';
+process.env.JWT_SECRET ||= 'test-secret';
+process.env.APP_ORIGIN ||= 'http://localhost:5173';
+process.env.PUBLIC_SITE_URL ||= 'https://esadar.com.uy';
+process.env.CORS_ORIGINS ||= 'http://localhost:5173,https://sandbox.esadar.com.uy,https://esadar.com.uy';
+process.env.MAIL_ALLOWED_SITE_URLS ||= 'http://localhost:5173,https://sandbox.esadar.com.uy,https://esadar.com.uy';

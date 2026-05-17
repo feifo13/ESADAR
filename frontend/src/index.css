@@ -11559,7 +11559,7 @@ textarea,
 }
 
 .account-order-detail-page {
-  max-width: 980px;
+  max-width: 1180px;
 }
 
 .account-order-detail-back {
@@ -11573,6 +11573,27 @@ textarea,
 .account-order-items-card-list {
   display: grid !important;
   gap: 12px;
+}
+
+.account-order-detail-content-grid {
+  display: grid;
+  gap: 18px;
+}
+
+@media (min-width: 1024px) {
+  .account-order-detail-content-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.9fr);
+    grid-template-areas: "items history";
+    align-items: start;
+  }
+
+  .account-order-detail-content-grid .account-order-items-section {
+    grid-area: items;
+  }
+
+  .account-order-detail-content-grid .account-order-history {
+    grid-area: history;
+  }
 }
 
 .summary-item-card__quantity--readonly {
@@ -15351,3 +15372,198 @@ dialog,
     height: 22px !important;
   }
 }
+
+/* === ESADAR admin batch actions: super admin checkbox workflows === */
+.admin-batch-snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  z-index: 10000;
+  width: min(760px, calc(100vw - 32px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  transform: translate3d(-50%, 0, 0);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--orange, #ff6f00), color-mix(in srgb, var(--orange, #ff6f00) 82%, #101820 18%));
+  color: #ffffff;
+  box-shadow: 0 24px 62px rgba(6, 19, 29, 0.36);
+  animation: admin-batch-snackbar-in 220ms var(--ease-smooth) both;
+  isolation: isolate;
+  pointer-events: auto;
+  will-change: transform;
+}
+
+.admin-batch-snackbar__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-batch-snackbar__copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 950;
+  letter-spacing: 0.01em;
+}
+
+.admin-batch-snackbar__copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.admin-batch-snackbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.admin-batch-snackbar__button {
+  min-height: 38px;
+  min-width: 38px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-smooth), background 160ms var(--ease-smooth), border-color 160ms var(--ease-smooth), opacity 160ms var(--ease-smooth);
+}
+
+.admin-batch-snackbar__button svg {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  stroke: currentColor;
+}
+
+.admin-batch-snackbar__button:hover:not(:disabled),
+.admin-batch-snackbar__button:focus-visible:not(:disabled) {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.58);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.admin-batch-snackbar__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.admin-batch-snackbar__button--success {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.admin-batch-snackbar__button--danger {
+  background: rgba(16, 24, 32, 0.22);
+}
+
+.admin-batch-snackbar__button--clear {
+  background: transparent;
+}
+
+.admin-batch-snackbar__fallback-icon {
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.admin-batch-snackbar__spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-top-color: #ffffff;
+  border-radius: 999px;
+  animation: admin-batch-spinner 700ms linear infinite;
+}
+
+.admin-batch-snackbar.is-busy {
+  cursor: wait;
+}
+
+@keyframes admin-batch-snackbar-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-50%, 14px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+}
+
+@keyframes admin-batch-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.batch-select-cell {
+  width: 44px;
+  text-align: center;
+}
+
+.batch-select-checkbox {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--color-accent, #ff6f00);
+  cursor: pointer;
+}
+
+.batch-select-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+@media (max-width: 767px) {
+  .admin-batch-snackbar {
+    width: min(calc(100vw - 20px), 34rem);
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    padding: 12px;
+  }
+
+  .admin-batch-snackbar__copy strong,
+  .admin-batch-snackbar__copy span {
+    white-space: normal;
+  }
+
+  .admin-batch-snackbar__actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .admin-batch-snackbar__button {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .batch-select-cell {
+    width: auto;
+    text-align: left;
+  }
+}
+
+

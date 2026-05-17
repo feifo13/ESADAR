@@ -51,6 +51,7 @@ export default function OfferPage() {
   const { slugOrId } = useParams();
   const location = useLocation();
   const relatedTrackRef = useRef(null);
+  const offerNoticeRef = useRef(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { site } = useSiteSeo();
   const { notifyMobileStatus } = useMobileMenu();
@@ -104,6 +105,19 @@ export default function OfferPage() {
       ignore = true;
     };
   }, [slugOrId]);
+
+  useEffect(() => {
+    if (!success || !offerEligibility || offerEligibility.canOffer) return undefined;
+
+    const scrollTimer = window.setTimeout(() => {
+      offerNoticeRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [offerEligibility, success]);
 
   useEffect(() => {
     let ignore = false;
@@ -444,7 +458,7 @@ export default function OfferPage() {
             ) : null}
 
             {offerEligibility && !offerEligibility.canOffer ? (
-              <div className="section-card nested-card offer-eligibility-notice">
+              <div ref={offerNoticeRef} className="section-card nested-card offer-eligibility-notice">
                 <p className="section-kicker">Oferta registrada</p>
                 <strong>{blockedOfferMessage}</strong>
                 {!isAcceptedOfferBlocked &&

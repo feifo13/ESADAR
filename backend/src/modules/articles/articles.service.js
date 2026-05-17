@@ -1339,6 +1339,50 @@ export async function changeArticleStatus(id, status, auditContext) {
   });
 }
 
+
+const ARTICLE_BATCH_ACTION_CONFIG = {
+  ACTIVATE: { payload: { status: 'ACTIVE' } },
+  DEACTIVATE: { payload: { status: 'INACTIVE' } },
+  FEATURE: { payload: { isFeatured: true } },
+  UNFEATURE: { payload: { isFeatured: false } },
+  ALLOW_OFFERS: { payload: { allowOffers: true } },
+  DISALLOW_OFFERS: { payload: { allowOffers: false } },
+};
+
+export async function batchUpdateArticles({ ids = [], action, auditContext }) {
+  const config = ARTICLE_BATCH_ACTION_CONFIG[action];
+  if (!config) {
+    throw badRequest('Acción batch de artículos inválida.');
+  }
+
+  const uniqueIds = [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))].slice(0, 100);
+  const results = [];
+
+  for (const id of uniqueIds) {
+    try {
+      const article = await updateArticleQuickFlags(id, config.payload, auditContext);
+      results.push({ id, ok: true, article });
+    } catch (error) {
+      results.push({
+        id,
+        ok: false,
+        message: error?.message || 'No se pudo actualizar el artículo.',
+      });
+    }
+  }
+
+  const succeeded = results.filter((result) => result.ok).length;
+  const failed = results.length - succeeded;
+
+  return {
+    action,
+    requested: uniqueIds.length,
+    succeeded,
+    failed,
+    results,
+  };
+}
+
 export async function updateArticleQuickFlags(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
