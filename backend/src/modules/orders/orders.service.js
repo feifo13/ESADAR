@@ -31,6 +31,7 @@ import {
 } from "../customers/customer-helpers.js";
 import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
 import { getCollectingSettings } from "../collecting/collecting.service.js";
+import { calculateShippingCost, usesWeightRanges } from "../shipping/shipping-pricing.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -109,6 +110,7 @@ export async function createOrder(input, actor, auditContext) {
           a.purchase_price_shipping AS purchasePriceShipping,
           a.purchase_price_courier AS purchasePriceCourier,
           a.purchase_price_total AS purchasePriceTotal,
+          a.weight_kg AS weightKg,
           a.quantity_available AS quantityAvailable,
           a.quantity_reserved AS quantityReserved,
           a.quantity_sold AS quantitySold,
@@ -222,6 +224,8 @@ export async function createOrder(input, actor, auditContext) {
           discountValueSnapshot: Number(article.discountValue),
           finalUnitPriceSnapshot: acceptedOfferPrice,
           lineTotalSnapshot: lineTotal,
+          weightKgSnapshot: Number(article.weightKg || 0),
+          lineWeightKgSnapshot: Number(article.weightKg || 0) * offerQuantity,
           ...costSnapshot,
           acceptedOfferId: acceptedOffer.id,
           acceptedOfferPriceSnapshot: acceptedOfferPrice,
@@ -254,6 +258,8 @@ export async function createOrder(input, actor, auditContext) {
           discountValueSnapshot: Number(article.discountValue),
           finalUnitPriceSnapshot: finalUnitPrice,
           lineTotalSnapshot: lineTotal,
+          weightKgSnapshot: Number(article.weightKg || 0),
+          lineWeightKgSnapshot: Number(article.weightKg || 0) * regularQuantity,
           ...costSnapshot,
           acceptedOfferId: null,
           acceptedOfferPriceSnapshot: null,
@@ -262,7 +268,16 @@ export async function createOrder(input, actor, auditContext) {
       }
     }
 
-    const shippingCost = shipping ? Number(shipping.baseCost) : 0;
+    const packageWeightKg = Number(
+      orderItems.reduce((sum, item) => sum + Number(item.lineWeightKgSnapshot || 0), 0).toFixed(3),
+    );
+    const shippingQuote = shipping ? calculateShippingCost(shipping, packageWeightKg) : { cost: 0, rate: null };
+    if (shipping && usesWeightRanges(shipping.pricingType) && shippingQuote.cost == null) {
+      throw badRequest(
+        `El método de envío seleccionado no tiene una tarifa configurada para ${packageWeightKg.toFixed(3)} kg.`,
+      );
+    }
+    const shippingCost = Number(shippingQuote.cost || 0);
     const total = subtotal - discountTotal + shippingCost;
     const orderNumber = generateOrderNumber();
 
@@ -276,6 +291,7 @@ export async function createOrder(input, actor, auditContext) {
           shipping_method_id,
           shipping_method_description_snapshot,
           shipping_cost_snapshot,
+          package_weight_kg_snapshot,
           payment_method,
           payment_status,
           order_status,
@@ -286,7 +302,7 @@ export async function createOrder(input, actor, auditContext) {
           internal_notes,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'RESERVED', ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'RESERVED', ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), ?, ?, ?)
       `,
       [
         orderNumber,
@@ -296,6 +312,7 @@ export async function createOrder(input, actor, auditContext) {
         shipping?.id || null,
         shipping?.description || null,
         shippingCost,
+        packageWeightKg,
         input.paymentMethod,
         subtotal,
         discountTotal,
@@ -327,6 +344,8 @@ export async function createOrder(input, actor, auditContext) {
             discount_value_snapshot,
             final_unit_price_snapshot,
             line_total_snapshot,
+            weight_kg_snapshot,
+            line_weight_kg_snapshot,
             purchase_price_item_snapshot,
             purchase_price_shipping_snapshot,
             purchase_price_courier_snapshot,
@@ -335,7 +354,7 @@ export async function createOrder(input, actor, auditContext) {
             accepted_offer_id,
             accepted_offer_price_snapshot,
             accepted_offer_quantity_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           orderId,
@@ -353,6 +372,8 @@ export async function createOrder(input, actor, auditContext) {
           item.discountValueSnapshot,
           item.finalUnitPriceSnapshot,
           item.lineTotalSnapshot,
+          item.weightKgSnapshot,
+          item.lineWeightKgSnapshot,
           item.purchasePriceItemSnapshot,
           item.purchasePriceShippingSnapshot,
           item.purchasePriceCourierSnapshot,
@@ -559,6 +580,7 @@ export async function listOrders({ filters, pagination }) {
         o.subtotal_snapshot AS subtotal,
         o.discount_total_snapshot AS discountTotal,
         o.shipping_cost_snapshot AS shippingCost,
+        o.package_weight_kg_snapshot AS packageWeightKg,
         o.created_at AS createdAt,
         o.reserved_until AS reservedUntil,
         o.approved_at AS approvedAt,
@@ -1349,7 +1371,11 @@ async function resolveOrderOwner(input, actor, connection) {
 async function getShippingMethod(id, connection) {
   const [rows] = await connection.execute(
     `
-      SELECT id, description, base_cost AS baseCost
+      SELECT
+        id,
+        description,
+        base_cost AS baseCost,
+        pricing_type AS pricingType
       FROM shipping_methods
       WHERE id = ? AND is_active = 1
       LIMIT 1
@@ -1361,7 +1387,42 @@ async function getShippingMethod(id, connection) {
     throw notFound("Metodo de envio no encontrado o no disponible.");
   }
 
-  return rows[0];
+  const method = {
+    ...rows[0],
+    baseCost: Number(rows[0].baseCost || 0),
+    pricingType: rows[0].pricingType || 'FIXED',
+    rates: [],
+  };
+
+  const [rateRows] = await connection.execute(
+    `
+      SELECT
+        id,
+        min_weight_kg AS minWeightKg,
+        max_weight_kg AS maxWeightKg,
+        price,
+        label,
+        sort_order AS sortOrder,
+        is_active AS isActive
+      FROM shipping_method_weight_rates
+      WHERE shipping_method_id = ?
+        AND is_active = 1
+      ORDER BY sort_order ASC, min_weight_kg ASC, max_weight_kg ASC, id ASC
+    `,
+    [id],
+  );
+
+  method.rates = rateRows.map((row) => ({
+    id: row.id,
+    minWeightKg: Number(row.minWeightKg || 0),
+    maxWeightKg: Number(row.maxWeightKg || 0),
+    price: Number(row.price || 0),
+    label: row.label || '',
+    sortOrder: Number(row.sortOrder || 0),
+    isActive: Boolean(row.isActive),
+  }));
+
+  return method;
 }
 
 async function lockOrderForUpdate(id, connection) {
@@ -1542,6 +1603,7 @@ async function getOrderById(id, connection) {
         o.shipping_method_id AS shippingMethodId,
         o.shipping_method_description_snapshot AS shippingMethodDescription,
         o.shipping_cost_snapshot AS shippingCost,
+        o.package_weight_kg_snapshot AS packageWeightKg,
         o.subtotal_snapshot AS subtotal,
         o.discount_total_snapshot AS discountTotal,
         o.total_snapshot AS total,
@@ -1600,6 +1662,8 @@ async function getOrderById(id, connection) {
         discount_value_snapshot AS discountValue,
         final_unit_price_snapshot AS finalUnitPrice,
         line_total_snapshot AS lineTotal,
+        weight_kg_snapshot AS weightKgSnapshot,
+        line_weight_kg_snapshot AS lineWeightKgSnapshot,
         purchase_price_item_snapshot AS purchasePriceItemSnapshot,
         purchase_price_shipping_snapshot AS purchasePriceShippingSnapshot,
         purchase_price_courier_snapshot AS purchasePriceCourierSnapshot,
@@ -1658,6 +1722,8 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
+    weightKgSnapshot: row.weightKgSnapshot != null ? Number(row.weightKgSnapshot) : 0,
+    lineWeightKgSnapshot: row.lineWeightKgSnapshot != null ? Number(row.lineWeightKgSnapshot) : 0,
     purchasePriceItemSnapshot:
       row.purchasePriceItemSnapshot != null
         ? Number(row.purchasePriceItemSnapshot)
@@ -1897,6 +1963,7 @@ function normalizeOrderListRow(row) {
     subtotal: Number(row.subtotal),
     discountTotal: Number(row.discountTotal),
     shippingCost: Number(row.shippingCost),
+    packageWeightKg: row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
     createdAt: row.createdAt,
     reservedUntil: row.reservedUntil,
     approvedAt: row.approvedAt,
@@ -1926,6 +1993,7 @@ function normalizeOrderDetailRow(row) {
     shippingMethodId: row.shippingMethodId,
     shippingMethodDescription: row.shippingMethodDescription,
     shippingCost: Number(row.shippingCost),
+    packageWeightKg: row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
     subtotal: Number(row.subtotal),
     discountTotal: Number(row.discountTotal),
     total: Number(row.total),

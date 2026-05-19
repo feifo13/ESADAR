@@ -240,6 +240,57 @@ INSERT INTO shipping_methods (description, base_cost, instructions, is_active, c
 SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'DAC interior');
 
+
+INSERT INTO shipping_methods (
+  description,
+  base_cost,
+  pricing_type,
+  instructions,
+  official_rates_label,
+  official_rates_file_path,
+  is_active,
+  created_by,
+  updated_by
+)
+SELECT
+  'Ahiva / Correo Uruguayo',
+  195.00,
+  'WEIGHT_RANGES',
+  'Tarifa nacional calculada por peso aproximado del paquete según tabla Ahiva / Correo Uruguayo.',
+  'Ver tarifas oficiales',
+  '/docs/tarifas-ahiva-correo.pdf',
+  1,
+  @admin_user_id,
+  @admin_user_id
+WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Ahiva / Correo Uruguayo');
+
+UPDATE shipping_methods
+SET
+  pricing_type = 'WEIGHT_RANGES',
+  official_rates_label = COALESCE(NULLIF(TRIM(official_rates_label), ''), 'Ver tarifas oficiales'),
+  official_rates_file_path = COALESCE(NULLIF(TRIM(official_rates_file_path), ''), '/docs/tarifas-ahiva-correo.pdf'),
+  updated_by = @admin_user_id
+WHERE description = 'Ahiva / Correo Uruguayo';
+
+INSERT INTO shipping_method_weight_rates (shipping_method_id, min_weight_kg, max_weight_kg, price, label, sort_order, is_active, created_by, updated_by)
+SELECT sm.id, rates.min_weight_kg, rates.max_weight_kg, rates.price, rates.label, rates.sort_order, 1, @admin_user_id, @admin_user_id
+FROM shipping_methods sm
+JOIN (
+  SELECT 0.000 AS min_weight_kg, 2.000 AS max_weight_kg, 195.00 AS price, 'Hasta 2 kg' AS label, 1 AS sort_order
+  UNION ALL SELECT 2.000, 5.000, 220.00, 'De 2 a 5 kg', 2
+  UNION ALL SELECT 5.000, 10.000, 275.00, 'De 5 a 10 kg', 3
+  UNION ALL SELECT 10.000, 15.000, 325.00, 'De 10 a 15 kg', 4
+  UNION ALL SELECT 15.000, 20.000, 405.00, 'De 15 a 20 kg', 5
+  UNION ALL SELECT 20.000, 25.000, 465.00, 'De 20 a 25 kg', 6
+  UNION ALL SELECT 25.000, 30.000, 550.00, 'De 25 a 30 kg', 7
+) rates
+WHERE sm.description = 'Ahiva / Correo Uruguayo'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM shipping_method_weight_rates existing
+    WHERE existing.shipping_method_id = sm.id
+  );
+
 INSERT INTO company_collecting_settings (
   id,
   is_bank_transfer_enabled,

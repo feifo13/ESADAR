@@ -9,6 +9,7 @@ import { useNotification } from "../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../lib/api.js";
 import { formatCurrency, formatDate } from "../lib/format.js";
 import { formatPaymentMethod } from "../lib/paymentMethods.js";
+import { formatWeightKg } from "../lib/shippingRates.js";
 import AppLoader from "../components/AppLoader.jsx";
 
 const ORDER_STATUS_LABELS = {
@@ -159,6 +160,10 @@ export default function AccountOrderDetailPage() {
                     order.shippingMethodDescription ||
                     "Sin datos"}
                 </strong>
+              </p>
+              <p className="summary-line">
+                <span>Peso aprox.</span>
+                <strong>{formatWeightKg(order.packageWeightKg)}</strong>
               </p>
               <p className="summary-line total">
                 <span>Total</span>

@@ -108,6 +108,7 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
     discountType: article.discountType || 'NONE',
     discountValue: Number(article.discountValue || 0),
     discountedPrice: getDiscountedPrice(article),
+    weightKg: Number(article.weightKg || 0),
     acceptedOffer: acceptedOffer || null,
     quantity,
     maxQuantity,
@@ -170,6 +171,7 @@ function normalizeRemoteItems(items = []) {
     discountType: item.discountType || 'NONE',
     discountValue: Number(item.discountValue || 0),
     discountedPrice: Number(item.discountedPrice || 0),
+    weightKg: Number(item.weightKg || 0),
     quantity: Number(item.quantity || 1),
     maxQuantity: Number(item.maxQuantity || item.quantityAvailable || item.quantity || 1),
     quantityAvailable: Number(item.quantityAvailable ?? item.maxQuantity ?? 0),
@@ -408,6 +410,7 @@ export function CartProvider({ children }) {
               acceptedOffer: null,
               quantity: extraQuantity,
               discountedPrice: Number(existing.discountedPrice || existing.salePrice || 0),
+              weightKg: Number(existing.weightKg || 0),
               lineTotal: Number(existing.discountedPrice || existing.salePrice || 0) * extraQuantity,
             }];
           }

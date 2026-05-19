@@ -162,7 +162,11 @@ CREATE TABLE shipping_methods (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   description VARCHAR(150) NOT NULL,
   base_cost DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  pricing_type ENUM('FIXED','AHIVA_CORREO_NACIONAL','WEIGHT_RANGES') NOT NULL DEFAULT 'FIXED',
   instructions TEXT NULL,
+  official_rates_label VARCHAR(120) NULL,
+  official_rates_url VARCHAR(500) NULL,
+  official_rates_file_path VARCHAR(500) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -175,6 +179,32 @@ CREATE TABLE shipping_methods (
   CONSTRAINT chk_shipping_methods_base_cost CHECK (base_cost >= 0),
   CONSTRAINT fk_shipping_methods_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_shipping_methods_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+
+) ENGINE=InnoDB;
+
+CREATE TABLE shipping_method_weight_rates (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  shipping_method_id BIGINT UNSIGNED NOT NULL,
+  min_weight_kg DECIMAL(8,3) NOT NULL DEFAULT 0.000,
+  max_weight_kg DECIMAL(8,3) NOT NULL,
+  price DECIMAL(12,2) NOT NULL,
+  label VARCHAR(120) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NULL,
+  updated_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY idx_shipping_weight_rates_method (shipping_method_id, is_active, sort_order),
+  KEY idx_shipping_weight_rates_range (shipping_method_id, min_weight_kg, max_weight_kg),
+  KEY idx_shipping_weight_rates_created_by (created_by),
+  KEY idx_shipping_weight_rates_updated_by (updated_by),
+  CONSTRAINT chk_shipping_weight_rates_weight CHECK (min_weight_kg >= 0 AND max_weight_kg > min_weight_kg),
+  CONSTRAINT chk_shipping_weight_rates_price CHECK (price >= 0),
+  CONSTRAINT fk_shipping_weight_rates_method FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_shipping_weight_rates_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_shipping_weight_rates_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE company_collecting_settings (
@@ -316,6 +346,7 @@ CREATE TABLE articles (
   size_text VARCHAR(80) NULL,
   measurements_text TEXT NULL,
   description TEXT NULL,
+  weight_kg DECIMAL(8,3) NOT NULL DEFAULT 0.000,
   purchase_price_item DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   purchase_price_shipping DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   purchase_price_courier DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -367,6 +398,7 @@ CREATE TABLE articles (
   KEY idx_articles_updated_by (updated_by),
   CONSTRAINT chk_articles_sale_price CHECK (sale_price >= 0),
   CONSTRAINT chk_articles_discount_value CHECK (discount_value >= 0),
+  CONSTRAINT chk_articles_weight_kg CHECK (weight_kg >= 0 AND weight_kg <= 30),
   CONSTRAINT chk_articles_purchase_price_item CHECK (purchase_price_item >= 0),
   CONSTRAINT chk_articles_purchase_price_shipping CHECK (purchase_price_shipping >= 0),
   CONSTRAINT chk_articles_purchase_price_courier CHECK (purchase_price_courier >= 0),
@@ -527,6 +559,7 @@ CREATE TABLE orders (
   shipping_method_id BIGINT UNSIGNED NULL,
   shipping_method_description_snapshot VARCHAR(150) NULL,
   shipping_cost_snapshot DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  package_weight_kg_snapshot DECIMAL(8,3) NOT NULL DEFAULT 0.000,
   payment_method ENUM('BANK_TRANSFER','MERCADO_PAGO') NOT NULL,
   payment_status ENUM('PENDING','PAID','FAILED','REFUNDED') NOT NULL DEFAULT 'PENDING',
   order_status ENUM('PENDING','RESERVED','APPROVED','SHIPPED','CANCELLED','EXPIRED') NOT NULL DEFAULT 'PENDING',
@@ -558,6 +591,7 @@ CREATE TABLE orders (
   KEY idx_orders_created_by (created_by),
   KEY idx_orders_updated_by (updated_by),
   CONSTRAINT chk_orders_shipping_cost_snapshot CHECK (shipping_cost_snapshot >= 0),
+  CONSTRAINT chk_orders_package_weight_kg_snapshot CHECK (package_weight_kg_snapshot >= 0),
   CONSTRAINT chk_orders_subtotal_snapshot CHECK (subtotal_snapshot >= 0),
   CONSTRAINT chk_orders_discount_total_snapshot CHECK (discount_total_snapshot >= 0),
   CONSTRAINT chk_orders_total_snapshot CHECK (total_snapshot >= 0),
@@ -586,6 +620,8 @@ CREATE TABLE order_items (
   discount_value_snapshot DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   final_unit_price_snapshot DECIMAL(12,2) NOT NULL,
   line_total_snapshot DECIMAL(12,2) NOT NULL,
+  weight_kg_snapshot DECIMAL(8,3) NOT NULL DEFAULT 0.000,
+  line_weight_kg_snapshot DECIMAL(8,3) NOT NULL DEFAULT 0.000,
   purchase_price_item_snapshot DECIMAL(12,2) NULL,
   purchase_price_shipping_snapshot DECIMAL(12,2) NULL,
   purchase_price_courier_snapshot DECIMAL(12,2) NULL,
@@ -603,6 +639,8 @@ CREATE TABLE order_items (
   CONSTRAINT chk_order_items_sale_price_snapshot CHECK (sale_price_snapshot >= 0),
   CONSTRAINT chk_order_items_final_unit_price_snapshot CHECK (final_unit_price_snapshot >= 0),
   CONSTRAINT chk_order_items_line_total_snapshot CHECK (line_total_snapshot >= 0),
+  CONSTRAINT chk_order_items_weight_kg_snapshot CHECK (weight_kg_snapshot >= 0),
+  CONSTRAINT chk_order_items_line_weight_kg_snapshot CHECK (line_weight_kg_snapshot >= 0),
   CONSTRAINT chk_order_items_purchase_price_item_snapshot CHECK (purchase_price_item_snapshot IS NULL OR purchase_price_item_snapshot >= 0),
   CONSTRAINT chk_order_items_purchase_price_shipping_snapshot CHECK (purchase_price_shipping_snapshot IS NULL OR purchase_price_shipping_snapshot >= 0),
   CONSTRAINT chk_order_items_purchase_price_courier_snapshot CHECK (purchase_price_courier_snapshot IS NULL OR purchase_price_courier_snapshot >= 0),
@@ -1207,6 +1245,57 @@ WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadeteria 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
 SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'DAC interior');
+
+
+INSERT INTO shipping_methods (
+  description,
+  base_cost,
+  pricing_type,
+  instructions,
+  official_rates_label,
+  official_rates_file_path,
+  is_active,
+  created_by,
+  updated_by
+)
+SELECT
+  'Ahiva / Correo Uruguayo',
+  195.00,
+  'WEIGHT_RANGES',
+  'Tarifa nacional calculada por peso aproximado del paquete según tabla Ahiva / Correo Uruguayo.',
+  'Ver tarifas oficiales',
+  '/docs/tarifas-ahiva-correo.pdf',
+  1,
+  @admin_user_id,
+  @admin_user_id
+WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Ahiva / Correo Uruguayo');
+
+UPDATE shipping_methods
+SET
+  pricing_type = 'WEIGHT_RANGES',
+  official_rates_label = COALESCE(NULLIF(TRIM(official_rates_label), ''), 'Ver tarifas oficiales'),
+  official_rates_file_path = COALESCE(NULLIF(TRIM(official_rates_file_path), ''), '/docs/tarifas-ahiva-correo.pdf'),
+  updated_by = @admin_user_id
+WHERE description = 'Ahiva / Correo Uruguayo';
+
+INSERT INTO shipping_method_weight_rates (shipping_method_id, min_weight_kg, max_weight_kg, price, label, sort_order, is_active, created_by, updated_by)
+SELECT sm.id, rates.min_weight_kg, rates.max_weight_kg, rates.price, rates.label, rates.sort_order, 1, @admin_user_id, @admin_user_id
+FROM shipping_methods sm
+JOIN (
+  SELECT 0.000 AS min_weight_kg, 2.000 AS max_weight_kg, 195.00 AS price, 'Hasta 2 kg' AS label, 1 AS sort_order
+  UNION ALL SELECT 2.000, 5.000, 220.00, 'De 2 a 5 kg', 2
+  UNION ALL SELECT 5.000, 10.000, 275.00, 'De 5 a 10 kg', 3
+  UNION ALL SELECT 10.000, 15.000, 325.00, 'De 10 a 15 kg', 4
+  UNION ALL SELECT 15.000, 20.000, 405.00, 'De 15 a 20 kg', 5
+  UNION ALL SELECT 20.000, 25.000, 465.00, 'De 20 a 25 kg', 6
+  UNION ALL SELECT 25.000, 30.000, 550.00, 'De 25 a 30 kg', 7
+) rates
+WHERE sm.description = 'Ahiva / Correo Uruguayo'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM shipping_method_weight_rates existing
+    WHERE existing.shipping_method_id = sm.id
+  );
 
 INSERT INTO company_collecting_settings (
   id,

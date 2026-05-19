@@ -9,6 +9,7 @@ import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiDownload, apiFetch } from '../../lib/api.js';
 import { formatCurrency, formatDate } from '../../lib/format.js';
 import { formatPaymentMethod } from '../../lib/paymentMethods.js';
+import { formatWeightKg } from '../../lib/shippingRates.js';
 import AppLoader from "../../components/AppLoader.jsx";
 
 const HISTORY_STATUS_LABELS = {
@@ -251,6 +252,7 @@ export default function AdminOrderDetailPage() {
               <p className="summary-line"><span>Subtotal</span><strong>{formatCurrency(order.subtotal)}</strong></p>
               <p className="summary-line"><span>Descuento</span><strong>{formatCurrency(order.discountTotal)}</strong></p>
               {order.hasOffers ? <p className="summary-line"><span>Ofertas</span><strong>{order.offerCount || 1}</strong></p> : null}
+              <p className="summary-line"><span>Peso aprox.</span><strong>{formatWeightKg(order.packageWeightKg)}</strong></p>
               <p className="summary-line"><span>Envio</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
               <p className="summary-line total"><span>Total</span><strong>{formatCurrency(order.total)}</strong></p>
               <p className="muted-copy">Creada: {formatDate(order.createdAt)}</p>

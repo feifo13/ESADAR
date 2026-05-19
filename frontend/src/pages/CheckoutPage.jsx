@@ -9,6 +9,7 @@ import PreviousNextControls from "../components/PreviousNextControls.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
+import { calculateShippingCost, formatWeightKg, usesWeightRanges } from "../lib/shippingRates.js";
 import { apiFetch } from "../lib/api.js";
 import {
   getEmailValidationMessage,
@@ -92,6 +93,18 @@ function getOfferSavings(item) {
   );
 }
 
+const DEFAULT_OFFICIAL_RATES_LABEL = "Ver tarifas oficiales";
+
+function getOfficialRatesHref(method) {
+  const officialUrl = String(method?.officialRatesUrl || "").trim();
+  if (officialUrl) return officialUrl;
+  return String(method?.officialRatesFilePath || "").trim();
+}
+
+function getOfficialRatesLabel(method) {
+  return String(method?.officialRatesLabel || "").trim() || DEFAULT_OFFICIAL_RATES_LABEL;
+}
+
 function isCheckoutItemUnavailable(item) {
   const status = String(item?.articleStatus || "ACTIVE").toUpperCase();
   const quantityAvailable = Number(
@@ -136,6 +149,7 @@ export default function CheckoutPage() {
     paymentMethodOptions,
     lookupError,
     loaded: lookupsLoaded,
+    refreshLookups,
   } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifyError } = useNotification();
@@ -178,6 +192,11 @@ export default function CheckoutPage() {
   const isMobileSummary = useMediaQuery("(max-width: 780px)");
 
   useEffect(() => {
+    if (currentStepKey !== "envio") return;
+    void refreshLookups?.();
+  }, [currentStepKey, refreshLookups]);
+
+  useEffect(() => {
     if (!shippingMethodOptions.length) {
       if (shippingMethodId) setShippingMethodId("");
       return;
@@ -207,15 +226,16 @@ export default function CheckoutPage() {
     }
   }, [paymentMethod, paymentMethodOptions]);
 
-  const shipping = useMemo(
+  const selectedShippingMethod = useMemo(
     () =>
-      shippingMethodOptions.find(
-        (item) => Number(item.id) === Number(shippingMethodId),
-      ) ||
-      shippingMethodOptions[0] ||
-      null,
+      shippingMethodId
+        ? shippingMethodOptions.find(
+            (item) => Number(item.id) === Number(shippingMethodId),
+          ) || null
+        : null,
     [shippingMethodId, shippingMethodOptions],
   );
+  const shipping = selectedShippingMethod || shippingMethodOptions[0] || null;
 
   const payment =
     paymentMethodOptions.find((item) => item.id === paymentMethod) ||
@@ -231,12 +251,47 @@ export default function CheckoutPage() {
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],
   );
+  const packageWeightKg = useMemo(
+    () =>
+      Number(
+        availableItems
+          .reduce(
+            (sum, item) => sum + Number(item.weightKg || 0) * Number(item.quantity || 0),
+            0,
+          )
+          .toFixed(3),
+      ),
+    [availableItems],
+  );
+  const hasItemsWithoutWeight = useMemo(
+    () => availableItems.some((item) => Number(item.weightKg || 0) <= 0),
+    [availableItems],
+  );
+  const shippingQuote = useMemo(
+    () => (shipping ? calculateShippingCost(shipping, packageWeightKg) : { cost: 0, rate: null, isUnavailable: false }),
+    [shipping, packageWeightKg],
+  );
+  const selectedOfficialRatesHref = useMemo(
+    () => getOfficialRatesHref(selectedShippingMethod),
+    [selectedShippingMethod],
+  );
+  const selectedOfficialRatesLabel = useMemo(
+    () => getOfficialRatesLabel(selectedShippingMethod),
+    [selectedShippingMethod],
+  );
   const subtotal = availableItems.reduce(
     (sum, item) =>
       sum + Number(item.lineTotal ?? item.discountedPrice * item.quantity),
     0,
   );
-  const total = subtotal + Number(shipping?.cost || 0);
+  const estimatedShippingCost = shippingQuote.isUnavailable
+    ? null
+    : Number(shippingQuote.cost || 0);
+  const total = subtotal + Number(estimatedShippingCost || 0);
+  const shippingUnavailableMessage =
+    shipping && shippingQuote.isUnavailable
+      ? `El método seleccionado no tiene tarifa configurada para ${formatWeightKg(packageWeightKg)}. Elegí otro método o contactá a ESADAR para coordinar el envío.`
+      : "";
 
   const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
   const paymentComplete = Boolean(
@@ -247,7 +302,8 @@ export default function CheckoutPage() {
     shippingMethodId &&
     shippingMethodOptions.some(
       (item) => Number(item.id) === Number(shippingMethodId),
-    ),
+    ) &&
+    !shippingQuote.isUnavailable,
   );
 
   const checkoutCanAdvanceFromSummary =
@@ -453,6 +509,10 @@ export default function CheckoutPage() {
           "error",
           "No hay métodos de envío disponibles en este momento. Contacta a ESADAR para coordinar la entrega.",
         );
+        return false;
+      }
+      if (shippingQuote.isUnavailable && shippingUnavailableMessage) {
+        showCheckoutMessage("error", shippingUnavailableMessage);
         return false;
       }
       showCheckoutMessage(
@@ -776,8 +836,16 @@ export default function CheckoutPage() {
               <strong>{formatCurrency(subtotal)}</strong>
             </p>
             <p className="summary-line">
+              <span>Peso aprox.</span>
+              <strong>{formatWeightKg(packageWeightKg)}</strong>
+            </p>
+            <p className="summary-line">
               <span>Envío estimado</span>
-              <strong>{formatCurrency(shipping?.cost || 0)}</strong>
+              <strong>
+                {shippingQuote.isUnavailable
+                  ? "Sin tarifa"
+                  : formatCurrency(estimatedShippingCost)}
+              </strong>
             </p>
             <p className="summary-line total">
               <span>Total estimado</span>
@@ -989,22 +1057,70 @@ export default function CheckoutPage() {
             No hay métodos de envío disponibles en este momento.
           </p>
         ) : null}
+        <div className="checkout-shipping-summary-card">
+          <div className="checkout-shipping-summary-main">
+            <span>Peso aproximado de la orden</span>
+            <strong>{formatWeightKg(packageWeightKg)}</strong>
+          </div>
+          {hasItemsWithoutWeight ? (
+            <p className="checkout-shipping-weight-warning">
+              Algunos artículos no tienen peso cargado; el cálculo puede ser aproximado.
+            </p>
+          ) : null}
+          {selectedOfficialRatesHref ? (
+            <a
+              className="ghost-button checkout-shipping-rates-link"
+              href={selectedOfficialRatesHref}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {selectedOfficialRatesLabel}
+            </a>
+          ) : null}
+        </div>
+        {shippingQuote.isUnavailable && shippingUnavailableMessage ? (
+          <p className="error-copy checkout-shipping-rate-alert">
+            {shippingUnavailableMessage}
+          </p>
+        ) : null}
         <div className="stack-gap-sm">
-          {shippingMethodOptions.map((option) => (
-            <label key={option.id} className="radio-card radio-card-plain">
-              <input
-                type="radio"
-                name="shippingMethodId"
-                checked={Number(shippingMethodId) === Number(option.id)}
-                onChange={() => setShippingMethodId(option.id)}
-              />
-              <div>
-                <strong>{option.label}</strong>
-                <p>{formatCurrency(option.cost)}</p>
-                <p className="muted-copy">{option.instructions}</p>
-              </div>
-            </label>
-          ))}
+          {shippingMethodOptions.map((option) => {
+            const optionQuote = calculateShippingCost(option, packageWeightKg);
+            const isWeightBased = usesWeightRanges(option.pricingType);
+            return (
+              <label
+                key={option.id}
+                className={[
+                  "radio-card",
+                  "radio-card-plain",
+                  optionQuote.isUnavailable ? "is-unavailable" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <input
+                  type="radio"
+                  name="shippingMethodId"
+                  checked={Number(shippingMethodId) === Number(option.id)}
+                  onChange={() => setShippingMethodId(option.id)}
+                />
+                <div>
+                  <strong>{option.label}</strong>
+                  <p>
+                    {optionQuote.isUnavailable
+                      ? "Sin tarifa para este peso"
+                      : formatCurrency(optionQuote.cost)}
+                  </p>
+                  {isWeightBased && optionQuote.rate ? (
+                    <p className="muted-copy">
+                      Rango aplicado: {optionQuote.rate.label || `${formatWeightKg(optionQuote.rate.minWeightKg)} a ${formatWeightKg(optionQuote.rate.maxWeightKg)}`}
+                    </p>
+                  ) : null}
+                  <p className="muted-copy">{option.instructions}</p>
+                </div>
+              </label>
+            );
+          })}
         </div>
       </div>
     );
@@ -1037,6 +1153,10 @@ export default function CheckoutPage() {
               <strong>{shipping?.label}</strong>
             </div>
             <div>
+              <span>Peso aprox.</span>
+              <strong>{formatWeightKg(packageWeightKg)}</strong>
+            </div>
+            <div>
               <span>Instrucciones de pago</span>
               <strong>{payment?.instructions}</strong>
             </div>
@@ -1058,7 +1178,11 @@ export default function CheckoutPage() {
           </p>
           <p className="summary-line">
             <span>Envío</span>
-            <strong>{formatCurrency(shipping?.cost || 0)}</strong>
+            <strong>
+              {shippingQuote.isUnavailable
+                ? "Sin tarifa"
+                : formatCurrency(estimatedShippingCost)}
+            </strong>
           </p>
           <p className="summary-line total">
             <span>Total</span>

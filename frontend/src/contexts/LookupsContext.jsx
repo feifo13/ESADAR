@@ -69,7 +69,13 @@ function mapShippingMethodOptions(items) {
     .map((item) => ({
       id: item.id,
       label: item.description,
+      baseCost: Number(item.baseCost || 0),
       cost: Number(item.baseCost || 0),
+      pricingType: item.pricingType || 'FIXED',
+      rates: Array.isArray(item.rates) ? item.rates : [],
+      officialRatesLabel: item.officialRatesLabel || '',
+      officialRatesUrl: item.officialRatesUrl || '',
+      officialRatesFilePath: item.officialRatesFilePath || '',
       instructions: item.instructions || '',
     }))
     .filter(isPublicShippingMethodVisible);
@@ -122,6 +128,8 @@ export function LookupsProvider({ children }) {
     }
   }, []);
 
+  const refreshLookups = useCallback(() => loadLookups({ force: true }), [loadLookups]);
+
   useEffect(() => {
     let ignore = false;
 
@@ -147,7 +155,10 @@ export function LookupsProvider({ children }) {
     });
   }, [loadLookups]);
 
-  const memoizedValue = useMemo(() => value, [value]);
+  const memoizedValue = useMemo(
+    () => ({ ...value, refreshLookups }),
+    [refreshLookups, value],
+  );
 
   return <LookupsContext.Provider value={memoizedValue}>{children}</LookupsContext.Provider>;
 }

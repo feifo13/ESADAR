@@ -445,6 +445,7 @@ async function getCartById(cartId, connection) {
         a.slug,
         a.title,
         a.quantity_available AS quantityAvailable,
+        a.weight_kg AS weightKg,
         a.status AS articleStatus,
         b.name AS brandName,
         COALESCE(s.code, a.size_text) AS sizeLabel,
@@ -477,6 +478,7 @@ async function getCartById(cartId, connection) {
     discountType: row.discountType,
     discountValue: Number(row.discountValue),
     discountedPrice: Number(row.discountedPrice),
+    weightKg: row.weightKg != null ? Number(row.weightKg) : 0,
     quantity: Number(row.quantity),
     acceptedOffer: row.acceptedOfferId ? {
       id: row.acceptedOfferId,
@@ -508,6 +510,7 @@ async function getArticleForCart(articleId, connection) {
         discount_type AS discountType,
         discount_value AS discountValue,
         discounted_price AS discountedPrice,
+        weight_kg AS weightKg,
         quantity_available AS quantityAvailable,
         status
       FROM articles
@@ -533,6 +536,7 @@ async function getArticleForCart(articleId, connection) {
     salePrice: Number(article.salePrice),
     discountValue: Number(article.discountValue),
     discountedPrice: Number(article.discountedPrice),
+    weightKg: article.weightKg != null ? Number(article.weightKg) : 0,
     quantityAvailable: Number(article.quantityAvailable),
   };
 }
@@ -546,6 +550,7 @@ async function getArticleSnapshotForCartSync(articleId, connection) {
         discount_type AS discountType,
         discount_value AS discountValue,
         discounted_price AS discountedPrice,
+        weight_kg AS weightKg,
         quantity_available AS quantityAvailable,
         status
       FROM articles
@@ -566,6 +571,7 @@ async function getArticleSnapshotForCartSync(articleId, connection) {
     salePrice: Number(article.salePrice),
     discountValue: Number(article.discountValue),
     discountedPrice: Number(article.discountedPrice),
+    weightKg: article.weightKg != null ? Number(article.weightKg) : 0,
     quantityAvailable: Number(article.quantityAvailable),
   };
 }

@@ -80,6 +80,10 @@ export async function listShippingMethods() {
         id,
         description,
         base_cost AS baseCost,
+        pricing_type AS pricingType,
+        official_rates_label AS officialRatesLabel,
+        official_rates_url AS officialRatesUrl,
+        official_rates_file_path AS officialRatesFilePath,
         instructions
       FROM shipping_methods
       WHERE is_active = 1
@@ -87,9 +91,51 @@ export async function listShippingMethods() {
     `,
   );
 
+  const ids = rows.map((row) => Number(row.id)).filter((id) => Number.isInteger(id) && id > 0);
+  const ratesByMethod = new Map();
+
+  if (ids.length) {
+    const placeholders = ids.map(() => '?').join(', ');
+    const [rateRows] = await pool.execute(
+      `
+        SELECT
+          shipping_method_id AS shippingMethodId,
+          min_weight_kg AS minWeightKg,
+          max_weight_kg AS maxWeightKg,
+          price,
+          label,
+          sort_order AS sortOrder,
+          is_active AS isActive
+        FROM shipping_method_weight_rates
+        WHERE shipping_method_id IN (${placeholders})
+          AND is_active = 1
+        ORDER BY shipping_method_id ASC, sort_order ASC, min_weight_kg ASC, max_weight_kg ASC, id ASC
+      `,
+      ids,
+    );
+
+    for (const row of rateRows) {
+      const methodId = Number(row.shippingMethodId);
+      if (!ratesByMethod.has(methodId)) ratesByMethod.set(methodId, []);
+      ratesByMethod.get(methodId).push({
+        minWeightKg: Number(row.minWeightKg || 0),
+        maxWeightKg: Number(row.maxWeightKg || 0),
+        price: Number(row.price || 0),
+        label: row.label || '',
+        sortOrder: Number(row.sortOrder || 0),
+        isActive: Boolean(row.isActive),
+      });
+    }
+  }
+
   return rows.map((row) => ({
     ...row,
     baseCost: Number(row.baseCost),
+    pricingType: row.pricingType || 'FIXED',
+    officialRatesLabel: row.officialRatesLabel || null,
+    officialRatesUrl: row.officialRatesUrl || null,
+    officialRatesFilePath: row.officialRatesFilePath || null,
+    rates: ratesByMethod.get(Number(row.id)) || [],
   }));
 }
 

@@ -100,6 +100,7 @@ function toFormState(article) {
     sizeText: article?.sizeText || "",
     measurementsText: article?.measurementsText || "",
     description: article?.description || "",
+    weightKg: article?.weightKg ?? 0,
     purchasePriceItem: article?.purchasePriceItem ?? 0,
     purchasePriceShipping: article?.purchasePriceShipping ?? 0,
     purchasePriceCourier: article?.purchasePriceCourier ?? 0,
@@ -241,7 +242,6 @@ export default function AdminArticleFormPage() {
   const [message, setMessage] = useState("");
   const [activeStep, setActiveStep] = useState(0);
   const [metaAdvancedOpen, setMetaAdvancedOpen] = useState(false);
-  const [commerceAdvancedOpen, setCommerceAdvancedOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -542,6 +542,7 @@ export default function AdminArticleFormPage() {
         sizeCode: isCreateNewLookup(form.sizeId)
           ? normalizeLabel(form.sizeCode)
           : null,
+        weightKg: Number(form.weightKg || 0),
         purchasePriceItem: Number(form.purchasePriceItem || 0),
         purchasePriceShipping: Number(form.purchasePriceShipping || 0),
         purchasePriceCourier: Number(form.purchasePriceCourier || 0),
@@ -1148,8 +1149,8 @@ export default function AdminArticleFormPage() {
               </p>
             </div>
 
-            <div className="form-grid-two">
-              <label className="field-group">
+            <div className="form-grid-two article-sale-stock-grid">
+              <label className="field-group admin-field-important">
                 <span>Precio de venta</span>
                 <input
                   className="input"
@@ -1163,7 +1164,20 @@ export default function AdminArticleFormPage() {
                 />
               </label>
 
-              <label className="field-group">
+              <label className="field-group admin-field-important">
+                <span>Peso aprox. (kg)</span>
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  max="30"
+                  step="0.001"
+                  value={form.weightKg}
+                  onChange={(event) => update("weightKg", event.target.value)}
+                />
+              </label>
+
+              <label className="field-group admin-field-important">
                 <span>Stock total</span>
                 <input
                   className="input"
@@ -1178,7 +1192,7 @@ export default function AdminArticleFormPage() {
                 />
               </label>
 
-              <label className="field-group">
+              <label className="field-group admin-field-important">
                 <span>Stock disponible</span>
                 <input
                   className="input"
@@ -1199,7 +1213,7 @@ export default function AdminArticleFormPage() {
               </label>
 
               {isEdit ? (
-                <label className="field-group">
+                <label className="field-group admin-field-important">
                   <span>Motivo del ajuste</span>
                   <select
                     className="input"
@@ -1220,7 +1234,7 @@ export default function AdminArticleFormPage() {
                 </label>
               ) : null}
 
-              <label className="field-group">
+              <label className="field-group admin-field-important">
                 <span>Estado de publicacion</span>
                 <select
                   className="input"
@@ -1236,19 +1250,19 @@ export default function AdminArticleFormPage() {
 
               {form.status === "SOLD_OUT" &&
               Number(form.quantityAvailable || 0) > 0 ? (
-                <div className="inline-note field-group-span-two">
+                <div className="inline-note form-grid-span-two">
                   Al guardar con stock disponible, el articulo volvera a estar activo salvo que lo marques como inactivo.
                 </div>
               ) : null}
 
               {form.status === "ACTIVE" &&
               Number(form.quantityAvailable || 0) <= 0 ? (
-                <div className="error-copy field-group-span-two">
+                <div className="error-copy form-grid-span-two">
                   No se puede publicar como activo un articulo sin stock disponible.
                 </div>
               ) : null}
 
-              <label className="field-group">
+              <label className="field-group admin-field-important">
                 <span>Descuento</span>
                 <select
                   className="input"
@@ -1263,7 +1277,7 @@ export default function AdminArticleFormPage() {
                 </select>
               </label>
 
-              <label className="field-group">
+              <label className="field-group admin-field-important">
                 <span>Valor de descuento</span>
                 <input
                   className="input"
@@ -1276,7 +1290,7 @@ export default function AdminArticleFormPage() {
                 />
               </label>
 
-              <label className="field-group checkbox-field field-group-span-two">
+              <label className="field-group checkbox-field form-grid-span-two admin-field-important">
                 <input
                   type="checkbox"
                   checked={
@@ -1297,7 +1311,7 @@ export default function AdminArticleFormPage() {
                 <span>¡Ofertá!</span>
               </label>
 
-              <label className="field-group checkbox-field field-group-span-two">
+              <label className="field-group checkbox-field form-grid-span-two admin-field-important">
                 <input
                   type="checkbox"
                   checked={form.isFeatured}
@@ -1309,19 +1323,7 @@ export default function AdminArticleFormPage() {
               </label>
             </div>
 
-            <details
-              className="bulk-advanced-panel"
-              open={commerceAdvancedOpen}
-              onToggle={(event) =>
-                setCommerceAdvancedOpen(event.currentTarget.open)
-              }
-            >
-              <summary>Avanzado</summary>
-              <p className="field-helper">
-                Campos técnicos generados automáticamente o usados para costos y
-                estados internos.
-              </p>
-              <div className="form-grid-two">
+            <div className="form-grid-two article-commerce-extra-fields">
                 <label className="field-group">
                   <span>Fecha de ingreso</span>
                   <input
@@ -1359,7 +1361,7 @@ export default function AdminArticleFormPage() {
                     Reservado y vendido se actualizan automáticamente por órdenes.
                   </span>
                 </label>
-                <label className="field-group">
+                <label className="field-group admin-field-important">
                   <span>Precio compra artículo</span>
                   <input
                     className="input"
@@ -1371,7 +1373,7 @@ export default function AdminArticleFormPage() {
                     }
                   />
                 </label>
-                <label className="field-group">
+                <label className="field-group admin-field-important">
                   <span>Precio compra envio</span>
                   <input
                     className="input"
@@ -1383,7 +1385,7 @@ export default function AdminArticleFormPage() {
                     }
                   />
                 </label>
-                <label className="field-group">
+                <label className="field-group admin-field-important">
                   <span>Precio compra courier</span>
                   <input
                     className="input"
@@ -1405,12 +1407,11 @@ export default function AdminArticleFormPage() {
                     }
                   />
                 </label>
-              </div>
-              <div className="inline-note">
+              <div className="inline-note article-commerce-total-note">
                 Costo de compra total estimado:{" "}
                 <strong>{totalPurchasePrice}</strong>
               </div>
-            </details>
+            </div>
           </section>
         ) : null}
 
@@ -1607,7 +1608,7 @@ export default function AdminArticleFormPage() {
                 sabes que necesitas otro valor.
               </p>
               <div className="form-grid-two">
-                <label className="field-group">
+                <label className="field-group admin-field-important">
                     <span>Código interno manual</span>
                   <input
                     className="input"
