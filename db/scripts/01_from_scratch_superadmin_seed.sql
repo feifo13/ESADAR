@@ -367,11 +367,7 @@ CREATE TABLE articles (
   allow_offers TINYINT(1) NOT NULL DEFAULT 0,
   is_featured TINYINT(1) NOT NULL DEFAULT 0,
   intake_date DATE NOT NULL,
-  quantity_total INT UNSIGNED NOT NULL DEFAULT 1,
-  quantity_available INT UNSIGNED NOT NULL DEFAULT 1,
-  quantity_reserved INT UNSIGNED NOT NULL DEFAULT 0,
-  quantity_sold INT UNSIGNED NOT NULL DEFAULT 0,
-  status ENUM('ACTIVE','INACTIVE','RESERVED','SOLD_OUT') NOT NULL DEFAULT 'ACTIVE',
+  status ENUM('DRAFT','ACTIVE','INACTIVE','ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
   origin_notes TEXT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -402,7 +398,6 @@ CREATE TABLE articles (
   CONSTRAINT chk_articles_purchase_price_item CHECK (purchase_price_item >= 0),
   CONSTRAINT chk_articles_purchase_price_shipping CHECK (purchase_price_shipping >= 0),
   CONSTRAINT chk_articles_purchase_price_courier CHECK (purchase_price_courier >= 0),
-  CONSTRAINT chk_articles_quantity_balance CHECK (quantity_total >= quantity_available + quantity_reserved + quantity_sold),
   CONSTRAINT chk_articles_offers_vs_discount CHECK (NOT (allow_offers = 1 AND discount_type <> 'NONE' AND discount_value > 0)),
   CONSTRAINT fk_articles_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_articles_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -411,26 +406,20 @@ CREATE TABLE articles (
   CONSTRAINT fk_articles_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE article_stock_movements (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+CREATE TABLE article_inventory (
   article_id BIGINT UNSIGNED NOT NULL,
-  movement_type ENUM('INITIAL','MANUAL_ADJUSTMENT','RESERVE','RELEASE_RESERVATION','SALE','CANCEL_ORDER','RETURN','LOSS') NOT NULL,
-  quantity_delta INT NOT NULL,
-  from_available INT UNSIGNED NULL,
-  to_available INT UNSIGNED NULL,
-  from_reserved INT UNSIGNED NULL,
-  to_reserved INT UNSIGNED NULL,
-  from_sold INT UNSIGNED NULL,
-  to_sold INT UNSIGNED NULL,
-  reason VARCHAR(255) NULL,
-  order_id BIGINT UNSIGNED NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NULL,
-  PRIMARY KEY (id),
-  KEY idx_article_stock_movements_article_id (article_id),
-  KEY idx_article_stock_movements_order_id (order_id),
-  KEY idx_article_stock_movements_type (movement_type),
-  KEY idx_article_stock_movements_created_at (created_at)
+  quantity_total INT UNSIGNED NOT NULL DEFAULT 1,
+  quantity_available INT UNSIGNED NOT NULL DEFAULT 1,
+  quantity_reserved INT UNSIGNED NOT NULL DEFAULT 0,
+  quantity_sold INT UNSIGNED NOT NULL DEFAULT 0,
+  quantity_lost INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (article_id),
+  KEY idx_article_inventory_updated_by (updated_by),
+  CONSTRAINT fk_article_inventory_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_article_inventory_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_article_inventory_balance CHECK (quantity_total = quantity_available + quantity_reserved + quantity_sold + quantity_lost)
 ) ENGINE=InnoDB;
 
 CREATE TABLE article_images (
@@ -572,6 +561,7 @@ CREATE TABLE orders (
   shipped_at DATETIME NULL,
   cancellation_reason TEXT NULL,
   internal_notes TEXT NULL,
+  tracking_code VARCHAR(120) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   created_by BIGINT UNSIGNED NULL,
@@ -601,6 +591,33 @@ CREATE TABLE orders (
   CONSTRAINT fk_orders_shipping_method FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_orders_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_orders_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE article_inventory_movements (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  article_id BIGINT UNSIGNED NOT NULL,
+  order_id BIGINT UNSIGNED NULL,
+  movement_type ENUM('INITIAL_STOCK','MANUAL_ADJUSTMENT','RESERVE','RELEASE_RESERVATION','SALE','LOSS','RETURN') NOT NULL,
+  available_delta INT NOT NULL DEFAULT 0,
+  reserved_delta INT NOT NULL DEFAULT 0,
+  sold_delta INT NOT NULL DEFAULT 0,
+  lost_delta INT NOT NULL DEFAULT 0,
+  quantity_available_after INT UNSIGNED NOT NULL,
+  quantity_reserved_after INT UNSIGNED NOT NULL,
+  quantity_sold_after INT UNSIGNED NOT NULL,
+  quantity_lost_after INT UNSIGNED NOT NULL,
+  reason VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY idx_article_inventory_movements_article_id (article_id),
+  KEY idx_article_inventory_movements_order_id (order_id),
+  KEY idx_article_inventory_movements_type (movement_type),
+  KEY idx_article_inventory_movements_created_at (created_at),
+  KEY idx_article_inventory_movements_created_by (created_by),
+  CONSTRAINT fk_article_inventory_movements_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_article_inventory_movements_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_article_inventory_movements_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE order_items (
@@ -651,14 +668,17 @@ CREATE TABLE order_items (
 
 CREATE TABLE order_status_history (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  event_type ENUM('STATUS_CHANGE','TRACKING_UPDATED') NOT NULL DEFAULT 'STATUS_CHANGE',
   order_id BIGINT UNSIGNED NOT NULL,
   from_status ENUM('PENDING','RESERVED','APPROVED','SHIPPED','CANCELLED','EXPIRED') NULL,
   to_status ENUM('PENDING','RESERVED','APPROVED','SHIPPED','CANCELLED','EXPIRED') NOT NULL,
   reason TEXT NULL,
+  metadata_json JSON NULL,
   changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   changed_by BIGINT UNSIGNED NULL,
   source ENUM('BACKOFFICE','FRONTEND','SYSTEM','API') NOT NULL DEFAULT 'SYSTEM',
   PRIMARY KEY (id),
+  KEY idx_order_status_history_event_type (event_type),
   KEY idx_order_status_history_order_id (order_id),
   KEY idx_order_status_history_changed_by (changed_by),
   KEY idx_order_status_history_changed_at (changed_at),
@@ -946,6 +966,24 @@ CREATE TABLE site_pages_seo (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_site_pages_seo_route (route)
+) ENGINE=InnoDB;
+
+CREATE TABLE site_hero (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(180) NULL,
+  subtitle VARCHAR(500) NULL,
+  cta_label VARCHAR(120) NULL,
+  cta_url VARCHAR(500) NULL,
+  image_url VARCHAR(500) NULL,
+  image_alt VARCHAR(255) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY idx_site_hero_active (is_active, updated_at),
+  KEY idx_site_hero_updated_by (updated_by),
+  CONSTRAINT fk_site_hero_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- =========================================================

@@ -11,6 +11,7 @@ import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
 import { calculateShippingCost, formatWeightKg, usesWeightRanges } from "../lib/shippingRates.js";
 import { apiFetch } from "../lib/api.js";
+import { articlePath } from "../lib/routes.js";
 import {
   getEmailValidationMessage,
   getFriendlyErrorMessage,
@@ -241,6 +242,7 @@ export default function CheckoutPage() {
     paymentMethodOptions.find((item) => item.id === paymentMethod) ||
     paymentMethodOptions[0] ||
     null;
+  const isBankTransferPayment = payment?.id === "BANK_TRANSFER";
   const unavailableItems = useMemo(
     () => items.filter((item) => isCheckoutItemUnavailable(item)),
     [items],
@@ -719,6 +721,7 @@ export default function CheckoutPage() {
                 <tbody>
                   {items.map((item) => {
                     const isUnavailable = isCheckoutItemUnavailable(item);
+                    const detailPath = articlePath(item, item.articleId);
                     const rowClassName = [
                       item.acceptedOffer ? "checkout-offer-row" : "",
                       isUnavailable ? "checkout-unavailable-row" : "",
@@ -731,15 +734,28 @@ export default function CheckoutPage() {
                         className={rowClassName || undefined}
                       >
                         <td>
-                          <SmartImage
-                            src={item.image}
-                            alt={item.title}
-                            fallbackLabel={item.title}
-                            className="table-thumb-image"
-                          />
+                          <Link
+                            to={detailPath}
+                            className="table-thumb-link"
+                            aria-label={`Ver prenda ${item.title}`}
+                          >
+                            <SmartImage
+                              src={item.image}
+                              alt={item.title}
+                              fallbackLabel={item.title}
+                              className="table-thumb-image"
+                            />
+                          </Link>
                         </td>
                         <td className="cell-truncate">
-                          <strong title={item.title}>{item.title}</strong>
+                          <Link
+                            to={detailPath}
+                            className="table-strong-link"
+                            aria-label={`Ver prenda ${item.title}`}
+                            title={item.title}
+                          >
+                            {item.title}
+                          </Link>
                         </td>
                         <td className="cell-truncate">
                           {item.brandName || "Sin marca"}
@@ -1168,6 +1184,14 @@ export default function CheckoutPage() {
           <p className="muted-copy">
             La reserva dura 24 horas y la orden será validada manualmente desde
             administración.
+          </p>
+          {isBankTransferPayment ? (
+            <p className="inline-note">
+              En el motivo/concepto de la transferencia indica el numero de orden. Al confirmarla te mostramos el numero exacto.
+            </p>
+          ) : null}
+          <p className="muted-copy">
+            Una vez aprobada y despachada la orden, te enviaremos el codigo de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
           </p>
         </div>
 

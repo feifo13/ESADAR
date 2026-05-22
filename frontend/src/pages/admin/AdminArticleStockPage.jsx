@@ -9,8 +9,16 @@ import { focusValidationTarget } from "../../lib/validation.js";
 import AppLoader from "../../components/AppLoader.jsx";
 
 const ARTICLE_STATUS_LABELS = {
+  DRAFT: "Borrador",
   ACTIVE: "Activa",
   INACTIVE: "Inactiva",
+  ARCHIVED: "Archivada",
+  RESERVED: "Reservada",
+  SOLD_OUT: "Agotada",
+};
+
+const STOCK_STATUS_LABELS = {
+  ACTIVE: "Disponible",
   RESERVED: "Reservada",
   SOLD_OUT: "Agotada",
 };
@@ -244,7 +252,7 @@ export default function AdminArticleStockPage() {
                 </strong>
               </div>
 
-              {article.status === "INACTIVE" ? (
+              {(article.publicationStatus || article.status) === "INACTIVE" ? (
                 <div className="inline-note">
                   Este artículo está inactivo. Ajustar stock no lo activa automáticamente.
                 </div>
@@ -285,8 +293,12 @@ export default function AdminArticleStockPage() {
                   Código: {article.internalCode || "Sin código"}
                 </span>
                 <StatusBadge
-                  status={article.status}
+                  status={article.publicationStatus || article.status}
                   labels={ARTICLE_STATUS_LABELS}
+                />
+                <StatusBadge
+                  status={article.stockStatus || "ACTIVE"}
+                  labels={STOCK_STATUS_LABELS}
                 />
               </div>
               <div className="admin-detail-meta">

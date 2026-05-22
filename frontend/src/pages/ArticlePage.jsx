@@ -228,12 +228,13 @@ export default function ArticlePage() {
 
   const discounted = hasDiscount(article);
   const finalPrice = getDiscountedPrice(article);
-  const articleStatus = String(article.status || "ACTIVE").toUpperCase();
+  const publicationStatus = String(article.publicationStatus || article.status || "ACTIVE").toUpperCase();
+  const articleStatus = String(article.stockStatus || article.status || "ACTIVE").toUpperCase();
   const isSoldOut =
     Number(article.quantityAvailable || 0) <= 0 || articleStatus === "SOLD_OUT";
   const isUnavailable =
     Boolean(article.isUnavailable) ||
-    !["ACTIVE", "SOLD_OUT"].includes(articleStatus);
+    publicationStatus !== "ACTIVE";
   const currentCartItem = getItem(article.id);
   const articleForCart = acceptedOffer
     ? {
@@ -417,7 +418,9 @@ export default function ArticlePage() {
       discountType: article.discountType,
       discountValue: article.discountValue,
       discountedPrice: article.discountedPrice,
-      status: article.status,
+      status: article.stockStatus || article.status,
+      stockStatus: article.stockStatus,
+      publicationStatus: article.publicationStatus,
       conditionLabel: article.conditionLabel,
       color: article.color,
       material: article.material,
@@ -482,7 +485,7 @@ export default function ArticlePage() {
     if (!shouldUseNativeArticleShare()) {
       notifyInfo(
         copied
-          ? "Copiamos el mensaje. Pegalo en Instagram, WhatsApp o Facebook."
+          ? "Enlace copiado"
           : "No pudimos copiar automáticamente. Copiá el enlace desde la barra del navegador.",
         { duration: 5200 },
       );
@@ -491,9 +494,7 @@ export default function ArticlePage() {
     }
 
     if (copied) {
-      notifyInfo(
-        "Copiamos el mensaje. Ahora compartimos solo el enlace limpio.",
-      );
+      notifyInfo("Enlace copiado");
     }
 
     const nativeShare = navigator
@@ -511,7 +512,7 @@ export default function ArticlePage() {
     if (result.status === "timeout") {
       notifyInfo(
         copied
-          ? "El mensaje ya quedó copiado. Si la app se queda esperando, volvé y pegalo manualmente."
+          ? "Enlace copiado"
           : "Si la app se queda esperando, volvé y copiá el enlace desde el navegador.",
         { duration: 6200 },
       );
@@ -523,7 +524,7 @@ export default function ArticlePage() {
       if (result.error?.name !== "AbortError") {
         notifyInfo(
           copied
-            ? "Copiamos el mensaje. Pegalo manualmente si la app no acepta compartir directo."
+            ? "Enlace copiado"
             : "No pudimos compartir directo. Copiá el enlace desde la barra del navegador.",
           { duration: 5200 },
         );

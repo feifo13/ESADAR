@@ -37,7 +37,8 @@ function findLineByKey(items, lineKey) {
 }
 
 function isCartItemAvailable(item) {
-  return item?.articleStatus === 'ACTIVE' && Number(item.quantityAvailable ?? item.maxQuantity ?? 0) > 0;
+  const stockStatus = item?.stockStatus || item?.articleStatus || 'ACTIVE';
+  return stockStatus === 'ACTIVE' && Number(item.quantityAvailable ?? item.maxQuantity ?? 0) > 0;
 }
 
 function splitLocalAdd(items, article, quantity, maxQuantity) {
@@ -113,7 +114,9 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
     quantity,
     maxQuantity,
     quantityAvailable: maxQuantity,
-    articleStatus: article.status || 'ACTIVE',
+    publicationStatus: article.publicationStatus || article.status || 'ACTIVE',
+    stockStatus: article.stockStatus || article.status || 'ACTIVE',
+    articleStatus: article.stockStatus || article.status || 'ACTIVE',
   };
   item.lineTotal = calculateLineTotal(item);
   return item;
@@ -142,13 +145,15 @@ function applyAvailabilitySnapshot(items = [], availabilityItems = []) {
     }
 
     const quantityAvailable = Number(snapshot.quantityAvailable || 0);
-    const articleStatus = snapshot.status || 'INACTIVE';
+    const articleStatus = snapshot.stockStatus || snapshot.status || 'INACTIVE';
     const maxQuantity = Math.max(0, quantityAvailable);
     const quantity = item.acceptedOffer ? 1 : clampQuantity(item.quantity, Math.max(1, maxQuantity || item.quantity || 1));
 
     return {
       ...item,
       articleStatus,
+      publicationStatus: snapshot.publicationStatus || item.publicationStatus || null,
+      stockStatus: articleStatus,
       quantityAvailable,
       maxQuantity,
       quantity,
@@ -175,7 +180,9 @@ function normalizeRemoteItems(items = []) {
     quantity: Number(item.quantity || 1),
     maxQuantity: Number(item.maxQuantity || item.quantityAvailable || item.quantity || 1),
     quantityAvailable: Number(item.quantityAvailable ?? item.maxQuantity ?? 0),
-    articleStatus: item.articleStatus || 'ACTIVE',
+    publicationStatus: item.publicationStatus || null,
+    stockStatus: item.stockStatus || item.articleStatus || 'ACTIVE',
+    articleStatus: item.stockStatus || item.articleStatus || 'ACTIVE',
     acceptedOffer: item.acceptedOffer || null,
     lineTotal: Number(item.lineTotal ?? calculateLineTotal(item)),
   }));

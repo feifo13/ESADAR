@@ -77,6 +77,12 @@ test('admin article query only accepts whitelisted sort fields and direction', (
   assert.equal(fallback.sortDir, 'desc');
 });
 
+test('admin article query accepts publication and derived stock status filters', () => {
+  assert.equal(adminArticleListQuerySchema.parse({ status: 'DRAFT' }).status, 'DRAFT');
+  assert.equal(adminArticleListQuerySchema.parse({ status: 'ARCHIVED' }).status, 'ARCHIVED');
+  assert.equal(adminArticleListQuerySchema.parse({ status: 'SOLD_OUT' }).status, 'SOLD_OUT');
+});
+
 test('related articles limit is bounded', () => {
   assert.equal(publicRelatedArticlesQuerySchema.parse({ limit: '6' }).limit, 6);
   assert.throws(

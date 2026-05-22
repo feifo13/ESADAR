@@ -97,7 +97,8 @@ export function buildProductJsonLd(article, site) {
       '@type': 'Offer',
       price: Number(article?.discountedPrice ?? article?.salePrice ?? 0),
       priceCurrency: 'UYU',
-      availability: Number(article?.quantityAvailable || 0) > 0 && article?.status === 'ACTIVE'
+      availability: Number(article?.quantityAvailable || 0) > 0 &&
+        (article?.publicationStatus || article?.status) === 'ACTIVE'
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       url: sanitizePublicUrl(article?.canonicalUrl) || toAbsoluteUrl(`/articles/${article?.slug || article?.id}`, site),

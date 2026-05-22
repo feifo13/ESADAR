@@ -13,11 +13,10 @@ import { buildSqlLimitClause, buildSqlLimitOffsetClause, buildSqlPlaceholders, n
 import { slugify, uniqueSlug } from '../../utils/slug.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
-  applyManualStockAdjustment,
-  logArticleStatusAutoUpdate,
-  recalculateArticleStockStatus,
-  recordArticleStockMovement,
-} from './article-stock.service.js';
+  adjustInventory,
+  createInitialInventory,
+} from '../inventory/inventory.service.js';
+import { deriveStockStatus } from '../inventory/inventory.constants.js';
 import { buildImportedImageRecord, deleteArticleImageFiles, processUploadedArticleImage } from './article-image-processing.js';
 import { enrichArticleSeo } from './articles.seo.js';
 
@@ -51,11 +50,12 @@ const publicBaseSelect = `
     a.allow_offers AS allowOffers,
     a.is_featured AS isFeatured,
     a.intake_date AS intakeDate,
-    a.quantity_total AS quantityTotal,
-    a.quantity_available AS quantityAvailable,
-    a.quantity_reserved AS quantityReserved,
-    a.quantity_sold AS quantitySold,
-    a.status,
+    inv.quantity_total AS quantityTotal,
+    inv.quantity_available AS quantityAvailable,
+    inv.quantity_reserved AS quantityReserved,
+    inv.quantity_sold AS quantitySold,
+    inv.quantity_lost AS quantityLost,
+    a.status AS publicationStatus,
     a.origin_notes AS originNotes,
     a.created_at AS createdAt,
     a.updated_at AS updatedAt,
@@ -123,6 +123,7 @@ const publicBaseSelect = `
   INNER JOIN categories c ON c.id = a.category_id
   LEFT JOIN brands b ON b.id = a.brand_id
   LEFT JOIN sizes s ON s.id = a.size_id
+  INNER JOIN article_inventory inv ON inv.article_id = a.id
 `;
 
 const ADMIN_ARTICLE_SORTS = {
@@ -132,7 +133,7 @@ const ADMIN_ARTICLE_SORTS = {
   salePrice: (direction) => `a.sale_price ${direction}, a.id DESC`,
   discountedPrice: (direction) => `a.discounted_price ${direction}, a.id DESC`,
   status: (direction) => `a.status ${direction}, a.id DESC`,
-  quantityAvailable: (direction) => `a.quantity_available ${direction}, a.id DESC`,
+  quantityAvailable: (direction) => `inv.quantity_available ${direction}, a.id DESC`,
   categoryName: (direction) => `c.name ${direction}, a.id DESC`,
   brandName: (direction) => `COALESCE(b.name, '') ${direction}, a.id DESC`,
   internalCode: (direction) => `a.internal_code ${direction}, a.id DESC`,
@@ -157,7 +158,7 @@ function buildPublicFilters(query, includeInactive = false) {
   const params = [];
 
   if (!includeInactive) {
-    clauses.push(`a.status IN ('ACTIVE', 'SOLD_OUT')`);
+    clauses.push(`a.status = 'ACTIVE'`);
   }
 
   if (query.search) {
@@ -234,7 +235,11 @@ function buildAdminArticleFilters(filters) {
     params.push(like, like, like, like, like, like, like, like, like, like);
   }
 
-  if (filters.status) {
+  if (filters.status === 'RESERVED') {
+    clauses.push('inv.quantity_available = 0 AND inv.quantity_reserved > 0');
+  } else if (filters.status === 'SOLD_OUT') {
+    clauses.push('inv.quantity_available = 0 AND inv.quantity_reserved = 0 AND inv.quantity_sold > 0');
+  } else if (filters.status) {
     clauses.push('a.status = ?');
     params.push(filters.status);
   }
@@ -296,16 +301,15 @@ function getTodayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function resolveWritableArticleStatus(stock) {
-  if (stock.status === 'INACTIVE') {
-    return 'INACTIVE';
+function resolveWritableArticleStatus(status = 'ACTIVE') {
+  const normalizedStatus = String(status || 'ACTIVE').trim().toUpperCase();
+  if (['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'].includes(normalizedStatus)) {
+    return normalizedStatus;
   }
-
-  if (stock.status === 'ACTIVE' && Number(stock.quantityAvailable || 0) <= 0) {
-    throw badRequest('No se puede activar un articulo sin stock disponible.');
+  if (['RESERVED', 'SOLD_OUT'].includes(normalizedStatus)) {
+    return 'ACTIVE';
   }
-
-  return recalculateArticleStockStatus(stock, { preserveInactive: false });
+  return 'ACTIVE';
 }
 
 export async function generateUniqueInternalCode(connection = pool) {
@@ -511,10 +515,11 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
   const quantityReserved = Number(input.quantityReserved ?? 0);
   const quantitySold = Number(input.quantitySold ?? 0);
   const quantityAvailable = Number(input.quantityAvailable ?? quantityTotal - quantityReserved - quantitySold);
+  let quantityLost = Number(input.quantityLost ?? quantityTotal - quantityAvailable - quantityReserved - quantitySold);
   const minimumQuantityTotal = quantityAvailable + quantityReserved + quantitySold;
 
   if (
-    [quantityTotal, quantityAvailable, quantityReserved, quantitySold].some(
+    [quantityTotal, quantityAvailable, quantityReserved, quantitySold, quantityLost].some(
       (value) => !Number.isFinite(value) || !Number.isInteger(value) || value < 0,
     )
   ) {
@@ -526,18 +531,16 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
       throw badRequest('El stock total debe cubrir disponible, reservado y vendido.');
     }
     quantityTotal = minimumQuantityTotal;
+    quantityLost = 0;
+  } else if (quantityLost !== quantityTotal - minimumQuantityTotal) {
+    quantityLost = quantityTotal - minimumQuantityTotal;
   }
 
   if (Boolean(input.allowOffers) && input.discountType !== 'NONE' && Number(input.discountValue || 0) > 0) {
     throw badRequest('Articles with discount cannot allow offers');
   }
 
-  const status = resolveWritableArticleStatus({
-    quantityAvailable,
-    quantityReserved,
-    quantitySold,
-    status: input.status || 'ACTIVE',
-  });
+  const status = resolveWritableArticleStatus(input.status || input.publicationStatus || 'ACTIVE');
 
   return {
     internalCode,
@@ -573,6 +576,7 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     quantityAvailable,
     quantityReserved,
     quantitySold,
+    quantityLost,
     status,
     originNotes: input.originNotes || null,
     isUpdate,
@@ -619,10 +623,17 @@ function normalizeArticleRow(row) {
     isFeatured: Boolean(Number(row.isFeatured || 0)),
     intakeDate: row.intakeDate,
     quantityTotal: row.quantityTotal != null ? Number(row.quantityTotal) : 0,
-    quantityAvailable: Number(row.quantityAvailable),
+    quantityAvailable: row.quantityAvailable != null ? Number(row.quantityAvailable) : 0,
     quantityReserved: row.quantityReserved != null ? Number(row.quantityReserved) : 0,
     quantitySold: row.quantitySold != null ? Number(row.quantitySold) : 0,
-    status: row.status,
+    quantityLost: row.quantityLost != null ? Number(row.quantityLost) : 0,
+    status: row.publicationStatus || row.status,
+    publicationStatus: row.publicationStatus || row.status,
+    stockStatus: deriveStockStatus({
+      quantityAvailable: row.quantityAvailable,
+      quantityReserved: row.quantityReserved,
+      quantitySold: row.quantitySold,
+    }),
     originNotes: row.originNotes || null,
     createdAt: row.createdAt || null,
     updatedAt: row.updatedAt || null,
@@ -759,19 +770,28 @@ export async function listPublicArticleAvailabilityByIds(articleIds = []) {
   const [rows] = await pool.execute(
     `
       SELECT
-        id,
-        status,
-        quantity_available AS quantityAvailable
-      FROM articles
-      WHERE id IN (${placeholders})
+        a.id,
+        a.status AS publicationStatus,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id IN (${placeholders})
     `,
     ids,
   );
 
   return rows.map((row) => ({
     id: Number(row.id),
-    status: row.status || 'INACTIVE',
+    publicationStatus: row.publicationStatus || 'INACTIVE',
+    status: row.publicationStatus === 'ACTIVE'
+      ? deriveStockStatus(row)
+      : 'INACTIVE',
+    stockStatus: deriveStockStatus(row),
     quantityAvailable: Number(row.quantityAvailable || 0),
+    quantityReserved: Number(row.quantityReserved || 0),
+    quantitySold: Number(row.quantitySold || 0),
   }));
 }
 
@@ -796,6 +816,7 @@ export async function listPublicArticles({ filters, pagination }) {
      INNER JOIN categories c ON c.id = a.category_id
      LEFT JOIN brands b ON b.id = a.brand_id
      LEFT JOIN sizes s ON s.id = a.size_id
+     INNER JOIN article_inventory inv ON inv.article_id = a.id
      ${where}`,
     params,
   );
@@ -822,7 +843,7 @@ export async function getPublicArticleBySlugOrId(slugOrId) {
 
   const article = rows[0];
   article.images = await getArticleImages(article.id);
-  article.isUnavailable = !['ACTIVE', 'SOLD_OUT'].includes(article.status);
+  article.isUnavailable = article.publicationStatus !== 'ACTIVE';
 
   return article;
 }
@@ -838,7 +859,7 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
       WHERE
         a.id <> ?
         AND a.status = 'ACTIVE'
-        AND COALESCE(a.quantity_available, 0) > 0
+        AND COALESCE(inv.quantity_available, 0) > 0
         AND a.category_id = ?
       ORDER BY
         a.is_featured DESC,
@@ -872,7 +893,7 @@ export async function getRelatedPublicArticles(slugOrId, limit = 8) {
       WHERE
         a.id <> ?
         AND a.status = 'ACTIVE'
-        AND COALESCE(a.quantity_available, 0) > 0
+        AND COALESCE(inv.quantity_available, 0) > 0
       ORDER BY
         a.is_featured DESC,
         a.intake_date DESC,
@@ -918,6 +939,7 @@ export async function listAdminArticles({ filters, pagination }) {
      INNER JOIN categories c ON c.id = a.category_id
      LEFT JOIN brands b ON b.id = a.brand_id
      LEFT JOIN sizes s ON s.id = a.size_id
+     INNER JOIN article_inventory inv ON inv.article_id = a.id
      ${where}`,
     params,
   );
@@ -1003,15 +1025,11 @@ export async function createArticle(input, auditContext) {
           allow_offers,
           is_featured,
           intake_date,
-          quantity_total,
-          quantity_available,
-          quantity_reserved,
-          quantity_sold,
           status,
           origin_notes,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         payload.internalCode,
@@ -1043,10 +1061,6 @@ export async function createArticle(input, auditContext) {
         payload.allowOffers ? 1 : 0,
         payload.isFeatured ? 1 : 0,
         payload.intakeDate,
-        payload.quantityTotal,
-        payload.quantityAvailable,
-        payload.quantityReserved,
-        payload.quantitySold,
         payload.status,
         payload.originNotes,
         auditContext.actorUserId,
@@ -1055,21 +1069,19 @@ export async function createArticle(input, auditContext) {
     );
 
     const articleId = result.insertId;
-    const created = await getAdminArticleByIdWithConnection(articleId, connection);
 
-    await recordArticleStockMovement(connection, {
+    await createInitialInventory(connection, {
       articleId,
-      movementType: 'INITIAL',
-      quantityDelta: created.quantityAvailable,
-      fromAvailable: null,
-      toAvailable: created.quantityAvailable,
-      fromReserved: null,
-      toReserved: created.quantityReserved,
-      fromSold: null,
-      toSold: created.quantitySold,
-      reason: 'Stock inicial',
+      quantityTotal: payload.quantityTotal,
+      quantityAvailable: payload.quantityAvailable,
+      quantityReserved: payload.quantityReserved,
+      quantitySold: payload.quantitySold,
+      quantityLost: payload.quantityLost,
       createdBy: auditContext.actorUserId || null,
+      reason: 'Stock inicial',
     });
+
+    const created = await getAdminArticleByIdWithConnection(articleId, connection);
 
     await logAudit(
       {
@@ -1099,13 +1111,17 @@ export async function updateArticle(id, input, auditContext) {
         ...input,
         quantityReserved: before.quantityReserved,
         quantitySold: before.quantitySold,
+        quantityLost: before.quantityLost,
       },
       connection,
       auditContext,
       true,
       id,
     );
-    const stockAvailableChanged = Number(payload.quantityAvailable) !== Number(before.quantityAvailable);
+    const stockChanged =
+      Number(payload.quantityTotal) !== Number(before.quantityTotal) ||
+      Number(payload.quantityAvailable) !== Number(before.quantityAvailable) ||
+      Number(payload.quantityLost) !== Number(before.quantityLost);
 
     await connection.execute(
       `
@@ -1140,8 +1156,6 @@ export async function updateArticle(id, input, auditContext) {
           allow_offers = ?,
           is_featured = ?,
           intake_date = ?,
-          quantity_total = ?,
-          quantity_available = ?,
           status = ?,
           origin_notes = ?,
           updated_by = ?
@@ -1177,8 +1191,6 @@ export async function updateArticle(id, input, auditContext) {
         payload.allowOffers ? 1 : 0,
         payload.isFeatured ? 1 : 0,
         payload.intakeDate,
-        payload.quantityTotal,
-        payload.quantityAvailable,
         payload.status,
         payload.originNotes,
         auditContext.actorUserId,
@@ -1186,25 +1198,25 @@ export async function updateArticle(id, input, auditContext) {
       ],
     );
 
-    const after = await getAdminArticleByIdWithConnection(id, connection);
-
-    if (stockAvailableChanged) {
+    if (stockChanged) {
       const reason = input.stockAdjustmentReason || 'Ajuste manual desde edicion de articulo';
 
-      await recordArticleStockMovement(connection, {
+      await adjustInventory(connection, {
         articleId: id,
-        movementType: 'MANUAL_ADJUSTMENT',
-        quantityDelta: Number(after.quantityAvailable) - Number(before.quantityAvailable),
-        fromAvailable: before.quantityAvailable,
-        toAvailable: after.quantityAvailable,
-        fromReserved: before.quantityReserved,
-        toReserved: after.quantityReserved,
-        fromSold: before.quantitySold,
-        toSold: after.quantitySold,
+        quantityTotal: payload.quantityTotal,
+        quantityAvailable: payload.quantityAvailable,
+        quantityReserved: payload.quantityReserved,
+        quantitySold: payload.quantitySold,
+        quantityLost: payload.quantityLost,
         reason,
-        createdBy: auditContext.actorUserId || null,
+        userId: auditContext.actorUserId || null,
       });
+    }
 
+    const after = await getAdminArticleByIdWithConnection(id, connection);
+
+    if (stockChanged) {
+      const reason = input.stockAdjustmentReason || 'Ajuste manual desde edicion de articulo';
       await logAudit(
         {
           actorUserId: auditContext.actorUserId,
@@ -1233,13 +1245,6 @@ export async function updateArticle(id, input, auditContext) {
       );
     }
 
-    await logArticleStatusAutoUpdate(connection, {
-      before,
-      after,
-      auditContext,
-      reason: stockAvailableChanged ? 'Ajuste manual desde edicion de articulo' : 'Edicion de articulo',
-    });
-
     await logAudit(
       {
         actorUserId: auditContext.actorUserId,
@@ -1264,15 +1269,12 @@ export async function adjustArticleStock(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const beforeArticle = await getAdminArticleByIdWithConnection(id, connection);
 
-    await applyManualStockAdjustment(
-      connection,
-      id,
-      {
-        quantityAvailable: input.quantityAvailable,
-        reason: input.reason || 'Ajuste manual desde edicion de articulo',
-      },
-      auditContext,
-    );
+    await adjustInventory(connection, {
+      articleId: id,
+      quantityAvailable: input.quantityAvailable,
+      reason: input.reason || 'Ajuste manual desde edicion de articulo',
+      userId: auditContext.actorUserId || null,
+    });
 
     const afterArticle = await getAdminArticleByIdWithConnection(id, connection);
 
@@ -1313,14 +1315,11 @@ export async function adjustArticleStock(id, input, auditContext) {
 export async function changeArticleStatus(id, status, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
-
-    if (status === 'ACTIVE' && Number(before.quantityAvailable || 0) <= 0) {
-      throw badRequest('No se puede activar un articulo sin stock disponible.');
-    }
+    const nextStatus = resolveWritableArticleStatus(status);
 
     await connection.execute(
       'UPDATE articles SET status = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [status, auditContext.actorUserId, id],
+      [nextStatus, auditContext.actorUserId, id],
     );
 
     const after = await getAdminArticleByIdWithConnection(id, connection);
@@ -1393,13 +1392,9 @@ export async function batchUpdateArticles({ ids = [], action, auditContext }) {
 export async function updateArticleQuickFlags(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
-    const nextStatus = input.status ?? before.status;
+    const nextStatus = input.status ? resolveWritableArticleStatus(input.status) : before.status;
     const nextIsFeatured = input.isFeatured ?? before.isFeatured;
     const nextAllowOffers = input.allowOffers ?? before.allowOffers;
-
-    if (nextStatus === 'ACTIVE' && Number(before.quantityAvailable || 0) <= 0) {
-      throw badRequest('No se puede activar un articulo sin stock disponible.');
-    }
 
     if (
       nextAllowOffers &&
@@ -1916,7 +1911,7 @@ export async function deleteArticle(id, auditContext) {
     const referenceQueries = [
       ['órdenes', 'SELECT COUNT(*) AS total FROM order_items WHERE article_id = ?', true],
       ['ofertas', 'SELECT COUNT(*) AS total FROM offers WHERE article_id = ?', true],
-      ['movimientos de stock', 'SELECT COUNT(*) AS total FROM article_stock_movements WHERE article_id = ?', true],
+      ['movimientos de inventario', 'SELECT COUNT(*) AS total FROM article_inventory_movements WHERE article_id = ?', true],
       ['carritos', 'SELECT COUNT(*) AS total FROM cart_items WHERE article_id = ?', false],
     ];
 

@@ -221,7 +221,7 @@ export async function listOffers({ filters, pagination }) {
         a.internal_code AS articleInternalCode,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
-        a.quantity_available AS articleQuantityAvailable,
+        inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
@@ -251,6 +251,7 @@ export async function listOffers({ filters, pagination }) {
         COALESCE(c.instagram, pc.instagram) AS contactInstagram
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       INNER JOIN categories cat ON cat.id = a.category_id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN customers c ON c.id = o.customer_id
@@ -267,6 +268,7 @@ export async function listOffers({ filters, pagination }) {
       SELECT COUNT(*) AS total
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       INNER JOIN categories cat ON cat.id = a.category_id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN customers c ON c.id = o.customer_id
@@ -298,7 +300,7 @@ export async function listAcceptedOffersForUser(userId) {
         a.slug AS articleSlug,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
-        a.quantity_available AS articleQuantityAvailable,
+        inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
@@ -326,6 +328,7 @@ export async function listAcceptedOffersForUser(userId) {
         c.instagram AS contactInstagram
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       INNER JOIN customers c ON c.id = o.customer_id
       WHERE c.user_id = ?
         AND o.status = 'ACCEPTED'
@@ -369,7 +372,7 @@ export async function listOffersForUser(userId) {
         a.internal_code AS articleInternalCode,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
-        a.quantity_available AS articleQuantityAvailable,
+        inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
@@ -399,6 +402,7 @@ export async function listOffersForUser(userId) {
         c.instagram AS contactInstagram
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       INNER JOIN categories cat ON cat.id = a.category_id
       LEFT JOIN brands b ON b.id = a.brand_id
       INNER JOIN customers c ON c.id = o.customer_id
@@ -651,12 +655,15 @@ async function assertArticleCanStillAcceptOffer(articleId, connection) {
   const [rows] = await connection.execute(
     `
       SELECT
-        id,
-        status,
-        allow_offers AS allowOffers,
-        quantity_available AS quantityAvailable
-      FROM articles
-      WHERE id = ?
+        a.id,
+        a.status AS publicationStatus,
+        a.allow_offers AS allowOffers,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id = ?
       LIMIT 1
       FOR UPDATE
     `,
@@ -672,7 +679,7 @@ async function assertArticleCanStillAcceptOffer(articleId, connection) {
     throw badRequest('Esta prenda ya no acepta ofertas.');
   }
 
-  if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
+  if (article.publicationStatus !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
     throw badRequest('Esta prenda ya no está disponible para aceptar ofertas.');
   }
 }
@@ -681,14 +688,17 @@ async function getOfferableArticle(articleId, connection) {
   const [rows] = await connection.execute(
     `
       SELECT
-        id,
-        title,
-        sale_price AS salePrice,
-        allow_offers AS allowOffers,
-        status,
-        quantity_available AS quantityAvailable
-      FROM articles
-      WHERE id = ?
+        a.id,
+        a.title,
+        a.sale_price AS salePrice,
+        a.allow_offers AS allowOffers,
+        a.status AS publicationStatus,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id = ?
       LIMIT 1
       FOR UPDATE
     `,
@@ -705,7 +715,7 @@ async function getOfferableArticle(articleId, connection) {
     throw badRequest('Esta prenda no acepta ofertas.');
   }
 
-  if (article.status !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
+  if (article.publicationStatus !== 'ACTIVE' || Number(article.quantityAvailable) <= 0) {
     throw badRequest('Esta prenda no está disponible para ofertas en este momento.');
   }
 
@@ -723,7 +733,7 @@ async function getOfferById(id, connection, options = {}) {
         a.slug AS articleSlug,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
-        a.quantity_available AS articleQuantityAvailable,
+        inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
           FROM article_images ai
@@ -751,6 +761,7 @@ async function getOfferById(id, connection, options = {}) {
         COALESCE(c.instagram, pc.instagram) AS contactInstagram
       FROM offers o
       INNER JOIN articles a ON a.id = o.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN potential_customers pc ON pc.id = o.potential_customer_id
       WHERE o.id = ?

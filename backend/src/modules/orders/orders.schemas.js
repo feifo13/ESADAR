@@ -54,6 +54,13 @@ export const createOrderPaymentSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'FAILED', 'REFUNDED']).default('APPROVED'),
 });
 
+export const orderTrackingUpdateSchema = z.object({
+  trackingCode: z.preprocess(
+    (value) => String(value ?? '').trim(),
+    z.string().max(120),
+  ),
+});
+
 export const expireReservationsSchema = z.object({
   limit: z.coerce.number().int().positive().max(500).optional(),
   now: z.string().datetime().optional(),

@@ -102,10 +102,19 @@ function buildWishlistFilters(filters = {}) {
       SELECT 1
       FROM wishlist_items wi_status
       INNER JOIN articles a_status ON a_status.id = wi_status.article_id
+      INNER JOIN article_inventory inv_status ON inv_status.article_id = a_status.id
       WHERE wi_status.wishlist_id = w.id
-        AND a_status.status = ?
+        AND ${
+          filters.status === 'RESERVED'
+            ? 'inv_status.quantity_available = 0 AND inv_status.quantity_reserved > 0'
+            : filters.status === 'SOLD_OUT'
+              ? 'inv_status.quantity_available = 0 AND inv_status.quantity_reserved = 0 AND inv_status.quantity_sold > 0'
+              : 'a_status.status = ?'
+        }
     )`);
-    params.push(filters.status);
+    if (!['RESERVED', 'SOLD_OUT'].includes(filters.status)) {
+      params.push(filters.status);
+    }
   }
 
   if (filters.source) {
@@ -118,8 +127,9 @@ function buildWishlistFilters(filters = {}) {
       SELECT 1
       FROM wishlist_items wi_stock
       INNER JOIN articles a_stock ON a_stock.id = wi_stock.article_id
+      INNER JOIN article_inventory inv_stock ON inv_stock.article_id = a_stock.id
       WHERE wi_stock.wishlist_id = w.id
-        AND COALESCE(a_stock.quantity_available, 0) > 0
+        AND COALESCE(inv_stock.quantity_available, 0) > 0
     )`);
   }
 
@@ -128,8 +138,9 @@ function buildWishlistFilters(filters = {}) {
       SELECT 1
       FROM wishlist_items wi_sold
       INNER JOIN articles a_sold ON a_sold.id = wi_sold.article_id
+      INNER JOIN article_inventory inv_sold ON inv_sold.article_id = a_sold.id
       WHERE wi_sold.wishlist_id = w.id
-        AND (a_sold.status = 'SOLD_OUT' OR COALESCE(a_sold.quantity_available, 0) <= 0)
+        AND COALESCE(inv_sold.quantity_available, 0) <= 0
     )`);
   }
 
@@ -290,13 +301,15 @@ export async function getAdminWishlistById(id) {
         a.id AS articleId,
         a.slug,
         a.title,
-        a.status,
+        a.status AS publicationStatus,
         a.condition_label AS conditionLabel,
         a.color,
         a.material,
         a.sale_price AS salePrice,
         a.discounted_price AS discountedPrice,
-        a.quantity_available AS quantityAvailable,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
         COALESCE(a.size_text, s.code) AS sizeLabel,
         (
           SELECT COALESCE(ai.card_file_path, ai.detail_file_path, ai.file_path)
@@ -318,6 +331,7 @@ export async function getAdminWishlistById(id) {
         ) AS wasPurchasedByOwner
       FROM wishlist_items wi
       INNER JOIN articles a ON a.id = wi.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN sizes s ON s.id = a.size_id
       WHERE wi.wishlist_id = ?
       ORDER BY wi.created_at DESC, wi.id DESC
@@ -392,7 +406,10 @@ export async function getAdminWishlistById(id) {
       articleId: Number(row.articleId),
       slug: row.slug,
       title: row.title,
-      status: row.status,
+      status: row.publicationStatus === 'ACTIVE' && Number(row.quantityAvailable || 0) > 0
+        ? 'ACTIVE'
+        : (Number(row.quantityReserved || 0) > 0 ? 'RESERVED' : 'SOLD_OUT'),
+      publicationStatus: row.publicationStatus,
       conditionLabel: row.conditionLabel || null,
       color: row.color || null,
       material: row.material || null,
@@ -474,8 +491,10 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
         COALESCE(a.size_text, s.code) AS sizeLabel,
         a.discounted_price AS discountedPrice,
         a.sale_price AS salePrice,
-        a.quantity_available AS quantityAvailable,
-        a.status,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
+        a.status AS publicationStatus,
         COUNT(wi.id) AS savesCount,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
@@ -489,6 +508,7 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
       LEFT JOIN potential_customers pc ON pc.id = w.potential_customer_id
       INNER JOIN wishlist_items wi ON wi.wishlist_id = w.id
       INNER JOIN articles a ON a.id = wi.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       INNER JOIN categories cat ON cat.id = a.category_id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN sizes s ON s.id = a.size_id
@@ -502,7 +522,9 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
         sizeLabel,
         a.discounted_price,
         a.sale_price,
-        a.quantity_available,
+        inv.quantity_available,
+        inv.quantity_reserved,
+        inv.quantity_sold,
         a.status
       ORDER BY savesCount DESC, a.is_featured DESC, a.updated_at DESC
       ${limitClause}
@@ -520,7 +542,10 @@ export async function getAdminWishlistTopArticles(filters = {}, limit = 10) {
     discountedPrice: Number(row.discountedPrice || 0),
     salePrice: Number(row.salePrice || 0),
     quantityAvailable: Number(row.quantityAvailable || 0),
-    status: row.status,
+    status: row.publicationStatus === 'ACTIVE' && Number(row.quantityAvailable || 0) > 0
+      ? 'ACTIVE'
+      : (Number(row.quantityReserved || 0) > 0 ? 'RESERVED' : 'SOLD_OUT'),
+    publicationStatus: row.publicationStatus,
     savesCount: Number(row.savesCount || 0),
     image: row.image || '',
   }));

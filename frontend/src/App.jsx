@@ -39,6 +39,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
 const AdminUserEditPage = lazy(() => import('./pages/admin/AdminUserEditPage.jsx'));
 const AdminCollectingPage = lazy(() => import('./pages/admin/AdminCollectingPage.jsx'));
 const AdminShippingPage = lazy(() => import('./pages/admin/AdminShippingPage.jsx'));
+const AdminSiteHeroPage = lazy(() => import('./pages/admin/AdminSiteHeroPage.jsx'));
 
 export default function App() {
   return (
@@ -217,6 +218,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminShippingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/site-hero"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminSiteHeroPage />
             </ProtectedRoute>
           }
         />

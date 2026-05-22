@@ -62,6 +62,39 @@ const STOCK_ADJUSTMENT_REASONS = [
   "Ajuste administrativo",
 ];
 
+const ARTICLE_FIELD_LABELS = {
+  title: "nombre",
+  salePrice: "precio",
+  categoryId: "categoría",
+  categoryName: "categoría",
+  sizeId: "talle",
+  sizeCode: "talle",
+  sizeText: "talle",
+  conditionLabel: "condición",
+  quantityTotal: "stock total",
+  quantityAvailable: "stock disponible",
+  canonicalUrl: "URL canónica",
+  imageAltOverride: "alt de imagen",
+};
+
+function getArticleApiValidationMessage(error) {
+  const fieldErrors =
+    error?.payload?.details?.fieldErrors ||
+    error?.payload?.details?.field_errors;
+  if (!fieldErrors || typeof fieldErrors !== "object") return "";
+
+  const labels = Object.keys(fieldErrors)
+    .filter((key) => {
+      const value = fieldErrors[key];
+      return Array.isArray(value) ? Boolean(value.length) : Boolean(value);
+    })
+    .map((key) => ARTICLE_FIELD_LABELS[key] || key)
+    .filter((label, index, list) => list.indexOf(label) === index);
+
+  if (!labels.length) return "";
+  return `Revisa estos campos: ${labels.slice(0, 6).join(", ")}${labels.length > 6 ? " y otros campos" : ""}.`;
+}
+
 function sortImages(images = []) {
   return [...images].sort((left, right) => {
     if (Number(left.isPrimary) !== Number(right.isPrimary)) {
@@ -117,7 +150,7 @@ function toFormState(article) {
     quantityReserved: article?.quantityReserved ?? 0,
     quantitySold: article?.quantitySold ?? 0,
     stockAdjustmentReason: "Ajuste administrativo",
-    status: article?.status || "ACTIVE",
+    status: article?.publicationStatus || article?.status || "ACTIVE",
     originNotes: article?.originNotes || "",
   };
 }
@@ -375,12 +408,6 @@ export default function AdminArticleFormPage() {
     }));
   }
 
-  async function refreshArticle(articleId) {
-    const response = await apiFetch(`/api/admin/articles/${articleId}`);
-    setForm(toFormState(response.article));
-    setExistingImages(sortImages(response.article.images || []));
-  }
-
   function validateStep(stepIndex) {
     if (stepIndex === 0 && !normalizeLabel(form.title)) {
       return {
@@ -441,19 +468,77 @@ export default function AdminArticleFormPage() {
       };
     }
 
-    if (
-      stepIndex === 1 &&
-      form.status === "ACTIVE" &&
-      Number(form.quantityAvailable || 0) <= 0
-    ) {
-      return {
-        message: "No se puede publicar como activo un articulo sin stock disponible.",
-        target: "article-quantity-available",
-        stepIndex,
-      };
-    }
-
     return null;
+  }
+
+  function getArticleFormValidationIssues() {
+    const hasCategory =
+      (form.categoryId && !isCreateNewLookup(form.categoryId)) ||
+      (isCreateNewLookup(form.categoryId) && normalizeLabel(form.categoryName));
+    const hasSize =
+      (form.sizeId && !isCreateNewLookup(form.sizeId)) ||
+      (isCreateNewLookup(form.sizeId) && normalizeLabel(form.sizeCode)) ||
+      normalizeLabel(form.sizeText);
+    const salePrice = Number(form.salePrice);
+    const quantityTotal = Number(form.quantityTotal);
+    const quantityAvailable =
+      form.quantityAvailable === "" ? quantityTotal : Number(form.quantityAvailable);
+    const hasPrimaryImage = Boolean(existingImages.length || selectedImageUploads.length);
+    const issues = [
+      {
+        label: "nombre",
+        target: "article-title",
+        stepIndex: 0,
+        invalid: !normalizeLabel(form.title),
+      },
+      {
+        label: "categoría",
+        target: "article-category",
+        stepIndex: 0,
+        invalid: !hasCategory,
+      },
+      {
+        label: "talle",
+        target: "article-size",
+        stepIndex: 0,
+        invalid: !hasSize,
+      },
+      {
+        label: "condición",
+        target: "article-condition",
+        stepIndex: 0,
+        invalid: !normalizeLabel(form.conditionLabel),
+      },
+      {
+        label: "precio",
+        target: "article-sale-price",
+        stepIndex: 1,
+        invalid:
+          form.salePrice === "" ||
+          !Number.isFinite(salePrice) ||
+          salePrice <= 0,
+      },
+      {
+        label: "stock total",
+        target: "article-quantity-total",
+        stepIndex: 1,
+        invalid: !Number.isFinite(quantityTotal) || quantityTotal < 0,
+      },
+      {
+        label: "stock disponible",
+        target: "article-quantity-available",
+        stepIndex: 1,
+        invalid: !Number.isFinite(quantityAvailable) || quantityAvailable < 0,
+      },
+      {
+        label: "imagen principal",
+        target: "article-images",
+        stepIndex: 2,
+        invalid: !hasPrimaryImage,
+      },
+    ];
+
+    return issues.filter((issue) => issue.invalid);
   }
 
   function scrollArticleWizardTop({ behavior = "smooth" } = {}) {
@@ -496,6 +581,18 @@ export default function AdminArticleFormPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    const validationIssues = getArticleFormValidationIssues();
+    if (validationIssues.length) {
+      const firstIssue = validationIssues[0];
+      const labels = validationIssues.slice(0, 6).map((issue) => issue.label);
+      const message = `Faltan campos requeridos: ${labels.join(", ")}${validationIssues.length > 6 ? " y otros campos" : ""}.`;
+      setError(message);
+      setActiveStep(firstIssue.stepIndex);
+      notifyFormStatus(notifyMobileStatus, "error", message);
+      focusFieldAfterRender(firstIssue.target, event.currentTarget);
+      return;
+    }
 
     const validationIssue = validateStep(0) || validateStep(1);
     if (validationIssue) {
@@ -645,18 +742,20 @@ export default function AdminArticleFormPage() {
         setImageChecklist(createEmptyImageState());
       }
 
-      await refreshArticle(articleId);
       const successMessage = isEdit
         ? "Articulo actualizado correctamente."
         : "Articulo creado correctamente.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
-
-      if (!isEdit) {
-        navigate(`/admin/articles/${articleId}/edit`, { replace: true });
-      }
+      navigate("/admin/articles", {
+        replace: true,
+        state: { refreshArticlesAt: Date.now(), message: successMessage },
+      });
     } catch (err) {
-      const errorMessage = err.message || "No se pudo guardar el articulo";
+      const errorMessage =
+        getArticleApiValidationMessage(err) ||
+        err.message ||
+        "No se pudo guardar el articulo";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
@@ -904,6 +1003,7 @@ export default function AdminArticleFormPage() {
                 <span>Categoría / rubro</span>
                 <select
                   className="input"
+                  data-validation-field="article-category"
                   value={form.categoryId}
                   onChange={(event) => {
                     const nextValue = event.target.value;
@@ -992,6 +1092,7 @@ export default function AdminArticleFormPage() {
                 <span>Talle</span>
                 <select
                   className="input"
+                  data-validation-field="article-size"
                   value={form.sizeId}
                   onChange={(event) => {
                     const nextValue = event.target.value;
@@ -1046,6 +1147,7 @@ export default function AdminArticleFormPage() {
                 <span>Estado / condicion</span>
                 <select
                   className="input"
+                  data-validation-field="article-condition"
                   value={form.conditionLabel}
                   onChange={(event) =>
                     update("conditionLabel", event.target.value)
@@ -1241,26 +1343,12 @@ export default function AdminArticleFormPage() {
                   value={form.status}
                   onChange={(event) => update("status", event.target.value)}
                 >
+                  <option value="DRAFT">Borrador</option>
                   <option value="ACTIVE">Activa</option>
                   <option value="INACTIVE">Inactiva</option>
-                  <option value="RESERVED">Reservada</option>
-                  <option value="SOLD_OUT">Agotada</option>
+                  <option value="ARCHIVED">Archivada</option>
                 </select>
               </label>
-
-              {form.status === "SOLD_OUT" &&
-              Number(form.quantityAvailable || 0) > 0 ? (
-                <div className="inline-note form-grid-span-two">
-                  Al guardar con stock disponible, el articulo volvera a estar activo salvo que lo marques como inactivo.
-                </div>
-              ) : null}
-
-              {form.status === "ACTIVE" &&
-              Number(form.quantityAvailable || 0) <= 0 ? (
-                <div className="error-copy form-grid-span-two">
-                  No se puede publicar como activo un articulo sin stock disponible.
-                </div>
-              ) : null}
 
               <label className="field-group admin-field-important">
                 <span>Descuento</span>
@@ -1416,7 +1504,7 @@ export default function AdminArticleFormPage() {
         ) : null}
 
         {activeStep === 2 ? (
-          <section className="section-card nested-card page-stack">
+          <section className="section-card nested-card page-stack" data-validation-field="article-images">
             <div>
               <p className="section-kicker">Paso 3</p>
               <h2>Imagenes</h2>

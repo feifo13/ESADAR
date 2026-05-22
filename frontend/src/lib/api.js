@@ -194,6 +194,10 @@ function maybeInvalidatePublicCacheAfterMutation(path, method) {
   if (normalizedPath.startsWith('/api/admin/shipping')) {
     invalidatePublicCache('/api/public/lookups');
   }
+
+  if (normalizedPath.startsWith('/api/admin/site')) {
+    invalidatePublicCache('/api/site/hero');
+  }
 }
 
 function getCacheTimestamp() {

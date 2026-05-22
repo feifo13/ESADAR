@@ -27,6 +27,7 @@ import shippingRoutes from './modules/shipping/shipping.routes.js';
 import mercadoPagoWebhookRoutes from './modules/webhooks/mercado-pago.webhook.routes.js';
 import { publicRouter as clientLogRoutes, adminRouter as adminClientLogRoutes } from './modules/client-logs/client-logs.routes.js';
 import pageVisitRoutes from './modules/page-visits/page-visits.routes.js';
+import { adminRouter as adminSiteRoutes, publicRouter as publicSiteRoutes } from './modules/site/site.routes.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 fs.mkdirSync(env.articleUploadDir, { recursive: true });
@@ -70,12 +71,14 @@ export function createApp() {
   app.use('/api/public', publicInteractionRouter);
   app.use('/api/public/page-visits', pageVisitRoutes);
   app.use('/api/public/orders', publicOrderRoutes);
+  app.use('/api/site', publicSiteRoutes);
   app.use('/api/webhooks', mercadoPagoWebhookRoutes);
   app.use('/api/client-logs', clientLogRoutes);
   app.use('/api/admin/articles', adminArticleRoutes);
   app.use('/api/admin/offers', adminOfferRoutes);
   app.use('/api/admin/contact-messages', adminContactRoutes);
   app.use('/api/admin/orders', adminOrderRoutes);
+  app.use('/api/admin/site', adminSiteRoutes);
   app.use('/api/admin/audit', auditRoutes);
   app.use('/api/admin', adminClientLogRoutes);
   app.use('/api/admin', adminSeoRoutes);

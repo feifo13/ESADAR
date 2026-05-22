@@ -20,6 +20,8 @@ const optionalNullableId = z.preprocess(
 
 const articleGenderSchema = z.enum(['UNISEX', 'HOMBRE', 'MUJER', 'NIÑO', 'NIÑA', 'OTRO']);
 const articleAgeGroupSchema = z.enum(['ADULT', 'KIDS', 'TODDLER', 'INFANT', 'NEWBORN']);
+const articlePublicationStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED']);
+const adminArticleStatusFilterValues = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED', 'RESERVED', 'SOLD_OUT'];
 
 const articleBaseShape = {
   internalCode: z.string().trim().min(2).max(80).optional(),
@@ -58,7 +60,7 @@ const articleBaseShape = {
   quantityAvailable: z.coerce.number().int().min(0).optional(),
   quantityReserved: z.coerce.number().int().min(0).default(0),
   quantitySold: z.coerce.number().int().min(0).default(0),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']).default('ACTIVE'),
+  status: articlePublicationStatusSchema.default('ACTIVE'),
   originNotes: z.string().trim().optional().nullable(),
 };
 
@@ -115,14 +117,6 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
     });
   }
 
-  if (value.status === 'ACTIVE' && quantityAvailable <= 0) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['status'],
-      message: 'No se puede activar un articulo sin stock disponible.',
-    });
-  }
-
   if (value.allowOffers && value.discountType !== 'NONE' && value.discountValue > 0) {
     ctx.addIssue({
       code: 'custom',
@@ -133,14 +127,6 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
 });
 
 export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, ctx) => {
-  if (value.status === 'ACTIVE' && value.quantityAvailable != null && value.quantityAvailable <= 0) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['status'],
-      message: 'No se puede activar un articulo sin stock disponible.',
-    });
-  }
-
   if (value.allowOffers && value.discountType && value.discountType !== 'NONE' && (value.discountValue || 0) > 0) {
     ctx.addIssue({
       code: 'custom',
@@ -151,7 +137,7 @@ export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, c
 });
 
 export const articleStatusSchema = z.object({
-  status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+  status: articlePublicationStatusSchema,
 });
 
 export const articleStockAdjustmentSchema = z.object({
@@ -161,7 +147,7 @@ export const articleStockAdjustmentSchema = z.object({
 
 export const articleQuickFlagsSchema = z
   .object({
-    status: z.enum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']).optional(),
+    status: articlePublicationStatusSchema.optional(),
     isFeatured: z.coerce.boolean().optional(),
     allowOffers: z.coerce.boolean().optional(),
   })
@@ -176,7 +162,7 @@ export const articleQuickFlagsSchema = z
 export const adminArticleListQuerySchema = z.object({
   q: optionalTrimmedString(150),
   search: optionalTrimmedString(150),
-  status: optionalEnum(['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT']),
+  status: optionalEnum(adminArticleStatusFilterValues),
   featured: optionalBooleanish,
   offerable: optionalBooleanish,
   categoryId: optionalPositiveInt,

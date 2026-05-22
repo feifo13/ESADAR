@@ -6,7 +6,7 @@ import {
   useOutletContext,
 } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
-import { apiFetch, cachedApiFetch, listenPublicCacheInvalidation } from "../lib/api.js";
+import { apiFetch, cachedApiFetch, listenPublicCacheInvalidation, resolveAssetUrl } from "../lib/api.js";
 import { runWhenIdle } from "../lib/performance.js";
 import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
@@ -27,7 +27,6 @@ import baller3 from "../assets/baller-3.jpg";
 import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
-const HERO_SEQUENCE = [...HERO_IMAGES, ...HERO_IMAGES, ...HERO_IMAGES];
 const CATALOG_PAGE_SIZE = 20;
 
 function mergeAcceptedOffers(items, acceptedOffersByArticle) {
@@ -272,6 +271,7 @@ export default function HomePage() {
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadSuccess, setLeadSuccess] = useState("");
+  const [siteHero, setSiteHero] = useState(null);
 
   const pageSeo =
     location.pathname === "/articles"
@@ -360,6 +360,34 @@ export default function HomePage() {
     (chip) => chip.key !== "sort",
   ).length;
   const activeMobileSort = filters.sort !== initialFilters.sort;
+  const heroImages = useMemo(() => {
+    const configuredImage = resolveAssetUrl(siteHero?.imageUrl);
+    return configuredImage ? [configuredImage] : HERO_IMAGES;
+  }, [siteHero?.imageUrl]);
+  const heroSequence = useMemo(
+    () => Array.from({ length: 9 }, (_item, index) => heroImages[index % heroImages.length]),
+    [heroImages],
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSiteHero() {
+      try {
+        const response = await cachedApiFetch("/api/site/hero", {
+          ttlMs: 120000,
+        });
+        if (!ignore) setSiteHero(response.hero || null);
+      } catch {
+        if (!ignore) setSiteHero(null);
+      }
+    }
+
+    void loadSiteHero();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     const isCatalogView =
@@ -890,7 +918,7 @@ export default function HomePage() {
         description={pageSeo?.description || site.description}
         canonical={pageSeo?.canonicalUrl || toAbsoluteUrl(currentSeoPath, site)}
         url={toAbsoluteUrl(currentSeoPath, site)}
-        image={toAbsoluteUrl(HERO_IMAGES[0], site)}
+        image={toAbsoluteUrl(heroImages[0], site)}
         jsonLd={[
           { id: "organization", data: buildOrganizationJsonLd(site) },
           { id: "website", data: buildWebsiteJsonLd(site) },
@@ -938,7 +966,7 @@ export default function HomePage() {
         </div>
         <div className="hero-carousel" aria-hidden="true">
           <div className="hero-carousel__track">
-            {HERO_SEQUENCE.map((image, index) => (
+            {heroSequence.map((image, index) => (
               <figure
                 key={`${image}-${index}`}
                 className="hero-carousel__slide"

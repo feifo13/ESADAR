@@ -24,7 +24,6 @@ import { formatPaymentMethod } from "../lib/paymentMethods.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
 import {
-  getEmailValidationMessage,
   getFriendlyErrorMessage,
   getMinLengthValidationMessage,
   getRequiredValidationMessage,
@@ -41,6 +40,9 @@ const PAYMENT_STATUS_LABELS = {
   REFUNDED: "Reintegrado",
   PAID: "Pagado",
 };
+
+const LOCKED_EMAIL_MESSAGE =
+  "El email de la cuenta no puede modificarse desde el perfil. Si necesitas cambiarlo, contactanos.";
 
 const ORDER_STATUS_LABELS = {
   RESERVED: "Reservada",
@@ -97,6 +99,10 @@ function getOfferDisplayStatus(offer) {
 
 function getOfferResponseDate(offer) {
   return offer?.acceptedAt || offer?.rejectedAt || offer?.cancelledAt || null;
+}
+
+function getItemStockStatus(item) {
+  return item?.stockStatus || item?.articleStatus || item?.status || "ACTIVE";
 }
 
 const initialForm = {
@@ -267,7 +273,7 @@ export default function AccountPage() {
         title: (item) => item.title,
         price: (item) => item.discountedPrice || item.salePrice,
         status: (item) =>
-          Number(item.quantityAvailable || 0) > 0 && item.status !== "SOLD_OUT"
+          Number(item.quantityAvailable || 0) > 0 && getItemStockStatus(item) !== "SOLD_OUT"
             ? "Disponible"
             : "Agotado",
       }),
@@ -331,8 +337,7 @@ export default function AccountPage() {
   function isArticleAvailable(item) {
     return (
       Number(item?.quantityAvailable || 0) > 0 &&
-      item?.status !== "SOLD_OUT" &&
-      item?.articleStatus !== "SOLD_OUT"
+      getItemStockStatus(item) !== "SOLD_OUT"
     );
   }
 
@@ -354,7 +359,9 @@ export default function AccountPage() {
       discountType: item.discountType,
       discountValue: item.discountValue,
       discountedPrice: item.discountedPrice,
-      status: item.status,
+      status: getItemStockStatus(item),
+      stockStatus: getItemStockStatus(item),
+      publicationStatus: item.publicationStatus,
       conditionLabel: item.conditionLabel,
       color: item.color,
       material: item.material,
@@ -391,7 +398,9 @@ export default function AccountPage() {
         discountValue: item.discountValue,
         discountedPrice: item.discountedPrice,
         quantityAvailable: item.quantityAvailable,
-        status: item.status || item.articleStatus,
+        status: getItemStockStatus(item),
+        stockStatus: getItemStockStatus(item),
+        publicationStatus: item.publicationStatus,
         acceptedOffer:
           item.status === "ACCEPTED" && !item.consumedAt
             ? {
@@ -486,6 +495,13 @@ export default function AccountPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function notifyEmailLocked(event) {
+    event.preventDefault();
+    notifyFormStatus(notifyMobileStatus, "info", LOCKED_EMAIL_MESSAGE, {
+      icon: "info",
+    });
+  }
+
   function updateAddressField(name, value) {
     setForm((current) => ({
       ...current,
@@ -514,8 +530,6 @@ export default function AccountPage() {
       { target: "account-first-name", message: getMinLengthValidationMessage(form.firstName, 2, "el nombre") },
       { target: "account-last-name", message: getRequiredValidationMessage(form.lastName, "el apellido") },
       { target: "account-last-name", message: getMinLengthValidationMessage(form.lastName, 2, "el apellido") },
-      { target: "account-email", message: getRequiredValidationMessage(form.email, "el email") },
-      { target: "account-email", message: getEmailValidationMessage(form.email) },
       { target: "account-phone", message: getRequiredValidationMessage(form.phone, "el teléfono") },
       { target: "account-birth-date", message: getRequiredValidationMessage(form.birthDate, "la fecha de nacimiento") },
       {
@@ -553,10 +567,11 @@ export default function AccountPage() {
       setProfileLoading(true);
       setProfileError("");
       setProfileMessage("");
+      const { email: _email, ...profilePayload } = form;
       await apiFetch("/api/public/account/profile", {
         method: "PATCH",
         body: {
-          ...form,
+          ...profilePayload,
           preferredShippingMethodId: form.preferredShippingMethodId || null,
           preferredPaymentMethod: form.preferredPaymentMethod || null,
           defaultAddress: form.defaultAddress?.addressLine
@@ -714,7 +729,7 @@ export default function AccountPage() {
                   required
                 />
               </label>
-              <label className="field-group">
+              <label className="field-group" onPointerDownCapture={notifyEmailLocked}>
                 <span>Email</span>
                 <input
                   className="input"
@@ -722,8 +737,8 @@ export default function AccountPage() {
                   name="email"
                   data-validation-field="account-email"
                   value={form.email}
-                  onChange={(event) => updateField("email", event.target.value)}
-                  required
+                  disabled
+                  onFocus={notifyEmailLocked}
                 />
               </label>
               <label className="field-group">
@@ -1083,7 +1098,7 @@ export default function AccountPage() {
                     {pagedWishlistItems.map((item) => {
                       const isAvailable =
                         Number(item.quantityAvailable || 0) > 0 &&
-                        item.status !== "SOLD_OUT";
+                        getItemStockStatus(item) !== "SOLD_OUT";
 
                       return (
                         <tr key={item.articleId}>

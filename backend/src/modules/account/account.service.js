@@ -264,7 +264,7 @@ function mergeProfileInput(current, input = {}) {
     firstName: input.firstName ?? current.firstName ?? '',
     lastName: input.lastName ?? current.lastName ?? '',
     birthDate: input.birthDate ?? current.birthDate ?? null,
-    email: input.email ? input.email.trim().toLowerCase() : (current.email ? current.email.trim().toLowerCase() : null),
+    email: current.email ? current.email.trim().toLowerCase() : null,
     phone: input.phone ?? current.phone ?? null,
     instagram: input.instagram ?? current.instagram ?? null,
     defaultAddress: input.defaultAddress === undefined
@@ -368,8 +368,6 @@ export async function saveAccountProfile(userId, input, auditContext) {
     const before = await buildAccountProfile(customer, connection);
     const next = mergeProfileInput(before, input);
 
-    await ensureUserEmailAvailable(next.email, userId, connection);
-
     await connection.execute(
       `
         UPDATE users
@@ -377,7 +375,6 @@ export async function saveAccountProfile(userId, input, auditContext) {
           first_name = ?,
           last_name = ?,
           birth_date = ?,
-          email = ?,
           address = ?,
           phone = ?,
           instagram = ?
@@ -387,7 +384,6 @@ export async function saveAccountProfile(userId, input, auditContext) {
         next.firstName,
         next.lastName,
         next.birthDate || null,
-        next.email || null,
         next.defaultAddress?.addressLine || null,
         next.phone || null,
         next.instagram || null,
@@ -554,6 +550,8 @@ export async function getAccountOrderDetail(userId, orderId) {
     paymentStatus: order.paymentStatus,
     paymentMethod: order.paymentMethod,
     shippingMethodDescription: order.shippingMethodDescription || null,
+    packageWeightKg: Number(order.packageWeightKg || 0),
+    trackingCode: order.trackingCode || null,
     shippingCost: Number(order.shippingCost || 0),
     subtotal: Number(order.subtotal || 0),
     discountTotal: Number(order.discountTotal || 0),
@@ -592,10 +590,14 @@ export async function getAccountOrderDetail(userId, orderId) {
     })),
     history: (order.history || []).map((entry) => ({
       id: Number(entry.id),
+      eventType: entry.eventType || 'STATUS_CHANGE',
       fromStatus: entry.fromStatus,
       toStatus: entry.toStatus,
       reason: entry.reason || null,
+      metadataJson: entry.metadataJson || null,
       changedAt: entry.changedAt,
+      changedBy: entry.changedBy != null ? Number(entry.changedBy) : null,
+      changedByName: entry.changedByName || null,
       source: entry.source || null,
     })),
   };
@@ -635,12 +637,14 @@ export async function listAccountAlerts(userId) {
         aia.updated_at AS updatedAt,
         a.title AS articleTitle,
         a.slug AS articleSlug,
-        a.status AS articleStatus,
+        a.status AS publicationStatus,
         a.sale_price AS salePrice,
         a.discount_type AS discountType,
         a.discount_value AS discountValue,
         a.discounted_price AS discountedPrice,
-        a.quantity_available AS quantityAvailable,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
         a.allow_offers AS allowOffers,
         b.name AS brandName,
         COALESCE(a.size_text, s.code) AS sizeLabel,
@@ -653,6 +657,7 @@ export async function listAccountAlerts(userId) {
         ) AS image
       FROM article_interest_alerts aia
       LEFT JOIN articles a ON a.id = aia.article_id
+      LEFT JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN sizes s ON s.id = a.size_id
       WHERE aia.potential_customer_id = ?
@@ -680,7 +685,10 @@ export async function listAccountAlerts(userId) {
     quantityAvailable: Number(row.quantityAvailable || 0),
     image: row.image || '',
     allowOffers: Boolean(row.allowOffers),
-    articleStatus: row.articleStatus || null,
+    publicationStatus: row.publicationStatus || null,
+    articleStatus: row.publicationStatus === 'ACTIVE' && Number(row.quantityAvailable || 0) > 0
+      ? 'ACTIVE'
+      : (Number(row.quantityReserved || 0) > 0 ? 'RESERVED' : 'SOLD_OUT'),
   }));
 }
 

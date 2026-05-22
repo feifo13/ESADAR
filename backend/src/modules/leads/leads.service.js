@@ -262,11 +262,13 @@ async function listWishlistItemsByWishlistId(wishlistId, connection) {
         a.discount_type AS discountType,
         a.discount_value AS discountValue,
         a.discounted_price AS discountedPrice,
-        a.status,
+        a.status AS publicationStatus,
         a.condition_label AS conditionLabel,
         a.color,
         a.material,
-        a.quantity_available AS quantityAvailable,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
         b.name AS brandName,
         COALESCE(a.size_text, s.code) AS sizeLabel,
         (
@@ -278,6 +280,7 @@ async function listWishlistItemsByWishlistId(wishlistId, connection) {
         ) AS image
       FROM wishlist_items wi
       INNER JOIN articles a ON a.id = wi.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN sizes s ON s.id = a.size_id
       WHERE wi.wishlist_id = ?
@@ -294,7 +297,10 @@ async function listWishlistItemsByWishlistId(wishlistId, connection) {
     discountType: row.discountType || 'NONE',
     discountValue: Number(row.discountValue || 0),
     discountedPrice: Number(row.discountedPrice || 0),
-    status: row.status,
+    status: row.publicationStatus === 'ACTIVE' && Number(row.quantityAvailable || 0) > 0
+      ? 'ACTIVE'
+      : (Number(row.quantityReserved || 0) > 0 ? 'RESERVED' : 'SOLD_OUT'),
+    publicationStatus: row.publicationStatus,
     conditionLabel: row.conditionLabel || null,
     color: row.color || null,
     material: row.material || null,

@@ -669,7 +669,7 @@ export async function getStatisticsMarketStudy(filters = {}) {
             AND o.order_status IN ('APPROVED', 'SHIPPED')
         ) AS soldCount
       FROM articles a
-      WHERE a.status IN ('ACTIVE', 'SOLD_OUT', 'RESERVED')
+      WHERE a.status = 'ACTIVE'
       HAVING soldCount = 0 AND (viewsCount > 0 OR savesCount > 0 OR offersCount > 0)
       ORDER BY savesCount DESC, viewsCount DESC, offersCount DESC
       LIMIT 10
@@ -719,9 +719,11 @@ export async function getStatisticsMarketStudy(filters = {}) {
         COUNT(DISTINCT wi.id) AS savesCount,
         COUNT(DISTINCT aia.id) AS alertsCount
       FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN wishlist_items wi ON wi.article_id = a.id
       LEFT JOIN article_interest_alerts aia ON aia.article_id = a.id AND aia.status = 'ACTIVE'
-      WHERE a.status = 'SOLD_OUT' OR COALESCE(a.quantity_available, 0) <= 0
+      WHERE a.status = 'ACTIVE'
+        AND COALESCE(inv.quantity_available, 0) <= 0
       GROUP BY a.id, a.slug, a.title
       HAVING savesCount > 0 OR alertsCount > 0
       ORDER BY savesCount DESC, alertsCount DESC, a.id DESC

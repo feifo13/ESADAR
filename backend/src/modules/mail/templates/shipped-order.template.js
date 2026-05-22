@@ -31,6 +31,23 @@ function renderSummaryRow(label, value, options = {}) {
   `;
 }
 
+function renderTrackingBlock({ trackingCode, shippingMethod }) {
+  const code = String(trackingCode || "").trim();
+  if (!code) return "";
+
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 22px; background:#ffffff; border:1px solid rgba(0,142,151,0.28);">
+      <tr>
+        <td style="padding:16px 18px;">
+          <p style="margin:0 0 8px; color:#008e97; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Codigo de seguimiento</p>
+          <p style="margin:0 0 8px; color:#102b34; font-size:22px; line-height:1.25; font-weight:700; word-break:break-word;">${escapeHtml(code)}</p>
+          ${shippingMethod ? `<p style="margin:0; color:#56737a; font-size:14px; line-height:1.5;">Metodo de envio: ${escapeHtml(shippingMethod)}</p>` : ""}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 export function renderShippedOrderEmail({ order, publicSiteUrl } = {}) {
   const urlOptions = { publicSiteUrl };
   const items = order?.items || [];
@@ -41,6 +58,7 @@ export function renderShippedOrderEmail({ order, publicSiteUrl } = {}) {
   const articleCount = formatOrderArticleCount(items);
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
+  const trackingCode = String(order?.trackingCode || "").trim();
   const subject = `Tu orden fue enviada - ${orderLabel}`;
   const preheader = "Tu compra ya fue marcada como enviada.";
 
@@ -56,13 +74,24 @@ export function renderShippedOrderEmail({ order, publicSiteUrl } = {}) {
   ];
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
+  if (trackingCode) textLines.push(`Codigo de seguimiento: ${trackingCode}`);
   textLines.push(...formatOrderItemsTextLines(items, { title: "Prendas enviadas" }));
-  textLines.push("", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push(
+    "",
+    trackingCode
+      ? "El codigo de seguimiento puede ser proporcionado sujeto a disponibilidad del proveedor del servicio de correo."
+      : "Tu orden fue enviada. El codigo de seguimiento puede estar sujeto a disponibilidad del proveedor del servicio de correo.",
+    "Podés revisar los detalles desde tu cuenta.",
+    orderUrl,
+    "",
+    "Equipo ESADAR",
+  );
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
     <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">enviada</strong>.</p>
     <p style="margin:0 0 14px;">Te avisamos para que puedas seguir el estado de tu compra desde tu cuenta.</p>
+    <p style="margin:0 0 14px; color:#56737a; font-size:14px; line-height:1.55;">El codigo de seguimiento puede ser proporcionado sujeto a disponibilidad del proveedor del servicio de correo.</p>
     <p style="margin:0 0 18px;">Gracias por elegir <strong style="color:#102b34;">ESADAR</strong>.</p>
   `;
 
@@ -81,6 +110,7 @@ export function renderShippedOrderEmail({ order, publicSiteUrl } = {}) {
         </td>
       </tr>
     </table>
+    ${renderTrackingBlock({ trackingCode, shippingMethod })}
     ${renderOrderItemsTable(items, urlOptions, { title: "Prendas enviadas" })}
   `;
 

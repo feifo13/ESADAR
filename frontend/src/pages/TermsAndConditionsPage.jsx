@@ -22,7 +22,7 @@ const sections = [
   },
   {
     title: "5. Medios de pago",
-    copy: "ESADAR puede ofrecer según disponibilidad transferencia bancaria, Prex, Mercado Pago u otros medios configurados en el sistema. En pagos por transferencia, el cliente debe utilizar los datos informados al finalizar la compra y enviados por correo, incluyendo la referencia de la orden.",
+    copy: "ESADAR puede ofrecer según disponibilidad transferencia bancaria, Prex, Mercado Pago u otros medios configurados en el sistema. En pagos por transferencia, el cliente debe utilizar los datos informados al finalizar la compra y enviados por correo, e indicar el número de orden en el motivo/concepto de la transferencia.",
   },
   {
     title: "6. Validación del pago",
@@ -30,7 +30,7 @@ const sections = [
   },
   {
     title: "7. Envíos",
-    copy: "Las condiciones de envío, costos y tiempos pueden variar según la opción seleccionada y la información disponible al momento de la compra. ESADAR podrá coordinar detalles adicionales con el cliente cuando sea necesario.",
+    copy: "El envío se gestiona después de la aprobación de la orden y del pago. Las condiciones de envío, costos y tiempos pueden variar según la opción seleccionada y la información disponible al momento de la compra. El código de seguimiento de los envíos podrá ser proporcionado cuando el proveedor del servicio de correo lo disponibilice. ESADAR informará al cliente la información de seguimiento disponible una vez despachada la orden, cuando corresponda.",
   },
   {
     title: "8. Cambios y devoluciones",

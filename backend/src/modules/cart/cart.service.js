@@ -3,6 +3,7 @@ import { withTransaction } from '../../db/transaction.js';
 import { badRequest, notFound } from '../../utils/app-error.js';
 import { logAudit } from '../audit/audit.service.js';
 import { findCustomerByUserId } from '../customers/customer-helpers.js';
+import { deriveStockStatus } from '../inventory/inventory.constants.js';
 
 export async function getCartForUser(userId) {
   const cart = await getOrCreateActiveCartForUser(userId, pool);
@@ -444,9 +445,11 @@ async function getCartById(cartId, connection) {
         ci.accepted_offer_quantity_snapshot AS acceptedOfferQuantity,
         a.slug,
         a.title,
-        a.quantity_available AS quantityAvailable,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
         a.weight_kg AS weightKg,
-        a.status AS articleStatus,
+        a.status AS publicationStatus,
         b.name AS brandName,
         COALESCE(s.code, a.size_text) AS sizeLabel,
         (
@@ -458,6 +461,7 @@ async function getCartById(cartId, connection) {
         ) AS image
       FROM cart_items ci
       INNER JOIN articles a ON a.id = ci.article_id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN sizes s ON s.id = a.size_id
       WHERE ci.cart_id = ?
@@ -488,7 +492,9 @@ async function getCartById(cartId, connection) {
     lineTotal: calculateAcceptedOfferLineTotal(row),
     quantityAvailable: Number(row.quantityAvailable || 0),
     maxQuantity: Math.max(Number(row.quantityAvailable || 0), Number(row.quantity || 0)),
-    articleStatus: row.articleStatus,
+    articleStatus: row.publicationStatus === 'ACTIVE' ? deriveStockStatus(row) : 'INACTIVE',
+    publicationStatus: row.publicationStatus,
+    stockStatus: deriveStockStatus(row),
   }));
 
   return {
@@ -505,16 +511,19 @@ async function getArticleForCart(articleId, connection) {
   const [rows] = await connection.execute(
     `
       SELECT
-        id,
-        sale_price AS salePrice,
-        discount_type AS discountType,
-        discount_value AS discountValue,
-        discounted_price AS discountedPrice,
-        weight_kg AS weightKg,
-        quantity_available AS quantityAvailable,
-        status
-      FROM articles
-      WHERE id = ?
+        a.id,
+        a.sale_price AS salePrice,
+        a.discount_type AS discountType,
+        a.discount_value AS discountValue,
+        a.discounted_price AS discountedPrice,
+        a.weight_kg AS weightKg,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
+        a.status AS publicationStatus
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id = ?
       LIMIT 1
       FOR UPDATE
     `,
@@ -527,7 +536,7 @@ async function getArticleForCart(articleId, connection) {
 
   const article = rows[0];
 
-  if (article.status !== 'ACTIVE') {
+  if (article.publicationStatus !== 'ACTIVE') {
     throw badRequest('Esta prenda no está disponible para agregar al carrito.');
   }
 
@@ -538,6 +547,7 @@ async function getArticleForCart(articleId, connection) {
     discountedPrice: Number(article.discountedPrice),
     weightKg: article.weightKg != null ? Number(article.weightKg) : 0,
     quantityAvailable: Number(article.quantityAvailable),
+    stockStatus: deriveStockStatus(article),
   };
 }
 
@@ -545,16 +555,19 @@ async function getArticleSnapshotForCartSync(articleId, connection) {
   const [rows] = await connection.execute(
     `
       SELECT
-        id,
-        sale_price AS salePrice,
-        discount_type AS discountType,
-        discount_value AS discountValue,
-        discounted_price AS discountedPrice,
-        weight_kg AS weightKg,
-        quantity_available AS quantityAvailable,
-        status
-      FROM articles
-      WHERE id = ?
+        a.id,
+        a.sale_price AS salePrice,
+        a.discount_type AS discountType,
+        a.discount_value AS discountValue,
+        a.discounted_price AS discountedPrice,
+        a.weight_kg AS weightKg,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
+        a.status AS publicationStatus
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id = ?
       LIMIT 1
       FOR UPDATE
     `,
@@ -573,6 +586,7 @@ async function getArticleSnapshotForCartSync(articleId, connection) {
     discountedPrice: Number(article.discountedPrice),
     weightKg: article.weightKg != null ? Number(article.weightKg) : 0,
     quantityAvailable: Number(article.quantityAvailable),
+    stockStatus: deriveStockStatus(article),
   };
 }
 

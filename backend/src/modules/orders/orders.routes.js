@@ -14,6 +14,7 @@ import {
   getAdminOrderReceiptPdf,
   getAdminOrders,
   shipAdminOrder,
+  updateAdminOrderTracking,
 } from './orders.controller.js';
 
 const publicRouter = Router();
@@ -28,6 +29,7 @@ adminRouter.post('/expire-reservations', asyncHandler(expireAdminOrderReservatio
 adminRouter.get('/:id/receipt.pdf', asyncHandler(getAdminOrderReceiptPdf));
 adminRouter.get('/:id', asyncHandler(getAdminOrder));
 adminRouter.post('/:id/payments', asyncHandler(createAdminOrderPayment));
+adminRouter.patch('/:id/tracking', requireRole('SUPER_ADMIN', 'ADMIN'), asyncHandler(updateAdminOrderTracking));
 adminRouter.patch('/:id/approve', asyncHandler(approveAdminOrder));
 adminRouter.patch('/:id/cancel', asyncHandler(cancelAdminOrder));
 adminRouter.patch('/:id/ship', asyncHandler(shipAdminOrder));

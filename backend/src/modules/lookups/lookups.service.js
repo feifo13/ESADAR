@@ -45,10 +45,11 @@ export async function listAvailableArticleBrands() {
         b.slug
       FROM brands b
       INNER JOIN articles a ON a.brand_id = b.id
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       WHERE
         b.is_active = 1
         AND a.status = 'ACTIVE'
-        AND COALESCE(a.quantity_available, 0) > 0
+        AND COALESCE(inv.quantity_available, 0) > 0
       ORDER BY b.name ASC
     `,
   );

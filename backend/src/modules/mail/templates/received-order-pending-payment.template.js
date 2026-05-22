@@ -31,7 +31,10 @@ function renderSummaryRow(label, value, options = {}) {
   `;
 }
 
-function renderPaymentInstructions(paymentInstructions) {
+const TRACKING_AVAILABILITY_COPY =
+  "Una vez aprobada y despachada la orden, te enviaremos el codigo de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.";
+
+function renderPaymentInstructions(paymentInstructions, orderLabel) {
   if (!paymentInstructions) return "";
 
   const fields = Array.isArray(paymentInstructions.fields)
@@ -41,7 +44,11 @@ function renderPaymentInstructions(paymentInstructions) {
   const checkoutUrl = paymentInstructions.checkoutUrl || "";
   const qrCodeUrl = paymentInstructions.qrCodeUrl || "";
   const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
-  if (!fields.length && !hasInstructions && !checkoutUrl && !qrCodeUrl) return "";
+  const isBankTransfer = paymentInstructions.method === "BANK_TRANSFER";
+  const transferReasonText = isBankTransfer && orderLabel
+    ? `Importante: en el motivo/concepto de la transferencia escribi tu numero de orden: ${orderLabel}.`
+    : "";
+  if (!fields.length && !hasInstructions && !checkoutUrl && !qrCodeUrl && !transferReasonText) return "";
 
   const rows = fields
     .map(
@@ -56,6 +63,9 @@ function renderPaymentInstructions(paymentInstructions) {
 
   const instructionsHtml = hasInstructions
     ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(paymentInstructions.instructions).replace(/\n/g, "<br />")}</p>`
+    : "";
+  const transferReasonHtml = transferReasonText
+    ? `<p style="margin:14px 0 0; padding:12px 14px; background:#eef4f5; border:1px solid rgba(0,142,151,0.28); color:#102b34; font-size:14px; line-height:1.5; font-weight:700;">${escapeHtml(transferReasonText)}</p>`
     : "";
 
   const mercadoPagoButtonHtml = isMercadoPago && checkoutUrl
@@ -95,6 +105,7 @@ function renderPaymentInstructions(paymentInstructions) {
           </table>
           ${mercadoPagoButtonHtml}
           ${qrHtml}
+          ${transferReasonHtml}
           ${instructionsHtml}
         </td>
       </tr>
@@ -102,14 +113,14 @@ function renderPaymentInstructions(paymentInstructions) {
   `;
 }
 
-function formatPaymentInstructionLines(paymentInstructions) {
+function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
   if (!paymentInstructions) return [];
   const lines = [];
   const fields = Array.isArray(paymentInstructions.fields)
     ? paymentInstructions.fields.filter((field) => field?.value)
     : [];
 
-  if (!fields.length && !paymentInstructions.instructions && !paymentInstructions.checkoutUrl) return lines;
+  if (!fields.length && !paymentInstructions.instructions && !paymentInstructions.checkoutUrl && !(paymentInstructions.method === "BANK_TRANSFER" && orderLabel)) return lines;
 
   lines.push("", paymentInstructions.title || "Datos de pago");
   fields.forEach((field) => lines.push(`${field.label}: ${field.value}`));
@@ -121,6 +132,9 @@ function formatPaymentInstructionLines(paymentInstructions) {
   }
   if (paymentInstructions.instructions) {
     lines.push(String(paymentInstructions.instructions));
+  }
+  if (paymentInstructions.method === "BANK_TRANSFER" && orderLabel) {
+    lines.push(`Importante: en el motivo/concepto de la transferencia escribi tu numero de orden: ${orderLabel}.`);
   }
   return lines;
 }
@@ -154,8 +168,16 @@ export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } 
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
   textLines.push(...formatOrderItemsTextLines(items));
-  textLines.push(...formatPaymentInstructionLines(paymentInstructions));
-  textLines.push("", "Los datos de pago también quedan incluidos en este correo.", "Podés revisar los detalles desde tu cuenta.", orderUrl, "", "Equipo ESADAR");
+  textLines.push(...formatPaymentInstructionLines(paymentInstructions, orderLabel));
+  textLines.push(
+    "",
+    "Los datos de pago también quedan incluidos en este correo.",
+    TRACKING_AVAILABILITY_COPY,
+    "Podés revisar los detalles desde tu cuenta.",
+    orderUrl,
+    "",
+    "Equipo ESADAR",
+  );
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
@@ -163,6 +185,7 @@ export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } 
     <p style="margin:0 0 14px;">La recepción del pago está <strong style="color:#102b34;">pendiente</strong>.</p>
     <p style="margin:0 0 18px;">Reservamos tu orden por <strong style="color:#102b34;">24 horas</strong>.</p>
     <p style="margin:0 0 18px;">Los datos de pago también quedan incluidos en este correo. El comprobante PDF se enviará cuando la orden sea aprobada.</p>
+    <p style="margin:0 0 18px; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(TRACKING_AVAILABILITY_COPY)}</p>
   `;
 
   const detailsHtml = `
@@ -180,7 +203,7 @@ export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } 
         </td>
       </tr>
     </table>
-    ${renderPaymentInstructions(paymentInstructions)}
+    ${renderPaymentInstructions(paymentInstructions, orderLabel)}
     ${renderOrderItemsTable(items, urlOptions)}
   `;
 

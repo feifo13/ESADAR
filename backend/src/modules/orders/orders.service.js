@@ -15,10 +15,10 @@ import {
 } from "../../utils/sql-safety.js";
 import { logAudit } from "../audit/audit.service.js";
 import {
-  markReservedStockAsSold,
-  releaseArticleStockFromOrder,
-  reserveArticleStockForOrder,
-} from "../articles/article-stock.service.js";
+  confirmSale,
+  releaseReservation,
+  reserveForOrder,
+} from "../inventory/inventory.service.js";
 import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   sendApprovedOrderEmail,
@@ -42,6 +42,16 @@ const ORDER_SORTS = {
   customerName: (direction) =>
     `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
 };
+
+function parseJsonValue(value) {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
 
 function buildOrderItemCostSnapshot(article, quantity, lineTotal) {
   const itemQuantity = Number(quantity || 0);
@@ -111,10 +121,10 @@ export async function createOrder(input, actor, auditContext) {
           a.purchase_price_courier AS purchasePriceCourier,
           a.purchase_price_total AS purchasePriceTotal,
           a.weight_kg AS weightKg,
-          a.quantity_available AS quantityAvailable,
-          a.quantity_reserved AS quantityReserved,
-          a.quantity_sold AS quantitySold,
-          a.status,
+          inv.quantity_available AS quantityAvailable,
+          inv.quantity_reserved AS quantityReserved,
+          inv.quantity_sold AS quantitySold,
+          a.status AS publicationStatus,
           c.name AS categoryName,
           b.name AS brandName,
           COALESCE(s.code, a.size_text) AS sizeSnapshot,
@@ -126,6 +136,7 @@ export async function createOrder(input, actor, auditContext) {
             LIMIT 1
           ) AS imageSnapshot
         FROM articles a
+        INNER JOIN article_inventory inv ON inv.article_id = a.id
         INNER JOIN categories c ON c.id = a.category_id
         LEFT JOIN brands b ON b.id = a.brand_id
         LEFT JOIN sizes s ON s.id = a.size_id
@@ -150,7 +161,7 @@ export async function createOrder(input, actor, auditContext) {
       if (!article) {
         throw notFound(`Articulo ${articleId} no encontrado.`);
       }
-      if (article.status !== "ACTIVE") {
+      if (article.publicationStatus !== "ACTIVE") {
         throw badRequest(
           `La prenda ${article.id} no está disponible para comprar.`,
         );
@@ -418,11 +429,11 @@ export async function createOrder(input, actor, auditContext) {
     }
 
     for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
-      await reserveArticleStockForOrder(connection, {
+      await reserveForOrder(connection, {
         articleId,
         quantity,
         orderId,
-        auditContext,
+        userId: auditContext.actorUserId || null,
         reason: "Orden creada, stock reservado",
       });
     }
@@ -586,6 +597,7 @@ export async function listOrders({ filters, pagination }) {
         o.approved_at AS approvedAt,
         o.cancelled_at AS cancelledAt,
         o.shipped_at AS shippedAt,
+        o.tracking_code AS trackingCode,
         COALESCE(c.first_name, pc.first_name) AS customerFirstName,
         COALESCE(c.last_name, pc.last_name) AS customerLastName,
         COALESCE(c.email, pc.email) AS customerEmail,
@@ -745,11 +757,11 @@ export async function approveOrder(id, auditContext) {
     for (const [articleId, quantity] of aggregateOrderItemQuantities(
       items,
     ).entries()) {
-      await markReservedStockAsSold(connection, {
+      await confirmSale(connection, {
         articleId,
         quantity,
         orderId: id,
-        auditContext,
+        userId: auditContext.actorUserId || null,
         reason: "Aprobada por administracion",
       });
     }
@@ -821,13 +833,12 @@ export async function cancelOrder(id, reason, auditContext) {
     for (const [articleId, quantity] of aggregateOrderItemQuantities(
       items,
     ).entries()) {
-      await releaseArticleStockFromOrder(connection, {
+      await releaseReservation(connection, {
         articleId,
         quantity,
         orderId: id,
-        auditContext,
+        userId: auditContext.actorUserId || null,
         reason: reason || "Orden cancelada",
-        movementType: "CANCEL_ORDER",
       });
     }
 
@@ -968,6 +979,90 @@ export async function shipOrder(id, auditContext) {
   });
 
   return order;
+}
+
+export async function updateOrderTrackingCode(id, input, auditContext) {
+  return withTransaction(async (connection) => {
+    await lockOrderForUpdate(id, connection);
+    const before = await getOrderById(id, connection);
+    const trackingCode = String(input.trackingCode || '').trim() || null;
+    const previousTrackingCode = before.trackingCode || null;
+
+    if (previousTrackingCode === trackingCode) {
+      return before;
+    }
+
+    await connection.execute(
+      `
+        UPDATE orders
+        SET
+          tracking_code = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [trackingCode, auditContext.actorUserId || null, id],
+    );
+
+    const shippingMethod =
+      before.shippingMethodDescription ||
+      before.shippingMethodName ||
+      'Sin datos';
+    const trackingReason = trackingCode
+      ? 'Seguimiento actualizado'
+      : 'Seguimiento limpiado';
+
+    await connection.execute(
+      `
+        INSERT INTO order_status_history (
+          event_type,
+          order_id,
+          from_status,
+          to_status,
+          reason,
+          metadata_json,
+          changed_by,
+          source
+        ) VALUES ('TRACKING_UPDATED', ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        id,
+        before.orderStatus,
+        before.orderStatus,
+        trackingReason,
+        JSON.stringify({
+          trackingCode,
+          previousTrackingCode,
+          shippingMethod,
+        }),
+        auditContext.actorUserId || null,
+        auditContext.source,
+      ],
+    );
+
+    const after = await getOrderById(id, connection);
+
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'ORDER_TRACKING_UPDATED',
+        entityType: 'orders',
+        entityId: id,
+        beforeJson: { trackingCode: before.trackingCode || null },
+        afterJson: { trackingCode: after.trackingCode || null },
+        metadataJson: {
+          orderNumber: after.orderNumber,
+          cleared: !after.trackingCode,
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
 }
 
 export async function createOrderPayment(id, input, auditContext) {
@@ -1168,11 +1263,11 @@ export async function applyMercadoPagoPaymentToOrder(
         for (const [articleId, quantity] of aggregateOrderItemQuantities(
           items,
         ).entries()) {
-          await markReservedStockAsSold(connection, {
+          await confirmSale(connection, {
             articleId,
             quantity,
             orderId: before.id,
-            auditContext,
+            userId: auditContext.actorUserId || null,
             reason: "Pago aprobado automáticamente por Mercado Pago",
           });
         }
@@ -1613,6 +1708,7 @@ async function getOrderById(id, connection) {
         o.shipped_at AS shippedAt,
         o.cancellation_reason AS cancellationReason,
         o.internal_notes AS internalNotes,
+        o.tracking_code AS trackingCode,
         o.created_at AS createdAt,
         o.updated_at AS updatedAt,
         COALESCE(c.first_name, pc.first_name) AS customerFirstName,
@@ -1682,16 +1778,21 @@ async function getOrderById(id, connection) {
   const [historyRows] = await connection.execute(
     `
       SELECT
-        id,
-        from_status AS fromStatus,
-        to_status AS toStatus,
-        reason,
-        changed_at AS changedAt,
-        changed_by AS changedBy,
-        source
+        osh.id,
+        osh.event_type AS eventType,
+        osh.from_status AS fromStatus,
+        osh.to_status AS toStatus,
+        osh.reason,
+        osh.metadata_json AS metadataJson,
+        osh.changed_at AS changedAt,
+        osh.changed_by AS changedBy,
+        osh.source,
+        CONCAT_WS(' ', u.first_name, u.last_name) AS changedByName
       FROM order_status_history
-      WHERE order_id = ?
-      ORDER BY id ASC
+      osh
+      LEFT JOIN users u ON u.id = osh.changed_by
+      WHERE osh.order_id = ?
+      ORDER BY osh.id ASC
     `,
     [id],
   );
@@ -1750,7 +1851,11 @@ async function getOrderById(id, connection) {
         }
       : null,
   }));
-  order.history = historyRows;
+  order.history = historyRows.map((row) => ({
+    ...row,
+    eventType: row.eventType || 'STATUS_CHANGE',
+    metadataJson: parseJsonValue(row.metadataJson),
+  }));
   order.payments = paymentRows.map((row) => ({
     ...row,
     amount: Number(row.amount),
@@ -1969,6 +2074,7 @@ function normalizeOrderListRow(row) {
     approvedAt: row.approvedAt,
     cancelledAt: row.cancelledAt,
     shippedAt: row.shippedAt,
+    trackingCode: row.trackingCode || null,
     itemCount: Number(row.itemCount),
     totalQuantity: Number(row.totalQuantity || 0),
     previewImage: row.previewImage,
@@ -2001,6 +2107,7 @@ function normalizeOrderDetailRow(row) {
     approvedAt: row.approvedAt,
     cancelledAt: row.cancelledAt,
     shippedAt: row.shippedAt,
+    trackingCode: row.trackingCode || null,
     cancellationReason: row.cancellationReason,
     internalNotes: row.internalNotes,
     createdAt: row.createdAt,

@@ -91,7 +91,7 @@ function escapeXml(value) {
 
 function buildGoogleAvailability(article) {
   return Number(article.quantityAvailable || 0) > 0 &&
-    article.status === "ACTIVE"
+    article.publicationStatus === "ACTIVE"
     ? "in stock"
     : "out of stock";
 }
@@ -244,7 +244,7 @@ async function listIndexableArticles() {
         a.slug,
         a.updated_at AS updatedAt
       FROM articles a
-      WHERE a.status IN ('ACTIVE', 'SOLD_OUT')
+      WHERE a.status = 'ACTIVE'
       ORDER BY a.updated_at DESC, a.id DESC
     `,
   );
@@ -304,8 +304,8 @@ async function listFeedArticles() {
         a.description,
         a.sale_price AS salePrice,
         a.discounted_price AS discountedPrice,
-        a.status,
-        a.quantity_available AS quantityAvailable,
+        a.status AS publicationStatus,
+        inv.quantity_available AS quantityAvailable,
         a.google_product_category AS googleProductCategory,
         a.color,
         a.material,
@@ -313,8 +313,9 @@ async function listFeedArticles() {
         a.age_group AS ageGroup,
         b.name AS brandName
       FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
       LEFT JOIN brands b ON b.id = a.brand_id
-      WHERE a.status IN ('ACTIVE', 'SOLD_OUT')
+      WHERE a.status = 'ACTIVE'
       ORDER BY a.updated_at DESC, a.id DESC
     `,
   );

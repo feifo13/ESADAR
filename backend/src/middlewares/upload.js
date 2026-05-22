@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { env } from '../config/env.js';
 
 fs.mkdirSync(env.articleUploadDir, { recursive: true });
+const siteHeroUploadDir = path.join(env.uploadDir, 'site-hero');
+fs.mkdirSync(siteHeroUploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, env.articleUploadDir),
@@ -28,6 +30,23 @@ export const uploadArticleImages = multer({
   limits: {
     fileSize: env.maxUploadBytes,
     files: 10,
+  },
+});
+
+const siteHeroStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, siteHeroUploadDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    cb(null, `${Date.now()}-${randomUUID()}${ext}`);
+  },
+});
+
+export const uploadSiteHeroImage = multer({
+  storage: siteHeroStorage,
+  fileFilter,
+  limits: {
+    fileSize: env.maxUploadBytes,
+    files: 1,
   },
 });
 

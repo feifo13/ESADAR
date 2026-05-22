@@ -10,8 +10,8 @@
 --   - carritos, ordenes, pagos, webhooks, ofertas, leads, contactos,
 --     wishlists, alertas, auditoria, logs de cliente e importaciones
 -- Ajusta todas las prendas existentes a:
---   quantity_total = 100, quantity_available = 100,
---   quantity_reserved = 0, quantity_sold = 0, status = ACTIVE
+--   article_inventory total/disponible = 100,
+--   reservado/vendido/perdido = 0, articles.status = ACTIVE
 -- =========================================================
 
 SET NAMES utf8mb4;
@@ -45,7 +45,7 @@ DELETE FROM potential_customers;
 DELETE FROM password_reset_tokens;
 DELETE FROM article_import_batch_items;
 DELETE FROM article_import_batches;
-DELETE FROM article_stock_movements;
+DELETE FROM article_inventory_movements;
 
 -- Se conservan perfiles CUSTOMER vinculados a usuarios reales.
 DELETE ca
@@ -81,7 +81,7 @@ ALTER TABLE potential_customers AUTO_INCREMENT = 1;
 ALTER TABLE password_reset_tokens AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batch_items AUTO_INCREMENT = 1;
 ALTER TABLE article_import_batches AUTO_INCREMENT = 1;
-ALTER TABLE article_stock_movements AUTO_INCREMENT = 1;
+ALTER TABLE article_inventory_movements AUTO_INCREMENT = 1;
 
 SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;
 
@@ -331,9 +331,60 @@ ON DUPLICATE KEY UPDATE
   is_indexable = VALUES(is_indexable);
 
 UPDATE articles
-SET quantity_total = 100,
-    quantity_available = 100,
-    quantity_reserved = 0,
-    quantity_sold = 0,
-    status = 'ACTIVE',
+SET status = 'ACTIVE',
     updated_by = @admin_user_id;
+
+INSERT INTO article_inventory (
+  article_id,
+  quantity_total,
+  quantity_available,
+  quantity_reserved,
+  quantity_sold,
+  quantity_lost,
+  updated_by
+)
+SELECT
+  id,
+  100,
+  100,
+  0,
+  0,
+  0,
+  @admin_user_id
+FROM articles
+ON DUPLICATE KEY UPDATE
+  quantity_total = VALUES(quantity_total),
+  quantity_available = VALUES(quantity_available),
+  quantity_reserved = VALUES(quantity_reserved),
+  quantity_sold = VALUES(quantity_sold),
+  quantity_lost = VALUES(quantity_lost),
+  updated_by = VALUES(updated_by);
+
+INSERT INTO article_inventory_movements (
+  article_id,
+  movement_type,
+  available_delta,
+  reserved_delta,
+  sold_delta,
+  lost_delta,
+  quantity_available_after,
+  quantity_reserved_after,
+  quantity_sold_after,
+  quantity_lost_after,
+  reason,
+  created_by
+)
+SELECT
+  article_id,
+  'MANUAL_ADJUSTMENT',
+  quantity_available,
+  0,
+  0,
+  0,
+  quantity_available,
+  quantity_reserved,
+  quantity_sold,
+  quantity_lost,
+  'Reset operativo stock 100',
+  @admin_user_id
+FROM article_inventory;

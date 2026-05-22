@@ -7,6 +7,7 @@ import {
   getOrderDetail,
   listOrders,
   shipOrder,
+  updateOrderTrackingCode,
 } from './orders.service.js';
 import { expireReservedOrders } from './orders.expiration.service.js';
 import {
@@ -16,6 +17,7 @@ import {
   batchOrderActionSchema,
   adminOrderListQuerySchema,
   expireReservationsSchema,
+  orderTrackingUpdateSchema,
 } from './orders.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
@@ -102,6 +104,16 @@ export async function expireAdminOrderReservations(req, res) {
 
 export async function shipAdminOrder(req, res) {
   const order = await shipOrder(parsePositiveIntParam(req.params.id, 'id'), getAuditContext(req));
+  return res.json({ ok: true, order });
+}
+
+export async function updateAdminOrderTracking(req, res) {
+  const input = orderTrackingUpdateSchema.parse(req.body);
+  const order = await updateOrderTrackingCode(
+    parsePositiveIntParam(req.params.id, 'id'),
+    input,
+    getAuditContext(req),
+  );
   return res.json({ ok: true, order });
 }
 

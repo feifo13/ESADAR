@@ -30,6 +30,35 @@ const PAYMENT_STATUS_LABELS = {
   PAID: 'Pagado',
 };
 
+function getHistoryMetadata(entry) {
+  const metadata = entry?.metadataJson ?? entry?.metadata ?? null;
+  if (!metadata) return {};
+  if (typeof metadata === 'object') return metadata;
+  try {
+    return JSON.parse(metadata);
+  } catch {
+    return {};
+  }
+}
+
+function isTrackingHistoryEntry(entry) {
+  return entry?.eventType === 'TRACKING_UPDATED';
+}
+
+function getTrackingHistoryDetails(entry, order) {
+  const metadata = getHistoryMetadata(entry);
+  const trackingCode = String(metadata.trackingCode || '').trim();
+  return {
+    trackingCode,
+    shippingMethod:
+      metadata.shippingMethod ||
+      order?.shippingMethodDescription ||
+      order?.shippingMethodName ||
+      'Sin datos',
+    isCleared: !trackingCode,
+  };
+}
+
 export default function AdminOrderDetailPage() {
   const { id } = useParams();
   const { notifySuccess, notifyError } = useNotification();
@@ -39,6 +68,8 @@ export default function AdminOrderDetailPage() {
   const [message, setMessage] = useState('');
   const [cancelReason, setCancelReason] = useState('');
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [trackingCode, setTrackingCode] = useState('');
+  const [trackingSubmitting, setTrackingSubmitting] = useState(false);
 
   async function loadOrder() {
     try {
@@ -46,6 +77,7 @@ export default function AdminOrderDetailPage() {
       setError('');
       const response = await apiFetch(`/api/admin/orders/${id}`);
       setOrder(response.order);
+      setTrackingCode(response.order?.trackingCode || '');
     } catch (err) {
       setError(err.message || 'No se pudo cargar la orden');
     } finally {
@@ -134,6 +166,33 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  async function handleSaveTracking(event) {
+    event.preventDefault();
+
+    try {
+      setTrackingSubmitting(true);
+      setError('');
+      setMessage('');
+      const response = await apiFetch(`/api/admin/orders/${id}/tracking`, {
+        method: 'PATCH',
+        body: { trackingCode },
+      });
+      setOrder(response.order);
+      setTrackingCode(response.order?.trackingCode || '');
+      const successMessage = response.order?.trackingCode
+        ? 'Codigo de seguimiento guardado.'
+        : 'Codigo de seguimiento limpiado.';
+      setMessage(successMessage);
+      notifySuccess(successMessage);
+    } catch (err) {
+      const errorMessage = err.message || 'No se pudo guardar el seguimiento';
+      setError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setTrackingSubmitting(false);
+    }
+  }
+
   if (loading) {
     return <div className="container section-card centered-card"><AppLoader variant="card" label="Cargando orden" /></div>;
   }
@@ -185,6 +244,10 @@ export default function AdminOrderDetailPage() {
             <span>Envío</span>
             <strong>{order.shippingMethodDescription || order.shippingMethodName || "Sin datos"}</strong>
           </p>
+          <p className="summary-line">
+            <span>Seguimiento</span>
+            <strong>{order.trackingCode || "Sin cargar"}</strong>
+          </p>
           <p className="summary-line total">
             <span>Total</span>
             <strong>{formatCurrency(order.total)}</strong>
@@ -228,13 +291,38 @@ export default function AdminOrderDetailPage() {
             <div className="section-card nested-card">
               <h3>Historial</h3>
               <div className="history-list">
-                {order.history.map((entry) => (
-                  <div key={entry.id} className="history-row">
-                    <strong><StatusBadge status={entry.toStatus} labels={HISTORY_STATUS_LABELS} /></strong>
-                    <span>{entry.reason}</span>
-                    <span>{formatDate(entry.changedAt)}</span>
-                  </div>
-                ))}
+                {(order.history || []).map((entry) => {
+                  if (isTrackingHistoryEntry(entry)) {
+                    const tracking = getTrackingHistoryDetails(entry, order);
+                    return (
+                      <div key={entry.id} className="history-row">
+                        <strong>{entry.reason || 'Seguimiento actualizado'}</strong>
+                        <span>
+                          Método de envío: {tracking.shippingMethod}
+                          <br />
+                          {tracking.isCleared
+                            ? 'Código de seguimiento limpiado'
+                            : `Código de seguimiento: ${tracking.trackingCode}`}
+                          {entry.changedByName ? (
+                            <>
+                              <br />
+                              Admin: {entry.changedByName}
+                            </>
+                          ) : null}
+                        </span>
+                        <span>{formatDate(entry.changedAt)}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={entry.id} className="history-row">
+                      <strong><StatusBadge status={entry.toStatus} labels={HISTORY_STATUS_LABELS} /></strong>
+                      <span>{entry.reason}</span>
+                      <span>{formatDate(entry.changedAt)}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -261,6 +349,26 @@ export default function AdminOrderDetailPage() {
               <p className="muted-copy">Cancelada: {formatDate(order.cancelledAt)}</p>
               <p className="muted-copy">Estado de pago: <strong><StatusBadge status={order.paymentStatus} labels={PAYMENT_STATUS_LABELS} /></strong></p>
             </div>
+
+            <form className="section-card nested-card stack-gap-sm admin-order-side-card" onSubmit={handleSaveTracking}>
+              <h3>Seguimiento</h3>
+              <label className="field-group">
+                <span>Codigo de seguimiento</span>
+                <input
+                  className="input"
+                  value={trackingCode}
+                  onChange={(event) => setTrackingCode(event.target.value)}
+                  maxLength={120}
+                  placeholder="Ej: UY123456789"
+                />
+                <span className="field-helper">
+                  Se informa al cliente en el mail de orden enviada.
+                </span>
+              </label>
+              <button type="submit" className="button button-secondary" disabled={trackingSubmitting}>
+                {trackingSubmitting ? 'Guardando...' : 'Guardar seguimiento'}
+              </button>
+            </form>
 
             <div className="section-card nested-card stack-gap-sm admin-order-side-card">
               <h3>Pagos</h3>

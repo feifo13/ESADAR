@@ -30,6 +30,35 @@ const PAYMENT_STATUS_LABELS = {
   PAID: "Pagado",
 };
 
+function getHistoryMetadata(entry) {
+  const metadata = entry?.metadataJson ?? entry?.metadata ?? null;
+  if (!metadata) return {};
+  if (typeof metadata === "object") return metadata;
+  try {
+    return JSON.parse(metadata);
+  } catch {
+    return {};
+  }
+}
+
+function isTrackingHistoryEntry(entry) {
+  return entry?.eventType === "TRACKING_UPDATED";
+}
+
+function getTrackingHistoryDetails(entry, order) {
+  const metadata = getHistoryMetadata(entry);
+  const trackingCode = String(metadata.trackingCode || "").trim();
+  return {
+    trackingCode,
+    shippingMethod:
+      metadata.shippingMethod ||
+      order?.shippingMethodDescription ||
+      order?.shippingMethodName ||
+      "Sin datos",
+    isCleared: !trackingCode,
+  };
+}
+
 export default function AccountOrderDetailPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -161,6 +190,12 @@ export default function AccountOrderDetailPage() {
                     "Sin datos"}
                 </strong>
               </p>
+              {order.trackingCode ? (
+                <p className="summary-line">
+                  <span>Código de seguimiento</span>
+                  <strong>{order.trackingCode}</strong>
+                </p>
+              ) : null}
               <p className="summary-line">
                 <span>Peso aprox.</span>
                 <strong>{formatWeightKg(order.packageWeightKg)}</strong>
@@ -210,20 +245,42 @@ export default function AccountOrderDetailPage() {
               </div>
               <div className="history-list">
                 {(order.history || []).length ? (
-                  order.history.map((entry) => (
-                    <article key={entry.id} className="history-row">
-                      <div>
-                        <StatusBadge
-                          status={entry.toStatus}
-                          labels={ORDER_STATUS_LABELS}
-                        />
-                        <p className="muted-copy">
-                          {entry.reason || "Sin comentario adicional"}
-                        </p>
-                      </div>
-                      <span>{formatDate(entry.changedAt)}</span>
-                    </article>
-                  ))
+                  order.history.map((entry) => {
+                    if (isTrackingHistoryEntry(entry)) {
+                      const tracking = getTrackingHistoryDetails(entry, order);
+                      return (
+                        <article key={entry.id} className="history-row">
+                          <div>
+                            <strong>{entry.reason || "Seguimiento actualizado"}</strong>
+                            <p className="muted-copy">
+                              Método de envío: {tracking.shippingMethod}
+                            </p>
+                            <p className="muted-copy">
+                              {tracking.isCleared
+                                ? "Código de seguimiento limpiado"
+                                : `Código de seguimiento: ${tracking.trackingCode}`}
+                            </p>
+                          </div>
+                          <span>{formatDate(entry.changedAt)}</span>
+                        </article>
+                      );
+                    }
+
+                    return (
+                      <article key={entry.id} className="history-row">
+                        <div>
+                          <StatusBadge
+                            status={entry.toStatus}
+                            labels={ORDER_STATUS_LABELS}
+                          />
+                          <p className="muted-copy">
+                            {entry.reason || "Sin comentario adicional"}
+                          </p>
+                        </div>
+                        <span>{formatDate(entry.changedAt)}</span>
+                      </article>
+                    );
+                  })
                 ) : (
                   <p className="muted-copy">
                     Todavía no hay cambios registrados.

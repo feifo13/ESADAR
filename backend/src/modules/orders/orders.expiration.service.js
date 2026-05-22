@@ -1,7 +1,7 @@
 import { withTransaction } from '../../db/transaction.js';
 import { buildSqlLimitClause } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
-import { releaseArticleStockFromOrder } from '../articles/article-stock.service.js';
+import { releaseReservation } from '../inventory/inventory.service.js';
 import { restoreUsedOffersForOrder } from '../offers/offers.service.js';
 
 function toMysqlDateTime(value) {
@@ -48,13 +48,12 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
       );
 
       for (const item of items) {
-        await releaseArticleStockFromOrder(connection, {
+        await releaseReservation(connection, {
           articleId: Number(item.articleId),
           quantity: Number(item.quantity || 0),
           orderId: Number(order.id),
-          auditContext,
+          userId: auditContext.actorUserId || null,
           reason: 'Reserva vencida',
-          movementType: 'RELEASE_RESERVATION',
         });
       }
 

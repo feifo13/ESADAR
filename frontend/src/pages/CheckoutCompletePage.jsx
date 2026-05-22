@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+﻿import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
 import { formatCurrency } from "../lib/format.js";
@@ -118,12 +118,11 @@ export default function CheckoutCompletePage() {
         <h2>{transferLabel}</h2>
         <p className="checkout-complete-copy">
           Para completar la compra, realiza la transferencia con los datos de
-          cobro configurados en ESADAR. Estos datos también serán enviados por
+          cobro configurados en ESADAR. Estos datos tambiÃ©n serÃ¡n enviados por
           correo para que los tengas a mano.
         </p>
         <p className="checkout-complete-copy">
-          En referencia o comentario usa el número de orden para que podamos
-          validar el pago más rápido.
+          Importante: en el motivo/concepto de la transferencia escribi tu numero de orden: {completedOrder.orderNumber}.
         </p>
 
         <div className="checkout-complete-payment-details">
@@ -176,14 +175,17 @@ export default function CheckoutCompletePage() {
           <p className="section-kicker">Compra confirmada</p>
           <h1>Muchas gracias por tu compra</h1>
           <p className="checkout-complete-copy">
-            Tu orden quedó registrada correctamente y permanece pendiente de
-            validación manual.
+            Tu orden quedÃ³ registrada correctamente y permanece pendiente de
+            validaciÃ³n manual.
           </p>
           <p className="checkout-complete-copy">
             Tienes <strong>24 horas</strong> para completar el pago.
           </p>
           <p className="checkout-complete-order">
             Orden <strong>{completedOrder.orderNumber}</strong>
+          </p>
+          <p className="checkout-complete-copy">
+            Una vez aprobada y despachada la orden, te enviaremos el codigo de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
           </p>
 
           {renderTransferDetails()}

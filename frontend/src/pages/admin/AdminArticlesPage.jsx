@@ -27,11 +27,21 @@ import { focusValidationTarget, notifyFormStatus } from "../../lib/validation.js
 import AppLoader from "../../components/AppLoader.jsx";
 
 const ARTICLE_STATUS_LABELS = {
+  DRAFT: "Borrador",
   ACTIVE: "Activa",
   INACTIVE: "Inactiva",
+  ARCHIVED: "Archivada",
   RESERVED: "Reservada",
   SOLD_OUT: "Agotada",
 };
+
+const STOCK_STATUS_LABELS = {
+  ACTIVE: "Disponible",
+  RESERVED: "Reservada",
+  SOLD_OUT: "Agotada",
+};
+
+const STOCK_STATUS_FILTERS = new Set(["RESERVED", "SOLD_OUT"]);
 
 const initialFilters = {
   q: "",
@@ -69,9 +79,22 @@ function normalizeArticleFlags(article) {
   };
 }
 
+function getPublicationStatus(article) {
+  return article?.publicationStatus || article?.status || "ACTIVE";
+}
+
+function getStockStatus(article) {
+  return article?.stockStatus || "ACTIVE";
+}
+
 function articleStillMatchesVisibleFilters(article, filters) {
   if (!article) return false;
-  if (filters.status && article.status !== filters.status) return false;
+  if (filters.status) {
+    const visibleStatus = STOCK_STATUS_FILTERS.has(filters.status)
+      ? getStockStatus(article)
+      : getPublicationStatus(article);
+    if (visibleStatus !== filters.status) return false;
+  }
   if (filters.featured !== "" && asBooleanFlag(article.isFeatured) !== (filters.featured === "true")) return false;
   if (filters.offerable !== "" && asBooleanFlag(article.allowOffers) !== (filters.offerable === "true")) return false;
   return true;
@@ -500,10 +523,10 @@ export default function AdminArticlesPage() {
     const config = {
       status: {
         payload: {
-          status: article.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+          status: getPublicationStatus(article) === "ACTIVE" ? "INACTIVE" : "ACTIVE",
         },
         success:
-          article.status === "ACTIVE"
+          getPublicationStatus(article) === "ACTIVE"
             ? "Artículo desactivado correctamente."
             : "Artículo activado correctamente.",
         fallbackError: "No se pudo actualizar el estado del artículo.",
@@ -525,17 +548,6 @@ export default function AdminArticlesPage() {
     }[field];
 
     if (!config) return;
-
-    if (
-      field === "status" &&
-      config.payload.status === "ACTIVE" &&
-      Number(article.quantityAvailable || 0) <= 0
-    ) {
-      const errorMessage = "No se puede activar un articulo sin stock disponible.";
-      setError(errorMessage);
-      notifyError(errorMessage);
-      return;
-    }
 
     const pendingKey = `${article.id}:${field}`;
 
@@ -709,8 +721,10 @@ export default function AdminArticlesPage() {
                 onChange={(event) => updateDraft("status", event.target.value)}
               >
                 <option value="">Todos</option>
+                <option value="DRAFT">Borradores</option>
                 <option value="ACTIVE">Activas</option>
                 <option value="INACTIVE">Inactivas</option>
+                <option value="ARCHIVED">Archivadas</option>
                 <option value="RESERVED">Reservadas</option>
                 <option value="SOLD_OUT">Agotadas</option>
               </select>
@@ -1201,17 +1215,25 @@ export default function AdminArticlesPage() {
                             )}
                           </strong>
                         </td>
-                        <td>{article.quantityAvailable}</td>
+                        <td>
+                          <div className="cell-stack">
+                            <strong>{article.quantityAvailable}</strong>
+                            <StatusBadge
+                              status={getStockStatus(article)}
+                              labels={STOCK_STATUS_LABELS}
+                            />
+                          </div>
+                        </td>
                         <td>
                           <StatusBadge
-                            status={article.status}
+                            status={getPublicationStatus(article)}
                             labels={ARTICLE_STATUS_LABELS}
                           />
                         </td>
                         <td>
                           <div className="admin-article-toggles">
                             <QuickToggle
-                              checked={article.status === "ACTIVE"}
+                              checked={getPublicationStatus(article) === "ACTIVE"}
                               pending={Boolean(pendingToggles[`${article.id}:status`])}
                               disabled={Boolean(pendingToggles[`${article.id}:status`])}
                               label="Activo"
@@ -1267,7 +1289,7 @@ export default function AdminArticlesPage() {
                               <EditIcon />
                               {/* <span className="admin-action-label">Editar</span> */}
                             </Link>
-                            {article.status !== "INACTIVE" ? (
+                            {getPublicationStatus(article) !== "INACTIVE" ? (
                               <button
                                 type="button"
                                 className="button button-secondary button-compact admin-icon-action"

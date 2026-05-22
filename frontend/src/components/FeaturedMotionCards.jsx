@@ -67,7 +67,7 @@ export default function FeaturedMotionCards({
     const price = getDiscountedPrice(article);
     const soldOut =
       Number(article.quantityAvailable || 0) <= 0 ||
-      article.status === "SOLD_OUT";
+      article.stockStatus === "SOLD_OUT";
     const saved = isSaved(article.id);
     const pending = pendingIds.includes(Number(article.id));
 
@@ -83,7 +83,9 @@ export default function FeaturedMotionCards({
       discountType: article.discountType,
       discountValue: article.discountValue,
       discountedPrice: article.discountedPrice,
-      status: article.status,
+      status: article.stockStatus || article.status,
+      stockStatus: article.stockStatus,
+      publicationStatus: article.publicationStatus,
       conditionLabel: article.conditionLabel,
       color: article.color,
       material: article.material,
