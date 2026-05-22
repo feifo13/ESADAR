@@ -15901,6 +15901,79 @@ dialog,
   }
 }
 
+.site-hero {
+  --site-hero-height: 42vh;
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.site-hero--half-screen {
+  --site-hero-height: 50vh;
+}
+
+.site-hero--full-screen {
+  --site-hero-height: 100vh;
+}
+
+@supports (height: 100svh) {
+  .site-hero--full-screen {
+    --site-hero-height: 100svh;
+  }
+}
+
+.site-hero--custom {
+  --site-hero-height: var(--hero-height, 70vh);
+}
+
+.site-hero--configured {
+  padding: 0 0 8px;
+}
+
+.site-hero__media,
+.site-hero--configured.site-hero--carousel .hero-carousel {
+  width: 100%;
+  min-height: var(--site-hero-height);
+}
+
+.site-hero--configured.site-hero--carousel .hero-carousel {
+  border-inline: 0;
+  box-shadow: none;
+  max-height: none;
+}
+
+.site-hero--configured.site-hero--carousel .hero-carousel__slide {
+  flex: 0 0 100vw;
+  width: 100vw;
+  min-height: var(--site-hero-height);
+  aspect-ratio: auto;
+}
+
+.site-hero--configured.site-hero--carousel .hero-carousel__image,
+.site-hero__image {
+  display: block;
+  width: 100%;
+  height: var(--site-hero-height);
+  min-height: var(--site-hero-height);
+  object-fit: cover;
+  object-position: center;
+}
+
+.site-hero--single .site-hero__media {
+  overflow: hidden;
+  background: var(--surface);
+}
+
+@media (max-width: 780px) {
+  .site-hero--half-screen {
+    --site-hero-height: 50svh;
+  }
+
+  .site-hero--custom {
+    --site-hero-height: min(var(--hero-height, 70vh), 90svh);
+  }
+}
+
 /* Iteration: wrap the /admin/orders/:id title area in its own card so it breathes like the rest of the detail sections. */
 .admin-order-detail-shell {
   gap: clamp(16px, 2vw, 24px);

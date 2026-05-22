@@ -46,7 +46,7 @@ export const uploadSiteHeroImage = multer({
   fileFilter,
   limits: {
     fileSize: env.maxUploadBytes,
-    files: 1,
+    files: 10,
   },
 });
 

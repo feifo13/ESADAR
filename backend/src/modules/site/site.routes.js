@@ -17,6 +17,13 @@ publicRouter.get('/hero', asyncHandler(getSiteHero));
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/hero', asyncHandler(getAdminHero));
 adminRouter.put('/hero', asyncHandler(putAdminHero));
-adminRouter.post('/hero/image', uploadSiteHeroImage.single('image'), asyncHandler(postAdminHeroImage));
+adminRouter.post(
+  '/hero/image',
+  uploadSiteHeroImage.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'images', maxCount: 10 },
+  ]),
+  asyncHandler(postAdminHeroImage),
+);
 
 export { adminRouter, publicRouter };

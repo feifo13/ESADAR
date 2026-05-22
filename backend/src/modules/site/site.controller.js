@@ -23,6 +23,6 @@ export async function putAdminHero(req, res) {
 
 export async function postAdminHeroImage(req, res) {
   const input = siteHeroImageUpdateSchema.parse(req.body);
-  const hero = await updateAdminSiteHeroImage(req.file, input, getAuditContext(req));
+  const hero = await updateAdminSiteHeroImage(req.files || req.file, input, getAuditContext(req));
   return res.status(201).json({ ok: true, hero });
 }

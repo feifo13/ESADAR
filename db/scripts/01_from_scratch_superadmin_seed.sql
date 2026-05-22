@@ -974,6 +974,9 @@ CREATE TABLE site_hero (
   subtitle VARCHAR(500) NULL,
   cta_label VARCHAR(120) NULL,
   cta_url VARCHAR(500) NULL,
+  hero_height_mode ENUM('HALF_SCREEN','FULL_SCREEN','CUSTOM') NOT NULL DEFAULT 'HALF_SCREEN',
+  custom_height_vh INT UNSIGNED NULL,
+  hero_display_mode ENUM('SINGLE_IMAGE','CAROUSEL') NOT NULL DEFAULT 'SINGLE_IMAGE',
   image_url VARCHAR(500) NULL,
   image_alt VARCHAR(255) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -984,6 +987,20 @@ CREATE TABLE site_hero (
   KEY idx_site_hero_active (is_active, updated_at),
   KEY idx_site_hero_updated_by (updated_by),
   CONSTRAINT fk_site_hero_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE site_hero_images (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  hero_id BIGINT UNSIGNED NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  image_alt VARCHAR(255) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_site_hero_images_hero_sort (hero_id, is_active, sort_order, id),
+  CONSTRAINT fk_site_hero_images_hero FOREIGN KEY (hero_id) REFERENCES site_hero(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- =========================================================

@@ -28,6 +28,11 @@ import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const CATALOG_PAGE_SIZE = 20;
+const HERO_HEIGHT_CLASSES = {
+  HALF_SCREEN: "site-hero--half-screen",
+  FULL_SCREEN: "site-hero--full-screen",
+  CUSTOM: "site-hero--custom",
+};
 
 function mergeAcceptedOffers(items, acceptedOffersByArticle) {
   return items.map((item) => {
@@ -173,6 +178,25 @@ function getLabel(options, id, fallback) {
     options.find((option) => String(option.id) === String(id))?.label ||
     fallback
   );
+}
+
+function getConfiguredHeroImages(hero) {
+  const images = Array.isArray(hero?.images) ? hero.images : [];
+  const activeImages = images
+    .filter((image) => image?.imageUrl && image?.isActive !== false)
+    .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0))
+    .map((image) => ({
+      ...image,
+      imageUrl: resolveAssetUrl(image.imageUrl),
+    }))
+    .filter((image) => image.imageUrl);
+
+  if (activeImages.length) return activeImages;
+
+  const legacyImageUrl = resolveAssetUrl(hero?.imageUrl);
+  return legacyImageUrl
+    ? [{ id: "legacy", imageUrl: legacyImageUrl, imageAlt: hero?.imageAlt || "", sortOrder: 0 }]
+    : [];
 }
 
 function CatalogSortControl({ value, onChange, onApplied }) {
@@ -360,14 +384,51 @@ export default function HomePage() {
     (chip) => chip.key !== "sort",
   ).length;
   const activeMobileSort = filters.sort !== initialFilters.sort;
+  const configuredHeroImages = useMemo(
+    () => getConfiguredHeroImages(siteHero),
+    [siteHero],
+  );
+  const hasConfiguredHeroImages = configuredHeroImages.length > 0;
+  const wantsSingleHero =
+    hasConfiguredHeroImages &&
+    (siteHero?.heroDisplayMode === "SINGLE_IMAGE" ||
+      configuredHeroImages.length === 1);
+  const effectiveHeroDisplayMode = wantsSingleHero
+    ? "SINGLE_IMAGE"
+    : "CAROUSEL";
+  const isConfiguredHero = Boolean(siteHero);
   const heroImages = useMemo(() => {
-    const configuredImage = resolveAssetUrl(siteHero?.imageUrl);
-    return configuredImage ? [configuredImage] : HERO_IMAGES;
-  }, [siteHero?.imageUrl]);
+    if (hasConfiguredHeroImages) {
+      return configuredHeroImages.map((image) => image.imageUrl);
+    }
+    return HERO_IMAGES;
+  }, [configuredHeroImages, hasConfiguredHeroImages]);
   const heroSequence = useMemo(
-    () => Array.from({ length: 9 }, (_item, index) => heroImages[index % heroImages.length]),
+    () =>
+      Array.from(
+        { length: Math.max(9, heroImages.length * 3) },
+        (_item, index) => heroImages[index % heroImages.length],
+      ),
     [heroImages],
   );
+  const heroHeightMode = siteHero?.heroHeightMode || "";
+  const siteHeroClassName = [
+    "hero-strip",
+    "site-hero",
+    effectiveHeroDisplayMode === "CAROUSEL"
+      ? "hero-strip--carousel site-hero--carousel"
+      : "site-hero--single",
+    isConfiguredHero ? "site-hero--configured" : "site-hero--fallback",
+    isConfiguredHero ? HERO_HEIGHT_CLASSES[heroHeightMode] : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const customHeightVh = Number(siteHero?.customHeightVh || 0);
+  const heroStyle =
+    isConfiguredHero && heroHeightMode === "CUSTOM" && customHeightVh
+      ? { "--hero-height": `${customHeightVh}vh` }
+      : undefined;
+  const singleHeroImage = configuredHeroImages[0] || null;
 
   useEffect(() => {
     let ignore = false;
@@ -927,7 +988,8 @@ export default function HomePage() {
 
       <section
         ref={heroRef}
-        className="hero-strip hero-strip--carousel"
+        className={siteHeroClassName}
+        style={heroStyle}
         aria-label="Galeria destacada"
       >
         <div className="hero-offer-ticker" aria-label="Aceptamos ofertas">
@@ -964,25 +1026,38 @@ export default function HomePage() {
             </span>
           </div>
         </div>
-        <div className="hero-carousel" aria-hidden="true">
-          <div className="hero-carousel__track">
-            {heroSequence.map((image, index) => (
-              <figure
-                key={`${image}-${index}`}
-                className="hero-carousel__slide"
-              >
-                <img
-                  src={image}
-                  alt=""
-                  className="hero-carousel__image"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  fetchPriority={index === 0 ? "high" : "low"}
-                />
-              </figure>
-            ))}
+        {effectiveHeroDisplayMode === "SINGLE_IMAGE" && singleHeroImage ? (
+          <div className="site-hero__media">
+            <img
+              src={singleHeroImage.imageUrl}
+              alt={singleHeroImage.imageAlt || ""}
+              className="site-hero__image"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="hero-carousel" aria-hidden="true">
+            <div className="hero-carousel__track">
+              {heroSequence.map((image, index) => (
+                <figure
+                  key={`${image}-${index}`}
+                  className="hero-carousel__slide"
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    className="hero-carousel__image"
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    fetchPriority={index === 0 ? "high" : "low"}
+                  />
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* <section className="container value-hero-card section-card">

@@ -10,7 +10,11 @@ const emptyHeroForm = {
   subtitle: "",
   ctaLabel: "",
   ctaUrl: "",
+  heroHeightMode: "HALF_SCREEN",
+  customHeightVh: 70,
+  heroDisplayMode: "SINGLE_IMAGE",
   imageAlt: "",
+  images: [],
   isActive: true,
 };
 
@@ -20,7 +24,19 @@ function toHeroForm(hero) {
     subtitle: hero?.subtitle || "",
     ctaLabel: hero?.ctaLabel || "",
     ctaUrl: hero?.ctaUrl || "",
+    heroHeightMode: hero?.heroHeightMode || "HALF_SCREEN",
+    customHeightVh: hero?.customHeightVh || 70,
+    heroDisplayMode: hero?.heroDisplayMode || "SINGLE_IMAGE",
     imageAlt: hero?.imageAlt || "",
+    images: Array.isArray(hero?.images)
+      ? hero.images.map((image, index) => ({
+          id: image.id,
+          imageUrl: image.imageUrl || "",
+          imageAlt: image.imageAlt || "",
+          sortOrder: Number(image.sortOrder ?? index),
+          isActive: image.isActive ?? true,
+        }))
+      : [],
     isActive: hero?.isActive ?? true,
   };
 }
@@ -29,22 +45,26 @@ export default function AdminSiteHeroPage() {
   const { notifySuccess, notifyError } = useNotification();
   const [hero, setHero] = useState(null);
   const [form, setForm] = useState(emptyHeroForm);
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const imagePreview = useMemo(
-    () => (imageFile ? URL.createObjectURL(imageFile) : ""),
-    [imageFile],
+  const imagePreviews = useMemo(
+    () => imageFiles.map((file) => URL.createObjectURL(file)),
+    [imageFiles],
   );
+  const primaryImage = form.images
+    .filter((image) => image.isActive !== false)
+    .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0))[0];
+  const primaryPreview = imagePreviews[0] || resolveAssetUrl(primaryImage?.imageUrl || hero?.imageUrl);
 
   useEffect(() => {
     return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
     };
-  }, [imagePreview]);
+  }, [imagePreviews]);
 
   useEffect(() => {
     let ignore = false;
@@ -74,6 +94,15 @@ export default function AdminSiteHeroPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function updateImage(index, name, value) {
+    setForm((current) => ({
+      ...current,
+      images: current.images.map((image, imageIndex) =>
+        imageIndex === index ? { ...image, [name]: value } : image,
+      ),
+    }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -88,10 +117,11 @@ export default function AdminSiteHeroPage() {
       });
       let nextHero = textResponse.hero || null;
 
-      if (imageFile) {
+      if (imageFiles.length) {
         const formData = new FormData();
-        formData.append("image", imageFile);
+        imageFiles.forEach((file) => formData.append("images", file));
         formData.append("imageAlt", form.imageAlt || "");
+        formData.append("heroDisplayMode", form.heroDisplayMode);
         const imageResponse = await apiFetch("/api/admin/site/hero/image", {
           method: "POST",
           body: formData,
@@ -101,7 +131,7 @@ export default function AdminSiteHeroPage() {
 
       setHero(nextHero);
       setForm(toHeroForm(nextHero));
-      setImageFile(null);
+      setImageFiles([]);
       const successMessage = "Hero actualizado.";
       setMessage(successMessage);
       notifySuccess(successMessage);
@@ -179,6 +209,54 @@ export default function AdminSiteHeroPage() {
               </label>
 
               <label className="field-group">
+                <span>Tipo de hero</span>
+                <select
+                  className="input"
+                  value={form.heroDisplayMode}
+                  onChange={(event) =>
+                    updateField("heroDisplayMode", event.target.value)
+                  }
+                >
+                  <option value="SINGLE_IMAGE">Imagen única</option>
+                  <option value="CAROUSEL">Carousel</option>
+                </select>
+              </label>
+
+              <label className="field-group">
+                <span>Alto del hero</span>
+                <select
+                  className="input"
+                  value={form.heroHeightMode}
+                  onChange={(event) =>
+                    updateField("heroHeightMode", event.target.value)
+                  }
+                >
+                  <option value="HALF_SCREEN">Media pantalla</option>
+                  <option value="FULL_SCREEN">Pantalla completa</option>
+                  <option value="CUSTOM">Personalizado</option>
+                </select>
+              </label>
+
+              {form.heroHeightMode === "CUSTOM" ? (
+                <label className="field-group">
+                  <span>Alto personalizado (vh)</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="30"
+                    max="100"
+                    value={form.customHeightVh}
+                    onChange={(event) =>
+                      updateField("customHeightVh", event.target.value)
+                    }
+                  />
+                  <span className="field-helper">
+                    Ejemplo: 70 ocupa aproximadamente el 70% de la altura visible.
+                  </span>
+                </label>
+              ) : null}
+
+              <label className="field-group">
                 <span>Alt de imagen</span>
                 <input
                   className="input"
@@ -196,10 +274,16 @@ export default function AdminSiteHeroPage() {
                   className="input"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  multiple={form.heroDisplayMode === "CAROUSEL"}
                   onChange={(event) =>
-                    setImageFile(event.target.files?.[0] || null)
+                    setImageFiles(Array.from(event.target.files || []))
                   }
                 />
+                <span className="field-helper">
+                  {form.heroDisplayMode === "CAROUSEL"
+                    ? "Podés cargar varias imágenes para el carousel."
+                    : "La nueva imagen reemplaza la imagen activa del hero."}
+                </span>
               </label>
 
               <label className="field-group checkbox-field form-grid-span-two">
@@ -220,17 +304,71 @@ export default function AdminSiteHeroPage() {
                 <h2>Imagen del hero</h2>
               </div>
               <SmartImage
-                src={imagePreview || resolveAssetUrl(hero?.imageUrl)}
+                src={primaryPreview}
                 alt={form.imageAlt || "Hero ESADAR"}
                 className="image-manager-card__media"
                 loading="eager"
               />
-              {!hero?.imageUrl && !imagePreview ? (
+              {!primaryPreview ? (
                 <p className="muted-copy">
                   Sin imagen configurada. La home usa el fallback actual.
                 </p>
               ) : null}
             </div>
+
+            {form.images.length ? (
+              <div className="section-card nested-card page-stack">
+                <div>
+                  <p className="section-kicker">Imágenes</p>
+                  <h2>Orden y visibilidad</h2>
+                </div>
+                <div className="image-manager-grid">
+                  {form.images.map((image, index) => (
+                    <article className="image-manager-card" key={image.id || image.imageUrl}>
+                      <SmartImage
+                        src={resolveAssetUrl(image.imageUrl)}
+                        alt={image.imageAlt || form.imageAlt || "Hero ESADAR"}
+                        className="image-manager-card__media"
+                      />
+                      <div className="page-stack stack-gap-xs">
+                        <label className="field-group">
+                          <span>Alt</span>
+                          <input
+                            className="input"
+                            value={image.imageAlt || ""}
+                            onChange={(event) =>
+                              updateImage(index, "imageAlt", event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className="field-group">
+                          <span>Orden</span>
+                          <input
+                            className="input"
+                            type="number"
+                            min="0"
+                            value={image.sortOrder}
+                            onChange={(event) =>
+                              updateImage(index, "sortOrder", event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className="field-group checkbox-field">
+                          <input
+                            type="checkbox"
+                            checked={image.isActive}
+                            onChange={(event) =>
+                              updateImage(index, "isActive", event.target.checked)
+                            }
+                          />
+                          <span>Activa</span>
+                        </label>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="inline-action-group">
               <button
