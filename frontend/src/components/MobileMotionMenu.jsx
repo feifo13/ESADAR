@@ -288,7 +288,7 @@ export default function MobileMotionMenu({
                 >
                   <button
                     type="button"
-                    className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
+                    className={`mobile-motion-menu__item mobile-motion-menu__accordion-trigger${filtersCount > 0 ? " is-active" : ""}`}
                     aria-expanded={filtersOpen}
                     onClick={() => {
                       setSortOpen(false);
@@ -331,7 +331,7 @@ export default function MobileMotionMenu({
                 >
                   <button
                     type="button"
-                    className="mobile-motion-menu__item mobile-motion-menu__accordion-trigger"
+                    className={`mobile-motion-menu__item mobile-motion-menu__accordion-trigger${sortActive ? " is-active" : ""}`}
                     aria-expanded={sortOpen}
                     onClick={() => {
                       setFiltersOpen(false);

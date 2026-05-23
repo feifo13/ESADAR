@@ -5,23 +5,11 @@ import SmartImage from './SmartImage.jsx';
 import { getArticleImageSizes } from '../lib/article-images.js';
 
 
-function GalleryArrowIcon({ direction }) {
-  const path = direction === 'previous' ? 'M15 5 8 12l7 7' : 'M9 5l7 7-7 7';
-
+function GalleryArrowGlyph({ direction }) {
   return (
-    <svg
-      className="article-gallery-desktop-arrow-icon"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      focusable="false"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={path} />
-    </svg>
+    <span aria-hidden="true">
+      {direction === 'previous' ? '‹' : '›'}
+    </span>
   );
 }
 
@@ -237,10 +225,10 @@ export default function ArticleImageGallery({ images = [], title, fallbackImage 
         {hasMultipleImages ? (
           <PreviousNextControls
             className="article-gallery-desktop-arrows"
-            previousContent={<GalleryArrowIcon direction="previous" />}
-            nextContent={<GalleryArrowIcon direction="next" />}
-            previousClassName="article-gallery-desktop-arrow article-gallery-desktop-arrow--previous"
-            nextClassName="article-gallery-desktop-arrow article-gallery-desktop-arrow--next"
+            previousContent={<GalleryArrowGlyph direction="previous" />}
+            nextContent={<GalleryArrowGlyph direction="next" />}
+            previousClassName="scroll-rail-button article-gallery-desktop-arrow article-gallery-desktop-arrow--previous"
+            nextClassName="scroll-rail-button article-gallery-desktop-arrow article-gallery-desktop-arrow--next"
             previousAriaLabel="Imagen anterior"
             nextAriaLabel="Imagen siguiente"
             onPrevious={() => moveImage(-1)}

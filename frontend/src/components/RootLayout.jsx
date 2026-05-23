@@ -112,8 +112,11 @@ export default function RootLayout() {
   const isAdminView = location.pathname.startsWith("/admin");
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
+  const isPublicArticleView =
+    location.pathname === "/articles" ||
+    location.pathname.startsWith("/articles/");
   const showOfferTicker =
-    isAccountView || location.pathname.startsWith("/articles/");
+    isAccountView || isPublicArticleView;
   const isFooterHiddenView = [
     "/guia-de-compra",
     "/terminos-y-condiciones",

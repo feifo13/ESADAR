@@ -510,6 +510,7 @@ export default function AdminArticlesPage() {
       const successMessage = "El artículo fue eliminado correctamente.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
+      notifySuccess("Artículo removido");
     } catch (err) {
       const errorMessage =
         err.message ||

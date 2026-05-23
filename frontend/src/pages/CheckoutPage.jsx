@@ -39,7 +39,7 @@ const steps = [
   { key: "envio", label: "Método de envío", kicker: "Paso 4" },
   {
     key: "confirmacion",
-    label: "Orden pendiente de aprobación",
+    label: "Confirmar órden",
     kicker: "Paso 5",
   },
 ];
@@ -1146,7 +1146,7 @@ export default function CheckoutPage() {
     return (
       <div className="checkout-confirmation-grid">
         <div className="section-card nested-card checkout-confirm-panel">
-          <p className="section-kicker">Orden pendiente de aprobación</p>
+          <p className="section-kicker">Confirmar órden</p>
           <div className="detail-meta-list checkout-meta-list">
             <div>
               <span>Artículos</span>

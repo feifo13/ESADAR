@@ -480,7 +480,13 @@ export default function Header({ hideBrand = false }) {
           </span>
         </button>
         <span
-          className="mobile-catalog-indicators"
+          className={[
+            "mobile-catalog-indicators",
+            catalogFiltersCount > 0 ? "mobile-catalog-indicators--filters-active" : "",
+            catalogSortActive ? "mobile-catalog-indicators--sort-active" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           aria-hidden={
             catalogFiltersCount > 0 || catalogSortActive ? undefined : "true"
           }
@@ -512,6 +518,7 @@ export default function Header({ hideBrand = false }) {
               title="Restablecer orden"
             >
               <SortIcon />
+              <span>1</span>
             </button>
           ) : null}
         </span>

@@ -11,6 +11,7 @@
     "start": "node src/server.js",
     "test": "node --import ./tests/setup-env.js --test",
     "test:watch": "node --test --watch",
+    "emails:preview": "node scripts/generate-email-previews.mjs",
     "images:backfill": "node scripts/backfill-article-image-variants.mjs",
     "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run",
     "db:backup": "node scripts/backup-db.mjs"

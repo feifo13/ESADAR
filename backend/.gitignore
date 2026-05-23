@@ -6,3 +6,4 @@ uploads
 !public/uploads/**
 .DS_Store
 npm-debug.log*
+tmp/email-previews/

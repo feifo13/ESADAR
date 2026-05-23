@@ -19,7 +19,6 @@ const guideSteps = [
   {
     title: "4. Pagá y esperá validación",
     copy: "Si elegís transferencia, los datos de pago quedan visibles al finalizar la compra y también se envían por correo. En el motivo/concepto de la transferencia indicá tu número de orden. La orden queda reservada por 24 horas.",
-    highlightPaymentReference: true,
   },
   {
     title: "5. Recibí la confirmación",
@@ -63,7 +62,7 @@ export default function PurchaseGuidePage() {
         {guideSteps.map((step) => (
           <article className="section-card guide-step-card" key={step.title}>
             <h2>{step.title}</h2>
-            <p className={step.highlightPaymentReference ? "muted-copy payment-reference-note" : "muted-copy"}>
+            <p className="muted-copy">
               {step.copy}
             </p>
           </article>
