@@ -13724,17 +13724,11 @@ select.input,
 }
 
 /* === ESADAR checkout wizard framing spacer ===
-   Desktop keeps a safety spacer for programmatic step scroll. On mobile the
-   recommendations section after the wizard already provides enough runway, so
-   avoid leaving a large blank gap below checkout. */
+   The post-wizard recommendations/fallback section now provides the needed
+   scroll runway on every viewport, so avoid forcing a large blank tail on
+   /checkout and its child routes. */
 .app-shell--checkout-view .checkout-page-stack {
-  padding-bottom: max(320px, 34vh);
-}
-
-@media (max-width: 780px) {
-  .app-shell--checkout-view .checkout-page-stack {
-    padding-bottom: clamp(18px, 6vw, 32px);
-  }
+  padding-bottom: clamp(18px, 3vw, 32px);
 }
 
 .offer-page .offer-eligibility-notice {

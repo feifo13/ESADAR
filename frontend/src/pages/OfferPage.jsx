@@ -107,7 +107,8 @@ export default function OfferPage() {
   }, [slugOrId]);
 
   useEffect(() => {
-    if (!success || !offerEligibility || offerEligibility.canOffer) return undefined;
+    if (!success || !offerEligibility || offerEligibility.canOffer)
+      return undefined;
 
     const scrollTimer = window.setTimeout(() => {
       offerNoticeRef.current?.scrollIntoView({
@@ -316,7 +317,7 @@ export default function OfferPage() {
       <section className="page-stack">
         <div className="detail-titlebar detail-titlebar-offer">
           <p className="section-kicker">¡Ofertá!</p>
-          <h1>Estas ofertando por: {article.title}</h1>
+          <h1>Estás ofertando por: {article.title}</h1>
         </div>
 
         <div className="ebay-article-layout ebay-article-layout--offer">
@@ -458,7 +459,10 @@ export default function OfferPage() {
             ) : null}
 
             {offerEligibility && !offerEligibility.canOffer ? (
-              <div ref={offerNoticeRef} className="section-card nested-card offer-eligibility-notice">
+              <div
+                ref={offerNoticeRef}
+                className="section-card nested-card offer-eligibility-notice"
+              >
                 <p className="section-kicker">Oferta registrada</p>
                 <strong>{blockedOfferMessage}</strong>
                 {!isAcceptedOfferBlocked &&
@@ -528,8 +532,8 @@ export default function OfferPage() {
       <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
         <div className="section-heading section-heading-wrap">
           <div>
-            <p className="section-kicker">También permiten oferta</p>
-            <h2>Más artículos ofertables</h2>
+            <p className="section-kicker">Más artículos ofertables</p>
+            <h2>También podés ofertar por:</h2>
           </div>
           <ScrollRailControls
             targetRef={relatedTrackRef}

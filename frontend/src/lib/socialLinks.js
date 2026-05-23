@@ -10,7 +10,7 @@ export const ESADAR_SOCIAL_LINKS = [
     key: "facebook",
     label: "Esadar Uy",
     platformLabel: "Facebook",
-    webUrl: "https://www.facebook.com/people/Esadar-Uy",
+    webUrl: "https://www.facebook.com/profile.php?id=61589423619093",
     appUrl:
       "fb://facewebmodal/f?href=https%3A%2F%2Fwww.facebook.com%2Fpeople%2FEsadar-Uy",
   },
@@ -30,9 +30,10 @@ function isMobileNavigator() {
     typeof window !== "undefined" &&
     ("ontouchstart" in window || Number(navigator.maxTouchPoints || 0) > 0);
 
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    ua,
-  ) || (isTouchDevice && /Macintosh/i.test(ua));
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) ||
+    (isTouchDevice && /Macintosh/i.test(ua))
+  );
 }
 
 export function handleMobileSocialLink(event, socialLink) {

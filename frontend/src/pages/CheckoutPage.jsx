@@ -11,7 +11,11 @@ import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
-import { calculateShippingCost, formatWeightKg, usesWeightRanges } from "../lib/shippingRates.js";
+import {
+  calculateShippingCost,
+  formatWeightKg,
+  usesWeightRanges,
+} from "../lib/shippingRates.js";
 import { apiFetch } from "../lib/api.js";
 import { articlePath } from "../lib/routes.js";
 import {
@@ -105,14 +109,21 @@ function getOfficialRatesHref(method) {
 }
 
 function getOfficialRatesLabel(method) {
-  return String(method?.officialRatesLabel || "").trim() || DEFAULT_OFFICIAL_RATES_LABEL;
+  return (
+    String(method?.officialRatesLabel || "").trim() ||
+    DEFAULT_OFFICIAL_RATES_LABEL
+  );
 }
 
 function isCheckoutItemUnavailable(item) {
-  const publicationStatus = String(item?.publicationStatus || "ACTIVE").toUpperCase();
+  const publicationStatus = String(
+    item?.publicationStatus || "ACTIVE",
+  ).toUpperCase();
   const articleStatus = String(
     item?.articleStatus ||
-      (publicationStatus === "ACTIVE" ? item?.stockStatus || "ACTIVE" : "INACTIVE"),
+      (publicationStatus === "ACTIVE"
+        ? item?.stockStatus || "ACTIVE"
+        : "INACTIVE"),
   ).toUpperCase();
   const stockStatus = String(item?.stockStatus || articleStatus).toUpperCase();
   const quantityAvailable = Number(
@@ -204,11 +215,12 @@ export default function CheckoutPage() {
   );
 
   const cartArticleIds = useMemo(
-    () => new Set(
-      cartArticleIdsSignature
-        ? cartArticleIdsSignature.split("|").map((item) => Number(item))
-        : [],
-    ),
+    () =>
+      new Set(
+        cartArticleIdsSignature
+          ? cartArticleIdsSignature.split("|").map((item) => Number(item))
+          : [],
+      ),
     [cartArticleIdsSignature],
   );
 
@@ -248,7 +260,9 @@ export default function CheckoutPage() {
             const publicationStatus = String(
               article.publicationStatus || article.status || "ACTIVE",
             ).toUpperCase();
-            const stockStatus = String(article.stockStatus || "ACTIVE").toUpperCase();
+            const stockStatus = String(
+              article.stockStatus || "ACTIVE",
+            ).toUpperCase();
             return (
               publicationStatus === "ACTIVE" &&
               stockStatus === "ACTIVE" &&
@@ -331,11 +345,10 @@ export default function CheckoutPage() {
   );
   const hasUnavailableItems = unavailableItems.length > 0;
   const unavailableItemsCount = unavailableItems.length;
-  const unavailableTickerLabel = unavailableItemsCount === 1
-    ? "1 artículo no disponible"
-    : `${unavailableItemsCount} artículos no disponibles`;
-  const unavailableTickerInstruction =
-    "Para avanzar con la compra, primero quitá todos los artículos agotados o no disponibles del carrito.";
+  const unavailableTickerLabel =
+    unavailableItemsCount === 1
+      ? "1 artículo no disponible"
+      : `${unavailableItemsCount} artículos no disponibles`;
   const availableItems = useMemo(
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],
@@ -352,7 +365,8 @@ export default function CheckoutPage() {
       Number(
         availableItems
           .reduce(
-            (sum, item) => sum + Number(item.weightKg || 0) * Number(item.quantity || 0),
+            (sum, item) =>
+              sum + Number(item.weightKg || 0) * Number(item.quantity || 0),
             0,
           )
           .toFixed(3),
@@ -364,7 +378,10 @@ export default function CheckoutPage() {
     [availableItems],
   );
   const shippingQuote = useMemo(
-    () => (shipping ? calculateShippingCost(shipping, packageWeightKg) : { cost: 0, rate: null, isUnavailable: false }),
+    () =>
+      shipping
+        ? calculateShippingCost(shipping, packageWeightKg)
+        : { cost: 0, rate: null, isUnavailable: false },
     [shipping, packageWeightKg],
   );
   const selectedOfficialRatesHref = useMemo(
@@ -802,8 +819,8 @@ export default function CheckoutPage() {
       <section className="page-stack article-related-scroll-section checkout-interest-scroll-section">
         <div className="section-heading section-heading-wrap">
           <div>
-            <p className="section-kicker">También</p>
-            <h2>También podría interesarte?</h2>
+            <p className="section-kicker">¡Ey!</p>
+            <h2>También podría interesarte</h2>
           </div>
           <ScrollRailControls
             targetRef={checkoutInterestTrackRef}
@@ -828,204 +845,208 @@ export default function CheckoutPage() {
   function renderSummaryStep() {
     return (
       <>
-      <div className="checkout-step-grid">
-        <div className="checkout-items-block section-card nested-card">
-          <div className="section-heading compact-heading">
-            <div>
-              <p className="section-kicker">Resumen</p>
-              {/* <h2>Resumen</h2> */}
+        <div className="checkout-step-grid">
+          <div className="checkout-items-block section-card nested-card">
+            <div className="section-heading compact-heading">
+              <div>
+                <p className="section-kicker">Resumen</p>
+                {/* <h2>Resumen</h2> */}
+              </div>
             </div>
+
+            {isMobileSummary ? (
+              <div
+                className="summary-item-card-list"
+                aria-label="Prendas de la orden"
+              >
+                {items.map((item) => {
+                  const isUnavailable = isCheckoutItemUnavailable(item);
+                  return (
+                    <SummaryItemCard
+                      key={getCheckoutLineKey(item)}
+                      item={item}
+                      isUnavailable={isUnavailable}
+                      onRemove={handleRemoveCartItem}
+                      onQuantityChange={(articleId, quantity) => {
+                        if (isUnavailable) return;
+                        const result = updateQuantity(articleId, quantity);
+                        showStockNotice(result);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="table-shell checkout-items-table-shell">
+                <table className="data-table checkout-items-table">
+                  <thead>
+                    <tr>
+                      <th>Img</th>
+                      <th>Prenda</th>
+                      <th>Marca</th>
+                      <th>Talle</th>
+                      <th>Cant.</th>
+                      <th>Unitario</th>
+                      <th>Total</th>
+                      <th>Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => {
+                      const isUnavailable = isCheckoutItemUnavailable(item);
+                      const detailPath = articlePath(item, item.articleId);
+                      const rowClassName = [
+                        item.acceptedOffer ? "checkout-offer-row" : "",
+                        isUnavailable ? "checkout-unavailable-row" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      return (
+                        <tr
+                          key={getCheckoutLineKey(item)}
+                          className={rowClassName || undefined}
+                        >
+                          <td>
+                            <Link
+                              to={detailPath}
+                              className="table-thumb-link"
+                              aria-label={`Ver prenda ${item.title}`}
+                            >
+                              <SmartImage
+                                src={item.image}
+                                alt={item.title}
+                                fallbackLabel={item.title}
+                                className="table-thumb-image"
+                              />
+                            </Link>
+                          </td>
+                          <td className="cell-truncate">
+                            <Link
+                              to={detailPath}
+                              className="table-strong-link"
+                              aria-label={`Ver prenda ${item.title}`}
+                              title={item.title}
+                            >
+                              {item.title}
+                            </Link>
+                          </td>
+                          <td className="cell-truncate">
+                            {item.brandName || "Sin marca"}
+                          </td>
+                          <td className="cell-truncate">
+                            {item.sizeLabel || "Sin talle"}
+                          </td>
+                          <td>
+                            {isUnavailable ? (
+                              <span className="status-badge status-unavailable">
+                                No disponible
+                              </span>
+                            ) : (
+                              <input
+                                className="input input-small checkout-qty-input"
+                                type="number"
+                                min="1"
+                                max={item.maxQuantity || item.quantity}
+                                value={item.quantity}
+                                aria-label={`Cantidad de ${item.title}`}
+                                onChange={(event) => {
+                                  const result = updateQuantity(
+                                    getCheckoutLineKey(item),
+                                    Number(event.target.value || 1),
+                                  );
+                                  showStockNotice(result);
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td>
+                            {item.acceptedOffer ? (
+                              <span className="checkout-offer-price">
+                                <span className="pill pill-offer">
+                                  Oferta aceptada
+                                </span>
+                                <span className="price-old">
+                                  {formatCurrency(item.salePrice)}
+                                </span>
+                                <strong>
+                                  {formatCurrency(item.acceptedOffer.price)}
+                                </strong>
+                                <small className="muted-copy">
+                                  Aplica a 1 unidad · ahorro{" "}
+                                  {formatCurrency(getOfferSavings(item))}
+                                </small>
+                              </span>
+                            ) : (
+                              <span className="checkout-regular-price">
+                                {/* <span className="muted-copy">Precio normal</span> */}
+                                <strong>
+                                  {formatCurrency(item.discountedPrice)}
+                                </strong>
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {isUnavailable ? (
+                              <span className="muted-copy">
+                                Fuera del total
+                              </span>
+                            ) : (
+                              <strong>
+                                {formatCurrency(
+                                  item.lineTotal ??
+                                    item.discountedPrice * item.quantity,
+                                )}
+                              </strong>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="icon-action-button"
+                              onClick={() =>
+                                handleRemoveCartItem(getCheckoutLineKey(item))
+                              }
+                              aria-label={`Quitar ${item.title}`}
+                              title="Quitar"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
-          {isMobileSummary ? (
-            <div
-              className="summary-item-card-list"
-              aria-label="Prendas de la orden"
-            >
-              {items.map((item) => {
-                const isUnavailable = isCheckoutItemUnavailable(item);
-                return (
-                  <SummaryItemCard
-                    key={getCheckoutLineKey(item)}
-                    item={item}
-                    isUnavailable={isUnavailable}
-                    onRemove={handleRemoveCartItem}
-                    onQuantityChange={(articleId, quantity) => {
-                      if (isUnavailable) return;
-                      const result = updateQuantity(articleId, quantity);
-                      showStockNotice(result);
-                    }}
-                  />
-                );
-              })}
+          <aside className="checkout-side-summary section-card nested-card">
+            <p className="section-kicker">Totales</p>
+            <div className="order-summary-card checkout-summary-plain">
+              <p className="summary-line">
+                <span>Subtotal</span>
+                <strong>{formatCurrency(subtotal)}</strong>
+              </p>
+              <p className="summary-line">
+                <span>Peso aprox.</span>
+                <strong>{formatWeightKg(packageWeightKg)}</strong>
+              </p>
+              <p className="summary-line">
+                <span>Envío estimado</span>
+                <strong>
+                  {shippingQuote.isUnavailable
+                    ? "Sin tarifa"
+                    : formatCurrency(estimatedShippingCost)}
+                </strong>
+              </p>
+              <p className="summary-line total">
+                <span>Total estimado</span>
+                <strong>{formatCurrency(total)}</strong>
+              </p>
             </div>
-          ) : (
-            <div className="table-shell checkout-items-table-shell">
-              <table className="data-table checkout-items-table">
-                <thead>
-                  <tr>
-                    <th>Img</th>
-                    <th>Prenda</th>
-                    <th>Marca</th>
-                    <th>Talle</th>
-                    <th>Cant.</th>
-                    <th>Unitario</th>
-                    <th>Total</th>
-                    <th>Accion</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const isUnavailable = isCheckoutItemUnavailable(item);
-                    const detailPath = articlePath(item, item.articleId);
-                    const rowClassName = [
-                      item.acceptedOffer ? "checkout-offer-row" : "",
-                      isUnavailable ? "checkout-unavailable-row" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ");
-                    return (
-                      <tr
-                        key={getCheckoutLineKey(item)}
-                        className={rowClassName || undefined}
-                      >
-                        <td>
-                          <Link
-                            to={detailPath}
-                            className="table-thumb-link"
-                            aria-label={`Ver prenda ${item.title}`}
-                          >
-                            <SmartImage
-                              src={item.image}
-                              alt={item.title}
-                              fallbackLabel={item.title}
-                              className="table-thumb-image"
-                            />
-                          </Link>
-                        </td>
-                        <td className="cell-truncate">
-                          <Link
-                            to={detailPath}
-                            className="table-strong-link"
-                            aria-label={`Ver prenda ${item.title}`}
-                            title={item.title}
-                          >
-                            {item.title}
-                          </Link>
-                        </td>
-                        <td className="cell-truncate">
-                          {item.brandName || "Sin marca"}
-                        </td>
-                        <td className="cell-truncate">
-                          {item.sizeLabel || "Sin talle"}
-                        </td>
-                        <td>
-                          {isUnavailable ? (
-                            <span className="status-badge status-unavailable">
-                              No disponible
-                            </span>
-                          ) : (
-                            <input
-                              className="input input-small checkout-qty-input"
-                              type="number"
-                              min="1"
-                              max={item.maxQuantity || item.quantity}
-                              value={item.quantity}
-                              aria-label={`Cantidad de ${item.title}`}
-                              onChange={(event) => {
-                                const result = updateQuantity(
-                                  getCheckoutLineKey(item),
-                                  Number(event.target.value || 1),
-                                );
-                                showStockNotice(result);
-                              }}
-                            />
-                          )}
-                        </td>
-                        <td>
-                          {item.acceptedOffer ? (
-                            <span className="checkout-offer-price">
-                              <span className="pill pill-offer">
-                                Oferta aceptada
-                              </span>
-                              <span className="price-old">
-                                {formatCurrency(item.salePrice)}
-                              </span>
-                              <strong>
-                                {formatCurrency(item.acceptedOffer.price)}
-                              </strong>
-                              <small className="muted-copy">
-                                Aplica a 1 unidad · ahorro{" "}
-                                {formatCurrency(getOfferSavings(item))}
-                              </small>
-                            </span>
-                          ) : (
-                            <span className="checkout-regular-price">
-                              {/* <span className="muted-copy">Precio normal</span> */}
-                              <strong>
-                                {formatCurrency(item.discountedPrice)}
-                              </strong>
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          {isUnavailable ? (
-                            <span className="muted-copy">Fuera del total</span>
-                          ) : (
-                            <strong>
-                              {formatCurrency(
-                                item.lineTotal ??
-                                  item.discountedPrice * item.quantity,
-                              )}
-                            </strong>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="icon-action-button"
-                            onClick={() => handleRemoveCartItem(getCheckoutLineKey(item))}
-                            aria-label={`Quitar ${item.title}`}
-                            title="Quitar"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </aside>
         </div>
-
-        <aside className="checkout-side-summary section-card nested-card">
-          <p className="section-kicker">Totales</p>
-          <div className="order-summary-card checkout-summary-plain">
-            <p className="summary-line">
-              <span>Subtotal</span>
-              <strong>{formatCurrency(subtotal)}</strong>
-            </p>
-            <p className="summary-line">
-              <span>Peso aprox.</span>
-              <strong>{formatWeightKg(packageWeightKg)}</strong>
-            </p>
-            <p className="summary-line">
-              <span>Envío estimado</span>
-              <strong>
-                {shippingQuote.isUnavailable
-                  ? "Sin tarifa"
-                  : formatCurrency(estimatedShippingCost)}
-              </strong>
-            </p>
-            <p className="summary-line total">
-              <span>Total estimado</span>
-              <strong>{formatCurrency(total)}</strong>
-            </p>
-          </div>
-        </aside>
-      </div>
       </>
     );
   }
@@ -1237,7 +1258,8 @@ export default function CheckoutPage() {
           </div>
           {hasItemsWithoutWeight ? (
             <p className="checkout-shipping-weight-warning">
-              Algunos artículos no tienen peso cargado; el cálculo puede ser aproximado.
+              Algunos artículos no tienen peso cargado; el cálculo puede ser
+              aproximado.
             </p>
           ) : null}
           {selectedOfficialRatesHref ? (
@@ -1286,7 +1308,9 @@ export default function CheckoutPage() {
                   </p>
                   {isWeightBased && optionQuote.rate ? (
                     <p className="muted-copy">
-                      Rango aplicado: {optionQuote.rate.label || `${formatWeightKg(optionQuote.rate.minWeightKg)} a ${formatWeightKg(optionQuote.rate.maxWeightKg)}`}
+                      Rango aplicado:{" "}
+                      {optionQuote.rate.label ||
+                        `${formatWeightKg(optionQuote.rate.minWeightKg)} a ${formatWeightKg(optionQuote.rate.maxWeightKg)}`}
                     </p>
                   ) : null}
                   <p className="muted-copy">{option.instructions}</p>
@@ -1344,11 +1368,14 @@ export default function CheckoutPage() {
           </p>
           {isBankTransferPayment ? (
             <p className="inline-note payment-reference-note">
-              En el motivo/concepto de la transferencia indicá el número de orden. Al confirmarla te mostramos el número exacto.
+              En el motivo/concepto de la transferencia indicá el número de
+              orden. Al confirmarla te mostramos el número exacto.
             </p>
           ) : null}
           <p className="muted-copy checkout-tracking-availability-copy">
-            Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
+            Una vez aprobada y despachada la orden, te enviaremos el código de
+            seguimiento en el mail de orden enviada, sujeto a disponibilidad del
+            proveedor del servicio de correo.
           </p>
         </div>
 
@@ -1406,7 +1433,7 @@ export default function CheckoutPage() {
           aria-live="assertive"
         >
           <span className="cart-unavailable-ticker__message">
-            {unavailableTickerLabel}. {unavailableTickerInstruction}
+            {unavailableTickerLabel}.
           </span>
         </div>
       ) : null}
