@@ -8,19 +8,22 @@ CREATE TABLE IF NOT EXISTS site_hero_images (
   hero_id BIGINT UNSIGNED NOT NULL,
   image_url VARCHAR(500) NOT NULL,
   image_alt VARCHAR(255) NULL,
+  viewport_target ENUM('DESKTOP_TABLET','MOBILE') NOT NULL DEFAULT 'DESKTOP_TABLET',
   sort_order INT NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_site_hero_images_hero_sort (hero_id, is_active, sort_order, id),
+  KEY idx_site_hero_images_viewport_active (hero_id, viewport_target, is_active, sort_order, id),
   CONSTRAINT fk_site_hero_images_hero FOREIGN KEY (hero_id) REFERENCES site_hero(id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO site_hero_images (
   hero_id,
   image_url,
   image_alt,
+  viewport_target,
   sort_order,
   is_active
 )
@@ -28,6 +31,7 @@ SELECT
   sh.id,
   sh.image_url,
   sh.image_alt,
+  'DESKTOP_TABLET',
   0,
   1
 FROM site_hero sh

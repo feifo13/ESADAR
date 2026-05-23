@@ -5,66 +5,125 @@ import SmartImage from "../../components/SmartImage.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch, resolveAssetUrl } from "../../lib/api.js";
 
+const VIEWPORT_DESKTOP_TABLET = "DESKTOP_TABLET";
+const VIEWPORT_MOBILE = "MOBILE";
+const VIEWPORT_OPTIONS = [
+  { value: VIEWPORT_DESKTOP_TABLET, label: "Desktop / tablet" },
+  { value: VIEWPORT_MOBILE, label: "Mobile" },
+];
+
 const emptyHeroForm = {
-  title: "",
-  subtitle: "",
-  ctaLabel: "",
-  ctaUrl: "",
-  heroHeightMode: "HALF_SCREEN",
-  customHeightVh: 70,
-  heroDisplayMode: "SINGLE_IMAGE",
   imageAlt: "",
   images: [],
   isActive: true,
 };
 
+function normalizeViewportTarget(value) {
+  return value === VIEWPORT_MOBILE ? VIEWPORT_MOBILE : VIEWPORT_DESKTOP_TABLET;
+}
+
+function normalizeImages(images = []) {
+  const safeImages = Array.isArray(images)
+    ? images.map((image, index) => ({
+        id: image.id,
+        imageUrl: image.imageUrl || "",
+        imageAlt: image.imageAlt || "",
+        viewportTarget: normalizeViewportTarget(
+          image.viewportTarget || image.viewport_target,
+        ),
+        sortOrder: Number(image.sortOrder ?? index),
+        isActive: image.isActive ?? true,
+      }))
+    : [];
+
+  const firstIndexByViewport = new Map();
+  const selectedIndexByViewport = new Map();
+
+  safeImages.forEach((image, index) => {
+    const viewportTarget = normalizeViewportTarget(image.viewportTarget);
+    if (!firstIndexByViewport.has(viewportTarget)) {
+      firstIndexByViewport.set(viewportTarget, index);
+    }
+    if (image.isActive !== false && !selectedIndexByViewport.has(viewportTarget)) {
+      selectedIndexByViewport.set(viewportTarget, index);
+    }
+  });
+
+  return safeImages.map((image, index) => {
+    const viewportTarget = normalizeViewportTarget(image.viewportTarget);
+    const selectedIndex = selectedIndexByViewport.has(viewportTarget)
+      ? selectedIndexByViewport.get(viewportTarget)
+      : firstIndexByViewport.get(viewportTarget);
+
+    return {
+      ...image,
+      viewportTarget,
+      isActive: index === selectedIndex,
+    };
+  });
+}
+
 function toHeroForm(hero) {
   return {
-    title: hero?.title || "",
-    subtitle: hero?.subtitle || "",
-    ctaLabel: hero?.ctaLabel || "",
-    ctaUrl: hero?.ctaUrl || "",
-    heroHeightMode: hero?.heroHeightMode || "HALF_SCREEN",
-    customHeightVh: hero?.customHeightVh || 70,
-    heroDisplayMode: hero?.heroDisplayMode || "SINGLE_IMAGE",
     imageAlt: hero?.imageAlt || "",
-    images: Array.isArray(hero?.images)
-      ? hero.images.map((image, index) => ({
-          id: image.id,
-          imageUrl: image.imageUrl || "",
-          imageAlt: image.imageAlt || "",
-          sortOrder: Number(image.sortOrder ?? index),
-          isActive: image.isActive ?? true,
-        }))
-      : [],
+    images: normalizeImages(hero?.images),
     isActive: hero?.isActive ?? true,
   };
+}
+
+function getSelectedImage(images, viewportTarget) {
+  const target = normalizeViewportTarget(viewportTarget);
+  return (
+    images.find((image) => image.viewportTarget === target && image.isActive) ||
+    images.find((image) => image.viewportTarget === target) ||
+    null
+  );
 }
 
 export default function AdminSiteHeroPage() {
   const { notifySuccess, notifyError } = useNotification();
   const [hero, setHero] = useState(null);
   const [form, setForm] = useState(emptyHeroForm);
-  const [imageFiles, setImageFiles] = useState([]);
+  const [desktopImageFiles, setDesktopImageFiles] = useState([]);
+  const [mobileImageFiles, setMobileImageFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const imagePreviews = useMemo(
-    () => imageFiles.map((file) => URL.createObjectURL(file)),
-    [imageFiles],
+  const desktopImagePreviews = useMemo(
+    () => desktopImageFiles.map((file) => URL.createObjectURL(file)),
+    [desktopImageFiles],
   );
-  const primaryImage = form.images
-    .filter((image) => image.isActive !== false)
-    .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0))[0];
-  const primaryPreview = imagePreviews[0] || resolveAssetUrl(primaryImage?.imageUrl || hero?.imageUrl);
+  const mobileImagePreviews = useMemo(
+    () => mobileImageFiles.map((file) => URL.createObjectURL(file)),
+    [mobileImageFiles],
+  );
+
+  const selectedDesktopImage = getSelectedImage(
+    form.images,
+    VIEWPORT_DESKTOP_TABLET,
+  );
+  const selectedMobileImage = getSelectedImage(form.images, VIEWPORT_MOBILE);
+
+  const desktopPreview =
+    desktopImagePreviews[0] ||
+    resolveAssetUrl(selectedDesktopImage?.imageUrl || hero?.desktopImageUrl || hero?.imageUrl);
+  const mobilePreview =
+    mobileImagePreviews[0] ||
+    resolveAssetUrl(selectedMobileImage?.imageUrl || hero?.mobileImageUrl || selectedDesktopImage?.imageUrl || hero?.imageUrl);
 
   useEffect(() => {
     return () => {
-      imagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+      desktopImagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
     };
-  }, [imagePreviews]);
+  }, [desktopImagePreviews]);
+
+  useEffect(() => {
+    return () => {
+      mobileImagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [mobileImagePreviews]);
 
   useEffect(() => {
     let ignore = false;
@@ -103,6 +162,73 @@ export default function AdminSiteHeroPage() {
     }));
   }
 
+  function updateImageViewport(index, viewportTarget) {
+    const nextViewportTarget = normalizeViewportTarget(viewportTarget);
+    setForm((current) => ({
+      ...current,
+      images: normalizeImages(
+        current.images.map((image, imageIndex) => {
+          if (imageIndex !== index) return image;
+          return {
+            ...image,
+            viewportTarget: nextViewportTarget,
+            isActive: true,
+          };
+        }),
+      ),
+    }));
+  }
+
+  function selectImage(index) {
+    setForm((current) => {
+      const selected = current.images[index];
+      const selectedViewport = normalizeViewportTarget(selected?.viewportTarget);
+
+      return {
+        ...current,
+        images: current.images.map((image, imageIndex) => {
+          if (normalizeViewportTarget(image.viewportTarget) !== selectedViewport) {
+            return image;
+          }
+
+          return {
+            ...image,
+            isActive: imageIndex === index,
+          };
+        }),
+      };
+    });
+  }
+
+  async function handleDeleteImage(image) {
+    if (!image?.id) return;
+    const shouldDelete = window.confirm(
+      "¿Eliminar esta imagen del hero? Esta acción no se puede deshacer.",
+    );
+    if (!shouldDelete) return;
+
+    try {
+      setSaving(true);
+      setError("");
+      setMessage("");
+      const response = await apiFetch(`/api/admin/site/hero/images/${image.id}`, {
+        method: "DELETE",
+      });
+      const nextHero = response.hero || null;
+      setHero(nextHero);
+      setForm(toHeroForm(nextHero));
+      const successMessage = "Imagen eliminada.";
+      setMessage(successMessage);
+      notifySuccess(successMessage);
+    } catch (err) {
+      const errorMessage = err.message || "No pudimos eliminar la imagen.";
+      setError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -113,15 +239,26 @@ export default function AdminSiteHeroPage() {
 
       const textResponse = await apiFetch("/api/admin/site/hero", {
         method: "PUT",
-        body: form,
+        body: {
+          imageAlt: form.imageAlt,
+          images: normalizeImages(form.images).map((image, index) => ({
+            id: image.id,
+            imageUrl: image.imageUrl,
+            imageAlt: image.imageAlt,
+            viewportTarget: image.viewportTarget,
+            sortOrder: index,
+            isActive: Boolean(image.isActive),
+          })),
+          isActive: form.isActive,
+        },
       });
       let nextHero = textResponse.hero || null;
 
-      if (imageFiles.length) {
+      if (desktopImageFiles.length || mobileImageFiles.length) {
         const formData = new FormData();
-        imageFiles.forEach((file) => formData.append("images", file));
+        desktopImageFiles.forEach((file) => formData.append("desktopImages", file));
+        mobileImageFiles.forEach((file) => formData.append("mobileImages", file));
         formData.append("imageAlt", form.imageAlt || "");
-        formData.append("heroDisplayMode", form.heroDisplayMode);
         const imageResponse = await apiFetch("/api/admin/site/hero/image", {
           method: "POST",
           body: formData,
@@ -131,7 +268,8 @@ export default function AdminSiteHeroPage() {
 
       setHero(nextHero);
       setForm(toHeroForm(nextHero));
-      setImageFiles([]);
+      setDesktopImageFiles([]);
+      setMobileImageFiles([]);
       const successMessage = "Hero actualizado.";
       setMessage(successMessage);
       notifySuccess(successMessage);
@@ -149,11 +287,21 @@ export default function AdminSiteHeroPage() {
       <AdminToolbar />
 
       <section className="section-card page-stack">
-        <div className="section-heading">
+        <div className="section-heading admin-site-hero-heading">
           <div>
             <p className="section-kicker">Home</p>
             <h1>Hero</h1>
           </div>
+          {!loading ? (
+            <button
+              type="submit"
+              form="admin-site-hero-form"
+              className="button button-primary"
+              disabled={saving}
+            >
+              {saving ? "Guardando..." : "Guardar hero"}
+            </button>
+          ) : null}
         </div>
 
         {loading ? <AppLoader variant="card" label="Cargando hero" /> : null}
@@ -161,132 +309,20 @@ export default function AdminSiteHeroPage() {
         {message ? <p className="success-copy">{message}</p> : null}
 
         {!loading ? (
-          <form className="page-stack" onSubmit={handleSubmit}>
+          <form id="admin-site-hero-form" className="page-stack" onSubmit={handleSubmit}>
             <div className="form-grid-two">
               <label className="field-group">
-                <span>Titulo</span>
-                <input
-                  className="input"
-                  value={form.title}
-                  onChange={(event) => updateField("title", event.target.value)}
-                  maxLength={180}
-                />
-              </label>
-
-              <label className="field-group">
-                <span>Texto secundario</span>
-                <input
-                  className="input"
-                  value={form.subtitle}
-                  onChange={(event) =>
-                    updateField("subtitle", event.target.value)
-                  }
-                  maxLength={500}
-                />
-              </label>
-
-              <label className="field-group">
-                <span>CTA</span>
-                <input
-                  className="input"
-                  value={form.ctaLabel}
-                  onChange={(event) =>
-                    updateField("ctaLabel", event.target.value)
-                  }
-                  maxLength={120}
-                />
-              </label>
-
-              <label className="field-group">
-                <span>URL CTA</span>
-                <input
-                  className="input"
-                  value={form.ctaUrl}
-                  onChange={(event) => updateField("ctaUrl", event.target.value)}
-                  maxLength={500}
-                  placeholder="/articles"
-                />
-              </label>
-
-              <label className="field-group">
-                <span>Tipo de hero</span>
-                <select
-                  className="input"
-                  value={form.heroDisplayMode}
-                  onChange={(event) =>
-                    updateField("heroDisplayMode", event.target.value)
-                  }
-                >
-                  <option value="SINGLE_IMAGE">Imagen única</option>
-                  <option value="CAROUSEL">Carousel</option>
-                </select>
-              </label>
-
-              <label className="field-group">
-                <span>Alto del hero</span>
-                <select
-                  className="input"
-                  value={form.heroHeightMode}
-                  onChange={(event) =>
-                    updateField("heroHeightMode", event.target.value)
-                  }
-                >
-                  <option value="HALF_SCREEN">Media pantalla</option>
-                  <option value="FULL_SCREEN">Pantalla completa</option>
-                  <option value="CUSTOM">Personalizado</option>
-                </select>
-              </label>
-
-              {form.heroHeightMode === "CUSTOM" ? (
-                <label className="field-group">
-                  <span>Alto personalizado (vh)</span>
-                  <input
-                    className="input"
-                    type="number"
-                    min="30"
-                    max="100"
-                    value={form.customHeightVh}
-                    onChange={(event) =>
-                      updateField("customHeightVh", event.target.value)
-                    }
-                  />
-                  <span className="field-helper">
-                    Ejemplo: 70 ocupa aproximadamente el 70% de la altura visible.
-                  </span>
-                </label>
-              ) : null}
-
-              <label className="field-group">
-                <span>Alt de imagen</span>
+                <span>Texto alternativo general</span>
                 <input
                   className="input"
                   value={form.imageAlt}
-                  onChange={(event) =>
-                    updateField("imageAlt", event.target.value)
-                  }
+                  onChange={(event) => updateField("imageAlt", event.target.value)}
                   maxLength={255}
+                  placeholder="Hero ESADAR"
                 />
               </label>
 
-              <label className="field-group">
-                <span>Imagen</span>
-                <input
-                  className="input"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple={form.heroDisplayMode === "CAROUSEL"}
-                  onChange={(event) =>
-                    setImageFiles(Array.from(event.target.files || []))
-                  }
-                />
-                <span className="field-helper">
-                  {form.heroDisplayMode === "CAROUSEL"
-                    ? "Podés cargar varias imágenes para el carousel."
-                    : "La nueva imagen reemplaza la imagen activa del hero."}
-                </span>
-              </label>
-
-              <label className="field-group checkbox-field form-grid-span-two">
+              <label className="field-group checkbox-field">
                 <input
                   type="checkbox"
                   checked={form.isActive}
@@ -296,41 +332,143 @@ export default function AdminSiteHeroPage() {
                 />
                 <span>Hero activo</span>
               </label>
+
+              <label className="field-group">
+                <span>Subir imagen desktop / tablet</span>
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(event) =>
+                    setDesktopImageFiles(Array.from(event.target.files || []))
+                  }
+                />
+                <span className="field-helper">
+                  Se usa en desktop y tablet. Podés subir varias y luego elegir cuál mostrar.
+                </span>
+              </label>
+
+              <label className="field-group">
+                <span>Subir imagen mobile</span>
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(event) =>
+                    setMobileImageFiles(Array.from(event.target.files || []))
+                  }
+                />
+                <span className="field-helper">
+                  Se usa en pantallas angostas. Si no elegís una, se usa la de desktop/tablet.
+                </span>
+              </label>
             </div>
 
-            <div className="section-card nested-card page-stack">
+            <div className="section-card nested-card page-stack admin-site-hero-preview-card">
               <div>
                 <p className="section-kicker">Vista actual</p>
-                <h2>Imagen del hero</h2>
+                <h2>Imágenes visibles del hero</h2>
               </div>
-              <SmartImage
-                src={primaryPreview}
-                alt={form.imageAlt || "Hero ESADAR"}
-                className="image-manager-card__media"
-                loading="eager"
-              />
-              {!primaryPreview ? (
+              <div className="admin-site-hero-preview-grid">
+                <figure className="admin-site-hero-preview-item">
+                  <figcaption>Desktop / tablet</figcaption>
+                  <SmartImage
+                    src={desktopPreview}
+                    alt={form.imageAlt || selectedDesktopImage?.imageAlt || "Hero ESADAR"}
+                    className="image-manager-card__media admin-site-hero-preview__media"
+                    loading="eager"
+                  />
+                </figure>
+                <figure className="admin-site-hero-preview-item">
+                  <figcaption>Mobile</figcaption>
+                  <SmartImage
+                    src={mobilePreview}
+                    alt={form.imageAlt || selectedMobileImage?.imageAlt || "Hero ESADAR mobile"}
+                    className="image-manager-card__media admin-site-hero-preview__media"
+                    loading="eager"
+                  />
+                </figure>
+              </div>
+              {!desktopPreview && !mobilePreview ? (
                 <p className="muted-copy">
-                  Sin imagen configurada. La home usa el fallback actual.
+                  Sin imágenes configuradas. La home usa el fallback actual.
                 </p>
               ) : null}
             </div>
+
+            {desktopImagePreviews.length || mobileImagePreviews.length ? (
+              <div className="section-card nested-card page-stack">
+                <div>
+                  <p className="section-kicker">Pendientes</p>
+                  <h2>Imágenes listas para subir</h2>
+                </div>
+                <div className="image-manager-grid admin-site-hero-image-grid">
+                  {desktopImagePreviews.map((preview, index) => (
+                    <figure className="image-manager-card image-manager-card--pending" key={preview}>
+                      <SmartImage
+                        src={preview}
+                        alt={`Nueva imagen desktop/tablet ${index + 1}`}
+                        className="image-manager-card__media admin-site-hero-thumb__media"
+                      />
+                      <figcaption>Desktop / tablet</figcaption>
+                    </figure>
+                  ))}
+                  {mobileImagePreviews.map((preview, index) => (
+                    <figure className="image-manager-card image-manager-card--pending" key={preview}>
+                      <SmartImage
+                        src={preview}
+                        alt={`Nueva imagen mobile ${index + 1}`}
+                        className="image-manager-card__media admin-site-hero-thumb__media"
+                      />
+                      <figcaption>Mobile</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {form.images.length ? (
               <div className="section-card nested-card page-stack">
                 <div>
                   <p className="section-kicker">Imágenes</p>
-                  <h2>Orden y visibilidad</h2>
+                  <h2>Seleccionar imagen visible por viewport</h2>
                 </div>
-                <div className="image-manager-grid">
+                <div className="image-manager-grid admin-site-hero-image-grid">
                   {form.images.map((image, index) => (
                     <article className="image-manager-card" key={image.id || image.imageUrl}>
                       <SmartImage
                         src={resolveAssetUrl(image.imageUrl)}
                         alt={image.imageAlt || form.imageAlt || "Hero ESADAR"}
-                        className="image-manager-card__media"
+                        className="image-manager-card__media admin-site-hero-thumb__media"
                       />
                       <div className="page-stack stack-gap-xs">
+                        <label className="field-group">
+                          <span>Viewport</span>
+                          <select
+                            className="input"
+                            value={image.viewportTarget}
+                            onChange={(event) => updateImageViewport(index, event.target.value)}
+                          >
+                            {VIEWPORT_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="field-group checkbox-field">
+                          <input
+                            type="radio"
+                            name={`selectedHeroImage-${image.viewportTarget}`}
+                            checked={Boolean(image.isActive)}
+                            onChange={() => selectImage(index)}
+                          />
+                          <span>
+                            Mostrar en {image.viewportTarget === VIEWPORT_MOBILE ? "mobile" : "desktop/tablet"}
+                          </span>
+                        </label>
                         <label className="field-group">
                           <span>Alt</span>
                           <input
@@ -341,28 +479,14 @@ export default function AdminSiteHeroPage() {
                             }
                           />
                         </label>
-                        <label className="field-group">
-                          <span>Orden</span>
-                          <input
-                            className="input"
-                            type="number"
-                            min="0"
-                            value={image.sortOrder}
-                            onChange={(event) =>
-                              updateImage(index, "sortOrder", event.target.value)
-                            }
-                          />
-                        </label>
-                        <label className="field-group checkbox-field">
-                          <input
-                            type="checkbox"
-                            checked={image.isActive}
-                            onChange={(event) =>
-                              updateImage(index, "isActive", event.target.checked)
-                            }
-                          />
-                          <span>Activa</span>
-                        </label>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={saving}
+                          onClick={() => handleDeleteImage(image)}
+                        >
+                          Eliminar imagen
+                        </button>
                       </div>
                     </article>
                   ))}

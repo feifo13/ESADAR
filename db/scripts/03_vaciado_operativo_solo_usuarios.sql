@@ -10,7 +10,8 @@
 -- queden como CUSTOMER.
 -- =========================================================
 
-SET NAMES utf8mb4;
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
 SET time_zone = '+00:00';
 
 SET @OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;
@@ -111,7 +112,7 @@ ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   is_active = 1;
 
-SET @esadar_super_admin_email := 'fefio1313@gmail.com';
+SET @esadar_super_admin_email := _utf8mb4'fefio1313@gmail.com' COLLATE utf8mb4_unicode_ci;
 SET @esadar_super_admin_password_hash := '$2b$10$Z7dhGDzCSsn0bU5TrJWCc.mkmdYN0Cbn88l6t5kjuAh/eaGEK2xHK';
 
 INSERT INTO users (
@@ -147,7 +148,12 @@ ON DUPLICATE KEY UPDATE
   is_active = 1,
   updated_by = NULL;
 
-SET @admin_user_id := (SELECT id FROM users WHERE email = @esadar_super_admin_email LIMIT 1);
+SET @admin_user_id := (
+  SELECT id
+  FROM users
+  WHERE email COLLATE utf8mb4_unicode_ci = @esadar_super_admin_email COLLATE utf8mb4_unicode_ci
+  LIMIT 1
+);
 SET @super_admin_role_id := (SELECT id FROM roles WHERE code = 'SUPER_ADMIN' LIMIT 1);
 SET @admin_role_id := (SELECT id FROM roles WHERE code = 'ADMIN' LIMIT 1);
 SET @customer_role_id := (SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1);

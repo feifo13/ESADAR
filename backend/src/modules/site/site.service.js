@@ -1,10 +1,23 @@
+import fs from 'node:fs/promises';
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { logAudit } from '../audit/audit.service.js';
-import { buildUploadPublicPathFromDiskPath, normalizePublicAssetPath } from '../../utils/assets.js';
+import {
+  buildUploadPublicPathFromDiskPath,
+  isManagedUploadPath,
+  normalizePublicAssetPath,
+  resolveUploadDiskPath,
+} from '../../utils/assets.js';
 
 const DEFAULT_HEIGHT_MODE = 'HALF_SCREEN';
 const DEFAULT_DISPLAY_MODE = 'SINGLE_IMAGE';
+const DEFAULT_VIEWPORT_TARGET = 'DESKTOP_TABLET';
+const VIEWPORT_TARGETS = new Set(['DESKTOP_TABLET', 'MOBILE']);
+
+function normalizeViewportTarget(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return VIEWPORT_TARGETS.has(normalized) ? normalized : DEFAULT_VIEWPORT_TARGET;
+}
 
 function normalizeHeroImageRow(row) {
   if (!row) return null;
@@ -13,6 +26,7 @@ function normalizeHeroImageRow(row) {
     heroId: Number(row.heroId),
     imageUrl: row.imageUrl || '',
     imageAlt: row.imageAlt || '',
+    viewportTarget: normalizeViewportTarget(row.viewportTarget),
     sortOrder: Number(row.sortOrder || 0),
     isActive: Boolean(row.isActive),
     createdAt: row.createdAt || null,
@@ -30,9 +44,13 @@ function normalizeHeroRow(row) {
     ctaUrl: row.ctaUrl || '',
     heroHeightMode: row.heroHeightMode || DEFAULT_HEIGHT_MODE,
     customHeightVh: row.customHeightVh != null ? Number(row.customHeightVh) : null,
-    heroDisplayMode: row.heroDisplayMode || DEFAULT_DISPLAY_MODE,
+    heroDisplayMode: DEFAULT_DISPLAY_MODE,
     imageUrl: row.imageUrl || '',
     imageAlt: row.imageAlt || '',
+    desktopImageUrl: '',
+    desktopImageAlt: '',
+    mobileImageUrl: '',
+    mobileImageAlt: '',
     images: [],
     isActive: Boolean(row.isActive),
     createdAt: row.createdAt || null,
@@ -41,13 +59,41 @@ function normalizeHeroRow(row) {
   };
 }
 
-function normalizeFiles(files) {
+function normalizeFiles(files, input = {}) {
   if (!files) return [];
-  if (Array.isArray(files)) return files.filter(Boolean);
-  return [
-    ...(Array.isArray(files.image) ? files.image : []),
-    ...(Array.isArray(files.images) ? files.images : []),
-  ].filter(Boolean);
+
+  if (Array.isArray(files)) {
+    return files.filter(Boolean).map((file) => ({
+      file,
+      viewportTarget: normalizeViewportTarget(input.viewportTarget),
+    }));
+  }
+
+  const fileEntries = [];
+  const pushFiles = (fieldName, viewportTarget) => {
+    const fieldFiles = Array.isArray(files[fieldName]) ? files[fieldName] : [];
+    fieldFiles.filter(Boolean).forEach((file) => {
+      fileEntries.push({ file, viewportTarget });
+    });
+  };
+
+  pushFiles('desktopImage', 'DESKTOP_TABLET');
+  pushFiles('desktopImages', 'DESKTOP_TABLET');
+  pushFiles('mobileImage', 'MOBILE');
+  pushFiles('mobileImages', 'MOBILE');
+  pushFiles('image', normalizeViewportTarget(input.viewportTarget));
+  pushFiles('images', normalizeViewportTarget(input.viewportTarget));
+
+  return fileEntries;
+}
+
+function pickActiveImageForViewport(images, viewportTarget) {
+  const target = normalizeViewportTarget(viewportTarget);
+  return (
+    images.find((image) => image.viewportTarget === target && image.isActive) ||
+    images.find((image) => image.viewportTarget === target) ||
+    null
+  );
 }
 
 async function selectHeroImages(connection, heroId, { includeInactive = false } = {}) {
@@ -58,6 +104,7 @@ async function selectHeroImages(connection, heroId, { includeInactive = false } 
         hero_id AS heroId,
         image_url AS imageUrl,
         image_alt AS imageAlt,
+        viewport_target AS viewportTarget,
         sort_order AS sortOrder,
         is_active AS isActive,
         created_at AS createdAt,
@@ -103,14 +150,19 @@ async function selectLatestHero(connection = pool, { includeInactive = false } =
 
   hero.images = await selectHeroImages(connection, hero.id, { includeInactive });
 
-  const firstActiveImage =
-    hero.images.find((image) => image.isActive) ||
-    hero.images[0] ||
-    null;
-  if (firstActiveImage) {
-    hero.imageUrl = firstActiveImage.imageUrl;
-    hero.imageAlt = firstActiveImage.imageAlt || hero.imageAlt;
+  const desktopImage = pickActiveImageForViewport(hero.images, 'DESKTOP_TABLET');
+  const mobileImage = pickActiveImageForViewport(hero.images, 'MOBILE');
+  const fallbackImage = desktopImage || mobileImage || hero.images.find((image) => image.isActive) || hero.images[0] || null;
+
+  if (fallbackImage) {
+    hero.imageUrl = fallbackImage.imageUrl;
+    hero.imageAlt = fallbackImage.imageAlt || hero.imageAlt;
   }
+
+  hero.desktopImageUrl = desktopImage?.imageUrl || fallbackImage?.imageUrl || hero.imageUrl || '';
+  hero.desktopImageAlt = desktopImage?.imageAlt || hero.imageAlt || '';
+  hero.mobileImageUrl = mobileImage?.imageUrl || hero.desktopImageUrl || '';
+  hero.mobileImageAlt = mobileImage?.imageAlt || hero.desktopImageAlt || hero.imageAlt || '';
 
   return hero;
 }
@@ -147,9 +199,53 @@ async function ensureHeroRow(connection) {
     heroDisplayMode: DEFAULT_DISPLAY_MODE,
     imageUrl: '',
     imageAlt: 'Hero ESADAR',
+    desktopImageUrl: '',
+    desktopImageAlt: 'Hero ESADAR',
+    mobileImageUrl: '',
+    mobileImageAlt: 'Hero ESADAR',
     images: [],
     isActive: true,
   };
+}
+
+async function ensureSingleActiveHeroImagePerViewport(connection, heroId) {
+  for (const viewportTarget of VIEWPORT_TARGETS) {
+    const [rows] = await connection.execute(
+      `
+        SELECT id, is_active AS isActive
+        FROM site_hero_images
+        WHERE hero_id = ?
+          AND viewport_target = ?
+        ORDER BY sort_order ASC, id ASC
+      `,
+      [heroId, viewportTarget],
+    );
+
+    if (!rows.length) continue;
+
+    const selected = rows.find((row) => Boolean(row.isActive)) || rows[0];
+    await connection.execute(
+      `
+        UPDATE site_hero_images
+        SET is_active = CASE WHEN id = ? THEN 1 ELSE 0 END
+        WHERE hero_id = ?
+          AND viewport_target = ?
+      `,
+      [selected.id, heroId, viewportTarget],
+    );
+  }
+}
+
+async function deleteManagedHeroImageFile(imageUrl) {
+  if (!isManagedUploadPath(imageUrl)) return;
+  const diskPath = resolveUploadDiskPath(imageUrl);
+  if (!diskPath) return;
+
+  try {
+    await fs.unlink(diskPath);
+  } catch (_error) {
+    // The DB record is the source of truth. Missing files must not break admin cleanup.
+  }
 }
 
 async function syncLegacyHeroImageFields(connection, heroId) {
@@ -159,13 +255,30 @@ async function syncLegacyHeroImageFields(connection, heroId) {
       FROM site_hero_images
       WHERE hero_id = ?
         AND is_active = 1
+        AND viewport_target = 'DESKTOP_TABLET'
       ORDER BY sort_order ASC, id ASC
       LIMIT 1
     `,
     [heroId],
   );
 
-  const firstImage = rows[0] || null;
+  let firstImage = rows[0] || null;
+
+  if (!firstImage) {
+    const [fallbackRows] = await connection.execute(
+      `
+        SELECT image_url AS imageUrl, image_alt AS imageAlt
+        FROM site_hero_images
+        WHERE hero_id = ?
+          AND is_active = 1
+        ORDER BY sort_order ASC, id ASC
+        LIMIT 1
+      `,
+      [heroId],
+    );
+    firstImage = fallbackRows[0] || null;
+  }
+
   await connection.execute(
     `
       UPDATE site_hero
@@ -179,12 +292,15 @@ async function syncLegacyHeroImageFields(connection, heroId) {
 }
 
 async function upsertHeroImageMetadata(connection, heroId, image) {
+  const viewportTarget = normalizeViewportTarget(image.viewportTarget);
+
   if (image.id) {
     await connection.execute(
       `
         UPDATE site_hero_images
         SET
           image_alt = ?,
+          viewport_target = ?,
           sort_order = ?,
           is_active = ?
         WHERE id = ?
@@ -192,6 +308,7 @@ async function upsertHeroImageMetadata(connection, heroId, image) {
       `,
       [
         image.imageAlt || null,
+        viewportTarget,
         Number(image.sortOrder || 0),
         image.isActive ? 1 : 0,
         Number(image.id),
@@ -210,14 +327,16 @@ async function upsertHeroImageMetadata(connection, heroId, image) {
         hero_id,
         image_url,
         image_alt,
+        viewport_target,
         sort_order,
         is_active
-      ) VALUES (?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `,
     [
       heroId,
       imageUrl,
       image.imageAlt || null,
+      viewportTarget,
       Number(image.sortOrder || 0),
       image.isActive ? 1 : 0,
     ],
@@ -261,9 +380,9 @@ export async function updateAdminSiteHero(input, auditContext) {
         input.subtitle || null,
         input.ctaLabel || null,
         input.ctaUrl || null,
-        input.heroHeightMode || DEFAULT_HEIGHT_MODE,
-        input.heroHeightMode === 'CUSTOM' ? input.customHeightVh || null : null,
-        input.heroDisplayMode || DEFAULT_DISPLAY_MODE,
+        DEFAULT_HEIGHT_MODE,
+        null,
+        DEFAULT_DISPLAY_MODE,
         nextImageUrl || null,
         input.imageAlt || null,
         input.isActive ? 1 : 0,
@@ -276,17 +395,27 @@ export async function updateAdminSiteHero(input, auditContext) {
       await upsertHeroImageMetadata(connection, before.id, {
         imageUrl: nextImageUrl,
         imageAlt: input.imageAlt || before.imageAlt || null,
+        viewportTarget: DEFAULT_VIEWPORT_TARGET,
         sortOrder: 0,
         isActive: true,
       });
     }
 
     if (Array.isArray(input.images)) {
+      const selectedByViewport = new Set();
       for (const image of input.images) {
-        await upsertHeroImageMetadata(connection, before.id, image);
+        const viewportTarget = normalizeViewportTarget(image.viewportTarget);
+        const shouldBeActive = Boolean(image.isActive) && !selectedByViewport.has(viewportTarget);
+        await upsertHeroImageMetadata(connection, before.id, {
+          ...image,
+          viewportTarget,
+          isActive: shouldBeActive,
+        });
+        if (shouldBeActive) selectedByViewport.add(viewportTarget);
       }
     }
 
+    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
     await syncLegacyHeroImageFields(connection, before.id);
 
     const after = await selectLatestHero(connection, { includeInactive: true });
@@ -311,54 +440,59 @@ export async function updateAdminSiteHero(input, auditContext) {
 }
 
 export async function updateAdminSiteHeroImage(files, input, auditContext) {
-  const uploadFiles = normalizeFiles(files);
+  const uploadEntries = normalizeFiles(files, input);
 
   return withTransaction(async (connection) => {
     const before = await ensureHeroRow(connection);
-    if (!uploadFiles.length) return before;
-
-    const displayMode = input.heroDisplayMode || before.heroDisplayMode || DEFAULT_DISPLAY_MODE;
-    const filesToInsert = displayMode === 'SINGLE_IMAGE' ? uploadFiles.slice(0, 1) : uploadFiles;
-
-    if (displayMode === 'SINGLE_IMAGE') {
-      await connection.execute(
-        'UPDATE site_hero_images SET is_active = 0 WHERE hero_id = ?',
-        [before.id],
-      );
-    }
+    if (!uploadEntries.length) return before;
 
     const [sortRows] = await connection.execute(
       'SELECT COALESCE(MAX(sort_order), -1) AS maxSortOrder FROM site_hero_images WHERE hero_id = ?',
       [before.id],
     );
     let nextSortOrder = Number(sortRows[0]?.maxSortOrder ?? -1) + 1;
+    const activeByViewport = new Set(
+      before.images
+        .filter((image) => image.isActive)
+        .map((image) => normalizeViewportTarget(image.viewportTarget)),
+    );
+    const selectedInBatch = new Set();
 
-    for (const file of filesToInsert) {
-      const imageUrl = buildUploadPublicPathFromDiskPath(file.path);
+    for (const entry of uploadEntries) {
+      const imageUrl = buildUploadPublicPathFromDiskPath(entry.file.path);
+      const viewportTarget = normalizeViewportTarget(entry.viewportTarget);
+      const shouldSelectUpload = !activeByViewport.has(viewportTarget) && !selectedInBatch.has(viewportTarget);
+
       await connection.execute(
         `
           INSERT INTO site_hero_images (
             hero_id,
             image_url,
             image_alt,
+            viewport_target,
             sort_order,
             is_active
-          ) VALUES (?, ?, ?, ?, 1)
+          ) VALUES (?, ?, ?, ?, ?, ?)
         `,
         [
           before.id,
           imageUrl,
           input.imageAlt || before.imageAlt || null,
-          displayMode === 'SINGLE_IMAGE' ? 0 : nextSortOrder,
+          viewportTarget,
+          nextSortOrder,
+          shouldSelectUpload ? 1 : 0,
         ],
       );
+
+      if (shouldSelectUpload) selectedInBatch.add(viewportTarget);
       nextSortOrder += 1;
     }
 
     await connection.execute(
       'UPDATE site_hero SET hero_display_mode = ?, updated_by = ? WHERE id = ?',
-      [displayMode, auditContext.actorUserId || null, before.id],
+      [DEFAULT_DISPLAY_MODE, auditContext.actorUserId || null, before.id],
     );
+    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
     await syncLegacyHeroImageFields(connection, before.id);
 
     const after = await selectLatestHero(connection, { includeInactive: true });
@@ -371,7 +505,7 @@ export async function updateAdminSiteHeroImage(files, input, auditContext) {
         entityId: before.id,
         beforeJson: before,
         afterJson: after,
-        metadataJson: { uploadedImages: filesToInsert.length, displayMode },
+        metadataJson: { uploadedImages: uploadEntries.length },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,
@@ -381,4 +515,50 @@ export async function updateAdminSiteHeroImage(files, input, auditContext) {
 
     return after;
   });
+}
+
+export async function deleteAdminSiteHeroImage(imageId, auditContext) {
+  if (!Number.isInteger(imageId) || imageId <= 0) {
+    throw new Error('Invalid hero image id');
+  }
+
+  let deletedImageUrl = '';
+
+  const after = await withTransaction(async (connection) => {
+    const before = await ensureHeroRow(connection);
+    const [rows] = await connection.execute(
+      'SELECT id, image_url AS imageUrl, viewport_target AS viewportTarget FROM site_hero_images WHERE id = ? AND hero_id = ? LIMIT 1',
+      [imageId, before.id],
+    );
+
+    const image = rows[0] || null;
+    if (!image) return before;
+
+    deletedImageUrl = image.imageUrl || '';
+    await connection.execute('DELETE FROM site_hero_images WHERE id = ? AND hero_id = ?', [imageId, before.id]);
+    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    await syncLegacyHeroImageFields(connection, before.id);
+
+    const nextHero = await selectLatestHero(connection, { includeInactive: true });
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'SITE_HERO_IMAGE_DELETED',
+        entityType: 'site_hero_image',
+        entityId: imageId,
+        beforeJson: image,
+        afterJson: nextHero,
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return nextHero;
+  });
+
+  await deleteManagedHeroImageFile(deletedImageUrl);
+  return after;
 }

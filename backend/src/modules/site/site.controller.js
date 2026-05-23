@@ -1,6 +1,7 @@
 import { getAuditContext } from '../../utils/audit-context.js';
 import {
   getAdminSiteHero,
+  deleteAdminSiteHeroImage,
   getPublicSiteHero,
   updateAdminSiteHero,
   updateAdminSiteHeroImage,
@@ -25,4 +26,10 @@ export async function postAdminHeroImage(req, res) {
   const input = siteHeroImageUpdateSchema.parse(req.body);
   const hero = await updateAdminSiteHeroImage(req.files || req.file, input, getAuditContext(req));
   return res.status(201).json({ ok: true, hero });
+}
+
+export async function deleteAdminHeroImage(req, res) {
+  const imageId = Number(req.params.imageId);
+  const hero = await deleteAdminSiteHeroImage(imageId, getAuditContext(req));
+  return res.json({ ok: true, hero });
 }

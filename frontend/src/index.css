@@ -16419,3 +16419,134 @@ dialog,
     width: 100%;
   }
 }
+
+/* === ESADAR simplified hero: one selected image, no carousel/config leftovers === */
+.home-hero-section {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.home-hero-frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.home-hero-picture {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.home-hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  min-width: 0;
+  object-fit: contain;
+  object-position: center center;
+  background: var(--surface);
+}
+
+.admin-site-hero-heading {
+  align-items: start;
+}
+
+.admin-site-hero-heading .button {
+  justify-self: end;
+}
+
+.admin-site-hero-preview-card {
+  align-items: start;
+}
+
+.admin-site-hero-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, min(260px, 100%)));
+  gap: 1rem;
+  align-items: start;
+  justify-content: start;
+}
+
+.admin-site-hero-preview-item {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.admin-site-hero-preview-item figcaption {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-site-hero-preview__media {
+  width: min(520px, 100%) !important;
+  height: auto !important;
+  max-height: 260px !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  justify-self: start;
+}
+
+.admin-site-hero-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 200px)) !important;
+  align-items: start;
+  justify-content: start;
+}
+
+.admin-site-hero-image-grid .image-manager-card {
+  max-width: 200px;
+}
+
+.admin-site-hero-thumb__media,
+.admin-site-hero-image-grid .image-manager-card__media {
+  width: 100% !important;
+  height: 120px !important;
+  max-height: 120px !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+@media (max-width: 720px) {
+  .admin-site-hero-heading {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-site-hero-heading .button {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .admin-site-hero-preview__media {
+    width: 100% !important;
+    max-height: 220px !important;
+  }
+  .admin-site-hero-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .admin-site-hero-image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  }
+}

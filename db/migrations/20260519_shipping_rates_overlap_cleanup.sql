@@ -7,7 +7,8 @@
 --   - Evitar solapamientos creados por migraciones idempotentes previas.
 -- =========================================================
 
-SET NAMES utf8mb4;
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
 SET time_zone = '+00:00';
 
 CREATE TEMPORARY TABLE tmp_esadar_default_shipping_rates (
