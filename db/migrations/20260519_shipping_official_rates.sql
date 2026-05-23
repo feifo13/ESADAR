@@ -1,9 +1,9 @@
 -- =========================================================
--- ESADAR - Documentos oficiales y consolidacion envio por peso
+-- ESADAR - Documentos oficiales y consolidación envío por peso
 -- Fecha: 2026-05-19
 -- Objetivo:
---   - Agregar link/path oficial configurable por metodo de envio.
---   - Confirmar soporte para metodos con rangos por peso.
+--   - Agregar link/path oficial configurable por método de envío.
+--   - Confirmar soporte para métodos con rangos por peso.
 --   - Completar tarifas Ahiva / Correo cuando no haya rangos cargados.
 -- =========================================================
 
@@ -72,7 +72,7 @@ SET @sql := IF(@col_exists = 0,
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---------------------------------------------------------
--- Tabla de rangos por peso si todavia no existe
+-- Tabla de rangos por peso si todavía no existe
 -- ---------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS shipping_method_weight_rates (

@@ -117,7 +117,7 @@ export default function ArticleCard({
       return;
     }
 
-    notifySuccess("Articulo agregado al carrito.");
+    notifySuccess("Artículo agregado al carrito.");
   }
 
   if (variant === "editorial" && view === "grid") {
@@ -183,7 +183,7 @@ export default function ArticleCard({
           pending={pending}
           className="article-card-heart article-card-heart--editorial article-card-heart--bare"
           labelActive="Quitar de guardados"
-          labelInactive="Guardar articulo"
+          labelInactive="Guardar artículo"
           onToggle={() => void handleWishlistToggle()}
         />
       </motion.article>
@@ -229,7 +229,7 @@ export default function ArticleCard({
           pending={pending}
           className="article-card-heart"
           labelActive="Quitar de guardados"
-          labelInactive="Guardar articulo"
+          labelInactive="Guardar artículo"
           onToggle={() => void handleWishlistToggle()}
         />
       </div>

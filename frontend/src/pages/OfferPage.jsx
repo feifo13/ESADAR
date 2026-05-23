@@ -30,7 +30,7 @@ const initialGuest = {
 };
 
 const ACCEPTED_OFFER_NOTICE_MESSAGE =
-  "Ya tenes una oferta aceptada para esta prenda. Puedes usarla desde el carrito.";
+  "Ya tenés una oferta aceptada para esta prenda. Podés usarla desde el carrito.";
 
 function isAcceptedOfferEligibility(eligibility) {
   return (
@@ -92,7 +92,7 @@ export default function OfferPage() {
         if (!ignore) {
           setArticle(null);
           setError(
-            err.message || "No se pudo cargar este articulo para ofertar.",
+            err.message || "No se pudo cargar este artículo para ofertar.",
           );
         }
       } finally {
@@ -284,7 +284,7 @@ export default function OfferPage() {
   if (!article) {
     return (
       <div className="container section-card error-card">
-        {error || "No se pudo cargar este articulo para ofertar."}
+        {error || "No se pudo cargar este artículo para ofertar."}
       </div>
     );
   }
@@ -511,7 +511,7 @@ export default function OfferPage() {
                 to={articlePath(article)}
                 className="button button-secondary button-compact"
               >
-                Volver al articulo
+                Volver al artículo
               </Link>
             </div>
 

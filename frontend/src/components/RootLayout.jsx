@@ -7,6 +7,7 @@ import FooterScrollScene from "./FooterScrollScene.jsx";
 import SeoHead from "./SeoHead.jsx";
 import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
 import AppSnackbar from "./AppSnackbar.jsx";
+import OfferTicker from "./OfferTicker.jsx";
 import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
 import AppLoader from "./AppLoader.jsx";
@@ -111,6 +112,8 @@ export default function RootLayout() {
   const isAdminView = location.pathname.startsWith("/admin");
   const isAuthView = ["/login", "/register"].includes(location.pathname);
   const isAccountView = location.pathname.startsWith("/cuenta");
+  const showOfferTicker =
+    isAccountView || location.pathname.startsWith("/articles/");
   const isFooterHiddenView = [
     "/guia-de-compra",
     "/terminos-y-condiciones",
@@ -300,6 +303,7 @@ export default function RootLayout() {
       <MobileMenuProvider>
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
+        {showOfferTicker ? <OfferTicker className="page-offer-ticker" /> : null}
         <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
           {showBreadcrumbs ? <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} /> : null}
           <div className="page-transition-shell">

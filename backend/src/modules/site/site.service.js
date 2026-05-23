@@ -13,10 +13,29 @@ const DEFAULT_HEIGHT_MODE = 'HALF_SCREEN';
 const DEFAULT_DISPLAY_MODE = 'SINGLE_IMAGE';
 const DEFAULT_VIEWPORT_TARGET = 'DESKTOP_TABLET';
 const VIEWPORT_TARGETS = new Set(['DESKTOP_TABLET', 'MOBILE']);
+const HERO_HEIGHT_MODES = new Set(['HALF_SCREEN', 'FULL_SCREEN', 'CUSTOM']);
+const HERO_DISPLAY_MODES = new Set(['SINGLE_IMAGE', 'CAROUSEL']);
 
 function normalizeViewportTarget(value) {
   const normalized = String(value || '').trim().toUpperCase();
   return VIEWPORT_TARGETS.has(normalized) ? normalized : DEFAULT_VIEWPORT_TARGET;
+}
+
+function normalizeHeroHeightMode(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return HERO_HEIGHT_MODES.has(normalized) ? normalized : DEFAULT_HEIGHT_MODE;
+}
+
+function normalizeHeroDisplayMode(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return HERO_DISPLAY_MODES.has(normalized) ? normalized : DEFAULT_DISPLAY_MODE;
+}
+
+function normalizeCustomHeightVh(mode, value) {
+  if (mode !== 'CUSTOM') return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 70;
+  return Math.min(100, Math.max(30, Math.trunc(numeric)));
 }
 
 function normalizeHeroImageRow(row) {
@@ -42,9 +61,9 @@ function normalizeHeroRow(row) {
     subtitle: row.subtitle || '',
     ctaLabel: row.ctaLabel || '',
     ctaUrl: row.ctaUrl || '',
-    heroHeightMode: row.heroHeightMode || DEFAULT_HEIGHT_MODE,
+    heroHeightMode: normalizeHeroHeightMode(row.heroHeightMode),
     customHeightVh: row.customHeightVh != null ? Number(row.customHeightVh) : null,
-    heroDisplayMode: DEFAULT_DISPLAY_MODE,
+    heroDisplayMode: normalizeHeroDisplayMode(row.heroDisplayMode),
     imageUrl: row.imageUrl || '',
     imageAlt: row.imageAlt || '',
     desktopImageUrl: '',
@@ -182,7 +201,7 @@ async function ensureHeroRow(connection) {
         hero_display_mode,
         image_alt,
         is_active
-      ) VALUES ('ESADAR', 'Ropa seleccionada', 'Ver catalogo', '/articles', ?, ?, 'Hero ESADAR', 1)
+      ) VALUES ('ESADAR', 'Ropa seleccionada', 'Ver catálogo', '/articles', ?, ?, 'Hero ESADAR', 1)
     `,
     [DEFAULT_HEIGHT_MODE, DEFAULT_DISPLAY_MODE],
   );
@@ -192,7 +211,7 @@ async function ensureHeroRow(connection) {
     id: result.insertId,
     title: 'ESADAR',
     subtitle: 'Ropa seleccionada',
-    ctaLabel: 'Ver catalogo',
+    ctaLabel: 'Ver catálogo',
     ctaUrl: '/articles',
     heroHeightMode: DEFAULT_HEIGHT_MODE,
     customHeightVh: null,
@@ -224,6 +243,7 @@ async function ensureSingleActiveHeroImagePerViewport(connection, heroId) {
     if (!rows.length) continue;
 
     const selected = rows.find((row) => Boolean(row.isActive)) || rows[0];
+
     await connection.execute(
       `
         UPDATE site_hero_images
@@ -357,6 +377,9 @@ export async function updateAdminSiteHero(input, auditContext) {
     const nextImageUrl = input.imageUrl === undefined
       ? before.imageUrl || null
       : normalizePublicAssetPath(input.imageUrl);
+    const heroHeightMode = normalizeHeroHeightMode(input.heroHeightMode);
+    const customHeightVh = normalizeCustomHeightVh(heroHeightMode, input.customHeightVh);
+    const heroDisplayMode = normalizeHeroDisplayMode(input.heroDisplayMode);
 
     await connection.execute(
       `
@@ -380,9 +403,9 @@ export async function updateAdminSiteHero(input, auditContext) {
         input.subtitle || null,
         input.ctaLabel || null,
         input.ctaUrl || null,
-        DEFAULT_HEIGHT_MODE,
-        null,
-        DEFAULT_DISPLAY_MODE,
+        heroHeightMode,
+        customHeightVh,
+        heroDisplayMode,
         nextImageUrl || null,
         input.imageAlt || null,
         input.isActive ? 1 : 0,
@@ -405,7 +428,9 @@ export async function updateAdminSiteHero(input, auditContext) {
       const selectedByViewport = new Set();
       for (const image of input.images) {
         const viewportTarget = normalizeViewportTarget(image.viewportTarget);
-        const shouldBeActive = Boolean(image.isActive) && !selectedByViewport.has(viewportTarget);
+        const shouldBeActive = heroDisplayMode === 'CAROUSEL'
+          ? Boolean(image.isActive)
+          : Boolean(image.isActive) && !selectedByViewport.has(viewportTarget);
         await upsertHeroImageMetadata(connection, before.id, {
           ...image,
           viewportTarget,
@@ -415,7 +440,9 @@ export async function updateAdminSiteHero(input, auditContext) {
       }
     }
 
-    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    if (heroDisplayMode === 'SINGLE_IMAGE') {
+      await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    }
     await syncLegacyHeroImageFields(connection, before.id);
 
     const after = await selectLatestHero(connection, { includeInactive: true });
@@ -461,7 +488,8 @@ export async function updateAdminSiteHeroImage(files, input, auditContext) {
     for (const entry of uploadEntries) {
       const imageUrl = buildUploadPublicPathFromDiskPath(entry.file.path);
       const viewportTarget = normalizeViewportTarget(entry.viewportTarget);
-      const shouldSelectUpload = !activeByViewport.has(viewportTarget) && !selectedInBatch.has(viewportTarget);
+      const shouldSelectUpload = before.heroDisplayMode === 'CAROUSEL'
+        || (!activeByViewport.has(viewportTarget) && !selectedInBatch.has(viewportTarget));
 
       await connection.execute(
         `
@@ -489,10 +517,12 @@ export async function updateAdminSiteHeroImage(files, input, auditContext) {
     }
 
     await connection.execute(
-      'UPDATE site_hero SET hero_display_mode = ?, updated_by = ? WHERE id = ?',
-      [DEFAULT_DISPLAY_MODE, auditContext.actorUserId || null, before.id],
+      'UPDATE site_hero SET updated_by = ? WHERE id = ?',
+      [auditContext.actorUserId || null, before.id],
     );
-    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    if (before.heroDisplayMode === 'SINGLE_IMAGE') {
+      await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    }
     await syncLegacyHeroImageFields(connection, before.id);
 
     const after = await selectLatestHero(connection, { includeInactive: true });
@@ -536,7 +566,9 @@ export async function deleteAdminSiteHeroImage(imageId, auditContext) {
 
     deletedImageUrl = image.imageUrl || '';
     await connection.execute('DELETE FROM site_hero_images WHERE id = ? AND hero_id = ?', [imageId, before.id]);
-    await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    if (before.heroDisplayMode === 'SINGLE_IMAGE') {
+      await ensureSingleActiveHeroImagePerViewport(connection, before.id);
+    }
     await syncLegacyHeroImageFields(connection, before.id);
 
     const nextHero = await selectLatestHero(connection, { includeInactive: true });

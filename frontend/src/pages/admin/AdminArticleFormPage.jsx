@@ -289,7 +289,7 @@ export default function AdminArticleFormPage() {
           setExistingImages(sortImages(response.article.images || []));
         }
       } catch (err) {
-        if (!ignore) setError(err.message || "No se pudo cargar el articulo");
+        if (!ignore) setError(err.message || "No se pudo cargar el artículo");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -743,8 +743,8 @@ export default function AdminArticleFormPage() {
       }
 
       const successMessage = isEdit
-        ? "Articulo actualizado correctamente."
-        : "Articulo creado correctamente.";
+        ? "Artículo actualizado correctamente."
+        : "Artículo creado correctamente.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
       navigate("/admin/articles", {
@@ -755,7 +755,7 @@ export default function AdminArticleFormPage() {
       const errorMessage =
         getArticleApiValidationMessage(err) ||
         err.message ||
-        "No se pudo guardar el articulo";
+        "No se pudo guardar el artículo";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     } finally {
@@ -939,9 +939,9 @@ export default function AdminArticleFormPage() {
               <h1>{isEdit ? "Editar artículo" : "Nuevo artículo"}</h1>
 
             {/* <p className="muted-copy">
-              Alta individual guiada. Si prefieres cargar varios artículos
+              Alta individual guiada. Si preferís cargar varios artículos
               juntos, usa la opción visible en Artículos {">"} Crear múltiples
-              articulos.
+              artículos.
             </p> */}
           </div>
           <Link to="/admin/articles" className="ghost-button linklike">
@@ -1462,7 +1462,7 @@ export default function AdminArticleFormPage() {
                   />
                 </label>
                 <label className="field-group admin-field-important">
-                  <span>Precio compra envio</span>
+                  <span>Precio compra envío</span>
                   <input
                     className="input"
                     type="number"
@@ -1636,8 +1636,8 @@ export default function AdminArticleFormPage() {
               <h3>Imagenes nuevas</h3>
               {/* <p className="field-helper">
                 Carga las mismas tarjetas guiadas que en crear múltiples
-                articulos: frente, espalda, etiqueta, textura y detalles. Las
-                imagenes se suben al guardar el articulo.
+                artículos: frente, espalda, etiqueta, textura y detalles. Las
+                imágenes se suben al guardar el artículo.
               </p> */}
               <BulkArticleImageChecklist
                 value={imageChecklist}
@@ -1767,7 +1767,7 @@ export default function AdminArticleFormPage() {
                       update("imageAltOverride", event.target.value)
                     }
                     placeholder={`${
-                      normalizeLabel(form.title) || "Articulo ESADAR"
+                      normalizeLabel(form.title) || "Artículo ESADAR"
                     } - frente principal`}
                   />
                 </label>
@@ -1779,7 +1779,7 @@ export default function AdminArticleFormPage() {
 
         <div className="article-wizard-footer">
           <div className="inline-note">
-            {activeStep === 0 ? "Completa lo basico de la prenda." : null}
+            {activeStep === 0 ? "Completá lo básico de la prenda." : null}
             {activeStep === 1
               ? "Define precio, stock disponible y estado comercial."
               : null}
@@ -1811,7 +1811,7 @@ export default function AdminArticleFormPage() {
                   ? "Guardando..."
                   : isEdit
                     ? "Guardar cambios"
-                    : "Crear articulo"}
+                    : "Crear artículo"}
               </button>
             )}
           />

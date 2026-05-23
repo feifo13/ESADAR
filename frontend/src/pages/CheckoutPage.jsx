@@ -1186,12 +1186,12 @@ export default function CheckoutPage() {
             administración.
           </p>
           {isBankTransferPayment ? (
-            <p className="inline-note">
-              En el motivo/concepto de la transferencia indica el numero de orden. Al confirmarla te mostramos el numero exacto.
+            <p className="inline-note payment-reference-note">
+              En el motivo/concepto de la transferencia indicá el número de orden. Al confirmarla te mostramos el número exacto.
             </p>
           ) : null}
-          <p className="muted-copy">
-            Una vez aprobada y despachada la orden, te enviaremos el codigo de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
+          <p className="muted-copy checkout-tracking-availability-copy">
+            Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
           </p>
         </div>
 

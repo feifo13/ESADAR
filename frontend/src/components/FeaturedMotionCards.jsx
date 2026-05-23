@@ -158,7 +158,7 @@ export default function FeaturedMotionCards({
           pending={pending}
           className="featured-motion-card__favorite wishlist-heart-button--bare"
           labelActive="Quitar de guardados"
-          labelInactive="Guardar articulo"
+          labelInactive="Guardar artículo"
           onToggle={() =>
             void handleWishlistToggle(article, optimisticWishlistItem, saved)
           }

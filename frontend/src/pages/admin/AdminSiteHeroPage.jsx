@@ -11,8 +11,26 @@ const VIEWPORT_OPTIONS = [
   { value: VIEWPORT_DESKTOP_TABLET, label: "Desktop / tablet" },
   { value: VIEWPORT_MOBILE, label: "Mobile" },
 ];
+const DISPLAY_MODE_SINGLE = "SINGLE_IMAGE";
+const DISPLAY_MODE_CAROUSEL = "CAROUSEL";
+const HERO_HEIGHT_OPTIONS = [
+  { value: "HALF_SCREEN", label: "Media pantalla" },
+  { value: "FULL_SCREEN", label: "Pantalla completa" },
+  { value: "CUSTOM", label: "Personalizado" },
+];
+const HERO_DISPLAY_OPTIONS = [
+  { value: DISPLAY_MODE_SINGLE, label: "Imagen única" },
+  { value: DISPLAY_MODE_CAROUSEL, label: "Carousel" },
+];
 
 const emptyHeroForm = {
+  title: "",
+  subtitle: "",
+  ctaLabel: "",
+  ctaUrl: "",
+  heroHeightMode: "HALF_SCREEN",
+  customHeightVh: 70,
+  heroDisplayMode: DISPLAY_MODE_SINGLE,
   imageAlt: "",
   images: [],
   isActive: true,
@@ -22,7 +40,11 @@ function normalizeViewportTarget(value) {
   return value === VIEWPORT_MOBILE ? VIEWPORT_MOBILE : VIEWPORT_DESKTOP_TABLET;
 }
 
-function normalizeImages(images = []) {
+function normalizeDisplayMode(value) {
+  return value === DISPLAY_MODE_CAROUSEL ? DISPLAY_MODE_CAROUSEL : DISPLAY_MODE_SINGLE;
+}
+
+function normalizeImages(images = [], displayMode = DISPLAY_MODE_SINGLE) {
   const safeImages = Array.isArray(images)
     ? images.map((image, index) => ({
         id: image.id,
@@ -35,6 +57,10 @@ function normalizeImages(images = []) {
         isActive: image.isActive ?? true,
       }))
     : [];
+
+  if (normalizeDisplayMode(displayMode) === DISPLAY_MODE_CAROUSEL) {
+    return safeImages;
+  }
 
   const firstIndexByViewport = new Map();
   const selectedIndexByViewport = new Map();
@@ -65,8 +91,15 @@ function normalizeImages(images = []) {
 
 function toHeroForm(hero) {
   return {
+    title: hero?.title || "",
+    subtitle: hero?.subtitle || "",
+    ctaLabel: hero?.ctaLabel || "",
+    ctaUrl: hero?.ctaUrl || "",
+    heroHeightMode: hero?.heroHeightMode || "HALF_SCREEN",
+    customHeightVh: Number(hero?.customHeightVh || 70),
+    heroDisplayMode: normalizeDisplayMode(hero?.heroDisplayMode),
     imageAlt: hero?.imageAlt || "",
-    images: normalizeImages(hero?.images),
+    images: normalizeImages(hero?.images, hero?.heroDisplayMode),
     isActive: hero?.isActive ?? true,
   };
 }
@@ -88,8 +121,6 @@ export default function AdminSiteHeroPage() {
   const [mobileImageFiles, setMobileImageFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   const desktopImagePreviews = useMemo(
     () => desktopImageFiles.map((file) => URL.createObjectURL(file)),
@@ -131,13 +162,12 @@ export default function AdminSiteHeroPage() {
     async function loadHero() {
       try {
         setLoading(true);
-        setError("");
         const response = await apiFetch("/api/admin/site/hero");
         if (ignore) return;
         setHero(response.hero || null);
         setForm(toHeroForm(response.hero));
       } catch (err) {
-        if (!ignore) setError(err.message || "No pudimos cargar el hero.");
+        if (!ignore) notifyError(err.message || "No pudimos cargar el hero.");
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -147,7 +177,7 @@ export default function AdminSiteHeroPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [notifyError]);
 
   function updateField(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -172,9 +202,12 @@ export default function AdminSiteHeroPage() {
           return {
             ...image,
             viewportTarget: nextViewportTarget,
-            isActive: true,
+            isActive: normalizeDisplayMode(current.heroDisplayMode) === DISPLAY_MODE_CAROUSEL
+              ? image.isActive
+              : true,
           };
         }),
+        current.heroDisplayMode,
       ),
     }));
   }
@@ -209,8 +242,6 @@ export default function AdminSiteHeroPage() {
 
     try {
       setSaving(true);
-      setError("");
-      setMessage("");
       const response = await apiFetch(`/api/admin/site/hero/images/${image.id}`, {
         method: "DELETE",
       });
@@ -218,11 +249,9 @@ export default function AdminSiteHeroPage() {
       setHero(nextHero);
       setForm(toHeroForm(nextHero));
       const successMessage = "Imagen eliminada.";
-      setMessage(successMessage);
       notifySuccess(successMessage);
     } catch (err) {
       const errorMessage = err.message || "No pudimos eliminar la imagen.";
-      setError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setSaving(false);
@@ -234,14 +263,22 @@ export default function AdminSiteHeroPage() {
 
     try {
       setSaving(true);
-      setError("");
-      setMessage("");
 
       const textResponse = await apiFetch("/api/admin/site/hero", {
         method: "PUT",
         body: {
+          title: form.title,
+          subtitle: form.subtitle,
+          ctaLabel: form.ctaLabel,
+          ctaUrl: form.ctaUrl,
+          heroHeightMode: form.heroHeightMode,
+          customHeightVh:
+            form.heroHeightMode === "CUSTOM"
+              ? Number(form.customHeightVh || 70)
+              : null,
+          heroDisplayMode: form.heroDisplayMode,
           imageAlt: form.imageAlt,
-          images: normalizeImages(form.images).map((image, index) => ({
+          images: normalizeImages(form.images, form.heroDisplayMode).map((image, index) => ({
             id: image.id,
             imageUrl: image.imageUrl,
             imageAlt: image.imageAlt,
@@ -271,11 +308,9 @@ export default function AdminSiteHeroPage() {
       setDesktopImageFiles([]);
       setMobileImageFiles([]);
       const successMessage = "Hero actualizado.";
-      setMessage(successMessage);
       notifySuccess(successMessage);
     } catch (err) {
       const errorMessage = err.message || "No pudimos guardar el hero.";
-      setError(errorMessage);
       notifyError(errorMessage);
     } finally {
       setSaving(false);
@@ -305,12 +340,105 @@ export default function AdminSiteHeroPage() {
         </div>
 
         {loading ? <AppLoader variant="card" label="Cargando hero" /> : null}
-        {error ? <p className="error-copy">{error}</p> : null}
-        {message ? <p className="success-copy">{message}</p> : null}
 
         {!loading ? (
           <form id="admin-site-hero-form" className="page-stack" onSubmit={handleSubmit}>
             <div className="form-grid-two">
+              <label className="field-group">
+                <span>Título</span>
+                <input
+                  className="input"
+                  value={form.title}
+                  onChange={(event) => updateField("title", event.target.value)}
+                  maxLength={180}
+                  placeholder="ESADAR"
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Subtítulo</span>
+                <input
+                  className="input"
+                  value={form.subtitle}
+                  onChange={(event) => updateField("subtitle", event.target.value)}
+                  maxLength={500}
+                  placeholder="Ropa seleccionada"
+                />
+              </label>
+
+              <label className="field-group">
+                <span>CTA</span>
+                <input
+                  className="input"
+                  value={form.ctaLabel}
+                  onChange={(event) => updateField("ctaLabel", event.target.value)}
+                  maxLength={120}
+                  placeholder="Ver catálogo"
+                />
+              </label>
+
+              <label className="field-group">
+                <span>URL del CTA</span>
+                <input
+                  className="input"
+                  value={form.ctaUrl}
+                  onChange={(event) => updateField("ctaUrl", event.target.value)}
+                  maxLength={500}
+                  placeholder="/articles"
+                />
+              </label>
+
+              <label className="field-group">
+                <span>Tipo de hero</span>
+                <select
+                  className="input"
+                  value={form.heroDisplayMode}
+                  onChange={(event) =>
+                    updateField("heroDisplayMode", normalizeDisplayMode(event.target.value))
+                  }
+                >
+                  {HERO_DISPLAY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field-group">
+                <span>Alto del hero</span>
+                <select
+                  className="input"
+                  value={form.heroHeightMode}
+                  onChange={(event) => updateField("heroHeightMode", event.target.value)}
+                >
+                  {HERO_HEIGHT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {form.heroHeightMode === "CUSTOM" ? (
+                <label className="field-group">
+                  <span>Alto personalizado (vh)</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="30"
+                    max="100"
+                    value={form.customHeightVh}
+                    onChange={(event) =>
+                      updateField("customHeightVh", event.target.value)
+                    }
+                  />
+                  <span className="field-helper">
+                    Ejemplo: 70 ocupa aproximadamente el 70% de la altura visible.
+                  </span>
+                </label>
+              ) : null}
+
               <label className="field-group">
                 <span>Texto alternativo general</span>
                 <input
@@ -458,17 +586,30 @@ export default function AdminSiteHeroPage() {
                             ))}
                           </select>
                         </label>
-                        <label className="field-group checkbox-field">
-                          <input
-                            type="radio"
-                            name={`selectedHeroImage-${image.viewportTarget}`}
-                            checked={Boolean(image.isActive)}
-                            onChange={() => selectImage(index)}
-                          />
-                          <span>
-                            Mostrar en {image.viewportTarget === VIEWPORT_MOBILE ? "mobile" : "desktop/tablet"}
-                          </span>
-                        </label>
+                        {form.heroDisplayMode === DISPLAY_MODE_CAROUSEL ? (
+                          <label className="field-group checkbox-field">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(image.isActive)}
+                              onChange={(event) =>
+                                updateImage(index, "isActive", event.target.checked)
+                              }
+                            />
+                            <span>Incluir en carousel</span>
+                          </label>
+                        ) : (
+                          <label className="field-group checkbox-field">
+                            <input
+                              type="radio"
+                              name={`selectedHeroImage-${image.viewportTarget}`}
+                              checked={Boolean(image.isActive)}
+                              onChange={() => selectImage(index)}
+                            />
+                            <span>
+                              Mostrar en {image.viewportTarget === VIEWPORT_MOBILE ? "mobile" : "desktop/tablet"}
+                            </span>
+                          </label>
+                        )}
                         <label className="field-group">
                           <span>Alt</span>
                           <input

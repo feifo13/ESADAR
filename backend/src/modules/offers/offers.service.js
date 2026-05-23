@@ -422,7 +422,7 @@ export async function changeOfferStatus(id, input, auditContext) {
     const before = await getOfferById(id, connection, { forUpdate: true });
 
     if (before.status !== 'PENDING') {
-      throw badRequest('Solo se pueden actualizar ofertas pendientes desde administracion.');
+      throw badRequest('Solo se pueden actualizar ofertas pendientes desde administración.');
     }
 
     if (input.status === 'ACCEPTED') {
@@ -461,7 +461,7 @@ export async function changeOfferStatus(id, input, auditContext) {
         id,
         before.status,
         input.status,
-        input.reason || `Oferta ${getStatusReasonLabel(input.status)} desde administracion`,
+        input.reason || `Oferta ${getStatusReasonLabel(input.status)} desde administración`,
         auditContext.actorUserId,
         auditContext.source,
       ],

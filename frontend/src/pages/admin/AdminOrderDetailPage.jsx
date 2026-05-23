@@ -94,7 +94,7 @@ export default function AdminOrderDetailPage() {
       setError('');
       setMessage('');
       if (action === 'cancel' && !cancelReason.trim()) {
-        const errorMessage = 'Escribe un motivo de cancelacion.';
+        const errorMessage = 'Escribe un motivo de cancelación.';
         setError(errorMessage);
         notifyError(errorMessage);
         return;
@@ -154,7 +154,7 @@ export default function AdminOrderDetailPage() {
         body: {},
       });
       setOrder(response.order);
-      const successMessage = 'El pago interno quedo registrado.';
+      const successMessage = 'El pago interno quedó registrado.';
       setMessage(successMessage);
       notifySuccess(successMessage);
     } catch (err) {
@@ -180,8 +180,8 @@ export default function AdminOrderDetailPage() {
       setOrder(response.order);
       setTrackingCode(response.order?.trackingCode || '');
       const successMessage = response.order?.trackingCode
-        ? 'Codigo de seguimiento guardado.'
-        : 'Codigo de seguimiento limpiado.';
+        ? 'Código de seguimiento guardado.'
+        : 'Código de seguimiento limpiado.';
       setMessage(successMessage);
       notifySuccess(successMessage);
     } catch (err) {
@@ -296,7 +296,15 @@ export default function AdminOrderDetailPage() {
                     const tracking = getTrackingHistoryDetails(entry, order);
                     return (
                       <div key={entry.id} className="history-row">
-                        <strong>{entry.reason || 'Seguimiento actualizado'}</strong>
+                        <strong>
+                          <StatusBadge
+                            status="TRACKING_UPDATED"
+                            labels={{
+                              TRACKING_UPDATED:
+                                entry.reason || 'Seguimiento actualizado',
+                            }}
+                          />
+                        </strong>
                         <span>
                           Método de envío: {tracking.shippingMethod}
                           <br />
@@ -341,7 +349,7 @@ export default function AdminOrderDetailPage() {
               <p className="summary-line"><span>Descuento</span><strong>{formatCurrency(order.discountTotal)}</strong></p>
               {order.hasOffers ? <p className="summary-line"><span>Ofertas</span><strong>{order.offerCount || 1}</strong></p> : null}
               <p className="summary-line"><span>Peso aprox.</span><strong>{formatWeightKg(order.packageWeightKg)}</strong></p>
-              <p className="summary-line"><span>Envio</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
+              <p className="summary-line"><span>Envío</span><strong>{formatCurrency(order.shippingCost)}</strong></p>
               <p className="summary-line total"><span>Total</span><strong>{formatCurrency(order.total)}</strong></p>
               <p className="muted-copy">Creada: {formatDate(order.createdAt)}</p>
               <p className="muted-copy">Aprobada: {formatDate(order.approvedAt)}</p>
@@ -353,7 +361,7 @@ export default function AdminOrderDetailPage() {
             <form className="section-card nested-card stack-gap-sm admin-order-side-card" onSubmit={handleSaveTracking}>
               <h3>Seguimiento</h3>
               <label className="field-group">
-                <span>Codigo de seguimiento</span>
+                <span>Código de seguimiento</span>
                 <input
                   className="input"
                   value={trackingCode}
@@ -400,7 +408,7 @@ export default function AdminOrderDetailPage() {
                 <>
                   <button type="button" className="button button-primary" onClick={() => runAction('approve')}>Aprobar</button>
                   <label className="field-group">
-                    <span>Motivo de cancelacion</span>
+                    <span>Motivo de cancelación</span>
                     <textarea className="input textarea" value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} />
                   </label>
                   <button type="button" className="button button-secondary" onClick={() => runAction('cancel')}>Cancelar</button>

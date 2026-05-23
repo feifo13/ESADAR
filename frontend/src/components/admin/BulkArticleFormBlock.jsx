@@ -49,14 +49,14 @@ export default function BulkArticleFormBlock({
             className="button button-secondary button-compact"
             onClick={onDuplicate}
           >
-            Duplicar articulo
+            Duplicar artículo
           </button>
           <button
             type="button"
             className="button button-secondary button-compact"
             onClick={onRemove}
           >
-            Eliminar articulo
+            Eliminar artículo
           </button>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function BulkArticleFormBlock({
       {article.expanded ? (
         <>
           <div className="page-stack-sm">
-            <h3>Datos basicos</h3>
+            <h3>Datos básicos</h3>
             <div className="admin-filter-grid">
               <label className="field-group field-group-span-2">
               <span>Título *</span>
@@ -259,7 +259,7 @@ export default function BulkArticleFormBlock({
                 />
               </label>
               <label className="field-group">
-                <span>Precio compra envio</span>
+                <span>Precio compra envío</span>
                 <input
                   className="input"
                   type="number"

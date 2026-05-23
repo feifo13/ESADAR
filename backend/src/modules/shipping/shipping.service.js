@@ -317,7 +317,7 @@ export async function listShippingMethodsForAdmin({ filters, pagination }) {
 
 export async function getShippingMethodDetail(id) {
   const method = await getShippingMethodForAdmin(id);
-  if (!method) throw notFound('Metodo de envio no encontrado.');
+  if (!method) throw notFound('Método de envío no encontrado.');
   return method;
 }
 
@@ -380,7 +380,7 @@ export async function createShippingMethod(input, auditContext) {
 export async function updateShippingMethod(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getShippingMethodForAdmin(id, connection, { forUpdate: true });
-    if (!before) throw notFound('Metodo de envio no encontrado.');
+    if (!before) throw notFound('Método de envío no encontrado.');
 
     const pricingType = normalizePricingType(input.pricingType);
     const rates = validateWeightRates(pricingType, input.weightRates || []);
@@ -440,7 +440,7 @@ export async function updateShippingMethod(id, input, auditContext) {
 export async function setShippingMethodActiveStatus(id, isActive, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getShippingMethodForAdmin(id, connection, { forUpdate: true });
-    if (!before) throw notFound('Metodo de envio no encontrado.');
+    if (!before) throw notFound('Método de envío no encontrado.');
 
     const [result] = await connection.execute(
       `
@@ -476,11 +476,11 @@ export async function setShippingMethodActiveStatus(id, isActive, auditContext) 
 export async function deleteShippingMethod(id, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getShippingMethodForAdmin(id, connection, { forUpdate: true });
-    if (!before) throw notFound('Metodo de envio no encontrado.');
+    if (!before) throw notFound('Método de envío no encontrado.');
 
     try {
       const [deleteResult] = await connection.execute('DELETE FROM shipping_methods WHERE id = ?', [id]);
-      if (!deleteResult.affectedRows) throw notFound('Metodo de envio no encontrado.');
+      if (!deleteResult.affectedRows) throw notFound('Método de envío no encontrado.');
     } catch (error) {
       if (error?.code === 'ER_ROW_IS_REFERENCED_2' || error?.errno === 1451) {
         throw badRequest('No se puede eliminar este método porque ya tiene órdenes vinculadas. Puedes desactivarlo.');

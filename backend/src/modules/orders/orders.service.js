@@ -762,7 +762,7 @@ export async function approveOrder(id, auditContext) {
         quantity,
         orderId: id,
         userId: auditContext.actorUserId || null,
-        reason: "Aprobada por administracion",
+        reason: "Aprobada por administración",
       });
     }
 
@@ -1479,7 +1479,7 @@ async function getShippingMethod(id, connection) {
   );
 
   if (!rows.length) {
-    throw notFound("Metodo de envio no encontrado o no disponible.");
+    throw notFound("Método de envío no encontrado o no disponible.");
   }
 
   const method = {
@@ -1562,7 +1562,7 @@ async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
   }
 
   throw badRequest(
-    "El medio de pago seleccionado no está disponible. Actualiza el checkout e inténtalo nuevamente.",
+    "El medio de pago seleccionado no está disponible. Actualizá el checkout e intentalo nuevamente.",
   );
 }
 

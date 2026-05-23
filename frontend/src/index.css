@@ -331,6 +331,12 @@ select.input option,
   color: var(--muted);
 }
 
+.payment-reference-note {
+  color: var(--orange) !important;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -9506,7 +9512,7 @@ textarea,
 .mobile-motion-menu__item--terms:hover,
 .mobile-motion-menu__item--terms:focus-visible,
 .mobile-motion-menu__item--terms.is-active {
-  border-bottom: 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent) !important;
   background: transparent !important;
   color: #000000 !important;
 }
@@ -13819,6 +13825,10 @@ dialog,
   opacity: 0.72;
 }
 
+.page-offer-ticker {
+  border-top: 0;
+}
+
 @keyframes hero-offer-ticker-marquee {
   from {
     transform: translate3d(0, 0, 0);
@@ -16460,6 +16470,64 @@ dialog,
   object-fit: contain;
   object-position: center center;
   background: var(--surface);
+}
+
+.home-hero-section.site-hero {
+  --site-hero-height: 50vh;
+}
+
+.home-hero-section.site-hero--full-screen {
+  --site-hero-height: 100vh;
+}
+
+@supports (height: 100svh) {
+  .home-hero-section.site-hero--full-screen {
+    --site-hero-height: 100svh;
+  }
+}
+
+.home-hero-section.site-hero--custom {
+  --site-hero-height: var(--hero-height, 70vh);
+}
+
+.home-hero-section.site-hero .home-hero-frame,
+.home-hero-section.site-hero .home-hero-picture {
+  height: var(--site-hero-height);
+  min-height: var(--site-hero-height);
+}
+
+.home-hero-section.site-hero .home-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.home-hero-carousel {
+  position: relative;
+}
+
+.home-hero-carousel__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 480ms var(--ease-smooth);
+}
+
+.home-hero-carousel__slide.is-active {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+}
+
+@media (max-width: 780px) {
+  .home-hero-section.site-hero--half-screen {
+    --site-hero-height: 50svh;
+  }
+
+  .home-hero-section.site-hero--custom {
+    --site-hero-height: min(var(--hero-height, 70vh), 90svh);
+  }
 }
 
 .admin-site-hero-heading {

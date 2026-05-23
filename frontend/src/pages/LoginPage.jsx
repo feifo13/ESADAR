@@ -113,7 +113,7 @@ export default function LoginPage() {
             Crear cuenta
           </Link>
           <Link className="button button-secondary" to="/forgot-password">
-            Reestablecer contraseña
+            Restablecer contraseña
           </Link>
           {/* </div> */}
         </div>

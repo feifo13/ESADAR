@@ -66,7 +66,7 @@ export default function ResetPasswordPage() {
         <p className="section-kicker">Nueva contraseña</p>
         <h1>Crear nueva contraseña</h1>
         <p className="muted-copy">
-          Elige una contraseña nueva para volver a entrar a tu cuenta.
+          Elegí una contraseña nueva para volver a entrar a tu cuenta.
         </p>
 
         <label className="field-group">
@@ -102,7 +102,7 @@ export default function ResetPasswordPage() {
 
         {message ? (
           <p className="muted-copy">
-            Ya puedes <Link to="/login">ingresar con tu nueva contraseña</Link>.
+            Ya podés <Link to="/login">ingresar con tu nueva contraseña</Link>.
           </p>
         ) : (
           <p className="muted-copy">

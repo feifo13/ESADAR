@@ -208,7 +208,7 @@ export default function AdminArticlesPage() {
         );
       } catch (err) {
         if (!ignore) {
-          const errorMessage = err.message || "No se pudo cargar articulos";
+          const errorMessage = err.message || "No se pudo cargar artículos";
           setError(errorMessage);
           notifyFormStatus(notifyMobileStatus, "error", errorMessage);
         }
@@ -485,11 +485,11 @@ export default function AdminArticlesPage() {
         }
         return nextItems;
       });
-      const successMessage = "El articulo fue enviado a inactivos.";
+      const successMessage = "El artículo fue enviado a inactivos.";
       setMessage(successMessage);
       notifyFormStatus(notifyMobileStatus, "success", successMessage);
     } catch (err) {
-      const errorMessage = err.message || "No se pudo desactivar el articulo.";
+      const errorMessage = err.message || "No se pudo desactivar el artículo.";
       setError(errorMessage);
       notifyFormStatus(notifyMobileStatus, "error", errorMessage);
     }
@@ -634,7 +634,7 @@ export default function AdminArticlesPage() {
               Crear múltiples artículos desde UI
             </Link> */}
             <Link to="/admin/articles/new" className="button button-primary">
-              Nuevo articulo
+              Nuevo artículo
             </Link>
           </div>
         </div>
@@ -1325,7 +1325,7 @@ export default function AdminArticlesPage() {
           ) : (
             <div className="centered-card nested-card">
               <p className="muted-copy">
-                No hay articulos para los filtros seleccionados.
+                No hay artículos para los filtros seleccionados.
               </p>
             </div>
           )

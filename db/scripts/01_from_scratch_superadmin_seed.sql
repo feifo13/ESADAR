@@ -9,7 +9,8 @@
 -- Las cuentas registradas desde el frontend deben quedar como CUSTOMER.
 -- =========================================================
 
-SET NAMES utf8mb4;
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
 SET time_zone = '+00:00';
 
 DROP DATABASE IF EXISTS esadar_sandbox;
@@ -24,7 +25,7 @@ USE esadar_sandbox;
 -- Catalog + checkout + backoffice + audit
 -- =========================================================
 
-SET NAMES utf8mb4;
+SET collation_connection = 'utf8mb4_unicode_ci';
 SET time_zone = '+00:00';
 
 -- =========================================================
@@ -977,6 +978,11 @@ CREATE TABLE site_hero (
   hero_height_mode ENUM('HALF_SCREEN','FULL_SCREEN','CUSTOM') NOT NULL DEFAULT 'HALF_SCREEN',
   custom_height_vh INT UNSIGNED NULL,
   hero_display_mode ENUM('SINGLE_IMAGE','CAROUSEL') NOT NULL DEFAULT 'SINGLE_IMAGE',
+  carousel_speed_seconds INT UNSIGNED NOT NULL DEFAULT 54,
+  carousel_loop TINYINT(1) NOT NULL DEFAULT 1,
+  carousel_drag_free TINYINT(1) NOT NULL DEFAULT 0,
+  carousel_stop_on_interaction TINYINT(1) NOT NULL DEFAULT 0,
+  carousel_stop_on_mouse_enter TINYINT(1) NOT NULL DEFAULT 1,
   image_url VARCHAR(500) NULL,
   image_alt VARCHAR(255) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -1079,9 +1085,9 @@ INSERT INTO sizes (code, description, sort_order) VALUES
 ON DUPLICATE KEY UPDATE description = VALUES(description), sort_order = VALUES(sort_order);
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
-  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Selección', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Selección', 'Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
@@ -1161,7 +1167,7 @@ ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   is_active = 1;
 
-SET @esadar_super_admin_email := 'fefio1313@gmail.com';
+SET @esadar_super_admin_email := _utf8mb4'fefio1313@gmail.com' COLLATE utf8mb4_unicode_ci;
 SET @esadar_super_admin_password_hash := '$2b$10$Z7dhGDzCSsn0bU5TrJWCc.mkmdYN0Cbn88l6t5kjuAh/eaGEK2xHK';
 
 INSERT INTO users (
@@ -1197,7 +1203,12 @@ ON DUPLICATE KEY UPDATE
   is_active = 1,
   updated_by = NULL;
 
-SET @admin_user_id := (SELECT id FROM users WHERE email = @esadar_super_admin_email LIMIT 1);
+SET @admin_user_id := (
+  SELECT id
+  FROM users
+  WHERE email = CONVERT(@esadar_super_admin_email USING utf8mb4) COLLATE utf8mb4_unicode_ci
+  LIMIT 1
+);
 SET @super_admin_role_id := (SELECT id FROM roles WHERE code = 'SUPER_ADMIN' LIMIT 1);
 SET @admin_role_id := (SELECT id FROM roles WHERE code = 'ADMIN' LIMIT 1);
 SET @customer_role_id := (SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1);
@@ -1243,8 +1254,8 @@ WHERE @customer_role_id IS NOT NULL
   );
 
 -- =========================================================
--- Seed minimo no operativo: talles, categorias, marcas, envios, cobros y SEO
--- No crea ordenes, carritos, pagos, ofertas ni datos transaccionales.
+-- Seed mínimo no operativo: talles, categorías, marcas, envíos, cobros y SEO
+-- No crea órdenes, carritos, pagos, ofertas ni datos transaccionales.
 -- =========================================================
 
 INSERT INTO sizes (code, description, sort_order, is_active) VALUES
@@ -1254,7 +1265,7 @@ INSERT INTO sizes (code, description, sort_order, is_active) VALUES
   ('L', 'Large', 40, 1),
   ('XL', 'Extra Large', 50, 1),
   ('XXL', 'Double Extra Large', 60, 1),
-  ('UNICO', 'Talle unico', 70, 1),
+  ('UNICO', 'Talle único', 70, 1),
   ('36', '36', 80, 1),
   ('38', '38', 90, 1),
   ('40', '40', 100, 1),
@@ -1267,7 +1278,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO categories (name, slug, description, sort_order, is_active, created_by, updated_by) VALUES
   ('Camperas', 'camperas', 'Camperas deportivas, rompevientros y jackets.', 10, 1, @admin_user_id, @admin_user_id),
   ('Buzos', 'buzos', 'Hoodies, crewnecks y buzos vintage.', 20, 1, @admin_user_id, @admin_user_id),
-  ('Remeras', 'remeras', 'Tees, tops y remeras basicas o graficas.', 30, 1, @admin_user_id, @admin_user_id),
+  ('Remeras', 'remeras', 'Tees, tops y remeras básicas o gráficas.', 30, 1, @admin_user_id, @admin_user_id),
   ('Pantalones', 'pantalones', 'Jeans, joggers y pantalones urbanos.', 40, 1, @admin_user_id, @admin_user_id),
   ('Shorts', 'shorts', 'Shorts deportivos y casuales.', 50, 1, @admin_user_id, @admin_user_id),
   ('Accesorios', 'accesorios', 'Gorras, bolsos y accesorios seleccionados.', 60, 1, @admin_user_id, @admin_user_id)
@@ -1296,8 +1307,8 @@ SELECT 'Retiro en punto acordado', 0.00, 'Coordinamos retiro por mensaje directo
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Retiro en punto acordado');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
-SELECT 'Cadeteria Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Montevideo luego de aprobada la orden.', 1, @admin_user_id, @admin_user_id
-WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadeteria Montevideo');
+SELECT 'Cadetería Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Montevideo luego de aprobada la orden.', 1, @admin_user_id, @admin_user_id
+WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadetería Montevideo');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
 SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
@@ -1380,9 +1391,9 @@ ON DUPLICATE KEY UPDATE
   updated_by = VALUES(updated_by);
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
-  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Selección', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Selección', 'Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1),
   ('/guia-de-compra', 'Guía de compra | ESADAR', 'Cómo comprar en ESADAR, medios de pago, envíos y aprobación de órdenes.', NULL, NULL, 1),
   ('/terminos-y-condiciones', 'Términos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)

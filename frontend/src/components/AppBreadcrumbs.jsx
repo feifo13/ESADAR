@@ -3,8 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 const ROUTE_LABELS = {
   login: "Ingresar",
   register: "Crear cuenta",
-  "forgot-password": "Recuperar contrasena",
-  "reset-password": "Nueva contrasena",
+  "forgot-password": "Recuperar contraseña",
+  "reset-password": "Nueva contraseña",
   contact: "Contacto",
   about: "Nosotros",
   avisos: "Avisos",
@@ -16,8 +16,8 @@ const CHECKOUT_LABELS = {
   resumen: "Resumen",
   comprador: "Comprador",
   pago: "Pago",
-  envio: "Envio",
-  confirmacion: "Confirmacion",
+  envio: "Envío",
+  confirmacion: "Confirmación",
   completa: "Orden completa",
 };
 
@@ -66,7 +66,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
     const articleLabel =
       labelOverrides[articlePathname] ||
       titleizePathSegment(parts[1]) ||
-      "Articulo";
+      "Artículo";
     const crumbs = [
       { label: "Catálogo", to: "/articles" },
       { label: articleLabel, to: parts[1] ? articlePathname : undefined },
@@ -101,7 +101,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
     const crumbs = [{ label: "Mi cuenta", to: "/cuenta/perfil" }];
     if (parts[1]) {
       crumbs.push({
-        label: ACCOUNT_LABELS[parts[1]] || "Seccion",
+        label: ACCOUNT_LABELS[parts[1]] || "Sección",
         to: parts[2] ? `/cuenta/${parts[1]}` : undefined,
       });
     }
@@ -117,7 +117,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
 
     if (section) {
       crumbs.push({
-        label: ADMIN_LABELS[section] || "Seccion",
+        label: ADMIN_LABELS[section] || "Sección",
         to: parts.length > 2 ? `/admin/${section}` : undefined,
       });
     }
@@ -140,7 +140,7 @@ function buildBreadcrumbs(pathname, labelOverrides = {}) {
     return crumbs;
   }
 
-  const fallbackLabel = ROUTE_LABELS[parts[0]] || "Seccion";
+  const fallbackLabel = ROUTE_LABELS[parts[0]] || "Sección";
   return [{ label: fallbackLabel }];
 }
 

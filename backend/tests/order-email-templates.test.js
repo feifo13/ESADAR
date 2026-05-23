@@ -116,10 +116,10 @@ test("shipped email includes tracking code when present", () => {
     publicSiteUrl: "https://esadar.example.test",
   });
 
-  assert.match(email.html, /Codigo de seguimiento/);
+  assert.match(email.html, /Código de seguimiento/);
   assert.match(email.html, /UY123456/);
   assert.match(email.html, /Retiro en showroom/);
-  assert.match(email.text, /Codigo de seguimiento: UY123456/);
+  assert.match(email.text, /Código de seguimiento: UY123456/);
   assert.match(email.text, /sujeto a disponibilidad/);
 });
 
@@ -129,8 +129,8 @@ test("shipped email does not render empty tracking block", () => {
     publicSiteUrl: "https://esadar.example.test",
   });
 
-  assert.doesNotMatch(email.html, /Codigo de seguimiento/);
-  assert.doesNotMatch(email.text, /Codigo de seguimiento:/);
+  assert.doesNotMatch(email.html, /Código de seguimiento/);
+  assert.doesNotMatch(email.text, /Código de seguimiento:/);
   assert.match(email.html, /sujeto a disponibilidad/);
   assert.match(email.text, /sujeto a disponibilidad/);
 });

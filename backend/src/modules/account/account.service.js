@@ -208,11 +208,12 @@ async function resolveShippingPreference(shippingMethodId, connection = pool) {
     `
       SELECT
         id,
-        name,
+        description AS name,
         description,
         base_cost AS baseCost
       FROM shipping_methods
       WHERE id = ?
+        AND is_active = 1
       LIMIT 1
     `,
     [shippingMethodId],
@@ -221,7 +222,7 @@ async function resolveShippingPreference(shippingMethodId, connection = pool) {
   return rows[0]
     ? {
       id: Number(rows[0].id),
-      name: rows[0].name,
+      name: rows[0].name || rows[0].description || null,
       description: rows[0].description || null,
       baseCost: Number(rows[0].baseCost || 0),
     }

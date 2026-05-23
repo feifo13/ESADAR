@@ -234,7 +234,7 @@ export default function BulkArticleCreatePage() {
         },
       });
     } catch (err) {
-      const errorMessage = err.message || 'No se pudieron crear los articulos.';
+      const errorMessage = err.message || 'No se pudieron crear los artículos.';
       setError(errorMessage);
       notifyError(errorMessage);
     } finally {
@@ -258,7 +258,7 @@ export default function BulkArticleCreatePage() {
               Volver
             </button>
             <button type="button" className="button button-secondary" onClick={() => addAnotherArticle()}>
-              Agregar otro articulo
+              Agregar otro artículo
             </button>
             <button type="button" className="button button-primary" onClick={() => void handleSubmitAll()} disabled={loading}>
               {loading ? 'Subiendo...' : 'Subir todos'}
@@ -292,7 +292,7 @@ export default function BulkArticleCreatePage() {
       <section className="section-card page-stack">
         <div className="inline-action-group">
           <button type="button" className="button button-secondary" onClick={() => addAnotherArticle()}>
-            Agregar otro articulo
+            Agregar otro artículo
           </button>
           <button type="button" className="button button-primary" onClick={() => void handleSubmitAll()} disabled={loading}>
             {loading ? 'Subiendo...' : 'Subir todos'}

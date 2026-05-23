@@ -34,7 +34,7 @@ export function renderEmailShell({
       @media only screen and (max-width: 620px) {
         .email-container { width: 100% !important; }
         .email-content { padding: 24px 20px !important; }
-        .email-title { font-size: 26px !important; line-height: 1.12 !important; }
+        .email-title { font-size: 24px !important; line-height: 1.16 !important; }
         .email-button { display: block !important; width: 100% !important; box-sizing: border-box !important; text-align: center !important; }
         .email-meta-table td { display: block !important; width: 100% !important; padding: 7px 0 !important; text-align: left !important; }
         .email-item-image { width: 64px !important; height: 64px !important; }
@@ -77,8 +77,8 @@ export function renderEmailShell({
                   <tr>
                     <td class="email-content" style="padding:32px 32px 28px;">
                       ${safeEyebrow ? `<p style="margin:0 0 8px; color:#008e97; text-transform:uppercase; letter-spacing:0.08em; font-size:12px; font-weight:700;">${safeEyebrow}</p>` : ""}
-                      ${safeTitle ? `<h1 class="email-title" style="margin:0 0 16px; color:#102b34; font-size:32px; line-height:1.05; font-weight:700;">${safeTitle}</h1>` : ""}
-                      <div style="color:#56737a; font-size:16px; line-height:1.65;">
+                      ${safeTitle ? `<h1 class="email-title" style="margin:0 0 16px; color:#102b34; font-size:28px; line-height:1.12; font-weight:700;">${safeTitle}</h1>` : ""}
+                      <div style="color:#56737a; font-size:15px; line-height:1.62;">
                         ${bodyHtml || ""}
                       </div>
                       ${detailsHtml || ""}

@@ -1,6 +1,9 @@
 -- ESADAR inventory split
 -- Separates article publication/catalog data from inventory balances and movement ledger.
 
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
 SET @OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
 

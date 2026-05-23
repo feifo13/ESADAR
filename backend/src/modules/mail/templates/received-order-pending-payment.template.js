@@ -32,7 +32,7 @@ function renderSummaryRow(label, value, options = {}) {
 }
 
 const TRACKING_AVAILABILITY_COPY =
-  "Una vez aprobada y despachada la orden, te enviaremos el codigo de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.";
+  "Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.";
 
 function renderPaymentInstructions(paymentInstructions, orderLabel) {
   if (!paymentInstructions) return "";
@@ -46,7 +46,7 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
   const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
   const isBankTransfer = paymentInstructions.method === "BANK_TRANSFER";
   const transferReasonText = isBankTransfer && orderLabel
-    ? `Importante: en el motivo/concepto de la transferencia escribi tu numero de orden: ${orderLabel}.`
+    ? `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`
     : "";
   if (!fields.length && !hasInstructions && !checkoutUrl && !qrCodeUrl && !transferReasonText) return "";
 
@@ -65,7 +65,7 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
     ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(paymentInstructions.instructions).replace(/\n/g, "<br />")}</p>`
     : "";
   const transferReasonHtml = transferReasonText
-    ? `<p style="margin:14px 0 0; padding:12px 14px; background:#eef4f5; border:1px solid rgba(0,142,151,0.28); color:#102b34; font-size:14px; line-height:1.5; font-weight:700;">${escapeHtml(transferReasonText)}</p>`
+    ? `<p style="margin:14px 0 0; padding:12px 14px; background:#fff4eb; border:1px solid rgba(236,103,43,0.36); color:#ec672b; font-size:14px; line-height:1.5; font-weight:700;">${escapeHtml(transferReasonText)}</p>`
     : "";
 
   const mercadoPagoButtonHtml = isMercadoPago && checkoutUrl
@@ -134,7 +134,7 @@ function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
     lines.push(String(paymentInstructions.instructions));
   }
   if (paymentInstructions.method === "BANK_TRANSFER" && orderLabel) {
-    lines.push(`Importante: en el motivo/concepto de la transferencia escribi tu numero de orden: ${orderLabel}.`);
+    lines.push(`Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`);
   }
   return lines;
 }

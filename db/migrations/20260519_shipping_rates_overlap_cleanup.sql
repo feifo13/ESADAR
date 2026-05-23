@@ -3,7 +3,7 @@
 -- Fecha: 2026-05-19
 -- Objetivo:
 --   - Eliminar rangos oficiales por defecto solo cuando se solapan
---     con rangos personalizados del mismo metodo.
+--     con rangos personalizados del mismo método.
 --   - Evitar solapamientos creados por migraciones idempotentes previas.
 -- =========================================================
 

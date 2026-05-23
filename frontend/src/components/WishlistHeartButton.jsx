@@ -20,7 +20,7 @@ export default function WishlistHeartButton({
   className = '',
   size = 'md',
   labelActive = 'Quitar de guardados',
-  labelInactive = 'Guardar articulo',
+  labelInactive = 'Guardar artículo',
 }) {
   const [bursting, setBursting] = useState(false);
 

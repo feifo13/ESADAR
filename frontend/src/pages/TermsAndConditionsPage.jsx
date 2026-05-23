@@ -23,6 +23,7 @@ const sections = [
   {
     title: "5. Medios de pago",
     copy: "ESADAR puede ofrecer según disponibilidad transferencia bancaria, Prex, Mercado Pago u otros medios configurados en el sistema. En pagos por transferencia, el cliente debe utilizar los datos informados al finalizar la compra y enviados por correo, e indicar el número de orden en el motivo/concepto de la transferencia.",
+    highlightPaymentReference: true,
   },
   {
     title: "6. Validación del pago",
@@ -76,7 +77,9 @@ export default function TermsAndConditionsPage() {
           {sections.map((section) => (
             <article className="terms-content-section" key={section.title}>
               <h2>{section.title}</h2>
-              <p className="muted-copy">{section.copy}</p>
+              <p className={section.highlightPaymentReference ? "muted-copy payment-reference-note" : "muted-copy"}>
+                {section.copy}
+              </p>
             </article>
           ))}
         </div>

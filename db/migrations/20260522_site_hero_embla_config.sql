@@ -1,3 +1,6 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
 ALTER TABLE site_hero
   ADD COLUMN carousel_speed_seconds INT UNSIGNED NOT NULL DEFAULT 6 AFTER hero_display_mode,
   ADD COLUMN carousel_loop TINYINT(1) NOT NULL DEFAULT 1 AFTER carousel_speed_seconds,

@@ -1002,11 +1002,11 @@ export async function runManualBulkArticleCreate({ articles = [], options = {}, 
     const errors = validateImportRow(row, referenceData);
 
     if (internalCode && duplicateCodes.has(internalCode)) {
-      errors.push(`El codigo ${internalCode} esta repetido dentro del lote.`);
+      errors.push(`El código ${internalCode} está repetido dentro del lote.`);
     }
 
     if (internalCode && existingByCode.has(internalCode)) {
-      errors.push(`El codigo ${internalCode} ya existe. Usa importacion con actualizacion si quieres reemplazarlo.`);
+      errors.push(`El código ${internalCode} ya existe. Usá importación con actualización si querés reemplazarlo.`);
     }
 
     warningsCount += warnings.length;

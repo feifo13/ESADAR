@@ -23,7 +23,7 @@ export default function BulkArticleSubmitSummary({ result }) {
           {(result.created || []).map((item) => (
             <div key={`${item.rowNumber}-${item.articleId}`} className="history-row">
               <div>
-                <strong>Articulo {item.rowNumber}: {item.title}</strong>
+                <strong>Artículo {item.rowNumber}: {item.title}</strong>
                 <p className="muted-copy">ID {item.articleId} · Código {item.internalCode}</p>
               </div>
               <span>{(item.warnings || []).length ? `${item.warnings.length} warnings` : 'OK'}</span>
@@ -38,7 +38,7 @@ export default function BulkArticleSubmitSummary({ result }) {
           {(result.failed || []).map((item) => (
             <div key={`${item.rowNumber}-${item.title}`} className="history-row">
               <div>
-                <strong>Articulo {item.rowNumber}: {item.title || 'Sin titulo'}</strong>
+                <strong>Artículo {item.rowNumber}: {item.title || 'Sin título'}</strong>
                 <p className="error-copy">{(item.errors || []).join(' · ')}</p>
               </div>
               <span>{(item.warnings || []).length ? `${item.warnings.length} warnings` : 'Sin warnings'}</span>

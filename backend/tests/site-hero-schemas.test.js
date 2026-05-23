@@ -11,7 +11,7 @@ test('site hero schema accepts display and height modes', () => {
   const parsed = siteHeroUpdateSchema.parse({
     title: 'ESADAR',
     subtitle: 'Ropa seleccionada',
-    ctaLabel: 'Ver catalogo',
+    ctaLabel: 'Ver catálogo',
     ctaUrl: '/articles',
     heroHeightMode: 'CUSTOM',
     customHeightVh: '70',

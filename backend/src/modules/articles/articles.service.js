@@ -325,7 +325,7 @@ export async function generateUniqueInternalCode(connection = pool) {
     }
   }
 
-  throw badRequest('No se pudo generar un codigo interno unico');
+  throw badRequest('No se pudo generar un código interno único');
 }
 
 async function ensureUniqueSlug(connection, rawValue, excludeId = null) {

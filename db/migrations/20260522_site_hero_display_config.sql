@@ -1,3 +1,6 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
 ALTER TABLE site_hero
   ADD COLUMN hero_height_mode ENUM('HALF_SCREEN','FULL_SCREEN','CUSTOM') NOT NULL DEFAULT 'HALF_SCREEN' AFTER cta_url,
   ADD COLUMN custom_height_vh INT UNSIGNED NULL AFTER hero_height_mode,

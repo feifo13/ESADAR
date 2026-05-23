@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   buildLikeValue,
   optionalSortField,
@@ -15,6 +18,8 @@ import {
   normalizeSqlOffset,
   resolveAllowedSqlIdentifier,
 } from '../src/utils/sql-safety.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 test('buildLikeValue keeps search as a prepared-statement value', () => {
   assert.equal(buildLikeValue('  nike  '), '%nike%');
@@ -85,4 +90,18 @@ test('pagination helper normalizes page, pageSize and offset bounds', () => {
   });
   assert.equal(getPagination({ page: '0x10', pageSize: '10' }).page, 1);
   assert.equal(getPagination({ page: '999999', pageSize: '100' }).offset, 999_900);
+});
+
+test('database scripts pin utf8mb4 collation for MySQL 8 seed comparisons', () => {
+  const fromScratchSeed = readFileSync(
+    resolve(__dirname, '../../db/scripts/01_from_scratch_superadmin_seed.sql'),
+    'utf8',
+  );
+
+  assert.match(fromScratchSeed, /SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;/);
+  assert.match(fromScratchSeed, /SET collation_connection = 'utf8mb4_unicode_ci';/);
+  assert.match(
+    fromScratchSeed,
+    /WHERE email = CONVERT\(@esadar_super_admin_email USING utf8mb4\) COLLATE utf8mb4_unicode_ci/,
+  );
 });

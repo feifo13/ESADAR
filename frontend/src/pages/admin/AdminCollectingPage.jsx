@@ -183,7 +183,7 @@ export default function AdminCollectingPage() {
                   <p className="section-kicker">Mercado Pago</p>
                   <h2>Datos de integración y pago</h2>
                   <p className="muted-copy">
-                    Para las credenciales de prueba, selecciona ambiente Prueba y pega la public key, access token completo y user ID del panel de Mercado Pago.
+                    Para las credenciales de prueba, seleccioná ambiente Prueba y pegá la public key, access token completo y user ID del panel de Mercado Pago.
                     El access token y la firma secreta del webhook quedan guardados en el backend y no se vuelven a mostrar.
                   </p>
                 </div>

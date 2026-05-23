@@ -1,3 +1,6 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET collation_connection = 'utf8mb4_unicode_ci';
+
 CREATE TABLE IF NOT EXISTS public_page_visits (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   page_type ENUM('HOME','CATALOG','ARTICLE_DETAIL','PURCHASE_GUIDE','TERMS','CONTACT') NOT NULL,

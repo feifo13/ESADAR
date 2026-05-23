@@ -337,7 +337,7 @@ export default function AdminShippingPage() {
       const path = form.id ? `/api/admin/shipping/${form.id}` : "/api/admin/shipping";
       const method = form.id ? "PUT" : "POST";
       await apiFetch(path, { method, body: buildPayload() });
-      notifySuccess(form.id ? "Metodo de envio actualizado." : "Metodo de envio creado.");
+      notifySuccess(form.id ? "Método de envío actualizado." : "Método de envío creado.");
       setForm(emptyForm);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
@@ -361,7 +361,7 @@ export default function AdminShippingPage() {
         method: "PATCH",
         body: { isActive },
       });
-      notifySuccess(isActive ? "Metodo de envio activado." : "Metodo de envio desactivado.");
+      notifySuccess(isActive ? "Método de envío activado." : "Método de envío desactivado.");
       setRefreshNonce((current) => current + 1);
     } catch (err) {
       const message = err.message || "No se pudo actualizar el método de envío.";
@@ -382,7 +382,7 @@ export default function AdminShippingPage() {
       setActionMethodId(method.id);
       setError("");
       await apiFetch(`/api/admin/shipping/${method.id}`, { method: "DELETE" });
-      notifySuccess("Metodo de envio eliminado.");
+      notifySuccess("Método de envío eliminado.");
       if (form.id === method.id) setForm(emptyForm);
       setRefreshNonce((current) => current + 1);
     } catch (err) {
@@ -402,7 +402,7 @@ export default function AdminShippingPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Administracion</p>
-            <h1>Metodos de envio</h1>
+            <h1>Métodos de envío</h1>
           </div>
         </div>
 
@@ -597,7 +597,7 @@ export default function AdminShippingPage() {
         </form>
 
         <ResponsiveFilterPanel
-          title="Filtros de envio"
+          title="Filtros de envío"
           description=""
           buttonLabel="Mostrar filtros"
           summary={activeFiltersCount ? `${activeFiltersCount} filtro(s) activos` : "Sin filtros adicionales"}
@@ -670,7 +670,7 @@ export default function AdminShippingPage() {
               <thead>
                 <tr>
                   <SortableTh sortKey="description" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>
-                    Metodo
+                    Método
                   </SortableTh>
                   <SortableTh sortKey="pricingType" sort={{ key: filters.sortBy, direction: filters.sortDir }} onSort={changeSort}>
                     Tipo
@@ -693,7 +693,7 @@ export default function AdminShippingPage() {
                   const isBusy = actionMethodId === method.id;
                   return (
                     <tr key={method.id}>
-                      <td data-label="Metodo">
+                      <td data-label="Método">
                         <div className="cell-stack">
                           <strong>{method.description}</strong>
                           {method.instructions ? <span className="muted-copy">{method.instructions}</span> : null}

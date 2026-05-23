@@ -572,7 +572,9 @@ export default function AccountPage() {
         method: "PATCH",
         body: {
           ...profilePayload,
-          preferredShippingMethodId: form.preferredShippingMethodId || null,
+          preferredShippingMethodId: form.preferredShippingMethodId
+            ? Number(form.preferredShippingMethodId)
+            : null,
           preferredPaymentMethod: form.preferredPaymentMethod || null,
           defaultAddress: form.defaultAddress?.addressLine
             ? form.defaultAddress
@@ -830,7 +832,7 @@ export default function AccountPage() {
                 />
               </label>
               <label className="field-group">
-                <span>Metodo de pago preferente</span>
+                <span>Método de pago preferente</span>
                 <select
                   className="input"
                   value={form.preferredPaymentMethod}
@@ -847,7 +849,7 @@ export default function AccountPage() {
                 </select>
               </label>
               <label className="field-group">
-                <span>Metodo de envio preferente</span>
+                <span>Método de envío preferente</span>
                 <select
                   className="input"
                   value={form.preferredShippingMethodId}
@@ -1686,9 +1688,9 @@ export default function AccountPage() {
                           formatPaymentMethod(order.paymentMethod)
                         }`,
                         order.shippingMethodName
-                          ? `Envio: ${order.shippingMethodName}`
+                          ? `Envío: ${order.shippingMethodName}`
                           : null,
-                        `Ultima actualizacion: ${formatDate(latestStatusDate)}`,
+                        `Última actualización: ${formatDate(latestStatusDate)}`,
                       ].filter(Boolean)}
                       price={formatCurrency(order.total)}
                       actions={[
@@ -1752,7 +1754,7 @@ export default function AccountPage() {
                         sort={ordersSort}
                         onSort={toggleOrdersSort}
                       >
-                        Ultima actualizacion
+                        Última actualización
                       </SortableTh>
                       <th>Acciones</th>
                     </tr>

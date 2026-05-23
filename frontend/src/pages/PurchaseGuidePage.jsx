@@ -18,15 +18,16 @@ const guideSteps = [
   },
   {
     title: "4. Pagá y esperá validación",
-    copy: "Si elegis transferencia, los datos de pago quedan visibles al finalizar la compra y tambien se envian por correo. En el motivo/concepto de la transferencia indica tu numero de orden. La orden queda reservada por 24 horas.",
+    copy: "Si elegís transferencia, los datos de pago quedan visibles al finalizar la compra y también se envían por correo. En el motivo/concepto de la transferencia indicá tu número de orden. La orden queda reservada por 24 horas.",
+    highlightPaymentReference: true,
   },
   {
     title: "5. Recibí la confirmación",
     copy: "Cuando la Administración de ESADAR valida el pago, recibís el mail de orden aprobada junto con el comprobante de compra en PDF.",
   },
   {
-    title: "6. Recibi y disfruta tu compra",
-    copy: "Cuando tu orden sea aprobada y despachada, te enviaremos la informacion de envio disponible. El codigo de seguimiento puede estar sujeto a disponibilidad del proveedor del servicio de correo.",
+    title: "6. Recibí y disfrutá tu compra",
+    copy: "Cuando tu orden sea aprobada y despachada, te enviaremos la información de envío disponible. El código de seguimiento puede estar sujeto a disponibilidad del proveedor del servicio de correo.",
   },
 ];
 
@@ -62,7 +63,9 @@ export default function PurchaseGuidePage() {
         {guideSteps.map((step) => (
           <article className="section-card guide-step-card" key={step.title}>
             <h2>{step.title}</h2>
-            <p className="muted-copy">{step.copy}</p>
+            <p className={step.highlightPaymentReference ? "muted-copy payment-reference-note" : "muted-copy"}>
+              {step.copy}
+            </p>
           </article>
         ))}
       </section>

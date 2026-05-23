@@ -221,7 +221,7 @@ export default function ArticlePage() {
   if (error || !article) {
     return (
       <div className="container section-card error-card">
-        {error || "Articulo no encontrado"}
+        {error || "Artículo no encontrado"}
       </div>
     );
   }
@@ -397,7 +397,7 @@ export default function ArticlePage() {
     const nextDialog =
       result.code === "OUT_OF_STOCK"
         ? {
-            title: "Articulo agotado",
+            title: "Artículo agotado",
             message: "Esta prenda no tiene stock disponible ahora.",
           }
         : {
@@ -768,7 +768,7 @@ export default function ArticlePage() {
               className="article-gallery-favorite wishlist-heart-button--bare"
               size="lg"
               labelActive="Quitar de guardados"
-              labelInactive="Guardar articulo"
+              labelInactive="Guardar artículo"
               onToggle={() => void handleWishlistToggle()}
             />
           </div>
@@ -884,7 +884,7 @@ export default function ArticlePage() {
                   });
                   showStockNotice(result);
                   if (result?.ok) {
-                    notifySuccess("Articulo agregado al carrito.");
+                    notifySuccess("Artículo agregado al carrito.");
                   }
                 }}
               >

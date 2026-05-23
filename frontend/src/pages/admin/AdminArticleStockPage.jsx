@@ -64,7 +64,7 @@ export default function AdminArticleStockPage() {
         }));
       } catch (err) {
         if (!ignore) {
-          const errorMessage = err.message || "No se pudo cargar el articulo";
+          const errorMessage = err.message || "No se pudo cargar el artículo";
           notifyError(errorMessage);
         }
       } finally {
@@ -84,7 +84,7 @@ export default function AdminArticleStockPage() {
 
     const quantityAvailable = Number(form.quantityAvailable);
     if (!Number.isInteger(quantityAvailable) || quantityAvailable < 0) {
-      const errorMessage = "El nuevo stock disponible debe ser un numero entero mayor o igual a cero.";
+      const errorMessage = "El nuevo stock disponible debe ser un número entero mayor o igual a cero.";
       focusValidationTarget("stock-quantity-available", event.currentTarget);
       notifyError(errorMessage);
       return;
@@ -152,7 +152,7 @@ export default function AdminArticleStockPage() {
           </div>
           <div className="toolbar-inline toolbar-inline-end">
             <Link to={`/admin/articles/${id}/edit`} className="ghost-button linklike">
-              Editar articulo
+              Editar artículo
             </Link>
             <Link to="/admin/articles" className="ghost-button linklike">
               Volver

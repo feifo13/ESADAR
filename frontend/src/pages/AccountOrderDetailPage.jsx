@@ -251,7 +251,13 @@ export default function AccountOrderDetailPage() {
                       return (
                         <article key={entry.id} className="history-row">
                           <div>
-                            <strong>{entry.reason || "Seguimiento actualizado"}</strong>
+                            <StatusBadge
+                              status="TRACKING_UPDATED"
+                              labels={{
+                                TRACKING_UPDATED:
+                                  entry.reason || "Seguimiento actualizado",
+                              }}
+                            />
                             <p className="muted-copy">
                               Método de envío: {tracking.shippingMethod}
                             </p>

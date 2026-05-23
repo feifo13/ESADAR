@@ -5,9 +5,9 @@
 --   - users, roles, user_roles
 --   - customers vinculados a users y sus direcciones
 --   - articles y article_images, sin tocar archivos fisicos del servidor
---   - catalogos maestros necesarios
+--   - catálogos maestros necesarios
 -- Limpia:
---   - carritos, ordenes, pagos, webhooks, ofertas, leads, contactos,
+--   - carritos, órdenes, pagos, webhooks, ofertas, leads, contactos,
 --     wishlists, alertas, auditoria, logs de cliente e importaciones
 -- Ajusta todas las prendas existentes a:
 --   article_inventory total/disponible = 100,
@@ -138,7 +138,7 @@ ON DUPLICATE KEY UPDATE
 SET @admin_user_id := (
   SELECT id
   FROM users
-  WHERE email COLLATE utf8mb4_unicode_ci = @esadar_super_admin_email COLLATE utf8mb4_unicode_ci
+  WHERE email = CONVERT(@esadar_super_admin_email USING utf8mb4) COLLATE utf8mb4_unicode_ci
   LIMIT 1
 );
 SET @super_admin_role_id := (SELECT id FROM roles WHERE code = 'SUPER_ADMIN' LIMIT 1);
@@ -186,8 +186,8 @@ WHERE @customer_role_id IS NOT NULL
   );
 
 -- =========================================================
--- Seed minimo no operativo: talles, categorias, marcas, envios, cobros y SEO
--- No crea ordenes, carritos, pagos, ofertas ni datos transaccionales.
+-- Seed mínimo no operativo: talles, categorías, marcas, envíos, cobros y SEO
+-- No crea órdenes, carritos, pagos, ofertas ni datos transaccionales.
 -- =========================================================
 
 INSERT INTO sizes (code, description, sort_order, is_active) VALUES
@@ -197,7 +197,7 @@ INSERT INTO sizes (code, description, sort_order, is_active) VALUES
   ('L', 'Large', 40, 1),
   ('XL', 'Extra Large', 50, 1),
   ('XXL', 'Double Extra Large', 60, 1),
-  ('UNICO', 'Talle unico', 70, 1),
+  ('UNICO', 'Talle único', 70, 1),
   ('36', '36', 80, 1),
   ('38', '38', 90, 1),
   ('40', '40', 100, 1),
@@ -210,7 +210,7 @@ ON DUPLICATE KEY UPDATE
 INSERT INTO categories (name, slug, description, sort_order, is_active, created_by, updated_by) VALUES
   ('Camperas', 'camperas', 'Camperas deportivas, rompevientros y jackets.', 10, 1, @admin_user_id, @admin_user_id),
   ('Buzos', 'buzos', 'Hoodies, crewnecks y buzos vintage.', 20, 1, @admin_user_id, @admin_user_id),
-  ('Remeras', 'remeras', 'Tees, tops y remeras basicas o graficas.', 30, 1, @admin_user_id, @admin_user_id),
+  ('Remeras', 'remeras', 'Tees, tops y remeras básicas o gráficas.', 30, 1, @admin_user_id, @admin_user_id),
   ('Pantalones', 'pantalones', 'Jeans, joggers y pantalones urbanos.', 40, 1, @admin_user_id, @admin_user_id),
   ('Shorts', 'shorts', 'Shorts deportivos y casuales.', 50, 1, @admin_user_id, @admin_user_id),
   ('Accesorios', 'accesorios', 'Gorras, bolsos y accesorios seleccionados.', 60, 1, @admin_user_id, @admin_user_id)
@@ -239,8 +239,8 @@ SELECT 'Retiro en punto acordado', 0.00, 'Coordinamos retiro por mensaje directo
 WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Retiro en punto acordado');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
-SELECT 'Cadeteria Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Montevideo luego de aprobada la orden.', 1, @admin_user_id, @admin_user_id
-WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadeteria Montevideo');
+SELECT 'Cadetería Montevideo', 180.00, 'Entregas en 24 a 48 horas dentro de Montevideo luego de aprobada la orden.', 1, @admin_user_id, @admin_user_id
+WHERE NOT EXISTS (SELECT 1 FROM shipping_methods WHERE description = 'Cadetería Montevideo');
 
 INSERT INTO shipping_methods (description, base_cost, instructions, is_active, created_by, updated_by)
 SELECT 'DAC interior', 260.00, 'Despacho al interior dentro de 24 horas hábiles posteriores a la aprobación.', 1, @admin_user_id, @admin_user_id
@@ -323,9 +323,9 @@ ON DUPLICATE KEY UPDATE
   updated_by = VALUES(updated_by);
 
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
-  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas unicas.', NULL, NULL, 1),
+  ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),
-  ('/about', 'Sobre ESADAR | Selección', 'Conoce la seleccion de ESADAR: prendas unicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
+  ('/about', 'Sobre ESADAR | Selección', 'Conocé la selección de ESADAR: prendas únicas, sportswear, vintage y ropa moderna elegida con criterio.', NULL, NULL, 1),
   ('/contact', 'Contacto | ESADAR', 'Consultanos por una prenda, talles, ingresos nuevos o formas de entrega.', NULL, NULL, 1),
   ('/guia-de-compra', 'Guía de compra | ESADAR', 'Cómo comprar en ESADAR, medios de pago, envíos y aprobación de órdenes.', NULL, NULL, 1),
   ('/terminos-y-condiciones', 'Términos y condiciones | ESADAR', 'Condiciones de compra, pagos, reservas, cambios y uso del sitio ESADAR.', NULL, NULL, 1)

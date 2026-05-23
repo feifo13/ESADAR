@@ -247,7 +247,7 @@ export default function AdminOrdersPage() {
       setError("");
       await apiFetch(`/api/admin/orders/${order.id}/cancel`, {
         method: "PATCH",
-        body: { reason: "Eliminada desde administracion." },
+        body: { reason: "Eliminada desde administración." },
       });
       notifySuccess(
         order.hasOffers
@@ -541,7 +541,7 @@ export default function AdminOrdersPage() {
                   >
                     Pago
                   </SortableTh>
-                  <th>Metodo de envio</th>
+                  <th>Método de envío</th>
                   <SortableTh
                     sortKey="total"
                     sort={{ key: filters.sortBy, direction: filters.sortDir }}

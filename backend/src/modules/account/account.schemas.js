@@ -40,7 +40,7 @@ const defaultAddressSchema = z.object({
     ctx.addIssue({
       code: 'custom',
       path: ['addressLine'],
-      message: 'La direccion principal es obligatoria si completas datos de envio.',
+      message: 'La dirección principal es obligatoria si completás datos de envío.',
     });
   }
 });

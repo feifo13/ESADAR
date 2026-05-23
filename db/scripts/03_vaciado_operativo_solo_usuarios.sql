@@ -5,7 +5,7 @@
 --   - users
 --   - roles
 --   - user_roles
--- Limpia todo el resto de datos de negocio/catalogo/configuracion.
+-- Limpia todo el resto de datos de negocio/catálogo/configuración.
 -- Asegura que exista CUSTOMER y que usuarios sin rol administrativo/operativo
 -- queden como CUSTOMER.
 -- =========================================================
@@ -151,7 +151,7 @@ ON DUPLICATE KEY UPDATE
 SET @admin_user_id := (
   SELECT id
   FROM users
-  WHERE email COLLATE utf8mb4_unicode_ci = @esadar_super_admin_email COLLATE utf8mb4_unicode_ci
+  WHERE email = CONVERT(@esadar_super_admin_email USING utf8mb4) COLLATE utf8mb4_unicode_ci
   LIMIT 1
 );
 SET @super_admin_role_id := (SELECT id FROM roles WHERE code = 'SUPER_ADMIN' LIMIT 1);

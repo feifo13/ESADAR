@@ -22,7 +22,7 @@ export default function ArticleImageZoom({ image, title }) {
   const resolvedSrc = resolveAssetUrl(displaySrc);
   const resolvedZoomSrc = resolveAssetUrl(zoomSrc || displaySrc) || resolvedSrc;
   const resolvedSrcSet = resolveSrcSet(image?.srcSet);
-  const alt = image?.altText || title || "Imagen de articulo";
+  const alt = image?.altText || title || "Imagen de artículo";
 
   if (!resolvedSrc) {
     return (

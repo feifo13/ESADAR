@@ -802,7 +802,7 @@ export async function getStatisticsMarketStudy(filters = {}) {
     },
     paymentShipping: paymentRows.map((row) => ({
       paymentMethod: row.paymentMethod,
-      shippingMethodName: row.shippingMethodName || 'Sin envio',
+      shippingMethodName: row.shippingMethodName || 'Sin envío',
       ordersCount: Number(row.ordersCount || 0),
       revenue: Number(row.revenue || 0),
     })),

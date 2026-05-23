@@ -28,6 +28,8 @@ import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const CATALOG_PAGE_SIZE = 20;
+const HERO_HEIGHT_MODES = new Set(["HALF_SCREEN", "FULL_SCREEN", "CUSTOM"]);
+const HERO_DISPLAY_MODES = new Set(["SINGLE_IMAGE", "CAROUSEL"]);
 function mergeAcceptedOffers(items, acceptedOffersByArticle) {
   return items.map((item) => {
     const acceptedOffer = acceptedOffersByArticle[Number(item.id)];
@@ -209,6 +211,42 @@ function getConfiguredHeroImageSources(hero) {
     null;
 
   return { desktop: desktopImage, mobile: mobileImage };
+}
+
+function normalizeHeroHeightMode(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return HERO_HEIGHT_MODES.has(normalized) ? normalized : "HALF_SCREEN";
+}
+
+function normalizeHeroDisplayMode(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  return HERO_DISPLAY_MODES.has(normalized) ? normalized : "SINGLE_IMAGE";
+}
+
+function getConfiguredHeroImages(hero, viewportTarget = "DESKTOP_TABLET") {
+  const images = Array.isArray(hero?.images) ? hero.images : [];
+  const activeImages = images
+    .filter((image) => image?.imageUrl && image?.isActive !== false)
+    .map((image) => ({
+      ...image,
+      viewportTarget: image.viewportTarget || image.viewport_target || "DESKTOP_TABLET",
+      imageUrl: resolveAssetUrl(image.imageUrl),
+    }))
+    .filter((image) => image.imageUrl);
+  const targetImages = activeImages.filter(
+    (image) => image.viewportTarget === viewportTarget,
+  );
+  const carouselImages = (targetImages.length ? targetImages : activeImages)
+    .sort((left, right) => Number(left.sortOrder || 0) - Number(right.sortOrder || 0));
+
+  if (carouselImages.length) return carouselImages;
+
+  return HERO_IMAGES.map((imageUrl, index) => ({
+    id: `fallback-${index}`,
+    imageUrl,
+    imageAlt: hero?.imageAlt || "ESADAR",
+    sortOrder: index,
+  }));
 }
 
 function CatalogSortControl({ value, onChange, onApplied }) {
@@ -400,6 +438,24 @@ export default function HomePage() {
     () => getConfiguredHeroImageSources(siteHero),
     [siteHero],
   );
+  const configuredHeroImages = useMemo(
+    () => getConfiguredHeroImages(siteHero),
+    [siteHero],
+  );
+  const heroHeightMode = normalizeHeroHeightMode(siteHero?.heroHeightMode);
+  const heroDisplayMode = normalizeHeroDisplayMode(siteHero?.heroDisplayMode);
+  const customHeroHeightVh =
+    heroHeightMode === "CUSTOM"
+      ? Math.min(100, Math.max(30, Number(siteHero?.customHeightVh || 70)))
+      : null;
+  const heroHeightClass =
+    heroHeightMode === "FULL_SCREEN"
+      ? "site-hero--full-screen"
+      : heroHeightMode === "CUSTOM"
+        ? "site-hero--custom"
+        : "site-hero--half-screen";
+  const shouldRenderHeroCarousel =
+    heroDisplayMode === "CAROUSEL" && configuredHeroImages.length > 1;
   const desktopHeroImage = configuredHeroSources.desktop || {
     imageUrl: HERO_IMAGES[0],
     imageAlt: siteHero?.imageAlt || "ESADAR",
@@ -408,6 +464,20 @@ export default function HomePage() {
   const selectedHeroImageUrl = desktopHeroImage.imageUrl;
   const selectedHeroImageAlt = desktopHeroImage.imageAlt || siteHero?.imageAlt || "ESADAR";
   const mobileHeroImageUrl = mobileHeroImage?.imageUrl || selectedHeroImageUrl;
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+
+  useEffect(() => {
+    setHeroSlideIndex(0);
+  }, [configuredHeroImages.length, heroDisplayMode]);
+
+  useEffect(() => {
+    if (!shouldRenderHeroCarousel) return undefined;
+    const intervalId = window.setInterval(() => {
+      setHeroSlideIndex((current) => (current + 1) % configuredHeroImages.length);
+    }, 6000);
+
+    return () => window.clearInterval(intervalId);
+  }, [configuredHeroImages.length, shouldRenderHeroCarousel]);
 
   useEffect(() => {
     let ignore = false;
@@ -967,7 +1037,20 @@ export default function HomePage() {
 
       <section
         ref={heroRef}
-        className="home-hero-section"
+        className={[
+          "home-hero-section",
+          "site-hero",
+          "site-hero--configured",
+          heroHeightClass,
+          shouldRenderHeroCarousel ? "site-hero--carousel" : "site-hero--single",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={
+          customHeroHeightVh
+            ? { "--hero-height": `${customHeroHeightVh}vh` }
+            : undefined
+        }
         aria-label="Imagen destacada"
       >
         <div className="hero-offer-ticker" aria-label="Aceptamos ofertas">
@@ -1005,21 +1088,48 @@ export default function HomePage() {
           </div>
         </div>
 
-        <figure className="home-hero-frame">
-          <picture className="home-hero-picture">
-            {mobileHeroImageUrl && mobileHeroImageUrl !== selectedHeroImageUrl ? (
-              <source media="(max-width: 767px)" srcSet={mobileHeroImageUrl} />
-            ) : null}
-            <img
-              src={selectedHeroImageUrl}
-              alt={selectedHeroImageAlt}
-              className="home-hero-image"
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-            />
-          </picture>
-        </figure>
+        {shouldRenderHeroCarousel ? (
+          <div className="home-hero-frame home-hero-carousel" aria-roledescription="carousel">
+            {configuredHeroImages.map((image, index) => (
+              <picture
+                className={[
+                  "home-hero-picture",
+                  "home-hero-carousel__slide",
+                  index === heroSlideIndex ? "is-active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                key={image.id || image.imageUrl}
+                aria-hidden={index === heroSlideIndex ? undefined : "true"}
+              >
+                <img
+                  src={image.imageUrl}
+                  alt={image.imageAlt || siteHero?.imageAlt || "ESADAR"}
+                  className="home-hero-image"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                />
+              </picture>
+            ))}
+          </div>
+        ) : (
+          <figure className="home-hero-frame">
+            <picture className="home-hero-picture">
+              {mobileHeroImageUrl && mobileHeroImageUrl !== selectedHeroImageUrl ? (
+                <source media="(max-width: 767px)" srcSet={mobileHeroImageUrl} />
+              ) : null}
+              <img
+                src={selectedHeroImageUrl}
+                alt={selectedHeroImageAlt}
+                className="home-hero-image"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </picture>
+          </figure>
+        )}
       </section>
 
       {/* <section className="container value-hero-card section-card">
@@ -1040,7 +1150,7 @@ export default function HomePage() {
             className="button button-primary"
             onClick={() => scrollToSection(catalogSectionRef)}
           >
-            Ver catalogo
+            Ver catálogo
           </button>
           <button
             type="button"
