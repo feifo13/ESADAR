@@ -12,9 +12,87 @@ import {
 const DEFAULT_HEIGHT_MODE = 'HALF_SCREEN';
 const DEFAULT_DISPLAY_MODE = 'SINGLE_IMAGE';
 const DEFAULT_VIEWPORT_TARGET = 'DESKTOP_TABLET';
+const DEFAULT_TICKER_TEXT = 'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS';
+const DEFAULT_TICKER_TARGET_URL = '/articles';
+const DEFAULT_TICKER_BACKGROUND_COLOR = '#ec672b';
+const TICKER_SETTINGS_ID = 1;
 const VIEWPORT_TARGETS = new Set(['DESKTOP_TABLET', 'MOBILE']);
 const HERO_HEIGHT_MODES = new Set(['HALF_SCREEN', 'FULL_SCREEN', 'CUSTOM']);
 const HERO_DISPLAY_MODES = new Set(['SINGLE_IMAGE', 'CAROUSEL']);
+const TICKER_COLOR_TOKENS = new Set([
+  'orange',
+  'navy',
+  'aqua',
+  'surface',
+  'text',
+]);
+
+let tickerTableEnsured = false;
+
+async function ensureTickerTable(connection = pool) {
+  if (tickerTableEnsured) return;
+
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS site_ticker_settings (
+      id TINYINT UNSIGNED NOT NULL DEFAULT 1,
+      ticker_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      ticker_text VARCHAR(180) NOT NULL DEFAULT 'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS',
+      ticker_target_url VARCHAR(500) NOT NULL DEFAULT '/articles',
+      ticker_target_section VARCHAR(80) NULL,
+      ticker_background_color VARCHAR(32) NOT NULL DEFAULT '#ec672b',
+      ticker_sticky TINYINT(1) NOT NULL DEFAULT 0,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      updated_by BIGINT UNSIGNED NULL,
+      PRIMARY KEY (id),
+      CONSTRAINT chk_site_ticker_settings_singleton CHECK (id = 1),
+      KEY idx_site_ticker_updated_by (updated_by),
+      CONSTRAINT fk_site_ticker_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    ) ENGINE=InnoDB
+  `);
+
+  tickerTableEnsured = true;
+}
+
+function normalizeTickerTargetUrl(value) {
+  const normalized = String(value || '').trim().replace(/\\/g, '/');
+  if (!normalized) return DEFAULT_TICKER_TARGET_URL;
+  if (!normalized.startsWith('/') || normalized.startsWith('//')) {
+    return DEFAULT_TICKER_TARGET_URL;
+  }
+  if (/[\u0000-\u001f]/.test(normalized) || /^[a-z][a-z0-9+.-]*:/i.test(normalized)) {
+    return DEFAULT_TICKER_TARGET_URL;
+  }
+  return normalized.slice(0, 500);
+}
+
+function normalizeTickerTargetSection(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return '';
+  return /^[a-z0-9_-]{1,80}$/.test(normalized) ? normalized : '';
+}
+
+function normalizeTickerBackgroundColor(value) {
+  const normalized = String(value || '').trim();
+  if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(normalized)) return normalized;
+  const token = normalized.toLowerCase();
+  return TICKER_COLOR_TOKENS.has(token) ? token : DEFAULT_TICKER_BACKGROUND_COLOR;
+}
+
+function normalizeTickerRow(row) {
+  return {
+    id: Number(row?.id || TICKER_SETTINGS_ID),
+    isEnabled: row?.tickerEnabled == null ? true : Boolean(row.tickerEnabled),
+    text: String(row?.tickerText || DEFAULT_TICKER_TEXT).trim() || DEFAULT_TICKER_TEXT,
+    targetUrl: normalizeTickerTargetUrl(row?.tickerTargetUrl),
+    targetSection: normalizeTickerTargetSection(row?.tickerTargetSection),
+    backgroundColor: normalizeTickerBackgroundColor(row?.tickerBackgroundColor),
+    isSticky: row?.tickerSticky == null ? false : Boolean(row.tickerSticky),
+    createdAt: row?.createdAt || null,
+    updatedAt: row?.updatedAt || null,
+    updatedBy: row?.updatedBy != null ? Number(row.updatedBy) : null,
+  };
+}
 
 function normalizeViewportTarget(value) {
   const normalized = String(value || '').trim().toUpperCase();
@@ -363,12 +441,131 @@ async function upsertHeroImageMetadata(connection, heroId, image) {
   );
 }
 
+async function selectTickerRow(connection = pool) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        ticker_enabled AS tickerEnabled,
+        ticker_text AS tickerText,
+        ticker_target_url AS tickerTargetUrl,
+        ticker_target_section AS tickerTargetSection,
+        ticker_background_color AS tickerBackgroundColor,
+        ticker_sticky AS tickerSticky,
+        created_at AS createdAt,
+        updated_at AS updatedAt,
+        updated_by AS updatedBy
+      FROM site_ticker_settings
+      WHERE id = ?
+      LIMIT 1
+    `,
+    [TICKER_SETTINGS_ID],
+  );
+
+  return rows[0] || null;
+}
+
+async function selectTickerSettings(connection = pool) {
+  await ensureTickerTable(connection);
+  return normalizeTickerRow(await selectTickerRow(connection));
+}
+
+async function ensureTickerSettingsRow(connection) {
+  await ensureTickerTable(connection);
+  const current = await selectTickerRow(connection);
+  if (current) return normalizeTickerRow(current);
+
+  await connection.execute(
+    `
+      INSERT INTO site_ticker_settings (
+        id,
+        ticker_enabled,
+        ticker_text,
+        ticker_target_url,
+        ticker_target_section,
+        ticker_background_color,
+        ticker_sticky
+      ) VALUES (?, 1, ?, ?, NULL, ?, 0)
+    `,
+    [
+      TICKER_SETTINGS_ID,
+      DEFAULT_TICKER_TEXT,
+      DEFAULT_TICKER_TARGET_URL,
+      DEFAULT_TICKER_BACKGROUND_COLOR,
+    ],
+  );
+
+  return normalizeTickerRow(await selectTickerRow(connection));
+}
+
 export async function getPublicSiteHero() {
   return selectLatestHero(pool);
 }
 
 export async function getAdminSiteHero() {
   return selectLatestHero(pool, { includeInactive: true });
+}
+
+export async function getPublicSiteTicker() {
+  return selectTickerSettings(pool);
+}
+
+export async function getAdminSiteTicker() {
+  return selectTickerSettings(pool);
+}
+
+export async function updateAdminSiteTicker(input, auditContext) {
+  return withTransaction(async (connection) => {
+    const before = await ensureTickerSettingsRow(connection);
+    const text = String(input.text || DEFAULT_TICKER_TEXT).trim() || DEFAULT_TICKER_TEXT;
+    const targetUrl = normalizeTickerTargetUrl(input.targetUrl);
+    const targetSection = normalizeTickerTargetSection(input.targetSection);
+    const backgroundColor = normalizeTickerBackgroundColor(input.backgroundColor);
+
+    await connection.execute(
+      `
+        UPDATE site_ticker_settings
+        SET
+          ticker_enabled = ?,
+          ticker_text = ?,
+          ticker_target_url = ?,
+          ticker_target_section = ?,
+          ticker_background_color = ?,
+          ticker_sticky = ?,
+          updated_by = ?
+        WHERE id = ?
+      `,
+      [
+        input.isEnabled ? 1 : 0,
+        text,
+        targetUrl,
+        targetSection || null,
+        backgroundColor,
+        input.isSticky ? 1 : 0,
+        auditContext.actorUserId || null,
+        TICKER_SETTINGS_ID,
+      ],
+    );
+
+    const after = await selectTickerSettings(connection);
+    await logAudit(
+      {
+        actorUserId: auditContext.actorUserId || null,
+        actorLabel: auditContext.actorLabel || null,
+        actionCode: 'SITE_TICKER_UPDATED',
+        entityType: 'site_ticker_settings',
+        entityId: TICKER_SETTINGS_ID,
+        beforeJson: before,
+        afterJson: after,
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    return after;
+  });
 }
 
 export async function updateAdminSiteHero(input, auditContext) {

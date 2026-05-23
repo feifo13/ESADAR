@@ -5,20 +5,26 @@ import { requireRole } from '../../middlewares/require-role.js';
 import { uploadSiteHeroImage } from '../../middlewares/upload.js';
 import {
   getAdminHero,
+  getAdminTicker,
   getSiteHero,
+  getSiteTicker,
   deleteAdminHeroImage,
   postAdminHeroImage,
   putAdminHero,
+  putAdminTicker,
 } from './site.controller.js';
 
 const publicRouter = Router();
 const adminRouter = Router();
 
 publicRouter.get('/hero', asyncHandler(getSiteHero));
+publicRouter.get('/ticker', asyncHandler(getSiteTicker));
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/hero', asyncHandler(getAdminHero));
+adminRouter.get('/ticker', asyncHandler(getAdminTicker));
 adminRouter.put('/hero', asyncHandler(putAdminHero));
+adminRouter.put('/ticker', asyncHandler(putAdminTicker));
 adminRouter.delete('/hero/images/:imageId', asyncHandler(deleteAdminHeroImage));
 adminRouter.post(
   '/hero/image',

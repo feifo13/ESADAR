@@ -53,6 +53,7 @@ DELETE FROM shipping_method_weight_rates;
 DELETE FROM shipping_methods;
 DELETE FROM site_hero_images;
 DELETE FROM site_hero;
+DELETE FROM site_ticker_settings;
 DELETE FROM site_pages_seo;
 DELETE FROM categories;
 DELETE FROM brands;

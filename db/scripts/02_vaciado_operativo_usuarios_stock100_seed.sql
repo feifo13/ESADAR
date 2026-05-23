@@ -322,6 +322,29 @@ VALUES (
 ON DUPLICATE KEY UPDATE
   updated_by = VALUES(updated_by);
 
+INSERT INTO site_ticker_settings (
+  id,
+  ticker_enabled,
+  ticker_text,
+  ticker_target_url,
+  ticker_target_section,
+  ticker_background_color,
+  ticker_sticky,
+  updated_by
+)
+VALUES (
+  1,
+  1,
+  'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS',
+  '/articles',
+  NULL,
+  '#ec672b',
+  0,
+  @admin_user_id
+)
+ON DUPLICATE KEY UPDATE
+  updated_by = VALUES(updated_by);
+
 INSERT INTO site_pages_seo (route, title, description, canonical_url, og_image, is_indexable) VALUES
   ('/', 'ESADAR | Ropa seleccionada', 'Sportswear, vintage y prendas modernas elegidas una por una. Stock limitado y piezas únicas.', NULL, NULL, 1),
   ('/articles', 'Catálogo | ESADAR', 'Explorá el catálogo de ESADAR: prendas seleccionadas, sportswear, vintage y ropa moderna con stock limitado.', NULL, NULL, 1),

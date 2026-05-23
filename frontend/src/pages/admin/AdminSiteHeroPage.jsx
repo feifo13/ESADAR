@@ -4,6 +4,12 @@ import AppLoader from "../../components/AppLoader.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch, resolveAssetUrl } from "../../lib/api.js";
+import {
+  buildTickerTargetUrl,
+  DEFAULT_SITE_TICKER,
+  normalizeSiteTicker,
+  resolveTickerBackgroundColor,
+} from "../../lib/siteTicker.js";
 
 const VIEWPORT_DESKTOP_TABLET = "DESKTOP_TABLET";
 const VIEWPORT_MOBILE = "MOBILE";
@@ -22,6 +28,13 @@ const HERO_DISPLAY_OPTIONS = [
   { value: DISPLAY_MODE_SINGLE, label: "Imagen única" },
   { value: DISPLAY_MODE_CAROUSEL, label: "Carousel" },
 ];
+const TICKER_TARGET_SECTION_OPTIONS = [
+  { value: "", label: "Usar URL configurada" },
+  { value: "catalog", label: "Catálogo general" },
+  { value: "featured", label: "Destacados" },
+  { value: "offers", label: "Ofertas" },
+  { value: "latest", label: "Últimos ingresos" },
+];
 
 const emptyHeroForm = {
   title: "",
@@ -35,6 +48,7 @@ const emptyHeroForm = {
   images: [],
   isActive: true,
 };
+const emptyTickerForm = { ...DEFAULT_SITE_TICKER };
 
 function normalizeViewportTarget(value) {
   return value === VIEWPORT_MOBILE ? VIEWPORT_MOBILE : VIEWPORT_DESKTOP_TABLET;
@@ -104,6 +118,10 @@ function toHeroForm(hero) {
   };
 }
 
+function toTickerForm(ticker) {
+  return normalizeSiteTicker(ticker);
+}
+
 function getSelectedImage(images, viewportTarget) {
   const target = normalizeViewportTarget(viewportTarget);
   return (
@@ -117,10 +135,13 @@ export default function AdminSiteHeroPage() {
   const { notifySuccess, notifyError } = useNotification();
   const [hero, setHero] = useState(null);
   const [form, setForm] = useState(emptyHeroForm);
+  const [ticker, setTicker] = useState(null);
+  const [tickerForm, setTickerForm] = useState(emptyTickerForm);
   const [desktopImageFiles, setDesktopImageFiles] = useState([]);
   const [mobileImageFiles, setMobileImageFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingTicker, setSavingTicker] = useState(false);
 
   const desktopImagePreviews = useMemo(
     () => desktopImageFiles.map((file) => URL.createObjectURL(file)),
@@ -159,21 +180,26 @@ export default function AdminSiteHeroPage() {
   useEffect(() => {
     let ignore = false;
 
-    async function loadHero() {
+    async function loadSiteSettings() {
       try {
         setLoading(true);
-        const response = await apiFetch("/api/admin/site/hero");
+        const [heroResponse, tickerResponse] = await Promise.all([
+          apiFetch("/api/admin/site/hero"),
+          apiFetch("/api/admin/site/ticker"),
+        ]);
         if (ignore) return;
-        setHero(response.hero || null);
-        setForm(toHeroForm(response.hero));
+        setHero(heroResponse.hero || null);
+        setForm(toHeroForm(heroResponse.hero));
+        setTicker(tickerResponse.ticker || null);
+        setTickerForm(toTickerForm(tickerResponse.ticker));
       } catch (err) {
-        if (!ignore) notifyError(err.message || "No pudimos cargar el hero.");
+        if (!ignore) notifyError(err.message || "No pudimos cargar la configuración del sitio.");
       } finally {
         if (!ignore) setLoading(false);
       }
     }
 
-    void loadHero();
+    void loadSiteSettings();
     return () => {
       ignore = true;
     };
@@ -181,6 +207,10 @@ export default function AdminSiteHeroPage() {
 
   function updateField(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function updateTickerField(name, value) {
+    setTickerForm((current) => ({ ...current, [name]: value }));
   }
 
   function updateImage(index, name, value) {
@@ -314,6 +344,54 @@ export default function AdminSiteHeroPage() {
       notifyError(errorMessage);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTickerSubmit(event) {
+    event.preventDefault();
+
+    const nextTicker = {
+      ...tickerForm,
+      text: String(tickerForm.text || "").trim(),
+      targetUrl: String(tickerForm.targetUrl || DEFAULT_SITE_TICKER.targetUrl).trim(),
+      targetSection: String(tickerForm.targetSection || "").trim().toLowerCase(),
+      backgroundColor: String(tickerForm.backgroundColor || DEFAULT_SITE_TICKER.backgroundColor).trim(),
+      isEnabled: Boolean(tickerForm.isEnabled),
+      isSticky: Boolean(tickerForm.isSticky),
+    };
+    if (nextTicker.isEnabled && !nextTicker.text.trim()) {
+      notifyError("El texto del ticker es obligatorio.");
+      return;
+    }
+    if (
+      !nextTicker.targetUrl.startsWith("/") ||
+      nextTicker.targetUrl.startsWith("//") ||
+      /^[a-z][a-z0-9+.-]*:/i.test(nextTicker.targetUrl)
+    ) {
+      notifyError("La URL del ticker debe ser interna.");
+      return;
+    }
+
+    try {
+      setSavingTicker(true);
+      const response = await apiFetch("/api/admin/site/ticker", {
+        method: "PUT",
+        body: {
+          isEnabled: nextTicker.isEnabled,
+          text: nextTicker.text,
+          targetUrl: nextTicker.targetUrl,
+          targetSection: nextTicker.targetSection,
+          backgroundColor: nextTicker.backgroundColor,
+          isSticky: nextTicker.isSticky,
+        },
+      });
+      setTicker(response.ticker || null);
+      setTickerForm(toTickerForm(response.ticker));
+      notifySuccess("Ticker actualizado.");
+    } catch (err) {
+      notifyError(err.message || "No pudimos guardar el ticker.");
+    } finally {
+      setSavingTicker(false);
     }
   }
 
@@ -642,6 +720,128 @@ export default function AdminSiteHeroPage() {
                 disabled={saving}
               >
                 {saving ? "Guardando..." : "Guardar hero"}
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </section>
+
+      <section className="section-card page-stack admin-site-ticker-card">
+        <div className="section-heading admin-site-hero-heading">
+          <div>
+            <p className="section-kicker">Sitio público</p>
+            <h1>Ticker</h1>
+          </div>
+          {!loading ? (
+            <button
+              type="submit"
+              form="admin-site-ticker-form"
+              className="button button-primary"
+              disabled={savingTicker}
+            >
+              {savingTicker ? "Guardando..." : "Guardar ticker"}
+            </button>
+          ) : null}
+        </div>
+
+        {loading ? <AppLoader variant="card" label="Cargando ticker" /> : null}
+
+        {!loading ? (
+          <form id="admin-site-ticker-form" className="page-stack" onSubmit={handleTickerSubmit}>
+            <div className="form-grid-two">
+              <label className="field-group checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={tickerForm.isEnabled}
+                  onChange={(event) => updateTickerField("isEnabled", event.target.checked)}
+                />
+                <span>Ticker activo</span>
+              </label>
+
+              <label className="field-group checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={tickerForm.isSticky}
+                  onChange={(event) => updateTickerField("isSticky", event.target.checked)}
+                />
+                <span>Mantener ticker fijo al hacer scroll</span>
+              </label>
+
+              <label className="field-group form-grid-span-two">
+                <span>Texto</span>
+                <input
+                  className="input"
+                  value={tickerForm.text}
+                  onChange={(event) => updateTickerField("text", event.target.value)}
+                  maxLength={180}
+                  placeholder="Nuevas prendas disponibles — ver catálogo"
+                />
+              </label>
+
+              <label className="field-group">
+                <span>URL destino</span>
+                <input
+                  className="input"
+                  value={tickerForm.targetUrl}
+                  onChange={(event) => updateTickerField("targetUrl", event.target.value)}
+                  maxLength={500}
+                  placeholder="/articles"
+                />
+                <span className="field-helper">
+                  Debe ser una ruta interna del sitio.
+                </span>
+              </label>
+
+              <label className="field-group">
+                <span>Sección destino</span>
+                <select
+                  className="input"
+                  value={tickerForm.targetSection}
+                  onChange={(event) => updateTickerField("targetSection", event.target.value)}
+                >
+                  {TICKER_TARGET_SECTION_OPTIONS.map((option) => (
+                    <option key={option.value || "url"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field-group">
+                <span>Color de fondo</span>
+                <input
+                  className="input"
+                  value={tickerForm.backgroundColor}
+                  onChange={(event) => updateTickerField("backgroundColor", event.target.value)}
+                  maxLength={32}
+                  placeholder="#ec672b"
+                />
+                <span className="field-helper">
+                  Hexadecimal o token: orange, navy, aqua, surface, text.
+                </span>
+              </label>
+            </div>
+
+            <div className="admin-site-ticker-preview">
+              <div
+                className="admin-site-ticker-preview__bar"
+                style={{ "--ticker-background": resolveTickerBackgroundColor(tickerForm.backgroundColor) }}
+              >
+                <span>{tickerForm.text || DEFAULT_SITE_TICKER.text}</span>
+              </div>
+              <p className="field-helper">
+                Destino: {buildTickerTargetUrl(tickerForm)}
+                {ticker?.updatedAt ? ` · Última actualización: ${ticker.updatedAt}` : ""}
+              </p>
+            </div>
+
+            <div className="inline-action-group">
+              <button
+                type="submit"
+                className="button button-primary"
+                disabled={savingTicker}
+              >
+                {savingTicker ? "Guardando..." : "Guardar ticker"}
               </button>
             </div>
           </form>

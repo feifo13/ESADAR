@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { siteHeroUpdateSchema } from '../src/modules/site/site.schemas.js';
+import {
+  siteHeroUpdateSchema,
+  siteTickerUpdateSchema,
+} from '../src/modules/site/site.schemas.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -70,4 +73,44 @@ test('site hero service returns ordered active images for public hero payloads',
   assert.match(source, /AND is_active = 1/);
   assert.match(source, /ORDER BY sort_order ASC, id ASC/);
   assert.match(source, /hero\.images = await selectHeroImages/);
+});
+
+test('site ticker schema accepts internal destinations and boolean flags', () => {
+  const parsed = siteTickerUpdateSchema.parse({
+    isEnabled: 'true',
+    text: 'Nuevas prendas disponibles',
+    targetUrl: '/articles?featured=true',
+    targetSection: 'offers',
+    backgroundColor: '#ff6b00',
+    isSticky: 'false',
+  });
+
+  assert.equal(parsed.isEnabled, true);
+  assert.equal(parsed.targetUrl, '/articles?featured=true');
+  assert.equal(parsed.targetSection, 'offers');
+  assert.equal(parsed.isSticky, false);
+});
+
+test('site ticker schema rejects unsafe URLs and invalid colors', () => {
+  assert.throws(
+    () => siteTickerUpdateSchema.parse({
+      isEnabled: true,
+      text: 'Ticker',
+      targetUrl: 'https://example.com',
+      backgroundColor: '#ff6b00',
+      isSticky: false,
+    }),
+    /interna/i,
+  );
+
+  assert.throws(
+    () => siteTickerUpdateSchema.parse({
+      isEnabled: true,
+      text: 'Ticker',
+      targetUrl: '/articles',
+      backgroundColor: 'javascript:alert(1)',
+      isSticky: false,
+    }),
+    /color/i,
+  );
 });

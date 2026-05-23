@@ -13781,17 +13781,37 @@ dialog,
   align-items: center;
   overflow: hidden;
   color: #ffffff;
-  background: linear-gradient(
+  background: var(--ticker-background, linear-gradient(
     90deg,
     color-mix(in srgb, var(--orange) 88%, var(--navy)),
     var(--orange) 42%,
     color-mix(in srgb, var(--orange) 92%, #ffffff)
-  );
+  ));
   border-block: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
     0 8px 18px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  pointer-events: none;
+  cursor: pointer;
+  text-decoration: none;
+  pointer-events: auto;
+  z-index: 45;
+}
+
+.hero-offer-ticker:hover,
+.hero-offer-ticker:focus-visible {
+  color: #ffffff;
+  text-decoration: none;
+  filter: brightness(1.03);
+}
+
+.hero-offer-ticker:focus-visible {
+  outline: 2px solid color-mix(in srgb, #ffffff 72%, var(--orange));
+  outline-offset: -2px;
+}
+
+.hero-offer-ticker--sticky {
+  position: sticky;
+  top: var(--header-height, 72px);
 }
 
 .hero-offer-ticker__track {
@@ -16635,6 +16655,29 @@ dialog,
   aspect-ratio: auto !important;
   object-fit: contain !important;
   object-position: center center !important;
+}
+
+.admin-site-ticker-preview {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.admin-site-ticker-preview__bar {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding-inline: 18px;
+  overflow: hidden;
+  color: #ffffff;
+  background: var(--ticker-background, var(--orange));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 
 @media (max-width: 720px) {

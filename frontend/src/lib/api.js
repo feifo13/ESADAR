@@ -196,7 +196,7 @@ function maybeInvalidatePublicCacheAfterMutation(path, method) {
   }
 
   if (normalizedPath.startsWith('/api/admin/site')) {
-    invalidatePublicCache('/api/site/hero');
+    invalidatePublicCache('/api/site');
   }
 }
 

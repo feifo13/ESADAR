@@ -12,6 +12,8 @@ import { MobileMenuProvider } from "../contexts/MobileMenuContext.jsx";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
 import AppLoader from "./AppLoader.jsx";
 import { trackPublicPageVisit } from "../lib/pageVisits.js";
+import { cachedApiFetch, listenPublicCacheInvalidation } from "../lib/api.js";
+import { DEFAULT_SITE_TICKER, normalizeSiteTicker } from "../lib/siteTicker.js";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
@@ -104,6 +106,7 @@ export default function RootLayout() {
   );
   const [breadcrumbLabelOverrides, setBreadcrumbLabelOverrides] = useState({});
   const [contentReadyKey, setContentReadyKey] = useState(null);
+  const [offerTickerConfig, setOfferTickerConfig] = useState(null);
   const didInitialIntro = useRef(false);
   const scrollPositionsRef = useRef(new Map());
   const isHome = location.pathname === "/";
@@ -116,7 +119,7 @@ export default function RootLayout() {
     location.pathname === "/articles" ||
     location.pathname.startsWith("/articles/");
   const showOfferTicker =
-    isAccountView || isPublicArticleView;
+    Boolean(offerTickerConfig?.isEnabled) && (isHome || isAccountView || isPublicArticleView);
   const isFooterHiddenView = [
     "/guia-de-compra",
     "/terminos-y-condiciones",
@@ -255,6 +258,33 @@ export default function RootLayout() {
     if (visit) trackPublicPageVisit(visit);
   }, [location.pathname]);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadTicker(force = false) {
+      try {
+        const response = await cachedApiFetch("/api/site/ticker", {
+          ttlMs: 120000,
+          force,
+        });
+        if (!ignore) setOfferTickerConfig(normalizeSiteTicker(response.ticker));
+      } catch {
+        if (!ignore) setOfferTickerConfig(DEFAULT_SITE_TICKER);
+      }
+    }
+
+    void loadTicker();
+    const stopListening = listenPublicCacheInvalidation((detail = {}) => {
+      const match = String(detail.match || "");
+      if (match && !match.startsWith("/api/site")) return;
+      void loadTicker(true);
+    });
+
+    return () => {
+      ignore = true;
+      stopListening();
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -306,7 +336,9 @@ export default function RootLayout() {
       <MobileMenuProvider>
         <Header hideBrand={isHome && heroLogoVisible} />
         <AppSnackbar />
-        {showOfferTicker ? <OfferTicker className="page-offer-ticker" /> : null}
+        {showOfferTicker ? (
+          <OfferTicker className="page-offer-ticker" config={offerTickerConfig || DEFAULT_SITE_TICKER} />
+        ) : null}
         <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
           {showBreadcrumbs ? <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} /> : null}
           <div className="page-transition-shell">

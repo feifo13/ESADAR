@@ -63,6 +63,7 @@ const CATALOG_STRING_FILTERS = [
   "brandId",
   "sizeId",
 ];
+const CATALOG_SECTION_FILTERS = new Set(["catalog", "offers", "featured", "latest"]);
 
 function normalizeCatalogFilters(value = {}) {
   return {
@@ -93,6 +94,11 @@ function readCatalogFiltersFromSearch(search) {
     nextFilters[key] = params.get(key) === "true";
   });
 
+  const section = String(params.get("section") || "").trim().toLowerCase();
+  if (section === "offers") nextFilters.offerable = true;
+  if (section === "featured") nextFilters.featured = true;
+  if (section === "latest") nextFilters.sort = "intake_desc";
+
   return normalizeCatalogFilters(nextFilters);
 }
 
@@ -100,6 +106,7 @@ function hasCatalogSearchIntent(search) {
   const params = new URLSearchParams(search);
 
   return (
+    (CATALOG_SECTION_FILTERS.has(String(params.get("section") || "").trim().toLowerCase())) ||
     CATALOG_STRING_FILTERS.some((key) => {
       const value = params.get(key);
       if (!value) return false;
@@ -1053,41 +1060,6 @@ export default function HomePage() {
         }
         aria-label="Imagen destacada"
       >
-        <div className="hero-offer-ticker" aria-label="Aceptamos ofertas">
-          <div className="hero-offer-ticker__track" aria-hidden="true">
-            <span className="hero-offer-ticker__group">
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-            </span>
-            <span className="hero-offer-ticker__group">
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-            </span>
-            <span className="hero-offer-ticker__group">
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-            </span>
-            <span className="hero-offer-ticker__group">
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-            </span>
-            <span className="hero-offer-ticker__group">
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-              <span>ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS</span>
-            </span>
-          </div>
-        </div>
-
         {shouldRenderHeroCarousel ? (
           <div className="home-hero-frame home-hero-carousel" aria-roledescription="carousel">
             {configuredHeroImages.map((image, index) => (
@@ -1169,7 +1141,7 @@ export default function HomePage() {
         </div>
       </section> */}
 
-      <section ref={featuredSectionRef}>
+      <section ref={featuredSectionRef} id="featured">
         <FeaturedMotionCards
           title="Destacados y descuentos"
           items={featuredItems}
@@ -1233,6 +1205,7 @@ export default function HomePage() {
 
       <section
         ref={catalogSectionRef}
+        id="catalog"
         className="catalog-wide container"
         tabIndex={-1}
       >

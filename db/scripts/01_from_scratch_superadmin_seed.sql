@@ -1011,6 +1011,23 @@ CREATE TABLE site_hero_images (
   CONSTRAINT fk_site_hero_images_hero FOREIGN KEY (hero_id) REFERENCES site_hero(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE site_ticker_settings (
+  id TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  ticker_enabled TINYINT(1) NOT NULL DEFAULT 1,
+  ticker_text VARCHAR(180) NOT NULL DEFAULT 'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS',
+  ticker_target_url VARCHAR(500) NOT NULL DEFAULT '/articles',
+  ticker_target_section VARCHAR(80) NULL,
+  ticker_background_color VARCHAR(32) NOT NULL DEFAULT '#ec672b',
+  ticker_sticky TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by BIGINT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT chk_site_ticker_settings_singleton CHECK (id = 1),
+  KEY idx_site_ticker_updated_by (updated_by),
+  CONSTRAINT fk_site_ticker_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 -- =========================================================
 -- 12) Central audit log
 -- =========================================================
@@ -1385,6 +1402,29 @@ VALUES (
   'test',
   'Paga con el boton o escanea el QR de Mercado Pago. Luego responde este correo con el comprobante para validar tu orden.',
   @admin_user_id,
+  @admin_user_id
+)
+ON DUPLICATE KEY UPDATE
+  updated_by = VALUES(updated_by);
+
+INSERT INTO site_ticker_settings (
+  id,
+  ticker_enabled,
+  ticker_text,
+  ticker_target_url,
+  ticker_target_section,
+  ticker_background_color,
+  ticker_sticky,
+  updated_by
+)
+VALUES (
+  1,
+  1,
+  'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS',
+  '/articles',
+  NULL,
+  '#ec672b',
+  0,
   @admin_user_id
 )
 ON DUPLICATE KEY UPDATE
