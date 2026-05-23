@@ -13899,6 +13899,11 @@ dialog,
   }
 }
 
+.hero-offer-ticker__label {
+  display: none;
+}
+
+
 @media (max-width: 820px) {
   .footer-scroll-scene__logo-button {
     width: min(350px, 78vw);
@@ -16724,11 +16729,11 @@ dialog,
     min-width: 0 !important;
     max-width: 100% !important;
     min-height: 30px !important;
-    margin: 0 !important;
+    margin: var(--header-height, 72px) 0 0 !important;
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
-    z-index: 49;
+    z-index: 70;
   }
 
   .page-offer-ticker.hero-offer-ticker--sticky {
@@ -16736,8 +16741,27 @@ dialog,
     top: var(--header-height, 72px) !important;
   }
 
+  .page-offer-ticker.hero-offer-ticker + .page-shell {
+    margin-top: 0 !important;
+  }
+
   .page-offer-ticker .hero-offer-ticker__track {
-    min-width: max-content;
+    display: none;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    padding: 8px 14px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: uppercase;
   }
 }
 

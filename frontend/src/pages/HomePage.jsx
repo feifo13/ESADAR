@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Link,
   useLocation,
   useNavigate,
   useOutletContext,
@@ -25,6 +24,7 @@ import baller1 from "../assets/baller-1.jpg";
 import baller2 from "../assets/baller-2.jpg";
 import baller3 from "../assets/baller-3.jpg";
 import AppLoader from "../components/AppLoader.jsx";
+import LeadCaptureCta from "../components/LeadCaptureCta.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const CATALOG_PAGE_SIZE = 20;
@@ -1373,22 +1373,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="container section-card lead-capture-card lead-capture-card--cta">
-        <div className="lead-capture-copy">
-          <p className="section-kicker">¡Ey!</p>
-          <h2>¿Querés enterarte cuando entra ropa nueva?</h2>
-          <p className="muted-copy">
-            Dejanos tus preferencias en una vista dedicada y te avisamos cuando
-            aparezcan prendas que encajen con tu estilo.
-          </p>
-        </div>
-        <Link
-          className="button button-primary lead-capture-cta-button"
-          to="/avisos"
-        >
-          ¡Quiero!
-        </Link>
-      </section>
+      <LeadCaptureCta className="container" />
     </div>
   );
 }

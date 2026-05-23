@@ -27,6 +27,7 @@ export default function OfferTicker({ className = "", config = DEFAULT_SITE_TICK
       style={{ "--ticker-background": resolveTickerBackgroundColor(ticker.backgroundColor) }}
       aria-label={`${ticker.text}. Ir al catálogo`}
     >
+      <span className="hero-offer-ticker__label">{ticker.text}</span>
       <div className="hero-offer-ticker__track" aria-hidden="true">
         {OFFER_TICKER_GROUPS.map((group) => (
           <span className="hero-offer-ticker__group" key={group}>

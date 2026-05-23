@@ -19,6 +19,7 @@ import {
   notifyFormStatus,
 } from "../lib/validation.js";
 import AppLoader from "../components/AppLoader.jsx";
+import LeadCaptureCta from "../components/LeadCaptureCta.jsx";
 
 const initialGuest = {
   firstName: "",
@@ -529,32 +530,36 @@ export default function OfferPage() {
         </div>
       </section>
 
-      <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
-        <div className="section-heading section-heading-wrap">
-          <div>
-            <p className="section-kicker">Más artículos ofertables</p>
-            <h2>También podés ofertar por:</h2>
-          </div>
-          <ScrollRailControls
-            targetRef={relatedTrackRef}
-            className="scroll-rail-controls--left"
-          />
-        </div>
-
-        <div
-          ref={relatedTrackRef}
-          className="article-grid article-horizontal-card-track"
-        >
-          {related.map((item) => (
-            <ArticleCard
-              key={item.id}
-              article={item}
-              view="grid"
-              variant="default"
+      {related.length ? (
+        <section className="page-stack article-related-scroll-section article-offer-related-scroll-section">
+          <div className="section-heading section-heading-wrap">
+            <div>
+              <p className="section-kicker">Más artículos ofertables</p>
+              <h2>También podés ofertar por:</h2>
+            </div>
+            <ScrollRailControls
+              targetRef={relatedTrackRef}
+              className="scroll-rail-controls--left"
             />
-          ))}
-        </div>
-      </section>
+          </div>
+
+          <div
+            ref={relatedTrackRef}
+            className="article-grid article-horizontal-card-track"
+          >
+            {related.map((item) => (
+              <ArticleCard
+                key={item.id}
+                article={item}
+                view="grid"
+                variant="default"
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <LeadCaptureCta className="article-interest-fallback-section article-offer-interest-fallback-section" />
+      )}
     </div>
   );
 }

@@ -46,6 +46,7 @@ import {
 } from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
 import AppLoader from "../components/AppLoader.jsx";
+import LeadCaptureCta from "../components/LeadCaptureCta.jsx";
 
 const initialAlertForm = {
   firstName: "",
@@ -372,7 +373,9 @@ export default function ArticlePage() {
                 ))}
               </div>
             </section>
-          ) : null}
+          ) : (
+            <LeadCaptureCta className="article-interest-fallback-section" />
+          )}
         </div>
       </>
     );
@@ -982,7 +985,9 @@ export default function ArticlePage() {
               ))}
             </div>
           </section>
-        ) : null}
+        ) : (
+          <LeadCaptureCta className="article-interest-fallback-section" />
+        )}
       </div>
     </>
   );
