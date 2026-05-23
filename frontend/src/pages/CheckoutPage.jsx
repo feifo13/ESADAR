@@ -1363,8 +1363,8 @@ export default function CheckoutPage() {
             </div>
           </div>
           <p className="muted-copy">
-            La reserva dura 24 horas y la orden será validada manualmente desde
-            administración.
+            La reserva dura 24 horas y la orden será validada desde
+            administración una vez confirmado el pago.
           </p>
           {isBankTransferPayment ? (
             <p className="inline-note payment-reference-note">
@@ -1374,8 +1374,9 @@ export default function CheckoutPage() {
           ) : null}
           <p className="muted-copy checkout-tracking-availability-copy">
             Una vez aprobada y despachada la orden, te enviaremos el código de
-            seguimiento en el mail de orden enviada, sujeto a disponibilidad del
-            proveedor del servicio de correo.
+            seguimiento en el mail de confirmación de envío, sujeto a
+            disponibilidad del proveedor del servicio de cadetería o
+            correspondencia.
           </p>
         </div>
 

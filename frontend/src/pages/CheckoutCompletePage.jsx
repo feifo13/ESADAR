@@ -20,9 +20,14 @@ function readCompletedOrder() {
 }
 
 function getInstructionField(paymentInstructions, label) {
-  const normalizedLabel = String(label || "").trim().toLowerCase();
+  const normalizedLabel = String(label || "")
+    .trim()
+    .toLowerCase();
   return (paymentInstructions?.fields || []).find(
-    (field) => String(field.label || "").trim().toLowerCase() === normalizedLabel,
+    (field) =>
+      String(field.label || "")
+        .trim()
+        .toLowerCase() === normalizedLabel,
   );
 }
 
@@ -122,7 +127,8 @@ export default function CheckoutCompletePage() {
           correo para que los tengas a mano.
         </p>
         <p className="checkout-complete-copy payment-reference-note">
-          Importante: en el motivo/concepto de la transferencia escribí tu número de orden: {completedOrder.orderNumber}.
+          Importante: en el motivo/concepto de la transferencia escribí tu
+          número de orden: {completedOrder.orderNumber}.
         </p>
 
         <div className="checkout-complete-payment-details">
@@ -185,7 +191,10 @@ export default function CheckoutCompletePage() {
             Orden <strong>{completedOrder.orderNumber}</strong>
           </p>
           <p className="checkout-complete-copy">
-            Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.
+            Una vez aprobada y despachada la orden, te enviaremos el código de
+            seguimiento en el mail de confirmación de envío, sujeto a
+            disponibilidad del proveedor del servicio de cadetería o
+            correspondencia.
           </p>
 
           {renderTransferDetails()}

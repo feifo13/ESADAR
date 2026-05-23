@@ -32,7 +32,7 @@ function renderSummaryRow(label, value, options = {}) {
 }
 
 const TRACKING_AVAILABILITY_COPY =
-  "Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.";
+  "Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de confirmación de envío, sujeto a disponibilidad del proveedor del servicio de cadetería o correspondencia.";
 
 function renderPaymentInstructions(paymentInstructions, orderLabel) {
   if (!paymentInstructions) return "";
@@ -45,10 +45,18 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
   const qrCodeUrl = paymentInstructions.qrCodeUrl || "";
   const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
   const isBankTransfer = paymentInstructions.method === "BANK_TRANSFER";
-  const transferReasonText = isBankTransfer && orderLabel
-    ? `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`
-    : "";
-  if (!fields.length && !hasInstructions && !checkoutUrl && !qrCodeUrl && !transferReasonText) return "";
+  const transferReasonText =
+    isBankTransfer && orderLabel
+      ? `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`
+      : "";
+  if (
+    !fields.length &&
+    !hasInstructions &&
+    !checkoutUrl &&
+    !qrCodeUrl &&
+    !transferReasonText
+  )
+    return "";
 
   const rows = fields
     .map(
@@ -68,8 +76,9 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
     ? `<p style="margin:14px 0 0; padding:12px 14px; background:#fff4eb; border:1px solid rgba(236,103,43,0.36); color:#ec672b; font-size:14px; line-height:1.5; font-weight:700;">${escapeHtml(transferReasonText)}</p>`
     : "";
 
-  const mercadoPagoButtonHtml = isMercadoPago && checkoutUrl
-    ? `
+  const mercadoPagoButtonHtml =
+    isMercadoPago && checkoutUrl
+      ? `
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
         <tr>
           <td>
@@ -78,10 +87,11 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
         </tr>
       </table>
     `
-    : "";
+      : "";
 
-  const qrHtml = isMercadoPago && qrCodeUrl
-    ? `
+  const qrHtml =
+    isMercadoPago && qrCodeUrl
+      ? `
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
         <tr>
           <td style="padding:12px; border:1px solid rgba(16,43,52,0.14); background:#ffffff;">
@@ -93,7 +103,7 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
         </tr>
       </table>
     `
-    : "";
+      : "";
 
   return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0; background:#ffffff; border:1px solid rgba(16,43,52,0.14);">
@@ -120,12 +130,23 @@ function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
     ? paymentInstructions.fields.filter((field) => field?.value)
     : [];
 
-  if (!fields.length && !paymentInstructions.instructions && !paymentInstructions.checkoutUrl && !(paymentInstructions.method === "BANK_TRANSFER" && orderLabel)) return lines;
+  if (
+    !fields.length &&
+    !paymentInstructions.instructions &&
+    !paymentInstructions.checkoutUrl &&
+    !(paymentInstructions.method === "BANK_TRANSFER" && orderLabel)
+  )
+    return lines;
 
   lines.push("", paymentInstructions.title || "Datos de pago");
   fields.forEach((field) => lines.push(`${field.label}: ${field.value}`));
-  if (paymentInstructions.method === "MERCADO_PAGO" && paymentInstructions.checkoutUrl) {
-    lines.push(`Pagar ahora con Mercado Pago: ${paymentInstructions.checkoutUrl}`);
+  if (
+    paymentInstructions.method === "MERCADO_PAGO" &&
+    paymentInstructions.checkoutUrl
+  ) {
+    lines.push(
+      `Pagar ahora con Mercado Pago: ${paymentInstructions.checkoutUrl}`,
+    );
     if (paymentInstructions.qrCodeUrl) {
       lines.push(`QR de pago: ${paymentInstructions.qrCodeUrl}`);
     }
@@ -134,12 +155,17 @@ function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
     lines.push(String(paymentInstructions.instructions));
   }
   if (paymentInstructions.method === "BANK_TRANSFER" && orderLabel) {
-    lines.push(`Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`);
+    lines.push(
+      `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`,
+    );
   }
   return lines;
 }
 
-export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } = {}) {
+export function renderReceivedOrderPendingPaymentEmail({
+  order,
+  publicSiteUrl,
+} = {}) {
   const urlOptions = { publicSiteUrl };
   const items = order?.items || [];
   const name = buildCustomerName(order?.customer);
@@ -168,7 +194,9 @@ export function renderReceivedOrderPendingPaymentEmail({ order, publicSiteUrl } 
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
   textLines.push(...formatOrderItemsTextLines(items));
-  textLines.push(...formatPaymentInstructionLines(paymentInstructions, orderLabel));
+  textLines.push(
+    ...formatPaymentInstructionLines(paymentInstructions, orderLabel),
+  );
   textLines.push(
     "",
     "Los datos de pago también quedan incluidos en este correo.",
