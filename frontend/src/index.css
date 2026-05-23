@@ -13724,15 +13724,16 @@ select.input,
 }
 
 /* === ESADAR checkout wizard framing spacer ===
-   Allows the checkout process card to be framed below the sticky header on
-   short steps without the browser clamping the programmatic scroll too early. */
+   Desktop keeps a safety spacer for programmatic step scroll. On mobile the
+   recommendations section after the wizard already provides enough runway, so
+   avoid leaving a large blank gap below checkout. */
 .app-shell--checkout-view .checkout-page-stack {
   padding-bottom: max(320px, 34vh);
 }
 
 @media (max-width: 780px) {
   .app-shell--checkout-view .checkout-page-stack {
-    padding-bottom: max(220px, 28vh);
+    padding-bottom: clamp(18px, 6vw, 32px);
   }
 }
 
@@ -16743,5 +16744,33 @@ dialog,
 
   .page-offer-ticker .hero-offer-ticker__track {
     min-width: max-content;
+  }
+}
+
+/* === ESADAR checkout recommendations rail === */
+.checkout-interest-scroll-section {
+  margin-top: clamp(1.5rem, 4vw, 2.25rem);
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  padding-top: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.checkout-interest-scroll-section .article-horizontal-card-track {
+  margin-top: 16px;
+}
+
+@media (max-width: 720px) {
+  .checkout-interest-scroll-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+  }
+}
+
+.checkout-interest-fallback-section {
+  margin-top: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+@media (max-width: 720px) {
+  .checkout-interest-fallback-section {
+    margin-top: 1.25rem;
   }
 }

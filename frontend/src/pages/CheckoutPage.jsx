@@ -6,6 +6,8 @@ import { useLookups } from "../contexts/LookupsContext.jsx";
 import { useMobileMenu } from "../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import PreviousNextControls from "../components/PreviousNextControls.jsx";
+import ArticleCard from "../components/ArticleCard.jsx";
+import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
@@ -167,6 +169,7 @@ export default function CheckoutPage() {
   const { notifyError } = useNotification();
   const checkoutShellRef = useRef(null);
   const checkoutStepContentRef = useRef(null);
+  const checkoutInterestTrackRef = useRef(null);
 
   const savedDraft = readDraft();
   const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
@@ -180,6 +183,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [interestArticles, setInterestArticles] = useState([]);
+  const [interestArticlesLoaded, setInterestArticlesLoaded] = useState(false);
 
   const cartAvailabilitySignature = useMemo(
     () =>
@@ -188,6 +193,23 @@ export default function CheckoutPage() {
         .sort()
         .join("|"),
     [items],
+  );
+
+  const cartArticleIdsSignature = useMemo(
+    () =>
+      [...new Set(items.map((item) => Number(item.articleId)).filter(Boolean))]
+        .sort((a, b) => a - b)
+        .join("|"),
+    [items],
+  );
+
+  const cartArticleIds = useMemo(
+    () => new Set(
+      cartArticleIdsSignature
+        ? cartArticleIdsSignature.split("|").map((item) => Number(item))
+        : [],
+    ),
+    [cartArticleIdsSignature],
   );
 
   useEffect(() => {
@@ -202,6 +224,55 @@ export default function CheckoutPage() {
   );
   const currentStep = steps[currentStepIndex] || steps[0];
   const isMobileSummary = useMediaQuery("(max-width: 780px)");
+
+  useEffect(() => {
+    if (currentStepKey !== "resumen" || !items.length) {
+      setInterestArticles([]);
+      setInterestArticlesLoaded(false);
+      return undefined;
+    }
+
+    let ignore = false;
+    setInterestArticlesLoaded(false);
+
+    async function loadInterestArticles() {
+      try {
+        const response = await apiFetch(
+          "/api/public/articles?page=1&pageSize=12&sort=intake_desc",
+        );
+        if (ignore) return;
+
+        const nextItems = (response.items || [])
+          .filter((article) => {
+            if (cartArticleIds.has(Number(article.id))) return false;
+            const publicationStatus = String(
+              article.publicationStatus || article.status || "ACTIVE",
+            ).toUpperCase();
+            const stockStatus = String(article.stockStatus || "ACTIVE").toUpperCase();
+            return (
+              publicationStatus === "ACTIVE" &&
+              stockStatus === "ACTIVE" &&
+              Number(article.quantityAvailable || 0) > 0
+            );
+          })
+          .slice(0, 8);
+
+        setInterestArticles(nextItems);
+        setInterestArticlesLoaded(true);
+      } catch {
+        if (!ignore) {
+          setInterestArticles([]);
+          setInterestArticlesLoaded(true);
+        }
+      }
+    }
+
+    void loadInterestArticles();
+
+    return () => {
+      ignore = true;
+    };
+  }, [cartArticleIds, currentStepKey, items.length]);
 
   useEffect(() => {
     if (currentStepKey !== "envio") return;
@@ -268,6 +339,13 @@ export default function CheckoutPage() {
   const availableItems = useMemo(
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],
+  );
+  const visibleInterestArticles = useMemo(
+    () =>
+      interestArticles.filter(
+        (article) => !cartArticleIds.has(Number(article.id)),
+      ),
+    [cartArticleIds, interestArticles],
   );
   const packageWeightKg = useMemo(
     () =>
@@ -692,8 +770,64 @@ export default function CheckoutPage() {
     notifyError(nextDialog.message);
   }
 
+  function renderInterestFallbackSection() {
+    return (
+      <section className="section-card lead-capture-card lead-capture-card--cta checkout-interest-fallback-section">
+        <div className="lead-capture-copy">
+          <p className="section-kicker">¡Ey!</p>
+          <h2>¿Querés enterarte cuando entra ropa nueva?</h2>
+          <p className="muted-copy">
+            Dejanos tus preferencias en una vista dedicada y te avisamos cuando
+            aparezcan prendas que encajen con tu estilo.
+          </p>
+        </div>
+        <Link
+          className="button button-primary lead-capture-cta-button"
+          to="/avisos"
+        >
+          ¡Quiero!
+        </Link>
+      </section>
+    );
+  }
+
+  function renderInterestArticlesSection() {
+    if (!interestArticlesLoaded) return null;
+
+    if (!visibleInterestArticles.length) {
+      return renderInterestFallbackSection();
+    }
+
+    return (
+      <section className="page-stack article-related-scroll-section checkout-interest-scroll-section">
+        <div className="section-heading section-heading-wrap">
+          <div>
+            <p className="section-kicker">También</p>
+            <h2>También podría interesarte?</h2>
+          </div>
+          <ScrollRailControls
+            targetRef={checkoutInterestTrackRef}
+            className="scroll-rail-controls--left"
+          />
+        </div>
+
+        <div
+          ref={checkoutInterestTrackRef}
+          className="related-articles-track article-horizontal-card-track"
+        >
+          {visibleInterestArticles.map((article) => (
+            <div key={article.id} className="related-articles-track__item">
+              <ArticleCard article={article} view="grid" variant="default" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   function renderSummaryStep() {
     return (
+      <>
       <div className="checkout-step-grid">
         <div className="checkout-items-block section-card nested-card">
           <div className="section-heading compact-heading">
@@ -892,6 +1026,7 @@ export default function CheckoutPage() {
           </div>
         </aside>
       </div>
+      </>
     );
   }
 
@@ -1352,6 +1487,8 @@ export default function CheckoutPage() {
             }
           />
         </section>
+
+        {currentStepKey === "resumen" ? renderInterestArticlesSection() : null}
       </div>
     </>
   );
