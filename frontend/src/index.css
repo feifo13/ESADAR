@@ -16724,44 +16724,69 @@ dialog,
 
 @media (max-width: 960px) {
   .page-offer-ticker.hero-offer-ticker {
+    --offer-ticker-mobile-height: 30px;
     display: flex !important;
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    min-height: 30px !important;
-    margin: var(--header-height, 72px) 0 0 !important;
+    min-height: var(--offer-ticker-mobile-height) !important;
+    margin: 0 !important;
     opacity: 1 !important;
     visibility: visible !important;
-    transform: none !important;
-    z-index: 70;
+    transform: translate3d(0, 0, 0) !important;
+    translate: none !important;
+    scale: none !important;
+    rotate: none !important;
+    animation: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    contain: layout paint style !important;
+    z-index: 999;
   }
 
   .page-offer-ticker.hero-offer-ticker--sticky {
-    position: sticky !important;
-    top: var(--header-height, 72px) !important;
+    position: fixed !important;
+    inset: var(--header-height, 74px) 0 auto 0 !important;
+    top: var(--header-height, 74px) !important;
+    right: 0 !important;
+    left: 0 !important;
+    height: var(--offer-ticker-mobile-height) !important;
   }
 
-  .page-offer-ticker.hero-offer-ticker + .page-shell {
+  .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) {
+    position: relative !important;
+    margin-top: var(--header-height, 74px) !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker--sticky + .page-shell {
+    margin-top: calc(var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px)) !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) + .page-shell {
     margin-top: 0 !important;
   }
 
   .page-offer-ticker .hero-offer-ticker__track {
-    display: none;
+    display: none !important;
   }
 
   .page-offer-ticker .hero-offer-ticker__label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block !important;
     width: 100%;
     min-width: 0;
-    padding: 8px 14px;
+    height: var(--offer-ticker-mobile-height, 30px);
+    padding: 0 14px;
+    overflow: hidden;
     font-family: var(--font-display);
     font-size: 0.72rem;
     font-weight: 800;
-    line-height: 1.2;
+    line-height: var(--offer-ticker-mobile-height, 30px);
     text-align: center;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 }
 
