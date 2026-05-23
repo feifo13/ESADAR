@@ -16733,6 +16733,11 @@ dialog,
     margin: 0 !important;
     opacity: 1 !important;
     visibility: visible !important;
+    overflow: hidden !important;
+    color: #ffffff !important;
+    border: 0 !important;
+    border-block: 0 !important;
+    box-shadow: none !important;
     transform: translate3d(0, 0, 0) !important;
     translate: none !important;
     scale: none !important;
@@ -16748,45 +16753,64 @@ dialog,
 
   .page-offer-ticker.hero-offer-ticker--sticky {
     position: fixed !important;
-    inset: var(--header-height, 74px) 0 auto 0 !important;
-    top: var(--header-height, 74px) !important;
+    inset: calc(var(--header-height, 74px) - 1px) 0 auto 0 !important;
+    top: calc(var(--header-height, 74px) - 1px) !important;
     right: 0 !important;
     left: 0 !important;
-    height: var(--offer-ticker-mobile-height) !important;
+    height: calc(var(--offer-ticker-mobile-height) + 1px) !important;
   }
 
   .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) {
     position: relative !important;
-    margin-top: var(--header-height, 74px) !important;
+    margin-top: calc(var(--header-height, 74px) - 1px) !important;
   }
 
   .page-offer-ticker.hero-offer-ticker--sticky + .page-shell {
-    margin-top: calc(var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px)) !important;
+    margin-top: calc(var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px) !important;
   }
 
   .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) + .page-shell {
     margin-top: 0 !important;
   }
 
-  .page-offer-ticker .hero-offer-ticker__track {
-    display: none !important;
+  .page-offer-ticker.hero-offer-ticker + .page-shell.page-shell--hero {
+    padding-top: 0 !important;
   }
 
-  .page-offer-ticker .hero-offer-ticker__label {
-    display: block !important;
-    width: 100%;
-    min-width: 0;
-    height: var(--offer-ticker-mobile-height, 30px);
-    padding: 0 14px;
-    overflow: hidden;
+  .page-offer-ticker .hero-offer-ticker__track {
+    display: flex !important;
+    align-items: center !important;
+    width: max-content !important;
+    min-width: max-content !important;
+    height: 100% !important;
+    animation: hero-offer-ticker-marquee 99s linear infinite !important;
+    will-change: transform !important;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 100% !important;
     font-family: var(--font-display);
     font-size: 0.72rem;
     font-weight: 800;
-    line-height: var(--offer-ticker-mobile-height, 30px);
-    text-align: center;
-    text-overflow: ellipsis;
+    line-height: 1;
     text-transform: uppercase;
     white-space: nowrap;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group span {
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group span::after {
+    margin-inline: 14px;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__label {
+    display: none !important;
   }
 }
 
