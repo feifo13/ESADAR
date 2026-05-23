@@ -39,7 +39,7 @@ const booleanFromFormValue = (fallback) =>
 
 const viewportTargetSchema = z.preprocess(
   (value) => String(value || 'DESKTOP_TABLET').trim().toUpperCase(),
-  z.enum(['DESKTOP_TABLET', 'MOBILE']),
+  z.enum(['DESKTOP_TABLET', 'TABLET_LAPTOP', 'MOBILE']),
 );
 
 const heroImageSchema = z.object({
@@ -53,7 +53,7 @@ const heroImageSchema = z.object({
 
 const heroHeightModeSchema = z.preprocess(
   (value) => String(value || 'HALF_SCREEN').trim().toUpperCase(),
-  z.enum(['HALF_SCREEN', 'FULL_SCREEN', 'CUSTOM']),
+  z.enum(['HALF_SCREEN', 'TABLET_LAPTOP', 'FULL_SCREEN', 'CUSTOM']),
 );
 
 const heroDisplayModeSchema = z.preprocess(

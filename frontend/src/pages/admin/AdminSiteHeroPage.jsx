@@ -12,15 +12,18 @@ import {
 } from "../../lib/siteTicker.js";
 
 const VIEWPORT_DESKTOP_TABLET = "DESKTOP_TABLET";
+const VIEWPORT_TABLET_LAPTOP = "TABLET_LAPTOP";
 const VIEWPORT_MOBILE = "MOBILE";
 const VIEWPORT_OPTIONS = [
-  { value: VIEWPORT_DESKTOP_TABLET, label: "Desktop / tablet" },
+  { value: VIEWPORT_DESKTOP_TABLET, label: "Desktop" },
+  { value: VIEWPORT_TABLET_LAPTOP, label: "Tablet / laptop chica" },
   { value: VIEWPORT_MOBILE, label: "Mobile" },
 ];
 const DISPLAY_MODE_SINGLE = "SINGLE_IMAGE";
 const DISPLAY_MODE_CAROUSEL = "CAROUSEL";
 const HERO_HEIGHT_OPTIONS = [
   { value: "HALF_SCREEN", label: "Media pantalla" },
+  { value: "TABLET_LAPTOP", label: "Tablet / laptop chica" },
   { value: "FULL_SCREEN", label: "Pantalla completa" },
   { value: "CUSTOM", label: "Personalizado" },
 ];
@@ -51,7 +54,9 @@ const emptyHeroForm = {
 const emptyTickerForm = { ...DEFAULT_SITE_TICKER };
 
 function normalizeViewportTarget(value) {
-  return value === VIEWPORT_MOBILE ? VIEWPORT_MOBILE : VIEWPORT_DESKTOP_TABLET;
+  if (value === VIEWPORT_MOBILE) return VIEWPORT_MOBILE;
+  if (value === VIEWPORT_TABLET_LAPTOP) return VIEWPORT_TABLET_LAPTOP;
+  return VIEWPORT_DESKTOP_TABLET;
 }
 
 function normalizeDisplayMode(value) {
@@ -138,6 +143,7 @@ export default function AdminSiteHeroPage() {
   const [ticker, setTicker] = useState(null);
   const [tickerForm, setTickerForm] = useState(emptyTickerForm);
   const [desktopImageFiles, setDesktopImageFiles] = useState([]);
+  const [tabletLaptopImageFiles, setTabletLaptopImageFiles] = useState([]);
   const [mobileImageFiles, setMobileImageFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -146,6 +152,10 @@ export default function AdminSiteHeroPage() {
   const desktopImagePreviews = useMemo(
     () => desktopImageFiles.map((file) => URL.createObjectURL(file)),
     [desktopImageFiles],
+  );
+  const tabletLaptopImagePreviews = useMemo(
+    () => tabletLaptopImageFiles.map((file) => URL.createObjectURL(file)),
+    [tabletLaptopImageFiles],
   );
   const mobileImagePreviews = useMemo(
     () => mobileImageFiles.map((file) => URL.createObjectURL(file)),
@@ -156,20 +166,46 @@ export default function AdminSiteHeroPage() {
     form.images,
     VIEWPORT_DESKTOP_TABLET,
   );
+  const selectedTabletLaptopImage = getSelectedImage(
+    form.images,
+    VIEWPORT_TABLET_LAPTOP,
+  );
   const selectedMobileImage = getSelectedImage(form.images, VIEWPORT_MOBILE);
 
   const desktopPreview =
     desktopImagePreviews[0] ||
     resolveAssetUrl(selectedDesktopImage?.imageUrl || hero?.desktopImageUrl || hero?.imageUrl);
+  const tabletLaptopPreview =
+    tabletLaptopImagePreviews[0] ||
+    resolveAssetUrl(
+      selectedTabletLaptopImage?.imageUrl ||
+        hero?.tabletLaptopImageUrl ||
+        selectedDesktopImage?.imageUrl ||
+        hero?.desktopImageUrl ||
+        hero?.imageUrl,
+    );
   const mobilePreview =
     mobileImagePreviews[0] ||
-    resolveAssetUrl(selectedMobileImage?.imageUrl || hero?.mobileImageUrl || selectedDesktopImage?.imageUrl || hero?.imageUrl);
+    resolveAssetUrl(
+      selectedMobileImage?.imageUrl ||
+        hero?.mobileImageUrl ||
+        selectedTabletLaptopImage?.imageUrl ||
+        hero?.tabletLaptopImageUrl ||
+        selectedDesktopImage?.imageUrl ||
+        hero?.imageUrl,
+    );
 
   useEffect(() => {
     return () => {
       desktopImagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
     };
   }, [desktopImagePreviews]);
+
+  useEffect(() => {
+    return () => {
+      tabletLaptopImagePreviews.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, [tabletLaptopImagePreviews]);
 
   useEffect(() => {
     return () => {
@@ -321,9 +357,10 @@ export default function AdminSiteHeroPage() {
       });
       let nextHero = textResponse.hero || null;
 
-      if (desktopImageFiles.length || mobileImageFiles.length) {
+      if (desktopImageFiles.length || tabletLaptopImageFiles.length || mobileImageFiles.length) {
         const formData = new FormData();
         desktopImageFiles.forEach((file) => formData.append("desktopImages", file));
+        tabletLaptopImageFiles.forEach((file) => formData.append("tabletLaptopImages", file));
         mobileImageFiles.forEach((file) => formData.append("mobileImages", file));
         formData.append("imageAlt", form.imageAlt || "");
         const imageResponse = await apiFetch("/api/admin/site/hero/image", {
@@ -336,6 +373,7 @@ export default function AdminSiteHeroPage() {
       setHero(nextHero);
       setForm(toHeroForm(nextHero));
       setDesktopImageFiles([]);
+      setTabletLaptopImageFiles([]);
       setMobileImageFiles([]);
       const successMessage = "Hero actualizado.";
       notifySuccess(successMessage);
@@ -540,7 +578,7 @@ export default function AdminSiteHeroPage() {
               </label>
 
               <label className="field-group">
-                <span>Subir imagen desktop / tablet</span>
+                <span>Subir imagen desktop</span>
                 <input
                   className="input"
                   type="file"
@@ -551,7 +589,23 @@ export default function AdminSiteHeroPage() {
                   }
                 />
                 <span className="field-helper">
-                  Se usa en desktop y tablet. Podés subir varias y luego elegir cuál mostrar.
+                  Se usa en pantallas grandes. Podés subir varias y luego elegir cuál mostrar.
+                </span>
+              </label>
+
+              <label className="field-group">
+                <span>Subir imagen tablet / laptop chica</span>
+                <input
+                  className="input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(event) =>
+                    setTabletLaptopImageFiles(Array.from(event.target.files || []))
+                  }
+                />
+                <span className="field-helper">
+                  Se usa en tablets horizontales y laptops chicas. Si no elegís una, se usa la de desktop.
                 </span>
               </label>
 
@@ -567,7 +621,7 @@ export default function AdminSiteHeroPage() {
                   }
                 />
                 <span className="field-helper">
-                  Se usa en pantallas angostas. Si no elegís una, se usa la de desktop/tablet.
+                  Se usa en pantallas angostas. Si no elegís una, se usa la de tablet/laptop o desktop.
                 </span>
               </label>
             </div>
@@ -579,10 +633,19 @@ export default function AdminSiteHeroPage() {
               </div>
               <div className="admin-site-hero-preview-grid">
                 <figure className="admin-site-hero-preview-item">
-                  <figcaption>Desktop / tablet</figcaption>
+                  <figcaption>Desktop</figcaption>
                   <SmartImage
                     src={desktopPreview}
                     alt={form.imageAlt || selectedDesktopImage?.imageAlt || "Hero ESADAR"}
+                    className="image-manager-card__media admin-site-hero-preview__media"
+                    loading="eager"
+                  />
+                </figure>
+                <figure className="admin-site-hero-preview-item">
+                  <figcaption>Tablet / laptop chica</figcaption>
+                  <SmartImage
+                    src={tabletLaptopPreview}
+                    alt={form.imageAlt || selectedTabletLaptopImage?.imageAlt || "Hero ESADAR tablet"}
                     className="image-manager-card__media admin-site-hero-preview__media"
                     loading="eager"
                   />
@@ -597,14 +660,14 @@ export default function AdminSiteHeroPage() {
                   />
                 </figure>
               </div>
-              {!desktopPreview && !mobilePreview ? (
+              {!desktopPreview && !tabletLaptopPreview && !mobilePreview ? (
                 <p className="muted-copy">
                   Sin imágenes configuradas. La home usa el fallback actual.
                 </p>
               ) : null}
             </div>
 
-            {desktopImagePreviews.length || mobileImagePreviews.length ? (
+            {desktopImagePreviews.length || tabletLaptopImagePreviews.length || mobileImagePreviews.length ? (
               <div className="section-card nested-card page-stack">
                 <div>
                   <p className="section-kicker">Pendientes</p>
@@ -615,10 +678,20 @@ export default function AdminSiteHeroPage() {
                     <figure className="image-manager-card image-manager-card--pending" key={preview}>
                       <SmartImage
                         src={preview}
-                        alt={`Nueva imagen desktop/tablet ${index + 1}`}
+                        alt={`Nueva imagen desktop ${index + 1}`}
                         className="image-manager-card__media admin-site-hero-thumb__media"
                       />
-                      <figcaption>Desktop / tablet</figcaption>
+                      <figcaption>Desktop</figcaption>
+                    </figure>
+                  ))}
+                  {tabletLaptopImagePreviews.map((preview, index) => (
+                    <figure className="image-manager-card image-manager-card--pending" key={preview}>
+                      <SmartImage
+                        src={preview}
+                        alt={`Nueva imagen tablet/laptop ${index + 1}`}
+                        className="image-manager-card__media admin-site-hero-thumb__media"
+                      />
+                      <figcaption>Tablet / laptop chica</figcaption>
                     </figure>
                   ))}
                   {mobileImagePreviews.map((preview, index) => (
@@ -684,7 +757,11 @@ export default function AdminSiteHeroPage() {
                               onChange={() => selectImage(index)}
                             />
                             <span>
-                              Mostrar en {image.viewportTarget === VIEWPORT_MOBILE ? "mobile" : "desktop/tablet"}
+                              Mostrar en {image.viewportTarget === VIEWPORT_MOBILE
+                                ? "mobile"
+                                : image.viewportTarget === VIEWPORT_TABLET_LAPTOP
+                                  ? "tablet/laptop chica"
+                                  : "desktop"}
                             </span>
                           </label>
                         )}

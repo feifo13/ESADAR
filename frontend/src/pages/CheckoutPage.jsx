@@ -107,11 +107,22 @@ function getOfficialRatesLabel(method) {
 }
 
 function isCheckoutItemUnavailable(item) {
-  const status = String(item?.articleStatus || "ACTIVE").toUpperCase();
+  const publicationStatus = String(item?.publicationStatus || "ACTIVE").toUpperCase();
+  const articleStatus = String(
+    item?.articleStatus ||
+      (publicationStatus === "ACTIVE" ? item?.stockStatus || "ACTIVE" : "INACTIVE"),
+  ).toUpperCase();
+  const stockStatus = String(item?.stockStatus || articleStatus).toUpperCase();
   const quantityAvailable = Number(
     item?.quantityAvailable ?? item?.maxQuantity ?? 0,
   );
-  return status !== "ACTIVE" || quantityAvailable <= 0;
+
+  return (
+    publicationStatus !== "ACTIVE" ||
+    articleStatus !== "ACTIVE" ||
+    stockStatus !== "ACTIVE" ||
+    quantityAvailable <= 0
+  );
 }
 
 function TrashIcon() {
@@ -249,6 +260,11 @@ export default function CheckoutPage() {
   );
   const hasUnavailableItems = unavailableItems.length > 0;
   const unavailableItemsCount = unavailableItems.length;
+  const unavailableTickerLabel = unavailableItemsCount === 1
+    ? "1 artículo no disponible"
+    : `${unavailableItemsCount} artículos no disponibles`;
+  const unavailableTickerInstruction =
+    "Para avanzar con la compra, primero quitá todos los artículos agotados o no disponibles del carrito.";
   const availableItems = useMemo(
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],
@@ -462,6 +478,12 @@ export default function CheckoutPage() {
       setSuccess(message);
     }
     notifyFormStatus(notifyMobileStatus, type, message, options);
+  }
+
+  function handleRemoveCartItem(lineKey) {
+    removeItem(lineKey);
+    setError("");
+    notifyFormStatus(notifyMobileStatus, "success", "Artículo removido");
   }
 
   function validateCurrentStep() {
@@ -693,7 +715,7 @@ export default function CheckoutPage() {
                     key={getCheckoutLineKey(item)}
                     item={item}
                     isUnavailable={isUnavailable}
-                    onRemove={removeItem}
+                    onRemove={handleRemoveCartItem}
                     onQuantityChange={(articleId, quantity) => {
                       if (isUnavailable) return;
                       const result = updateQuantity(articleId, quantity);
@@ -828,7 +850,7 @@ export default function CheckoutPage() {
                           <button
                             type="button"
                             className="icon-action-button"
-                            onClick={() => removeItem(getCheckoutLineKey(item))}
+                            onClick={() => handleRemoveCartItem(getCheckoutLineKey(item))}
                             aria-label={`Quitar ${item.title}`}
                             title="Quitar"
                           >
@@ -1248,16 +1270,9 @@ export default function CheckoutPage() {
           role="alert"
           aria-live="assertive"
         >
-          <div className="cart-unavailable-ticker__content">
-            <strong>
-              {unavailableItemsCount === 1
-                ? "1 artículo no disponible"
-                : `${unavailableItemsCount} artículos no disponibles`}
-            </strong>
-            {/* <span>
-              Para avanzar con la compra, primero quitá todos los artículos agotados o no disponibles del carrito.
-            </span> */}
-          </div>
+          <span className="cart-unavailable-ticker__message">
+            {unavailableTickerLabel}. {unavailableTickerInstruction}
+          </span>
         </div>
       ) : null}
 

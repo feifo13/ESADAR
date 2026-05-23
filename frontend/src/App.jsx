@@ -224,7 +224,7 @@ export default function App() {
         <Route
           path="admin/site-hero"
           element={
-            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}>
               <AdminSiteHeroPage />
             </ProtectedRoute>
           }

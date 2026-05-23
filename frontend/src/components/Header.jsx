@@ -416,6 +416,11 @@ export default function Header({ hideBrand = false }) {
         ]
       : []),
     { key: "admin-shipping", label: "Envíos", to: "/admin/shipping" },
+    ...(canManageUsers
+      ? [
+          { key: "admin-site-hero", label: "Hero / ticker", to: "/admin/site-hero" },
+        ]
+      : []),
     { key: "admin-statistics", label: "Estadísticas", to: "/admin/statistics" },
     { key: "admin-audit", label: "Auditoría", to: "/admin/audit" },
   ];

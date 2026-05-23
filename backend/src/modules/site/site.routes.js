@@ -33,6 +33,8 @@ adminRouter.post(
     { name: 'images', maxCount: 10 },
     { name: 'desktopImage', maxCount: 1 },
     { name: 'desktopImages', maxCount: 10 },
+    { name: 'tabletLaptopImage', maxCount: 1 },
+    { name: 'tabletLaptopImages', maxCount: 10 },
     { name: 'mobileImage', maxCount: 1 },
     { name: 'mobileImages', maxCount: 10 },
   ]),

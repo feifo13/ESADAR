@@ -782,17 +782,22 @@ export async function listPublicArticleAvailabilityByIds(articleIds = []) {
     ids,
   );
 
-  return rows.map((row) => ({
-    id: Number(row.id),
-    publicationStatus: row.publicationStatus || 'INACTIVE',
-    status: row.publicationStatus === 'ACTIVE'
-      ? deriveStockStatus(row)
-      : 'INACTIVE',
-    stockStatus: deriveStockStatus(row),
-    quantityAvailable: Number(row.quantityAvailable || 0),
-    quantityReserved: Number(row.quantityReserved || 0),
-    quantitySold: Number(row.quantitySold || 0),
-  }));
+  return rows.map((row) => {
+    const publicationStatus = row.publicationStatus || 'INACTIVE';
+    const stockStatus = deriveStockStatus(row);
+    const articleStatus = publicationStatus === 'ACTIVE' ? stockStatus : 'INACTIVE';
+
+    return {
+      id: Number(row.id),
+      publicationStatus,
+      status: articleStatus,
+      articleStatus,
+      stockStatus,
+      quantityAvailable: Number(row.quantityAvailable || 0),
+      quantityReserved: Number(row.quantityReserved || 0),
+      quantitySold: Number(row.quantitySold || 0),
+    };
+  });
 }
 
 export async function listPublicArticles({ filters, pagination }) {

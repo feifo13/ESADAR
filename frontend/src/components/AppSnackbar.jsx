@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useMobileMenu } from '../contexts/MobileMenuContext.jsx';
 
 function SnackbarIcon({ type }) {
@@ -53,7 +54,7 @@ export default function AppSnackbar() {
     ? mobileStatusBand.type
     : 'info';
 
-  return (
+  const snackbar = (
     <div
       className={`app-snackbar app-snackbar--${type}${isLeaving ? ' is-leaving' : ''}`}
       role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
@@ -71,4 +72,8 @@ export default function AppSnackbar() {
       </button>
     </div>
   );
+
+  if (typeof document === 'undefined') return snackbar;
+
+  return createPortal(snackbar, document.body);
 }

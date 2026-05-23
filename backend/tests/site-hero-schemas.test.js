@@ -32,6 +32,49 @@ test('site hero schema accepts display and height modes', () => {
   assert.equal(parsed.images[0].sortOrder, 1);
 });
 
+
+test('site hero schema accepts tablet/laptop height mode', () => {
+  const parsed = siteHeroUpdateSchema.parse({
+    title: 'ESADAR',
+    subtitle: null,
+    ctaLabel: null,
+    ctaUrl: null,
+    heroHeightMode: 'TABLET_LAPTOP',
+    customHeightVh: null,
+    heroDisplayMode: 'SINGLE_IMAGE',
+    imageAlt: 'Hero ESADAR',
+    isActive: true,
+  });
+
+  assert.equal(parsed.heroHeightMode, 'TABLET_LAPTOP');
+});
+
+
+test('site hero schema accepts tablet/laptop image viewport target', () => {
+  const parsed = siteHeroUpdateSchema.parse({
+    title: 'ESADAR',
+    subtitle: null,
+    ctaLabel: null,
+    ctaUrl: null,
+    heroHeightMode: 'HALF_SCREEN',
+    customHeightVh: null,
+    heroDisplayMode: 'SINGLE_IMAGE',
+    imageAlt: 'Hero ESADAR',
+    images: [
+      {
+        id: 3,
+        imageAlt: 'Hero tablet',
+        viewportTarget: 'TABLET_LAPTOP',
+        sortOrder: 0,
+        isActive: true,
+      },
+    ],
+    isActive: true,
+  });
+
+  assert.equal(parsed.images[0].viewportTarget, 'TABLET_LAPTOP');
+});
+
 test('site hero schema validates custom height range and display values', () => {
   const basePayload = {
     title: null,

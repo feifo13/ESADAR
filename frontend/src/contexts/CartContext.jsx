@@ -36,9 +36,29 @@ function findLineByKey(items, lineKey) {
   return items.find((item) => getLineKey(item) === wanted || String(item.articleId) === wanted) || null;
 }
 
+function normalizeStatus(value, fallback = 'ACTIVE') {
+  return String(value || fallback).toUpperCase();
+}
+
+function getCartItemAvailabilityStatus(item) {
+  const publicationStatus = normalizeStatus(item?.publicationStatus, 'ACTIVE');
+  const stockStatus = normalizeStatus(item?.stockStatus || item?.articleStatus, 'ACTIVE');
+  const articleStatus = normalizeStatus(
+    item?.articleStatus || (publicationStatus === 'ACTIVE' ? stockStatus : 'INACTIVE'),
+    publicationStatus === 'ACTIVE' ? stockStatus : 'INACTIVE',
+  );
+
+  return { publicationStatus, stockStatus, articleStatus };
+}
+
 function isCartItemAvailable(item) {
-  const stockStatus = item?.stockStatus || item?.articleStatus || 'ACTIVE';
-  return stockStatus === 'ACTIVE' && Number(item.quantityAvailable ?? item.maxQuantity ?? 0) > 0;
+  const { publicationStatus, stockStatus, articleStatus } = getCartItemAvailabilityStatus(item);
+  return (
+    publicationStatus === 'ACTIVE' &&
+    articleStatus === 'ACTIVE' &&
+    stockStatus === 'ACTIVE' &&
+    Number(item.quantityAvailable ?? item.maxQuantity ?? 0) > 0
+  );
 }
 
 function splitLocalAdd(items, article, quantity, maxQuantity) {
@@ -115,8 +135,12 @@ function createLocalCartItem(article, quantity, maxQuantity, acceptedOffer = nul
     maxQuantity,
     quantityAvailable: maxQuantity,
     publicationStatus: article.publicationStatus || article.status || 'ACTIVE',
-    stockStatus: article.stockStatus || article.status || 'ACTIVE',
-    articleStatus: article.stockStatus || article.status || 'ACTIVE',
+    stockStatus: article.stockStatus || 'ACTIVE',
+    articleStatus:
+      article.articleStatus ||
+      (String(article.publicationStatus || article.status || 'ACTIVE').toUpperCase() === 'ACTIVE'
+        ? article.stockStatus || 'ACTIVE'
+        : 'INACTIVE'),
   };
   item.lineTotal = calculateLineTotal(item);
   return item;
@@ -138,6 +162,8 @@ function applyAvailabilitySnapshot(items = [], availabilityItems = []) {
       return {
         ...item,
         articleStatus: 'INACTIVE',
+        publicationStatus: 'INACTIVE',
+        stockStatus: 'INACTIVE',
         quantityAvailable: 0,
         maxQuantity: 0,
         lineTotal: calculateLineTotal(item),
@@ -145,15 +171,20 @@ function applyAvailabilitySnapshot(items = [], availabilityItems = []) {
     }
 
     const quantityAvailable = Number(snapshot.quantityAvailable || 0);
-    const articleStatus = snapshot.stockStatus || snapshot.status || 'INACTIVE';
+    const publicationStatus = normalizeStatus(snapshot.publicationStatus || snapshot.publication_status, 'INACTIVE');
+    const stockStatus = normalizeStatus(snapshot.stockStatus || snapshot.stock_status || snapshot.status, 'INACTIVE');
+    const articleStatus = normalizeStatus(
+      snapshot.articleStatus || snapshot.article_status || (publicationStatus === 'ACTIVE' ? stockStatus : 'INACTIVE'),
+      publicationStatus === 'ACTIVE' ? stockStatus : 'INACTIVE',
+    );
     const maxQuantity = Math.max(0, quantityAvailable);
     const quantity = item.acceptedOffer ? 1 : clampQuantity(item.quantity, Math.max(1, maxQuantity || item.quantity || 1));
 
     return {
       ...item,
       articleStatus,
-      publicationStatus: snapshot.publicationStatus || item.publicationStatus || null,
-      stockStatus: articleStatus,
+      publicationStatus,
+      stockStatus,
       quantityAvailable,
       maxQuantity,
       quantity,
@@ -181,8 +212,12 @@ function normalizeRemoteItems(items = []) {
     maxQuantity: Number(item.maxQuantity || item.quantityAvailable || item.quantity || 1),
     quantityAvailable: Number(item.quantityAvailable ?? item.maxQuantity ?? 0),
     publicationStatus: item.publicationStatus || null,
-    stockStatus: item.stockStatus || item.articleStatus || 'ACTIVE',
-    articleStatus: item.stockStatus || item.articleStatus || 'ACTIVE',
+    stockStatus: item.stockStatus || 'ACTIVE',
+    articleStatus:
+      item.articleStatus ||
+      (String(item.publicationStatus || 'ACTIVE').toUpperCase() === 'ACTIVE'
+        ? item.stockStatus || 'ACTIVE'
+        : 'INACTIVE'),
     acceptedOffer: item.acceptedOffer || null,
     lineTotal: Number(item.lineTotal ?? calculateLineTotal(item)),
   }));

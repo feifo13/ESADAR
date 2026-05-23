@@ -13,7 +13,7 @@ SET @has_viewport_target := (
 
 SET @add_viewport_target_sql := IF(
   @has_viewport_target = 0,
-  'ALTER TABLE site_hero_images ADD COLUMN viewport_target ENUM(''DESKTOP_TABLET'',''MOBILE'') NOT NULL DEFAULT ''DESKTOP_TABLET'' AFTER image_alt',
+  'ALTER TABLE site_hero_images ADD COLUMN viewport_target ENUM(''DESKTOP_TABLET'',''TABLET_LAPTOP'',''MOBILE'') NOT NULL DEFAULT ''DESKTOP_TABLET'' AFTER image_alt',
   'SELECT ''site_hero_images.viewport_target already exists'' AS info'
 );
 

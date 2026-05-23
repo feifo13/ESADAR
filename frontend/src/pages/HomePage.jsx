@@ -28,7 +28,7 @@ import AppLoader from "../components/AppLoader.jsx";
 
 const HERO_IMAGES = [baller1, baller2, baller3];
 const CATALOG_PAGE_SIZE = 20;
-const HERO_HEIGHT_MODES = new Set(["HALF_SCREEN", "FULL_SCREEN", "CUSTOM"]);
+const HERO_HEIGHT_MODES = new Set(["HALF_SCREEN", "TABLET_LAPTOP", "FULL_SCREEN", "CUSTOM"]);
 const HERO_DISPLAY_MODES = new Set(["SINGLE_IMAGE", "CAROUSEL"]);
 function mergeAcceptedOffers(items, acceptedOffersByArticle) {
   return items.map((item) => {
@@ -211,13 +211,19 @@ function getConfiguredHeroImageSources(hero) {
     legacyImage ||
     normalizedImages[0] ||
     null;
+  const tabletLaptopImage =
+    normalizedImages.find((image) => image.viewportTarget === "TABLET_LAPTOP") ||
+    desktopImage ||
+    legacyImage ||
+    null;
   const mobileImage =
     normalizedImages.find((image) => image.viewportTarget === "MOBILE") ||
+    tabletLaptopImage ||
     desktopImage ||
     legacyImage ||
     null;
 
-  return { desktop: desktopImage, mobile: mobileImage };
+  return { desktop: desktopImage, tabletLaptop: tabletLaptopImage, mobile: mobileImage };
 }
 
 function normalizeHeroHeightMode(value) {
@@ -353,6 +359,7 @@ export default function HomePage() {
   const [leadError, setLeadError] = useState("");
   const [leadSuccess, setLeadSuccess] = useState("");
   const [siteHero, setSiteHero] = useState(null);
+  const [siteHeroLoaded, setSiteHeroLoaded] = useState(false);
 
   const pageSeo =
     location.pathname === "/articles"
@@ -460,17 +467,22 @@ export default function HomePage() {
       ? "site-hero--full-screen"
       : heroHeightMode === "CUSTOM"
         ? "site-hero--custom"
-        : "site-hero--half-screen";
+        : heroHeightMode === "TABLET_LAPTOP"
+          ? "site-hero--tablet-laptop"
+          : "site-hero--half-screen";
+  const shouldRenderSiteHero = siteHeroLoaded;
   const shouldRenderHeroCarousel =
     heroDisplayMode === "CAROUSEL" && configuredHeroImages.length > 1;
   const desktopHeroImage = configuredHeroSources.desktop || {
     imageUrl: HERO_IMAGES[0],
     imageAlt: siteHero?.imageAlt || "ESADAR",
   };
-  const mobileHeroImage = configuredHeroSources.mobile || desktopHeroImage;
+  const tabletLaptopHeroImage = configuredHeroSources.tabletLaptop || desktopHeroImage;
+  const mobileHeroImage = configuredHeroSources.mobile || tabletLaptopHeroImage || desktopHeroImage;
   const selectedHeroImageUrl = desktopHeroImage.imageUrl;
   const selectedHeroImageAlt = desktopHeroImage.imageAlt || siteHero?.imageAlt || "ESADAR";
-  const mobileHeroImageUrl = mobileHeroImage?.imageUrl || selectedHeroImageUrl;
+  const tabletLaptopHeroImageUrl = tabletLaptopHeroImage?.imageUrl || selectedHeroImageUrl;
+  const mobileHeroImageUrl = mobileHeroImage?.imageUrl || tabletLaptopHeroImageUrl || selectedHeroImageUrl;
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
 
   useEffect(() => {
@@ -489,20 +501,30 @@ export default function HomePage() {
   useEffect(() => {
     let ignore = false;
 
-    async function loadSiteHero() {
+    async function loadSiteHero(force = false) {
       try {
         const response = await cachedApiFetch("/api/site/hero", {
           ttlMs: 120000,
+          force,
         });
         if (!ignore) setSiteHero(response.hero || null);
       } catch {
         if (!ignore) setSiteHero(null);
+      } finally {
+        if (!ignore) setSiteHeroLoaded(true);
       }
     }
 
     void loadSiteHero();
+    const stopListening = listenPublicCacheInvalidation((detail = {}) => {
+      const match = String(detail.match || "");
+      if (match && !match.startsWith("/api/site")) return;
+      void loadSiteHero(true);
+    });
+
     return () => {
       ignore = true;
+      stopListening();
     };
   }, []);
 
@@ -1042,24 +1064,25 @@ export default function HomePage() {
         ]}
       />
 
-      <section
-        ref={heroRef}
-        className={[
-          "home-hero-section",
-          "site-hero",
-          "site-hero--configured",
-          heroHeightClass,
-          shouldRenderHeroCarousel ? "site-hero--carousel" : "site-hero--single",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        style={
-          customHeroHeightVh
-            ? { "--hero-height": `${customHeroHeightVh}vh` }
-            : undefined
-        }
-        aria-label="Imagen destacada"
-      >
+      {shouldRenderSiteHero ? (
+        <section
+          ref={heroRef}
+          className={[
+            "home-hero-section",
+            "site-hero",
+            "site-hero--configured",
+            heroHeightClass,
+            shouldRenderHeroCarousel ? "site-hero--carousel" : "site-hero--single",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          style={
+            customHeroHeightVh
+              ? { "--hero-height": `${customHeroHeightVh}vh` }
+              : undefined
+          }
+          aria-label="Imagen destacada"
+        >
         {shouldRenderHeroCarousel ? (
           <div className="home-hero-frame home-hero-carousel" aria-roledescription="carousel">
             {configuredHeroImages.map((image, index) => (
@@ -1091,6 +1114,12 @@ export default function HomePage() {
               {mobileHeroImageUrl && mobileHeroImageUrl !== selectedHeroImageUrl ? (
                 <source media="(max-width: 767px)" srcSet={mobileHeroImageUrl} />
               ) : null}
+              {tabletLaptopHeroImageUrl && tabletLaptopHeroImageUrl !== selectedHeroImageUrl ? (
+                <source
+                  media="(min-width: 768px) and (max-width: 1280px)"
+                  srcSet={tabletLaptopHeroImageUrl}
+                />
+              ) : null}
               <img
                 src={selectedHeroImageUrl}
                 alt={selectedHeroImageAlt}
@@ -1102,7 +1131,8 @@ export default function HomePage() {
             </picture>
           </figure>
         )}
-      </section>
+        </section>
+      ) : null}
 
       {/* <section className="container value-hero-card section-card">
         <div className="value-hero-copy">

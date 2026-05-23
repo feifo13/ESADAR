@@ -507,10 +507,13 @@ export default function AdminArticlesPage() {
       setMessage("");
       await apiFetch(`/api/admin/articles/${article.id}`, { method: "DELETE" });
       setItems((current) => current.filter((item) => Number(item.id) !== Number(article.id)));
-      const successMessage = "El artículo fue eliminado correctamente.";
+      setPagination((currentPagination) => ({
+        ...currentPagination,
+        total: Math.max(0, Number(currentPagination.total || 0) - 1),
+      }));
+      const successMessage = "Artículo removido";
       setMessage(successMessage);
-      notifyFormStatus(notifyMobileStatus, "success", successMessage);
-      notifySuccess("Artículo removido");
+      notifyFormStatus(notifyMobileStatus, "success", successMessage, { duration: 4200 });
     } catch (err) {
       const errorMessage =
         err.message ||

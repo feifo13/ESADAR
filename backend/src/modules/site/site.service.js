@@ -16,8 +16,8 @@ const DEFAULT_TICKER_TEXT = 'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS';
 const DEFAULT_TICKER_TARGET_URL = '/articles';
 const DEFAULT_TICKER_BACKGROUND_COLOR = '#ec672b';
 const TICKER_SETTINGS_ID = 1;
-const VIEWPORT_TARGETS = new Set(['DESKTOP_TABLET', 'MOBILE']);
-const HERO_HEIGHT_MODES = new Set(['HALF_SCREEN', 'FULL_SCREEN', 'CUSTOM']);
+const VIEWPORT_TARGETS = new Set(['DESKTOP_TABLET', 'TABLET_LAPTOP', 'MOBILE']);
+const HERO_HEIGHT_MODES = new Set(['HALF_SCREEN', 'TABLET_LAPTOP', 'FULL_SCREEN', 'CUSTOM']);
 const HERO_DISPLAY_MODES = new Set(['SINGLE_IMAGE', 'CAROUSEL']);
 const TICKER_COLOR_TOKENS = new Set([
   'orange',
@@ -146,6 +146,8 @@ function normalizeHeroRow(row) {
     imageAlt: row.imageAlt || '',
     desktopImageUrl: '',
     desktopImageAlt: '',
+    tabletLaptopImageUrl: '',
+    tabletLaptopImageAlt: '',
     mobileImageUrl: '',
     mobileImageAlt: '',
     images: [],
@@ -176,6 +178,8 @@ function normalizeFiles(files, input = {}) {
 
   pushFiles('desktopImage', 'DESKTOP_TABLET');
   pushFiles('desktopImages', 'DESKTOP_TABLET');
+  pushFiles('tabletLaptopImage', 'TABLET_LAPTOP');
+  pushFiles('tabletLaptopImages', 'TABLET_LAPTOP');
   pushFiles('mobileImage', 'MOBILE');
   pushFiles('mobileImages', 'MOBILE');
   pushFiles('image', normalizeViewportTarget(input.viewportTarget));
@@ -248,8 +252,9 @@ async function selectLatestHero(connection = pool, { includeInactive = false } =
   hero.images = await selectHeroImages(connection, hero.id, { includeInactive });
 
   const desktopImage = pickActiveImageForViewport(hero.images, 'DESKTOP_TABLET');
+  const tabletLaptopImage = pickActiveImageForViewport(hero.images, 'TABLET_LAPTOP');
   const mobileImage = pickActiveImageForViewport(hero.images, 'MOBILE');
-  const fallbackImage = desktopImage || mobileImage || hero.images.find((image) => image.isActive) || hero.images[0] || null;
+  const fallbackImage = desktopImage || tabletLaptopImage || mobileImage || hero.images.find((image) => image.isActive) || hero.images[0] || null;
 
   if (fallbackImage) {
     hero.imageUrl = fallbackImage.imageUrl;
@@ -258,8 +263,10 @@ async function selectLatestHero(connection = pool, { includeInactive = false } =
 
   hero.desktopImageUrl = desktopImage?.imageUrl || fallbackImage?.imageUrl || hero.imageUrl || '';
   hero.desktopImageAlt = desktopImage?.imageAlt || hero.imageAlt || '';
-  hero.mobileImageUrl = mobileImage?.imageUrl || hero.desktopImageUrl || '';
-  hero.mobileImageAlt = mobileImage?.imageAlt || hero.desktopImageAlt || hero.imageAlt || '';
+  hero.tabletLaptopImageUrl = tabletLaptopImage?.imageUrl || hero.desktopImageUrl || '';
+  hero.tabletLaptopImageAlt = tabletLaptopImage?.imageAlt || hero.desktopImageAlt || hero.imageAlt || '';
+  hero.mobileImageUrl = mobileImage?.imageUrl || hero.tabletLaptopImageUrl || hero.desktopImageUrl || '';
+  hero.mobileImageAlt = mobileImage?.imageAlt || hero.tabletLaptopImageAlt || hero.desktopImageAlt || hero.imageAlt || '';
 
   return hero;
 }
@@ -298,6 +305,8 @@ async function ensureHeroRow(connection) {
     imageAlt: 'Hero ESADAR',
     desktopImageUrl: '',
     desktopImageAlt: 'Hero ESADAR',
+    tabletLaptopImageUrl: '',
+    tabletLaptopImageAlt: 'Hero ESADAR',
     mobileImageUrl: '',
     mobileImageAlt: 'Hero ESADAR',
     images: [],
