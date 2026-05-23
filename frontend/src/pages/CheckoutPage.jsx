@@ -8,6 +8,7 @@ import { useNotification } from "../contexts/NotificationContext.jsx";
 import PreviousNextControls from "../components/PreviousNextControls.jsx";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ScrollRailControls from "../components/ScrollRailControls.jsx";
+import LeadCaptureCta from "../components/LeadCaptureCta.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { formatCurrency } from "../lib/format.js";
