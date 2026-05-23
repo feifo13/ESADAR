@@ -11,6 +11,7 @@ import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../../contexts/SiteSeoContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { getSiteUrl, sanitizePublicUrl } from "../../lib/seo.js";
+import { calculateArticleMarginPreview } from "../../lib/articleMargins.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
 import AppLoader from "../../components/AppLoader.jsx";
@@ -40,6 +41,15 @@ const AGE_GROUP_OPTIONS = [
   { value: "INFANT", label: "Infant" },
   { value: "NEWBORN", label: "Newborn" },
 ];
+
+function formatMarginCurrency(value) {
+  return new Intl.NumberFormat("es-UY", {
+    style: "currency",
+    currency: "UYU",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+}
 
 const NEW_LOOKUP_VALUE = "__CREATE_NEW__";
 
@@ -347,15 +357,15 @@ export default function AdminArticleFormPage() {
     sizeOptions,
   ]);
 
-  const totalPurchasePrice = useMemo(
-    () =>
-      Number(form.purchasePriceItem || 0) +
-      Number(form.purchasePriceShipping || 0) +
-      Number(form.purchasePriceCourier || 0),
+  const marginPreview = useMemo(
+    () => calculateArticleMarginPreview(form),
     [
+      form.discountType,
+      form.discountValue,
+      form.purchasePriceCourier,
       form.purchasePriceItem,
       form.purchasePriceShipping,
-      form.purchasePriceCourier,
+      form.salePrice,
     ],
   );
 
@@ -1450,7 +1460,7 @@ export default function AdminArticleFormPage() {
                   </span>
                 </label>
                 <label className="field-group admin-field-important">
-                  <span>Precio compra artículo</span>
+                  <span>Costo artículo</span>
                   <input
                     className="input"
                     type="number"
@@ -1462,7 +1472,7 @@ export default function AdminArticleFormPage() {
                   />
                 </label>
                 <label className="field-group admin-field-important">
-                  <span>Precio compra envío</span>
+                  <span>Costo envío USA</span>
                   <input
                     className="input"
                     type="number"
@@ -1474,7 +1484,7 @@ export default function AdminArticleFormPage() {
                   />
                 </label>
                 <label className="field-group admin-field-important">
-                  <span>Precio compra courier</span>
+                  <span>Costo envío MVD</span>
                   <input
                     className="input"
                     type="number"
@@ -1495,9 +1505,51 @@ export default function AdminArticleFormPage() {
                     }
                   />
                 </label>
-              <div className="inline-note article-commerce-total-note">
-                Costo de compra total estimado:{" "}
-                <strong>{totalPurchasePrice}</strong>
+              <div
+                className={[
+                  "article-margin-preview",
+                  marginPreview.isNegative ? "article-margin-preview--negative" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-live="polite"
+              >
+                <p className="summary-line">
+                  <span>Precio efectivo de venta</span>
+                  <strong>{formatMarginCurrency(marginPreview.effectiveSalePrice)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo artículo</span>
+                  <strong>{formatMarginCurrency(marginPreview.purchasePriceItem)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo envío USA</span>
+                  <strong>{formatMarginCurrency(marginPreview.purchasePriceShipping)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo envío MVD</span>
+                  <strong>{formatMarginCurrency(marginPreview.purchasePriceCourier)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo compra</span>
+                  <strong>{formatMarginCurrency(marginPreview.totalPurchasePrice)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Impuestos bancarios 2,5%</span>
+                  <strong>{formatMarginCurrency(marginPreview.bankTax)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo total estimado</span>
+                  <strong>{formatMarginCurrency(marginPreview.totalCost)}</strong>
+                </p>
+                <p className="summary-line article-margin-preview__highlight article-margin-preview__profit">
+                  <span>Ganancia estimada neta</span>
+                  <strong>{formatMarginCurrency(marginPreview.estimatedProfit)}</strong>
+                </p>
+                <p className="summary-line article-margin-preview__highlight">
+                  <span>Margen estimado neto</span>
+                  <strong>{marginPreview.estimatedMargin.toFixed(2)}%</strong>
+                </p>
               </div>
             </div>
           </section>

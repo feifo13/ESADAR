@@ -32,6 +32,24 @@ const EMPTY_MARKET_STUDY = {
   paymentShipping: [],
 };
 
+const ARTICLE_MARGIN_STATUSES = new Set(["DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"]);
+
+function buildArticleMarginsQuery(filters) {
+  const queryFilters = {
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    categoryId: filters.categoryId,
+    brandId: filters.brandId,
+    q: filters.q,
+  };
+
+  if (ARTICLE_MARGIN_STATUSES.has(filters.status)) {
+    queryFilters.status = filters.status;
+  }
+
+  return buildQueryString(queryFilters);
+}
+
 function HorizontalBars({
   items,
   valueKey,
@@ -259,6 +277,23 @@ export default function AdminStatisticsPage() {
     }
   }
 
+  async function handleArticleMarginsPdfExport() {
+    try {
+      setExporting("article_margins_pdf");
+      const query = buildArticleMarginsQuery(filters);
+      await apiDownload(`/api/admin/statistics/article-margins.pdf?${query}`, {
+        fileName: "esadar-margenes-articulos.pdf",
+        extension: "pdf",
+      });
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo exportar el PDF de márgenes.";
+      setError(errorMessage);
+      notifyError(errorMessage);
+    } finally {
+      setExporting("");
+    }
+  }
+
   return (
     <div className="container page-stack admin-page-shell admin-statistics-page">
       <AdminToolbar />
@@ -427,6 +462,16 @@ export default function AdminStatisticsPage() {
             disabled={Boolean(exporting)}
           >
             {exporting === "profits" ? "Exportando..." : "Exportar ganancias"}
+          </button>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={handleArticleMarginsPdfExport}
+            disabled={Boolean(exporting)}
+          >
+            {exporting === "article_margins_pdf"
+              ? "Exportando..."
+              : "Exportar PDF márgenes artículos"}
           </button>
           <button
             type="button"

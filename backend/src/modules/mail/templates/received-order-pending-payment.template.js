@@ -32,7 +32,7 @@ function renderSummaryRow(label, value, options = {}) {
 }
 
 const TRACKING_AVAILABILITY_COPY =
-  "Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de confirmación de envío, sujeto a disponibilidad del proveedor del servicio de cadetería o correspondencia.";
+  "Una vez aprobada y despachada la orden, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de cadetería o correspondencia.";
 
 function renderPaymentInstructions(paymentInstructions, orderLabel) {
   if (!paymentInstructions) return "";

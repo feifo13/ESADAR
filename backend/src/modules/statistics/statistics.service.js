@@ -1,15 +1,21 @@
-import { appendRowsSheet, createWorkbook, workbookToXlsxBuffer } from '../../utils/export-files.js';
+import { createWorkbook, workbookToXlsxBuffer } from '../../utils/export-files.js';
 import { pool } from '../../db/pool.js';
 import { appendDateRangeFilters, buildLikeValue } from '../../utils/listing.js';
 import { buildSqlLimitClause } from '../../utils/sql-safety.js';
+import { BANK_TAX_RATE } from './statistics.margin-calculator.js';
 import {
   getAdminWishlistSummary,
   getAdminWishlistTopArticles,
   getAdminWishlistTopUsers,
 } from '../wishlists/wishlists.service.js';
 
-const ORDER_ITEM_COST_TOTAL_EXPR = 'COALESCE(oi.purchase_price_total_snapshot, COALESCE(a.purchase_price_total, 0) * oi.quantity)';
-const ORDER_ITEM_PROFIT_EXPR = `COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR})`;
+const ORDER_ITEM_COST_ITEM_EXPR = 'COALESCE(oi.purchase_price_item_snapshot, COALESCE(a.purchase_price_item, 0) * oi.quantity)';
+const ORDER_ITEM_COST_USA_EXPR = 'COALESCE(oi.purchase_price_shipping_snapshot, COALESCE(a.purchase_price_shipping, 0) * oi.quantity)';
+const ORDER_ITEM_COST_MVD_EXPR = 'COALESCE(oi.purchase_price_courier_snapshot, COALESCE(a.purchase_price_courier, 0) * oi.quantity)';
+const ORDER_ITEM_COST_TOTAL_EXPR = `COALESCE(oi.purchase_price_total_snapshot, ${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_ITEM_COST_USA_EXPR} + ${ORDER_ITEM_COST_MVD_EXPR})`;
+const ORDER_ITEM_BANK_TAX_EXPR = `ROUND((${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_ITEM_COST_USA_EXPR}) * ${BANK_TAX_RATE}, 2)`;
+const ORDER_ITEM_TOTAL_COST_EXPR = `(${ORDER_ITEM_COST_TOTAL_EXPR} + ${ORDER_ITEM_BANK_TAX_EXPR})`;
+const ORDER_ITEM_PROFIT_EXPR = `(COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR}) - ${ORDER_ITEM_BANK_TAX_EXPR})`;
 const ORDER_ITEM_INCOMPLETE_COST_EXPR = `CASE WHEN ${ORDER_ITEM_COST_TOTAL_EXPR} <= 0 THEN 1 ELSE 0 END`;
 
 function normalizePositiveInt(value, fallback, max = 50) {
@@ -178,6 +184,8 @@ async function getSalesItemTotals(filters = {}) {
       SELECT
         COALESCE(SUM(oi.quantity), 0) AS itemsSold,
         COALESCE(SUM(oi.line_total_snapshot), 0) AS itemsRevenue,
+        COALESCE(SUM(${ORDER_ITEM_BANK_TAX_EXPR}), 0) AS bankTax,
+        COALESCE(SUM(${ORDER_ITEM_TOTAL_COST_EXPR}), 0) AS totalCost,
         COALESCE(SUM(${ORDER_ITEM_PROFIT_EXPR}), 0) AS estimatedProfit,
         COALESCE(SUM(${ORDER_ITEM_INCOMPLETE_COST_EXPR}), 0) AS incompleteCostRows
       FROM orders o
@@ -208,6 +216,8 @@ export async function getStatisticsTopArticles(filters = {}, limit = 10) {
         MAX(COALESCE(a.size_text, s.code, oi.size_snapshot)) AS sizeLabel,
         SUM(oi.quantity) AS quantitySold,
         SUM(oi.line_total_snapshot) AS revenue,
+        SUM(${ORDER_ITEM_BANK_TAX_EXPR}) AS bankTax,
+        SUM(${ORDER_ITEM_TOTAL_COST_EXPR}) AS totalCost,
         SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit,
         SUM(${ORDER_ITEM_INCOMPLETE_COST_EXPR}) AS incompleteCostRows,
         MAX((
@@ -242,7 +252,10 @@ export async function getStatisticsTopArticles(filters = {}, limit = 10) {
     sizeLabel: row.sizeLabel || null,
     quantitySold: Number(row.quantitySold || 0),
     revenue: Number(row.revenue || 0),
+    bankTax: Number(row.bankTax || 0),
+    totalCost: Number(row.totalCost || 0),
     estimatedProfit: Number(row.estimatedProfit || 0),
+    totalPerArticle: Number(row.revenue || 0),
     incompleteCostRows: Number(row.incompleteCostRows || 0),
     image: row.image || '',
   }));
@@ -263,6 +276,8 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
         COUNT(DISTINCT o.id) AS ordersCount,
         COALESCE(SUM(oi.quantity), 0) AS itemsCount,
         COALESCE(SUM(oi.line_total_snapshot), 0) AS totalSpent,
+        COALESCE(SUM(${ORDER_ITEM_BANK_TAX_EXPR}), 0) AS bankTax,
+        COALESCE(SUM(${ORDER_ITEM_TOTAL_COST_EXPR}), 0) AS totalCost,
         COALESCE(SUM(${ORDER_ITEM_PROFIT_EXPR}), 0) AS estimatedProfit
       FROM orders o
       LEFT JOIN customers c ON c.id = o.customer_id
@@ -286,7 +301,10 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
     ordersCount: Number(row.ordersCount || 0),
     itemsCount: Number(row.itemsCount || 0),
     totalSpent: Number(row.totalSpent || 0),
+    bankTax: Number(row.bankTax || 0),
+    totalCost: Number(row.totalCost || 0),
     estimatedProfit: Number(row.estimatedProfit || 0),
+    totalOrder: Number(row.totalSpent || 0),
   }));
 }
 
@@ -301,6 +319,8 @@ export async function getStatisticsTopCategories(filters = {}, limit = 10) {
         COALESCE(cat.name, oi.category_name_snapshot, 'Sin categoria') AS categoryName,
         SUM(oi.quantity) AS quantitySold,
         SUM(oi.line_total_snapshot) AS revenue,
+        SUM(${ORDER_ITEM_BANK_TAX_EXPR}) AS bankTax,
+        SUM(${ORDER_ITEM_TOTAL_COST_EXPR}) AS totalCost,
         SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit
       FROM orders o
       INNER JOIN order_items oi ON oi.order_id = o.id
@@ -321,7 +341,10 @@ export async function getStatisticsTopCategories(filters = {}, limit = 10) {
     categoryName: row.categoryName,
     quantitySold: Number(row.quantitySold || 0),
     revenue: Number(row.revenue || 0),
+    bankTax: Number(row.bankTax || 0),
+    totalCost: Number(row.totalCost || 0),
     estimatedProfit: Number(row.estimatedProfit || 0),
+    total: Number(row.revenue || 0),
   }));
 }
 
@@ -344,6 +367,8 @@ export async function getStatisticsSalesOverTime(filters = {}) {
         COUNT(DISTINCT o.id) AS ordersCount,
         SUM(oi.quantity) AS itemsSold,
         SUM(oi.line_total_snapshot) AS revenue,
+        SUM(${ORDER_ITEM_BANK_TAX_EXPR}) AS bankTax,
+        SUM(${ORDER_ITEM_TOTAL_COST_EXPR}) AS totalCost,
         SUM(${ORDER_ITEM_PROFIT_EXPR}) AS estimatedProfit
       FROM orders o
       INNER JOIN order_items oi ON oi.order_id = o.id
@@ -362,7 +387,13 @@ export async function getStatisticsSalesOverTime(filters = {}) {
     ordersCount: Number(row.ordersCount || 0),
     itemsSold: Number(row.itemsSold || 0),
     revenue: Number(row.revenue || 0),
+    bankTax: Number(row.bankTax || 0),
+    totalCost: Number(row.totalCost || 0),
     estimatedProfit: Number(row.estimatedProfit || 0),
+    averageMargin: Number(row.revenue || 0)
+      ? Number(((Number(row.estimatedProfit || 0) / Number(row.revenue || 0)) * 100).toFixed(2))
+      : 0,
+    total: Number(row.revenue || 0),
   }));
 }
 
@@ -815,11 +846,15 @@ export async function getStatisticsProfit(filters = {}) {
   const topArticles = await getStatisticsTopArticles(filters, 10);
 
   const grossRevenue = Number(orderTotals.grossRevenue || 0);
+  const bankTax = Number(salesTotals.bankTax || 0);
+  const totalCost = Number(salesTotals.totalCost || 0);
   const estimatedProfit = Number(salesTotals.estimatedProfit || 0);
   const averageMargin = grossRevenue ? Number(((estimatedProfit / grossRevenue) * 100).toFixed(2)) : 0;
 
   return {
     grossRevenue,
+    bankTax,
+    totalCost,
     estimatedProfit,
     averageMargin,
     incompleteCostRows: Number(salesTotals.incompleteCostRows || 0),
@@ -839,12 +874,16 @@ export async function getStatisticsSummary(filters = {}) {
 
   const totalOrders = Number(orderTotals.totalOrders || 0);
   const grossRevenue = Number(orderTotals.grossRevenue || 0);
+  const bankTax = Number(salesTotals.bankTax || 0);
+  const totalCost = Number(salesTotals.totalCost || 0);
   const estimatedProfit = Number(salesTotals.estimatedProfit || 0);
   const averageMargin = grossRevenue ? Number(((estimatedProfit / grossRevenue) * 100).toFixed(2)) : 0;
 
   return {
     totalOrders,
     grossRevenue,
+    bankTax,
+    totalCost,
     estimatedProfit,
     averageMargin,
     itemsSold: Number(salesTotals.itemsSold || 0),
@@ -858,30 +897,400 @@ export async function getStatisticsSummary(filters = {}) {
   };
 }
 
-function appendSheet(workbook, name, rows) {
-  appendRowsSheet(workbook, name, rows);
+const HEADER_LABELS = {
+  articleId: 'ID artículo',
+  id: 'ID',
+  slug: 'Slug',
+  title: 'Artículo',
+  categoryName: 'Categoría',
+  brandName: 'Marca',
+  sizeLabel: 'Talle',
+  quantitySold: 'Cantidad vendida',
+  quantityAvailable: 'Stock disponible',
+  revenue: 'Ingresos',
+  salePrice: 'Precio venta',
+  discountedPrice: 'Precio efectivo',
+  bankTax: 'Impuestos bancarios',
+  totalCost: 'Costo total',
+  estimatedProfit: 'Ganancia neta',
+  totalPerArticle: 'Total por artículo',
+  incompleteCostRows: 'Costos incompletos',
+  customerId: 'ID cliente',
+  potentialCustomerId: 'ID potencial',
+  customerName: 'Cliente',
+  name: 'Nombre',
+  email: 'Email',
+  phone: 'Teléfono',
+  instagram: 'Instagram',
+  sessionToken: 'Sesión',
+  ordersCount: 'Órdenes',
+  itemsCount: 'Artículos',
+  totalSpent: 'Total gastado',
+  totalOrder: 'Total orden',
+  categoryId: 'ID categoría',
+  periodLabel: 'Período',
+  itemsSold: 'Artículos vendidos',
+  averageMargin: 'Margen %',
+  grossRevenue: 'Ingresos brutos',
+  averageTicket: 'Ticket promedio',
+  totalOrders: 'Órdenes totales',
+  topCustomer: 'Cliente principal',
+  topArticle: 'Artículo principal',
+  topCategory: 'Categoría principal',
+  topWishlistArticle: 'Artículo más guardado',
+  wishlistConversionRate: 'Conversión guardados %',
+  total: 'Total',
+  summary: 'Resumen',
+  totalWishlists: 'Listas',
+  totalItems: 'Artículos guardados',
+  totalSavedItems: 'Artículos guardados',
+  totalOwners: 'Usuarios/listas únicos',
+  averageItemsPerWishlist: 'Promedio de artículos por lista',
+  totalWishlistItems: 'Artículos guardados',
+  convertedWishlistItems: 'Guardados convertidos',
+  conversionRate: 'Conversión %',
+  savesCount: 'Guardados',
+  usersCount: 'Usuarios',
+  label: 'Detalle',
+  viewsCount: 'Vistas',
+  soldCount: 'Vendidos',
+  offersCount: 'Ofertas',
+  alertsCount: 'Alertas',
+  intakeDate: 'Fecha ingreso',
+  daysPublished: 'Días publicados',
+  lastActivity: 'Última actividad',
+  createdAt: 'Fecha creación',
+  updatedAt: 'Fecha actualización',
+  ownerName: 'Usuario',
+  source: 'Origen',
+  itemCount: 'Cantidad',
+  lastSavedAt: 'Último guardado',
+  savedTitlesPreview: 'Artículos guardados',
+  lastArticleTitle: 'Último artículo',
+  articleTitle: 'Artículo',
+  articleSlug: 'Slug artículo',
+  eventType: 'Evento',
+  status: 'Estado',
+  publicationStatus: 'Estado publicación',
+  image: 'Imagen',
+  paymentMethod: 'Método de pago',
+  shippingMethodName: 'Método de envío',
+  totalOffers: 'Ofertas totales',
+  acceptedOffers: 'Ofertas aceptadas',
+  rejectedOffers: 'Ofertas rechazadas',
+  averageRequestedDiscount: 'Descuento promedio solicitado %',
+  estado: 'Estado',
+};
+
+const MONEY_KEYS = new Set([
+  'revenue',
+  'bankTax',
+  'totalCost',
+  'estimatedProfit',
+  'totalPerArticle',
+  'totalSpent',
+  'totalOrder',
+  'grossRevenue',
+  'averageTicket',
+  'total',
+  'salePrice',
+  'discountedPrice',
+]);
+
+const PERCENT_KEYS = new Set([
+  'averageMargin',
+  'wishlistConversionRate',
+  'conversionRate',
+  'averageRequestedDiscount',
+]);
+
+const TOTALABLE_KEYS = new Set([
+  'quantitySold',
+  'ordersCount',
+  'itemsCount',
+  'itemsSold',
+  'revenue',
+  'bankTax',
+  'totalCost',
+  'estimatedProfit',
+  'totalPerArticle',
+  'totalSpent',
+  'totalOrder',
+  'grossRevenue',
+  'totalOrders',
+  'total',
+  'totalWishlists',
+  'totalItems',
+  'totalWishlistItems',
+  'totalSavedItems',
+  'totalOwners',
+  'convertedWishlistItems',
+  'savesCount',
+  'usersCount',
+  'itemCount',
+  'viewsCount',
+  'soldCount',
+  'offersCount',
+  'alertsCount',
+  'totalOffers',
+  'acceptedOffers',
+  'rejectedOffers',
+  'incompleteCostRows',
+]);
+
+const LIST_COLUMNS = {
+  summary: [
+    'totalOrders',
+    'grossRevenue',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'averageMargin',
+    'itemsSold',
+    'averageTicket',
+    'topCustomer',
+    'topArticle',
+    'topCategory',
+    'topWishlistArticle',
+    'wishlistConversionRate',
+    'incompleteCostRows',
+  ],
+  sales: [
+    'periodLabel',
+    'ordersCount',
+    'itemsSold',
+    'revenue',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'averageMargin',
+    'total',
+  ],
+  profit: [
+    'grossRevenue',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'averageMargin',
+    'incompleteCostRows',
+  ],
+  topArticlesSales: [
+    'articleId',
+    'slug',
+    'title',
+    'categoryName',
+    'brandName',
+    'sizeLabel',
+    'quantitySold',
+    'revenue',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'incompleteCostRows',
+    'totalPerArticle',
+  ],
+  topArticlesProfit: [
+    'articleId',
+    'slug',
+    'title',
+    'categoryName',
+    'brandName',
+    'sizeLabel',
+    'quantitySold',
+    'revenue',
+    'bankTax',
+    'totalCost',
+    'incompleteCostRows',
+    'estimatedProfit',
+  ],
+  topCustomers: [
+    'customerName',
+    'email',
+    'phone',
+    'ordersCount',
+    'itemsCount',
+    'totalSpent',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'totalOrder',
+  ],
+  topCategories: [
+    'categoryName',
+    'quantitySold',
+    'revenue',
+    'bankTax',
+    'totalCost',
+    'estimatedProfit',
+    'total',
+  ],
+};
+
+function collectExportColumns(rows, preferredColumns = null) {
+  if (Array.isArray(preferredColumns) && preferredColumns.length) return preferredColumns;
+
+  const columns = [];
+  const seen = new Set();
+  for (const row of rows || []) {
+    for (const key of Object.keys(row || {})) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+      columns.push(key);
+    }
+  }
+  return columns.length ? columns : ['estado'];
+}
+
+function getExportLabel(key) {
+  return HEADER_LABELS[key] || String(key)
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function normalizeExportValue(key, value) {
+  if (value == null) return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  if (Array.isArray(value)) return value.join(' | ');
+  if (typeof value === 'object') {
+    return value.customerName
+      || value.title
+      || value.categoryName
+      || value.brandName
+      || value.label
+      || '';
+  }
+  if (PERCENT_KEYS.has(key) && typeof value === 'number') {
+    return value / 100;
+  }
+  return value;
+}
+
+function getWeightedMargin(rows) {
+  const totalProfit = rows.reduce((sum, row) => sum + Number(row.estimatedProfit || 0), 0);
+  const totalRevenue = rows.reduce(
+    (sum, row) => sum + Number(row.revenue || row.totalSpent || row.grossRevenue || row.total || 0),
+    0,
+  );
+  return totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+}
+
+function buildTotalsRow(rows, columns) {
+  const totals = {};
+  const firstColumn = columns[0] || 'estado';
+  totals[firstColumn] = 'Totales';
+
+  for (const column of columns.slice(1)) {
+    if (column === 'averageMargin') {
+      totals[column] = getWeightedMargin(rows);
+      continue;
+    }
+
+    if (!TOTALABLE_KEYS.has(column)) {
+      totals[column] = '';
+      continue;
+    }
+
+    totals[column] = rows.reduce((sum, row) => sum + Number(row?.[column] || 0), 0);
+  }
+
+  return totals;
+}
+
+function appendSheet(workbook, name, rows, options = {}) {
+  const safeRows = Array.isArray(rows) && rows.length ? rows : [{ estado: 'Sin datos' }];
+  const columns = collectExportColumns(safeRows, options.columns);
+  const worksheet = workbook.addWorksheet(String(name || 'Hoja').slice(0, 31));
+
+  worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+  worksheet.addRow(columns.map(getExportLabel));
+
+  for (const row of safeRows) {
+    worksheet.addRow(columns.map((column) => normalizeExportValue(column, row?.[column])));
+  }
+
+  if (options.includeTotals !== false && safeRows.length && !safeRows[0].estado) {
+    const totalsRow = buildTotalsRow(safeRows, columns);
+    worksheet.addRow(columns.map((column) => normalizeExportValue(column, totalsRow[column])));
+  }
+
+  worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF08265A' },
+  };
+  worksheet.getRow(1).alignment = { vertical: 'middle' };
+
+  const lastRow = worksheet.getRow(worksheet.rowCount);
+  if (worksheet.rowCount > safeRows.length + 1) {
+    lastRow.font = { bold: true };
+    lastRow.border = { top: { style: 'thin', color: { argb: 'FF08265A' } } };
+    lastRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFF4ED' },
+    };
+  }
+
+  worksheet.columns = columns.map((column) => ({
+    key: column,
+    width: Math.max(12, Math.min(34, getExportLabel(column).length + 4)),
+  }));
+
+  columns.forEach((column, index) => {
+    const excelColumn = worksheet.getColumn(index + 1);
+    if (MONEY_KEYS.has(column)) {
+      excelColumn.numFmt = '"$" #,##0.00;[Red]-"$" #,##0.00';
+      excelColumn.alignment = { horizontal: 'right' };
+    } else if (PERCENT_KEYS.has(column)) {
+      excelColumn.numFmt = '0.00%';
+      excelColumn.alignment = { horizontal: 'right' };
+    } else if (TOTALABLE_KEYS.has(column)) {
+      excelColumn.numFmt = '#,##0';
+      excelColumn.alignment = { horizontal: 'right' };
+    }
+  });
+
+  return worksheet;
 }
 
 export async function exportStatisticsReport(filters = {}, type = 'full') {
   const workbook = createWorkbook();
 
   if (type === 'summary') {
-    appendSheet(workbook, 'Resumen', [await getStatisticsSummary(filters)]);
+    appendSheet(workbook, 'Resumen', [await getStatisticsSummary(filters)], {
+      columns: LIST_COLUMNS.summary,
+      includeTotals: false,
+    });
   } else if (type === 'sales') {
-    appendSheet(workbook, 'Ventas por periodo', await getStatisticsSalesOverTime(filters));
+    appendSheet(workbook, 'Ventas por periodo', await getStatisticsSalesOverTime(filters), {
+      columns: LIST_COLUMNS.sales,
+    });
   } else if (type === 'profits') {
     const profit = await getStatisticsProfit(filters);
-    appendSheet(workbook, 'Ganancias', [profit]);
-    appendSheet(workbook, 'Top ganancia', profit.topProfitableArticles || []);
+    appendSheet(workbook, 'Ganancias', [profit], {
+      columns: LIST_COLUMNS.profit,
+      includeTotals: false,
+    });
+    appendSheet(workbook, 'Top ganancia', profit.topProfitableArticles || [], {
+      columns: LIST_COLUMNS.topArticlesProfit,
+    });
   } else if (type === 'top_articles') {
-    appendSheet(workbook, 'Prendas mas vendidas', await getStatisticsTopArticles(filters, 50));
+    appendSheet(workbook, 'Prendas mas vendidas', await getStatisticsTopArticles(filters, 50), {
+      columns: LIST_COLUMNS.topArticlesSales,
+    });
   } else if (type === 'top_customers') {
-    appendSheet(workbook, 'Top clientes', await getStatisticsTopCustomers(filters, 50));
+    appendSheet(workbook, 'Top clientes', await getStatisticsTopCustomers(filters, 50), {
+      columns: LIST_COLUMNS.topCustomers,
+    });
   } else if (type === 'categories') {
-    appendSheet(workbook, 'Categorías', await getStatisticsTopCategories(filters, 50));
+    appendSheet(workbook, 'Categorías', await getStatisticsTopCategories(filters, 50), {
+      columns: LIST_COLUMNS.topCategories,
+    });
   } else if (type === 'wishlist') {
     const wishlist = await getStatisticsWishlist(filters);
-    appendSheet(workbook, 'Resumen wishlist', [wishlist.summary]);
+    appendSheet(workbook, 'Resumen wishlist', [wishlist.summary], { includeTotals: false });
     appendSheet(workbook, 'Top guardados', wishlist.topArticles);
     appendSheet(workbook, 'Top usuarios', wishlist.topUsers);
     appendSheet(workbook, 'Categorías guardadas', wishlist.topCategories);
@@ -892,8 +1301,8 @@ export async function exportStatisticsReport(filters = {}, type = 'full') {
     appendSheet(workbook, 'Talles demanda', market.sizeDemand);
     appendSheet(workbook, 'Colores', market.colors);
     appendSheet(workbook, 'Materiales', market.materials);
-    appendSheet(workbook, 'Alto interes', market.highInterestLowConversion);
-    appendSheet(workbook, 'Baja rotacion', market.lowRotation);
+    appendSheet(workbook, 'Alto interés', market.highInterestLowConversion);
+    appendSheet(workbook, 'Baja rotación', market.lowRotation);
     appendSheet(workbook, 'Agotados demanda', market.soldOutWithDemand);
   } else {
     const [summary, sales, topArticles, topCustomers, topCategories, profit, wishlist, market] = await Promise.all([
@@ -907,18 +1316,34 @@ export async function exportStatisticsReport(filters = {}, type = 'full') {
       getStatisticsMarketStudy(filters),
     ]);
 
-    appendSheet(workbook, 'Resumen', [summary]);
-    appendSheet(workbook, 'Ventas por periodo', sales);
-    appendSheet(workbook, 'Articulos vendidos', topArticles);
-    appendSheet(workbook, 'Top clientes', topCustomers);
-    appendSheet(workbook, 'Categorías vendidas', topCategories);
-    appendSheet(workbook, 'Ganancias', [profit]);
-    appendSheet(workbook, 'Top ganancia', profit.topProfitableArticles || []);
-    appendSheet(workbook, 'Wishlist resumen', [wishlist.summary]);
-    appendSheet(workbook, 'Wishlist articulos', wishlist.topArticles);
+    appendSheet(workbook, 'Resumen', [summary], {
+      columns: LIST_COLUMNS.summary,
+      includeTotals: false,
+    });
+    appendSheet(workbook, 'Ventas por periodo', sales, {
+      columns: LIST_COLUMNS.sales,
+    });
+    appendSheet(workbook, 'Artículos vendidos', topArticles, {
+      columns: LIST_COLUMNS.topArticlesSales,
+    });
+    appendSheet(workbook, 'Top clientes', topCustomers, {
+      columns: LIST_COLUMNS.topCustomers,
+    });
+    appendSheet(workbook, 'Categorías vendidas', topCategories, {
+      columns: LIST_COLUMNS.topCategories,
+    });
+    appendSheet(workbook, 'Ganancias', [profit], {
+      columns: LIST_COLUMNS.profit,
+      includeTotals: false,
+    });
+    appendSheet(workbook, 'Top ganancia', profit.topProfitableArticles || [], {
+      columns: LIST_COLUMNS.topArticlesProfit,
+    });
+    appendSheet(workbook, 'Wishlist resumen', [wishlist.summary], { includeTotals: false });
+    appendSheet(workbook, 'Wishlist artículos', wishlist.topArticles);
     appendSheet(workbook, 'Wishlist usuarios', wishlist.topUsers);
-    appendSheet(workbook, 'Interes alto', market.highInterestLowConversion);
-    appendSheet(workbook, 'Baja rotacion', market.lowRotation);
+    appendSheet(workbook, 'Interés alto', market.highInterestLowConversion);
+    appendSheet(workbook, 'Baja rotación', market.lowRotation);
     appendSheet(workbook, 'Agotados demanda', market.soldOutWithDemand);
   }
 

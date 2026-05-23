@@ -36,6 +36,14 @@ export const statisticsExportQuerySchema = statisticsFiltersSchema.extend({
   ]).default('full'),
 });
 
+export const statisticsArticleMarginsQuerySchema = z.object({
+  dateFrom: optionalDateString,
+  dateTo: optionalDateString,
+  categoryId: optionalPositiveInt,
+  brandId: optionalPositiveInt,
+  status: optionalEnum(['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED']),
+  q: optionalTrimmedString(150),
+});
 
 export const statisticsTopQuerySchema = statisticsFiltersSchema.extend({
   limit: z.preprocess(

@@ -75,6 +75,18 @@ test('site hero schema accepts tablet/laptop image viewport target', () => {
   assert.equal(parsed.images[0].viewportTarget, 'TABLET_LAPTOP');
 });
 
+test('site hero viewport target migration keeps tablet/laptop enum value', () => {
+  const source = readFileSync(
+    resolve(__dirname, '../../db/migrations/20260523_fix_site_hero_viewport_target_enum.sql'),
+    'utf8',
+  );
+
+  assert.match(source, /MODIFY COLUMN viewport_target ENUM/);
+  assert.match(source, /DESKTOP_TABLET/);
+  assert.match(source, /TABLET_LAPTOP/);
+  assert.match(source, /MOBILE/);
+});
+
 test('site hero schema validates custom height range and display values', () => {
   const basePayload = {
     title: null,

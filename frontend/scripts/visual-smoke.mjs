@@ -6,8 +6,8 @@ import { ensureViteServer, waitForHttp } from './lib/dev-server.mjs';
 
 const OUTPUT_DIR = path.resolve('.artifacts', 'visual-smoke');
 const API_URL = (process.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
-const SMOKE_EMAIL = process.env.ESADAR_SMOKE_EMAIL || 'admin@miamicloset.test';
-const SMOKE_PASSWORD = process.env.ESADAR_SMOKE_PASSWORD || '123456';
+const SMOKE_EMAIL = process.env.ESADAR_SMOKE_EMAIL || 'fefio1313@gmail.com';
+const SMOKE_PASSWORD = process.env.ESADAR_SMOKE_PASSWORD || 'EsadarAdmin2026!';
 const SMOKE_CART_ITEMS = [
   {
     id: null,
