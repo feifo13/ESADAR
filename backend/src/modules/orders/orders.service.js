@@ -31,7 +31,10 @@ import {
 } from "../customers/customer-helpers.js";
 import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
 import { getCollectingSettings } from "../collecting/collecting.service.js";
-import { calculateShippingCost, usesWeightRanges } from "../shipping/shipping-pricing.js";
+import {
+  calculateShippingCost,
+  usesWeightRanges,
+} from "../shipping/shipping-pricing.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -163,7 +166,7 @@ export async function createOrder(input, actor, auditContext) {
       }
       if (article.publicationStatus !== "ACTIVE") {
         throw badRequest(
-          `La prenda ${article.id} no está disponible para comprar.`,
+          `La prenda ${article.title} no está disponible para comprar.`,
         );
       }
       if (Number(article.quantityAvailable) < quantity) {
@@ -280,10 +283,18 @@ export async function createOrder(input, actor, auditContext) {
     }
 
     const packageWeightKg = Number(
-      orderItems.reduce((sum, item) => sum + Number(item.lineWeightKgSnapshot || 0), 0).toFixed(3),
+      orderItems
+        .reduce((sum, item) => sum + Number(item.lineWeightKgSnapshot || 0), 0)
+        .toFixed(3),
     );
-    const shippingQuote = shipping ? calculateShippingCost(shipping, packageWeightKg) : { cost: 0, rate: null };
-    if (shipping && usesWeightRanges(shipping.pricingType) && shippingQuote.cost == null) {
+    const shippingQuote = shipping
+      ? calculateShippingCost(shipping, packageWeightKg)
+      : { cost: 0, rate: null };
+    if (
+      shipping &&
+      usesWeightRanges(shipping.pricingType) &&
+      shippingQuote.cost == null
+    ) {
       throw badRequest(
         `El método de envío seleccionado no tiene una tarifa configurada para ${packageWeightKg.toFixed(3)} kg.`,
       );
@@ -666,34 +677,33 @@ export async function getOrderDetail(id) {
   return getOrderById(id, pool);
 }
 
-
 function normalizeBatchError(error) {
-  return error?.message || 'No se pudo procesar el elemento.';
+  return error?.message || "No se pudo procesar el elemento.";
 }
 
 export async function batchUpdateOrders(input, auditContext) {
   const actionLabels = {
-    APPROVE: 'aprobada',
-    CANCEL: 'cancelada',
-    SHIP: 'enviada',
+    APPROVE: "aprobada",
+    CANCEL: "cancelada",
+    SHIP: "enviada",
   };
   const results = [];
 
   for (const id of input.ids) {
     try {
       let order;
-      if (input.action === 'APPROVE') {
+      if (input.action === "APPROVE") {
         order = await approveOrder(id, auditContext);
-      } else if (input.action === 'CANCEL') {
+      } else if (input.action === "CANCEL") {
         order = await cancelOrder(
           id,
-          input.reason || 'Orden cancelada en lote por super admin.',
+          input.reason || "Orden cancelada en lote por super admin.",
           auditContext,
         );
-      } else if (input.action === 'SHIP') {
+      } else if (input.action === "SHIP") {
         order = await shipOrder(id, auditContext);
       } else {
-        throw badRequest('Acción de lote no permitida para órdenes.');
+        throw badRequest("Acción de lote no permitida para órdenes.");
       }
 
       results.push({
@@ -701,7 +711,7 @@ export async function batchUpdateOrders(input, auditContext) {
         ok: true,
         status: order.orderStatus,
         orderNumber: order.orderNumber,
-        message: `Orden ${actionLabels[input.action] || 'actualizada'}.`,
+        message: `Orden ${actionLabels[input.action] || "actualizada"}.`,
       });
     } catch (error) {
       results.push({
@@ -860,11 +870,14 @@ export async function cancelOrder(id, reason, auditContext) {
       throw badRequest("La orden ya fue actualizada por otro proceso.");
     }
 
-    const consumedOffers = await markUsedOffersConsumedByCancelledOrder(connection, {
-      orderId: id,
-      auditContext,
-      reason: reason || "Orden cancelada; intento de oferta consumido",
-    });
+    const consumedOffers = await markUsedOffersConsumedByCancelledOrder(
+      connection,
+      {
+        orderId: id,
+        auditContext,
+        reason: reason || "Orden cancelada; intento de oferta consumido",
+      },
+    );
 
     await connection.execute(
       `
@@ -985,7 +998,7 @@ export async function updateOrderTrackingCode(id, input, auditContext) {
   return withTransaction(async (connection) => {
     await lockOrderForUpdate(id, connection);
     const before = await getOrderById(id, connection);
-    const trackingCode = String(input.trackingCode || '').trim() || null;
+    const trackingCode = String(input.trackingCode || "").trim() || null;
     const previousTrackingCode = before.trackingCode || null;
 
     if (previousTrackingCode === trackingCode) {
@@ -1006,10 +1019,10 @@ export async function updateOrderTrackingCode(id, input, auditContext) {
     const shippingMethod =
       before.shippingMethodDescription ||
       before.shippingMethodName ||
-      'Sin datos';
+      "Sin datos";
     const trackingReason = trackingCode
-      ? 'Seguimiento actualizado'
-      : 'Seguimiento limpiado';
+      ? "Seguimiento actualizado"
+      : "Seguimiento limpiado";
 
     await connection.execute(
       `
@@ -1045,8 +1058,8 @@ export async function updateOrderTrackingCode(id, input, auditContext) {
       {
         actorUserId: auditContext.actorUserId || null,
         actorLabel: auditContext.actorLabel || null,
-        actionCode: 'ORDER_TRACKING_UPDATED',
-        entityType: 'orders',
+        actionCode: "ORDER_TRACKING_UPDATED",
+        entityType: "orders",
         entityId: id,
         beforeJson: { trackingCode: before.trackingCode || null },
         afterJson: { trackingCode: after.trackingCode || null },
@@ -1485,7 +1498,7 @@ async function getShippingMethod(id, connection) {
   const method = {
     ...rows[0],
     baseCost: Number(rows[0].baseCost || 0),
-    pricingType: rows[0].pricingType || 'FIXED',
+    pricingType: rows[0].pricingType || "FIXED",
     rates: [],
   };
 
@@ -1512,7 +1525,7 @@ async function getShippingMethod(id, connection) {
     minWeightKg: Number(row.minWeightKg || 0),
     maxWeightKg: Number(row.maxWeightKg || 0),
     price: Number(row.price || 0),
-    label: row.label || '',
+    label: row.label || "",
     sortOrder: Number(row.sortOrder || 0),
     isActive: Boolean(row.isActive),
   }));
@@ -1823,8 +1836,10 @@ async function getOrderById(id, connection) {
     discountValue: Number(row.discountValue),
     finalUnitPrice: Number(row.finalUnitPrice),
     lineTotal: Number(row.lineTotal),
-    weightKgSnapshot: row.weightKgSnapshot != null ? Number(row.weightKgSnapshot) : 0,
-    lineWeightKgSnapshot: row.lineWeightKgSnapshot != null ? Number(row.lineWeightKgSnapshot) : 0,
+    weightKgSnapshot:
+      row.weightKgSnapshot != null ? Number(row.weightKgSnapshot) : 0,
+    lineWeightKgSnapshot:
+      row.lineWeightKgSnapshot != null ? Number(row.lineWeightKgSnapshot) : 0,
     purchasePriceItemSnapshot:
       row.purchasePriceItemSnapshot != null
         ? Number(row.purchasePriceItemSnapshot)
@@ -1853,7 +1868,7 @@ async function getOrderById(id, connection) {
   }));
   order.history = historyRows.map((row) => ({
     ...row,
-    eventType: row.eventType || 'STATUS_CHANGE',
+    eventType: row.eventType || "STATUS_CHANGE",
     metadataJson: parseJsonValue(row.metadataJson),
   }));
   order.payments = paymentRows.map((row) => ({
@@ -2068,7 +2083,8 @@ function normalizeOrderListRow(row) {
     subtotal: Number(row.subtotal),
     discountTotal: Number(row.discountTotal),
     shippingCost: Number(row.shippingCost),
-    packageWeightKg: row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
+    packageWeightKg:
+      row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
     createdAt: row.createdAt,
     reservedUntil: row.reservedUntil,
     approvedAt: row.approvedAt,
@@ -2099,7 +2115,8 @@ function normalizeOrderDetailRow(row) {
     shippingMethodId: row.shippingMethodId,
     shippingMethodDescription: row.shippingMethodDescription,
     shippingCost: Number(row.shippingCost),
-    packageWeightKg: row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
+    packageWeightKg:
+      row.packageWeightKg != null ? Number(row.packageWeightKg) : 0,
     subtotal: Number(row.subtotal),
     discountTotal: Number(row.discountTotal),
     total: Number(row.total),
