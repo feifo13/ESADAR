@@ -1,6 +1,7 @@
 import SeoHead from "../components/SeoHead.jsx";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { buildOrganizationJsonLd, toAbsoluteUrl } from "../lib/seo.js";
+import esadarLogo from "../assets/brand/esadar-logotipo.png";
 
 export default function AboutPage() {
   const { site, pagesByRoute } = useSiteSeo();
@@ -23,7 +24,7 @@ export default function AboutPage() {
 
       <section className="section-card page-stack">
         <div className="about-page-heading">
-          <p className="section-kicker">Sobre nosotros</p>
+          <p className="section-kicker"></p>
           <h1>Sobre nosotros...</h1>
         </div>
 
@@ -54,15 +55,43 @@ export default function AboutPage() {
           </p>
 
           <p>Gracias por elegir Esadar y confiar en nuestra selección.</p>
-
-          <p>
-            <strong>ESADAR </strong>
-          </p>
-          <p>
-            <span className="checkbox-row-accent">SELECCIONES POR Y PARA</span>
-            <strong className="checkbox-row-accent">HUMANOS/AS</strong>.
-          </p>
         </div>
+
+        <footer
+          aria-label="Firma Esadar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "clamp(14px, 3vw, 28px)",
+            marginTop: "clamp(28px, 5vw, 52px)",
+          }}
+        >
+          <img
+            src={esadarLogo}
+            alt="Esadar"
+            style={{
+              width: "clamp(84px, 12vw, 128px)",
+              height: "auto",
+              display: "block",
+              flexShrink: 0,
+            }}
+          />
+
+          <span
+            aria-hidden="true"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "3px",
+              background:
+                "linear-gradient(90deg, #41c7cf 0%, #071923 52%, #ff6a00 100%)",
+            }}
+          />
+        </footer>
+        <p>
+          <span className="checkbox-row-accent">Por y para </span>
+          <strong className="checkbox-row-accent">Humanos</strong>.
+        </p>
       </section>
     </div>
   );
