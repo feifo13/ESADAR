@@ -152,14 +152,12 @@ export default function AccountOrderDetailPage() {
               <div className="inline-action-group account-order-hero-actions">
                 {order.hasOffers ? (
                   <span className="pill pill-offer">
-                    {order.offerCount || 1} oferta{Number(order.offerCount || 1) === 1 ? "" : "s"}
+                    {order.offerCount || 1} oferta
+                    {Number(order.offerCount || 1) === 1 ? "" : "s"}
                   </span>
                 ) : null}
                 <OrderStatusBadge status={order.orderStatus} />
-                <Link
-                  to="/cuenta/ordenes"
-                  className="ghost-button linklike"
-                >
+                <Link to="/cuenta/ordenes" className="ghost-button linklike">
                   Volver a mis órdenes
                 </Link>
               </div>
@@ -252,9 +250,9 @@ export default function AccountOrderDetailPage() {
                         <article key={entry.id} className="history-row">
                           <div>
                             <StatusBadge
-                              status="TRACKING_UPDATED"
+                              status="SHIPPED"
                               labels={{
-                                TRACKING_UPDATED:
+                                SHIPPED:
                                   entry.reason || "Seguimiento actualizado",
                               }}
                             />

@@ -45,16 +45,14 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
   const qrCodeUrl = paymentInstructions.qrCodeUrl || "";
   const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
   const isBankTransfer = paymentInstructions.method === "BANK_TRANSFER";
-  const transferReasonText =
-    isBankTransfer && orderLabel
-      ? `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`
-      : "";
+  const shouldShowTransferReason = Boolean(isBankTransfer && orderLabel);
+
   if (
     !fields.length &&
     !hasInstructions &&
     !checkoutUrl &&
     !qrCodeUrl &&
-    !transferReasonText
+    !shouldShowTransferReason
   )
     return "";
 
@@ -72,8 +70,15 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
   const instructionsHtml = hasInstructions
     ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(paymentInstructions.instructions).replace(/\n/g, "<br />")}</p>`
     : "";
-  const transferReasonHtml = transferReasonText
-    ? `<p style="margin:14px 0 0; padding:12px 14px; background:#fff4eb; border:1px solid rgba(236,103,43,0.36); color:#ec672b; font-size:14px; line-height:1.5; font-weight:700;">${escapeHtml(transferReasonText)}</p>`
+
+  const transferReasonHtml = shouldShowTransferReason
+    ? `
+      <div style="margin:14px 0 0; padding:12px 14px; background:#fff4eb; border:1px solid rgba(236,103,43,0.36); color:#102b34; font-size:14px; line-height:1.5; font-weight:700;">
+        <div style="margin:0; color:#102b34;">Importante</div>
+        <div style="margin:0; color:#102b34;">En el motivo/concepto de la transferencia escribí tu número de orden:</div>
+        <div style="margin:4px 0 0; color:#ec672b;">${escapeHtml(orderLabel)}</div>
+      </div>
+    `
     : "";
 
   const mercadoPagoButtonHtml =
@@ -156,7 +161,9 @@ function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
   }
   if (paymentInstructions.method === "BANK_TRANSFER" && orderLabel) {
     lines.push(
-      `Importante: en el motivo/concepto de la transferencia escribí tu número de orden: ${orderLabel}.`,
+      "Importante",
+      "En el motivo/concepto de la transferencia escribí tu número de orden:",
+      String(orderLabel),
     );
   }
   return lines;

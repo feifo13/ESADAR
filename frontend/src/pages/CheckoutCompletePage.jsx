@@ -73,7 +73,7 @@ export default function CheckoutCompletePage() {
     ? "Transferencia Prex"
     : "Transferencia bancaria";
   const transferReference = completedOrder?.orderNumber
-    ? `ESADAR ${completedOrder.orderNumber}`
+    ? `${completedOrder.orderNumber}`
     : "ESADAR";
 
   useEffect(() => {
@@ -126,15 +126,17 @@ export default function CheckoutCompletePage() {
           cobro configurados en ESADAR. Estos datos también serán enviados por
           correo para que los tengas a mano.
         </p>
-        <p className="checkout-complete-copy payment-reference-note">
+        <p className="checkout-complete-copy payment-reference-note offer-sidebar-accent">
           Importante
         </p>
-        <p className="checkout-complete-copy payment-reference-note">
-          En el motivo/concepto de la transferencia escribí tu número de
-          orden:{" "}
+        <p className="checkout-complete-copy">
+          <strong>
+            En el motivo/concepto de la transferencia escribí tu número de
+            orden:{" "}
+          </strong>
         </p>
         <p className="checkout-complete-copy payment-reference-note">
-          {completedOrder.orderNumber}.
+          {completedOrder.orderNumber}
         </p>
 
         <div className="checkout-complete-payment-details">
