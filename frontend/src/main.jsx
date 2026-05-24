@@ -10,11 +10,17 @@ import { CartProvider } from './contexts/CartContext.jsx';
 import { LookupsProvider } from './contexts/LookupsContext.jsx';
 import { SiteSeoProvider } from './contexts/SiteSeoContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
+import {
+  applyMobileDebugClasses,
+  syncMobileDebugFlagsFromUrl,
+} from './lib/mobileDebugFlags.js';
 import './index.css';
 import './styles/rails.css';
 import './styles/feedback.css';
 
 if (typeof window !== 'undefined') {
+  applyMobileDebugClasses(document.documentElement, syncMobileDebugFlagsFromUrl());
+
   if ('scrollRestoration' in window.history) {
     window.history.scrollRestoration = 'manual';
   }

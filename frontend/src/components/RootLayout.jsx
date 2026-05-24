@@ -3,6 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Header from "./Header.jsx";
 import AppBreadcrumbs from "./AppBreadcrumbs.jsx";
 import ScrollChrome from "./ScrollChrome.jsx";
+import Footer from "./Footer.jsx";
 import FooterScrollScene from "./FooterScrollScene.jsx";
 import SeoHead from "./SeoHead.jsx";
 import ResponsiveTableLabels from "./ResponsiveTableLabels.jsx";
@@ -14,6 +15,11 @@ import AppLoader from "./AppLoader.jsx";
 import { trackPublicPageVisit } from "../lib/pageVisits.js";
 import { cachedApiFetch, listenPublicCacheInvalidation } from "../lib/api.js";
 import { DEFAULT_SITE_TICKER, normalizeSiteTicker } from "../lib/siteTicker.js";
+import {
+  applyMobileDebugClasses,
+  getMobileDebugFlags,
+  syncMobileDebugFlagsFromUrl,
+} from "../lib/mobileDebugFlags.js";
 
 const INTRO_INITIAL_VISIBLE_MS = 3300;
 const INTRO_INITIAL_FADE_MS = 650;
@@ -21,6 +27,15 @@ const INTRO_REPLAY_VISIBLE_MS = 1700;
 const INTRO_REPLAY_FADE_MS = 520;
 const CART_REPLAY_VISIBLE_MS = 650;
 const CART_REPLAY_FADE_MS = 350;
+const MOBILE_DEBUG_BADGE_LABELS = [
+  ["disableFooterRevealMobile", "footer off"],
+  ["disableVisualViewport", "visualViewport off"],
+  ["disableFooterCurtainCover", "curtain off"],
+  ["disableCardContentVisibility", "content-visibility off"],
+  ["pauseTickerMobile", "ticker paused"],
+  ["unifyMobileChrome", "chrome unified"],
+  ["disableTickerFixedMobile", "ticker relative"],
+];
 
 function isCompactViewport() {
   if (typeof window === "undefined") return false;
@@ -28,6 +43,51 @@ function isCompactViewport() {
     return window.matchMedia("(max-width: 960px)").matches;
   }
   return window.innerWidth <= 960;
+}
+
+function useCompactViewport() {
+  const [isCompact, setIsCompact] = useState(() => isCompactViewport());
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia?.("(max-width: 960px)");
+    const syncCompactViewport = () => setIsCompact(isCompactViewport());
+
+    syncCompactViewport();
+    window.addEventListener("resize", syncCompactViewport);
+    if (mediaQuery?.addEventListener) {
+      mediaQuery.addEventListener("change", syncCompactViewport);
+    } else if (mediaQuery?.addListener) {
+      mediaQuery.addListener(syncCompactViewport);
+    }
+
+    return () => {
+      window.removeEventListener("resize", syncCompactViewport);
+      if (mediaQuery?.removeEventListener) {
+        mediaQuery.removeEventListener("change", syncCompactViewport);
+      } else if (mediaQuery?.removeListener) {
+        mediaQuery.removeListener(syncCompactViewport);
+      }
+    };
+  }, []);
+
+  return isCompact;
+}
+
+function MobileDebugBadge({ flags }) {
+  if (!flags.enabled || flags.hideDebugBadge) return null;
+
+  const activeLabels = MOBILE_DEBUG_BADGE_LABELS.filter(
+    ([flagName]) => flags[flagName],
+  ).map(([, label]) => label);
+
+  return (
+    <aside className="mobile-debug-badge" aria-label="ESADAR mobile debug">
+      <strong>ESADAR DEBUG MOBILE</strong>
+      <span>{activeLabels.length ? activeLabels.join(" | ") : "baseline"}</span>
+    </aside>
+  );
 }
 
 function setWindowScrollTop(top) {
@@ -97,6 +157,10 @@ function getPublicPageVisitForPath(pathname) {
 export default function RootLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
+  const isCompact = useCompactViewport();
+  const [mobileDebugFlags, setMobileDebugFlags] = useState(() =>
+    getMobileDebugFlags(),
+  );
   const [heroLogoVisible, setHeroLogoVisible] = useState(false);
   const [introStage, setIntroStage] = useState("visible");
   const [introKey, setIntroKey] = useState(0);
@@ -126,9 +190,22 @@ export default function RootLayout() {
     "/guia-de-compra",
     "/terminos-y-condiciones",
   ].includes(location.pathname);
-  const showBreadcrumbs = true;
   const shouldNoIndex =
     isCheckoutView || isAdminView || isAuthView || isAccountView;
+  const disableFooterRevealForMobile =
+    mobileDebugFlags.disableFooterRevealMobile && isCompact;
+  const hasFooterReveal =
+    !shouldNoIndex && !isFooterHiddenView && !disableFooterRevealForMobile;
+  const showBreadcrumbs = true;
+
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const nextFlags = syncMobileDebugFlagsFromUrl();
+    applyMobileDebugClasses(document.documentElement, nextFlags);
+    setMobileDebugFlags(nextFlags);
+    return undefined;
+  }, [location.search]);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined" || !("scrollRestoration" in window.history)) {
@@ -170,7 +247,9 @@ export default function RootLayout() {
     const scheduledFrames = [];
     const scheduledTimers = [];
 
-    guardFooterRevealDuringNavigation(guardMs);
+    if (hasFooterReveal) {
+      guardFooterRevealDuringNavigation(guardMs);
+    }
 
     if (!shouldPreserveScroll && !shouldRouteControlScroll) {
       setWindowScrollTop(restoreTop);
@@ -207,7 +286,7 @@ export default function RootLayout() {
           : window.scrollY || document.documentElement.scrollTop || 0,
       );
     };
-  }, [location.key, location.state, navigationType]);
+  }, [hasFooterReveal, location.key, location.state, navigationType]);
 
   useEffect(() => {
     const wantsReplay = Boolean(location.state?.replayIntro);
@@ -313,9 +392,11 @@ export default function RootLayout() {
 
   const showIntro = introStage !== "hidden";
   const contentReady = contentReadyKey === location.key;
+  const showStaticDebugFooter =
+    disableFooterRevealForMobile && !shouldNoIndex && !isFooterHiddenView && contentReady && !showIntro;
   const appShellClassName = [
     "app-shell",
-    !shouldNoIndex && !isFooterHiddenView ? "app-shell--has-footer-reveal" : "",
+    hasFooterReveal ? "app-shell--has-footer-reveal" : "",
     showIntro ? "app-shell--intro-active" : "",
     contentReady && !showIntro ? "app-shell--content-ready" : "app-shell--route-loading",
     isCheckoutView ? "app-shell--checkout-view" : "",
@@ -362,10 +443,15 @@ export default function RootLayout() {
           </div>
         </main>
       </MobileMenuProvider>
-      {!shouldNoIndex && !isFooterHiddenView && contentReady && !showIntro ? (
-        <FooterScrollScene />
+      {hasFooterReveal && contentReady && !showIntro ? (
+        <FooterScrollScene
+          disableVisualViewport={mobileDebugFlags.disableVisualViewport}
+          disableFooterCurtainCover={mobileDebugFlags.disableFooterCurtainCover}
+        />
       ) : null}
+      {showStaticDebugFooter ? <Footer /> : null}
       <ScrollChrome />
+      <MobileDebugBadge flags={mobileDebugFlags} />
 
       {showIntro ? (
         <div

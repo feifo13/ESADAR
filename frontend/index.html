@@ -55,6 +55,78 @@
         window.scrollTo(0, 0);
       } catch (_) {}
     </script>
+    <script id="esadar-mobile-debug-classes">
+      try {
+        var mobileDebugClassMap = {
+          enabled: "esadar-debug-mobile",
+          disableFooterRevealMobile: "esadar-debug-disable-footer-reveal-mobile",
+          disableVisualViewport: "esadar-debug-disable-visual-viewport",
+          disableFooterCurtainCover: "esadar-debug-disable-footer-curtain-cover",
+          disableCardContentVisibility: "esadar-debug-disable-card-content-visibility",
+          pauseTickerMobile: "esadar-debug-pause-ticker-mobile",
+          unifyMobileChrome: "esadar-debug-unify-mobile-chrome",
+          disableTickerFixedMobile: "esadar-debug-disable-ticker-fixed-mobile",
+          hideDebugBadge: "esadar-debug-hide-badge"
+        };
+        var mobileDebugFlagNames = [
+          "disableFooterRevealMobile",
+          "disableVisualViewport",
+          "disableFooterCurtainCover",
+          "disableCardContentVisibility",
+          "pauseTickerMobile",
+          "unifyMobileChrome",
+          "disableTickerFixedMobile",
+          "hideDebugBadge"
+        ];
+        var mobileDebugParams = new URLSearchParams(window.location.search);
+        var mobileDebugTruthy = function (value) {
+          return value === "" || value === "1" || value === "true" || value === "yes";
+        };
+        var mobileDebugFlags = {};
+        var mobileDebugEnabled = false;
+
+        if (mobileDebugParams.has("esadarDebugMobileReset")) {
+          window.localStorage.removeItem("esadarDebugMobileFlags");
+          window.localStorage.removeItem("esadarDebugMobile");
+        } else if (
+          mobileDebugParams.has("esadarDebugMobile") &&
+          mobileDebugTruthy(mobileDebugParams.get("esadarDebugMobile"))
+        ) {
+          mobileDebugEnabled = true;
+          mobileDebugFlagNames.forEach(function (flagName) {
+            mobileDebugFlags[flagName] =
+              mobileDebugParams.has(flagName) &&
+              mobileDebugTruthy(mobileDebugParams.get(flagName));
+          });
+        } else if (mobileDebugParams.has("esadarDebugMobile")) {
+          window.localStorage.removeItem("esadarDebugMobileFlags");
+          window.localStorage.removeItem("esadarDebugMobile");
+        } else if (window.localStorage.getItem("esadarDebugMobile") === "1") {
+          mobileDebugEnabled = true;
+          try {
+            mobileDebugFlags = JSON.parse(
+              window.localStorage.getItem("esadarDebugMobileFlags") || "{}"
+            ) || {};
+          } catch (_) {
+            mobileDebugFlags = {};
+          }
+          mobileDebugFlagNames.forEach(function (flagName) {
+            if (mobileDebugParams.has(flagName)) {
+              mobileDebugFlags[flagName] = mobileDebugTruthy(mobileDebugParams.get(flagName));
+            }
+          });
+        }
+
+        if (mobileDebugEnabled) {
+          document.documentElement.classList.add(mobileDebugClassMap.enabled);
+          mobileDebugFlagNames.forEach(function (flagName) {
+            if (mobileDebugFlags[flagName] === true) {
+              document.documentElement.classList.add(mobileDebugClassMap[flagName]);
+            }
+          });
+        }
+      } catch (_) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

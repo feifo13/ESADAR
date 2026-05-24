@@ -17036,3 +17036,160 @@ dialog,
     scroll-margin-top: var(--site-chrome-scroll-margin);
   }
 }
+
+/* === ESADAR mobile iOS scroll jitter diagnostics === */
+.mobile-debug-badge {
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 2400;
+  display: grid;
+  gap: 2px;
+  max-width: min(260px, calc(100vw - 18px));
+  padding: 7px 9px;
+  border: 1px solid rgba(16, 43, 52, 0.22);
+  background: rgba(255, 255, 255, 0.94);
+  color: #102b34;
+  box-shadow: 0 10px 28px rgba(6, 19, 29, 0.16);
+  font-family: system-ui, sans-serif;
+  font-size: 0.64rem;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.mobile-debug-badge strong {
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.mobile-debug-badge span {
+  color: rgba(16, 43, 52, 0.78);
+}
+
+html.esadar-debug-hide-badge .mobile-debug-badge {
+  display: none !important;
+}
+
+@media (max-width: 960px) {
+  html.esadar-debug-disable-footer-reveal-mobile
+    .app-shell--has-footer-reveal
+    .page-shell {
+    min-height: auto !important;
+    margin-bottom: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html.esadar-debug-disable-footer-reveal-mobile .footer-scroll-scene {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  html.esadar-debug-disable-footer-curtain-cover
+    .app-shell--footer-curtain-cover::before {
+    content: none !important;
+    display: none !important;
+    opacity: 0 !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  html.esadar-debug-disable-card-content-visibility .article-card,
+  html.esadar-debug-disable-card-content-visibility .featured-motion-card,
+  html.esadar-debug-disable-card-content-visibility .summary-item-card {
+    content-visibility: visible !important;
+    contain-intrinsic-size: auto !important;
+    contain: none !important;
+  }
+
+  html.esadar-debug-pause-ticker-mobile
+    .page-offer-ticker
+    .hero-offer-ticker__track {
+    animation: none !important;
+    transform: none !important;
+    translate: none !important;
+    will-change: auto !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome:not(
+      .esadar-debug-disable-ticker-fixed-mobile
+    )
+    .app-shell--offer-ticker-sticky
+    > .site-chrome {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 1200 !important;
+    display: block !important;
+    height: calc(
+      var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px)
+    ) !important;
+    background: #ffffff !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    contain: layout paint style !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome:not(
+      .esadar-debug-disable-ticker-fixed-mobile
+    )
+    .app-shell--offer-ticker-sticky
+    > .site-chrome
+    .site-header {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    z-index: 2 !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome:not(
+      .esadar-debug-disable-ticker-fixed-mobile
+    )
+    .app-shell--offer-ticker-sticky
+    > .site-chrome
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: 1 !important;
+    margin-top: 0 !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome:not(
+      .esadar-debug-disable-ticker-fixed-mobile
+    )
+    .app-shell--offer-ticker-sticky
+    > .site-chrome
+    + .page-shell {
+    margin-top: calc(
+      var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px
+    ) !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile .site-chrome {
+    position: static !important;
+    z-index: auto !important;
+    display: flow-root !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: 1 !important;
+    margin-top: calc(var(--header-height, 74px) - 1px) !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile
+    .app-shell--offer-ticker-sticky
+    > .site-chrome
+    + .page-shell {
+    margin-top: 0 !important;
+  }
+}

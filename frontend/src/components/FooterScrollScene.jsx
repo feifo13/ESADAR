@@ -52,7 +52,10 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
-export default function FooterScrollScene() {
+export default function FooterScrollScene({
+  disableVisualViewport = false,
+  disableFooterCurtainCover = false,
+} = {}) {
   const sceneRef = useRef(null);
   const suppressRevealUntilRef = useRef(0);
   const suppressRevealUntilManualRef = useRef(false);
@@ -231,7 +234,7 @@ export default function FooterScrollScene() {
       );
       appShell.classList.toggle(
         "app-shell--footer-curtain-cover",
-        headerCoverProgress > 0.001,
+        !disableFooterCurtainCover && headerCoverProgress > 0.001,
       );
       const compactEndThreshold = Math.max(24, layoutViewportHeight * 0.04);
       const isDeepFooterReveal = isCompactViewport
@@ -318,8 +321,10 @@ export default function FooterScrollScene() {
     window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
-    window.visualViewport?.addEventListener("resize", scheduleUpdate);
-    window.visualViewport?.addEventListener("scroll", scheduleUpdate);
+    if (!disableVisualViewport) {
+      window.visualViewport?.addEventListener("resize", scheduleUpdate);
+      window.visualViewport?.addEventListener("scroll", scheduleUpdate);
+    }
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
@@ -334,8 +339,10 @@ export default function FooterScrollScene() {
       window.removeEventListener("keydown", handleManualScrollIntent);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
-      window.visualViewport?.removeEventListener("resize", scheduleUpdate);
-      window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
+      if (!disableVisualViewport) {
+        window.visualViewport?.removeEventListener("resize", scheduleUpdate);
+        window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
+      }
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.style.removeProperty("--footer-header-cover-progress");
@@ -347,7 +354,12 @@ export default function FooterScrollScene() {
         "app-shell--footer-reveal-suppressed",
       );
     };
-  }, [prefersReducedMotion, location.key]);
+  }, [
+    disableFooterCurtainCover,
+    disableVisualViewport,
+    prefersReducedMotion,
+    location.key,
+  ]);
 
   return (
     <footer
