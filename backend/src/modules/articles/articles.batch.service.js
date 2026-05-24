@@ -15,6 +15,7 @@ import {
   updateArticle,
 } from './articles.service.js';
 import { articleCreateSchema } from './articles.schemas.js';
+import { getArticlePriceValidationIssue } from './article-pricing-calculator.js';
 
 const SIMPLE_TEMPLATE_COLUMNS = [
   'title',
@@ -355,6 +356,11 @@ function validateImportRow(row, referenceData) {
 
   if (row.salePrice == null || row.salePrice === '' || Number(row.salePrice) <= 0) {
     errors.push('salePrice / precio es obligatorio y debe ser mayor a 0');
+  }
+
+  const priceIssue = getArticlePriceValidationIssue(row);
+  if (priceIssue) {
+    errors.push(priceIssue.message);
   }
 
   try {

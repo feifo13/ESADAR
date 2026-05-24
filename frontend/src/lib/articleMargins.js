@@ -28,20 +28,80 @@ export function getEffectiveSalePrice({
   return roundMoney(basePrice);
 }
 
-export function calculateBankTax(costItem, costUsaShipping) {
-  return roundMoney((asNumber(costItem) + asNumber(costUsaShipping)) * BANK_TAX_RATE);
+export function calculateBankTaxBase({
+  purchasePriceItem,
+  purchasePriceShipping,
+} = {}) {
+  return roundMoney(asNumber(purchasePriceItem) + asNumber(purchasePriceShipping));
+}
+
+export function calculateBankTax(articleOrCostItem = {}, costUsaShipping = 0) {
+  if (typeof articleOrCostItem === "object" && articleOrCostItem !== null) {
+    return roundMoney(calculateBankTaxBase(articleOrCostItem) * BANK_TAX_RATE);
+  }
+
+  return roundMoney(
+    (asNumber(articleOrCostItem) + asNumber(costUsaShipping)) * BANK_TAX_RATE,
+  );
+}
+
+export function calculateMinimumArticlePrice(article = {}) {
+  return roundMoney(
+    calculateBankTaxBase(article) +
+      calculateBankTax(article) +
+      asNumber(article.purchasePriceCourier),
+  );
+}
+
+export function getArticlePriceValidationIssue(article = {}) {
+  const salePrice = roundMoney(article.salePrice);
+  const effectiveSalePrice = getEffectiveSalePrice(article);
+  const minimumArticlePrice = calculateMinimumArticlePrice(article);
+
+  if (salePrice < minimumArticlePrice) {
+    return {
+      reason: "salePrice",
+      target: "article-sale-price",
+      message: `El precio de venta no puede ser menor al costo total mínimo del artículo (${formatMinimumPrice(minimumArticlePrice)}).`,
+      minimumArticlePrice,
+      salePrice,
+      effectiveSalePrice,
+    };
+  }
+
+  if (effectiveSalePrice < minimumArticlePrice) {
+    return {
+      reason: "discount",
+      target: "article-discount-value",
+      message: `El precio final con descuento no puede quedar por debajo del costo total mínimo del artículo (${formatMinimumPrice(minimumArticlePrice)}).`,
+      minimumArticlePrice,
+      salePrice,
+      effectiveSalePrice,
+    };
+  }
+
+  return null;
+}
+
+function formatMinimumPrice(value) {
+  return `$ ${new Intl.NumberFormat("es-UY", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(asNumber(value))}`;
 }
 
 export function calculateArticleMarginPreview(article = {}) {
   const purchasePriceItem = asNumber(article.purchasePriceItem);
   const purchasePriceShipping = asNumber(article.purchasePriceShipping);
   const purchasePriceCourier = asNumber(article.purchasePriceCourier);
+  const salePrice = asNumber(article.salePrice);
+  const bankTaxBase = calculateBankTaxBase(article);
   const totalPurchasePrice = roundMoney(
     purchasePriceItem + purchasePriceShipping + purchasePriceCourier,
   );
   const effectiveSalePrice = getEffectiveSalePrice(article);
-  const bankTax = calculateBankTax(purchasePriceItem, purchasePriceShipping);
-  const totalCost = roundMoney(totalPurchasePrice + bankTax);
+  const bankTax = calculateBankTax(article);
+  const totalCost = calculateMinimumArticlePrice(article);
   const estimatedProfit = roundMoney(effectiveSalePrice - totalCost);
   const estimatedMargin = effectiveSalePrice > 0
     ? Number(((estimatedProfit / effectiveSalePrice) * 100).toFixed(2))
@@ -51,9 +111,12 @@ export function calculateArticleMarginPreview(article = {}) {
     purchasePriceItem,
     purchasePriceShipping,
     purchasePriceCourier,
+    salePrice,
+    bankTaxBase,
     bankTax,
     totalPurchasePrice,
     totalCost,
+    minimumArticlePrice: totalCost,
     totalPerArticle: totalCost,
     effectiveSalePrice,
     estimatedProfit,

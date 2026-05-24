@@ -998,7 +998,8 @@ export async function updateOrderTrackingCode(id, input, auditContext) {
   return withTransaction(async (connection) => {
     await lockOrderForUpdate(id, connection);
     const before = await getOrderById(id, connection);
-    const trackingCode = String(input.trackingCode || "").trim() || null;
+    const trackingCode =
+      String(input.trackingCode || "").trim().replace(/\s+/g, " ") || null;
     const previousTrackingCode = before.trackingCode || null;
 
     if (previousTrackingCode === trackingCode) {

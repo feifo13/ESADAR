@@ -14,6 +14,7 @@ import {
   buildWebsiteJsonLd,
   toAbsoluteUrl,
 } from "../lib/seo.js";
+import { scrollElementIntoViewWithSiteChromeOffset } from "../lib/siteChromeOffset.js";
 import ArticleCard from "../components/ArticleCard.jsx";
 import ArticleFilters from "../components/ArticleFilters.jsx";
 import FeaturedMotionCards from "../components/FeaturedMotionCards.jsx";
@@ -610,19 +611,12 @@ export default function HomePage() {
       suppressFooterRevealForCatalogScroll();
     }
 
-    const header = document.querySelector(".site-header");
-    const headerHeight = Number(header?.offsetHeight || 0);
-    const fallbackOffset = window.matchMedia("(max-width: 780px)").matches
-      ? 76
-      : 96;
-    const offset = headerHeight > 0 ? headerHeight + 16 : fallbackOffset;
-    const targetTop = Math.max(
-      0,
-      section.getBoundingClientRect().top + window.scrollY - offset,
-    );
-
-    window.scrollTo({ top: targetTop, behavior });
-    section.focus({ preventScroll: true });
+    scrollElementIntoViewWithSiteChromeOffset(section, {
+      behavior,
+      includeTicker: true,
+      extra: window.matchMedia("(max-width: 960px)").matches ? 18 : 16,
+      focus: true,
+    });
   }
 
   function scheduleCatalogScroll(options = {}) {

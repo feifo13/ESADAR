@@ -18,6 +18,7 @@ import {
 } from '../inventory/inventory.service.js';
 import { deriveStockStatus } from '../inventory/inventory.constants.js';
 import { buildImportedImageRecord, deleteArticleImageFiles, processUploadedArticleImage } from './article-image-processing.js';
+import { getArticlePriceValidationIssue } from './article-pricing-calculator.js';
 import { enrichArticleSeo } from './articles.seo.js';
 
 const publicBaseSelect = `
@@ -542,7 +543,7 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
 
   const status = resolveWritableArticleStatus(input.status || input.publicationStatus || 'ACTIVE');
 
-  return {
+  const payload = {
     internalCode,
     slug,
     title,
@@ -581,6 +582,16 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     originNotes: input.originNotes || null,
     isUpdate,
   };
+
+  const priceIssue = getArticlePriceValidationIssue(payload);
+  if (priceIssue) {
+    throw badRequest(priceIssue.message, {
+      code: 'ARTICLE_PRICE_BELOW_COST',
+      ...priceIssue,
+    });
+  }
+
+  return payload;
 }
 
 async function getArticleRows(whereClause, params = [], connection = pool) {

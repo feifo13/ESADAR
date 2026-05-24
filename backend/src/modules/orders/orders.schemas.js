@@ -56,7 +56,7 @@ export const createOrderPaymentSchema = z.object({
 
 export const orderTrackingUpdateSchema = z.object({
   trackingCode: z.preprocess(
-    (value) => String(value ?? '').trim(),
+    (value) => String(value ?? '').trim().replace(/\s+/g, ' '),
     z.string().max(120),
   ),
 });

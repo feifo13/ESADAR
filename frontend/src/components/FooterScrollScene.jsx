@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
 import { ESADAR_SOCIAL_LINKS, handleMobileSocialLink } from "../lib/socialLinks.js";
+import { getSiteChromeOffset } from "../lib/siteChromeOffset.js";
 
 
 function FacebookIcon() {
@@ -160,8 +161,10 @@ export default function FooterScrollScene() {
       const isCompactViewport =
         window.matchMedia?.("(max-width: 960px)")?.matches ||
         window.innerWidth <= 960;
-      const header = document.querySelector(".site-header");
-      const headerHeight = Math.max(header?.offsetHeight || 0, 74);
+      const headerHeight = Math.max(
+        getSiteChromeOffset({ includeTicker: true, extra: 0 }),
+        74,
+      );
       const scrollTop = Math.max(
         window.scrollY || 0,
         scrollingElement?.scrollTop || 0,

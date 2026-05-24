@@ -22,8 +22,13 @@ test('account profile schema strips email changes from user profile updates', ()
 
 test('order tracking schema trims and bounds tracking codes', () => {
   assert.deepEqual(
-    orderTrackingUpdateSchema.parse({ trackingCode: '  UY123456  ' }),
-    { trackingCode: 'UY123456' },
+    orderTrackingUpdateSchema.parse({ trackingCode: '  UY   123456  ' }),
+    { trackingCode: 'UY 123456' },
+  );
+
+  assert.deepEqual(
+    orderTrackingUpdateSchema.parse({ trackingCode: null }),
+    { trackingCode: '' },
   );
 
   assert.throws(

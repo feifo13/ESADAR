@@ -120,6 +120,8 @@ export default function RootLayout() {
     location.pathname.startsWith("/articles/");
   const showOfferTicker =
     Boolean(offerTickerConfig?.isEnabled) && (isHome || isAccountView || isPublicArticleView);
+  const offerTicker = offerTickerConfig || DEFAULT_SITE_TICKER;
+  const showStickyOfferTicker = showOfferTicker && Boolean(offerTicker.isSticky);
   const isFooterHiddenView = [
     "/guia-de-compra",
     "/terminos-y-condiciones",
@@ -319,6 +321,8 @@ export default function RootLayout() {
     isCheckoutView ? "app-shell--checkout-view" : "",
     isAdminView ? "app-shell--admin-view" : "",
     isAccountView ? "app-shell--account-view" : "",
+    showOfferTicker ? "app-shell--has-offer-ticker" : "",
+    showStickyOfferTicker ? "app-shell--offer-ticker-sticky" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -334,11 +338,21 @@ export default function RootLayout() {
         />
       ) : null}
       <MobileMenuProvider>
-        <Header hideBrand={isHome && heroLogoVisible} />
+        <div
+          className={[
+            "site-chrome",
+            showOfferTicker ? "site-chrome--has-ticker" : "",
+            showStickyOfferTicker ? "site-chrome--ticker-sticky" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <Header hideBrand={isHome && heroLogoVisible} />
+          {showOfferTicker ? (
+            <OfferTicker className="page-offer-ticker" config={offerTicker} />
+          ) : null}
+        </div>
         <AppSnackbar />
-        {showOfferTicker ? (
-          <OfferTicker className="page-offer-ticker" config={offerTickerConfig || DEFAULT_SITE_TICKER} />
-        ) : null}
         <main className={`page-shell${isHeroView ? " page-shell--hero" : ""}`}>
           {showBreadcrumbs ? <AppBreadcrumbs labelOverrides={breadcrumbLabelOverrides} /> : null}
           <div className="page-transition-shell">

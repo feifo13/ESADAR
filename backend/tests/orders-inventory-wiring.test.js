@@ -26,6 +26,8 @@ test('orders service records tracking updates as history events only when change
   );
 
   assert.match(source, /previousTrackingCode === trackingCode/);
+  assert.match(source, /UPDATE orders[\s\S]*tracking_code = \?/);
+  assert.doesNotMatch(source, /INSERT INTO order_tracking/i);
   assert.match(source, /TRACKING_UPDATED/);
   assert.match(source, /metadata_json/);
   assert.match(source, /Seguimiento actualizado/);

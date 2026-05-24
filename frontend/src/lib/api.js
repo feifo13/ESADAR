@@ -22,6 +22,9 @@ function getApiErrorMessage(payload) {
     });
 
     if (firstKey) {
+      const detail = fieldErrors[firstKey];
+      if (Array.isArray(detail) && detail[0]) return String(detail[0]);
+      if (typeof detail === 'string' && detail) return detail;
       return 'Revisa los campos requeridos antes de continuar.';
     }
   }

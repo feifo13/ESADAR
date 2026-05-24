@@ -1,3 +1,5 @@
+import { scrollElementIntoViewWithSiteChromeOffset } from './siteChromeOffset.js';
+
 export function normalizeEmail(value) {
   return String(value || '').trim();
 }
@@ -121,9 +123,13 @@ export function focusValidationTarget(target, root) {
   if (!focusableElement) return false;
 
   try {
-    focusableElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    scrollElementIntoViewWithSiteChromeOffset(focusableElement, {
+      behavior: 'smooth',
+      includeTicker: true,
+      extra: 22,
+    });
   } catch (_error) {
-    focusableElement.scrollIntoView?.();
+    focusableElement.scrollIntoView?.({ behavior: 'smooth', block: 'center', inline: 'nearest' });
   }
 
   window.setTimeout(() => {

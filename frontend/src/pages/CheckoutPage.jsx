@@ -25,6 +25,7 @@ import {
   getRequiredValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
+import { scrollElementIntoViewWithSiteChromeOffset } from "../lib/siteChromeOffset.js";
 
 const STORAGE_KEY = "esadar-checkout-draft";
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
@@ -535,15 +536,11 @@ export default function CheckoutPage() {
     const target = checkoutShellRef.current || checkoutStepContentRef.current;
     if (!target) return;
 
-    const header = document.querySelector(".site-header");
-    const headerHeight = Number(header?.offsetHeight || 0);
-    const offset = headerHeight > 0 ? headerHeight + 14 : 82;
-    const targetTop = Math.max(
-      0,
-      target.getBoundingClientRect().top + window.scrollY - offset,
-    );
-
-    window.scrollTo({ top: targetTop, behavior });
+    scrollElementIntoViewWithSiteChromeOffset(target, {
+      behavior,
+      includeTicker: true,
+      extra: 14,
+    });
     checkoutStepContentRef.current?.focus?.({ preventScroll: true });
   }
 

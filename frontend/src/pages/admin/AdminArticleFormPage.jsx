@@ -11,9 +11,13 @@ import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useSiteSeo } from "../../contexts/SiteSeoContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { getSiteUrl, sanitizePublicUrl } from "../../lib/seo.js";
-import { calculateArticleMarginPreview } from "../../lib/articleMargins.js";
+import {
+  calculateArticleMarginPreview,
+  getArticlePriceValidationIssue,
+} from "../../lib/articleMargins.js";
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
+import { scrollElementIntoViewWithSiteChromeOffset } from "../../lib/siteChromeOffset.js";
 import AppLoader from "../../components/AppLoader.jsx";
 
 const FORM_STEPS = [
@@ -462,6 +466,17 @@ export default function AdminArticleFormPage() {
       };
     }
 
+    if (stepIndex === 1) {
+      const priceValidationIssue = getArticlePriceValidationIssue(form);
+      if (priceValidationIssue) {
+        return {
+          message: priceValidationIssue.message,
+          target: priceValidationIssue.target,
+          stepIndex,
+        };
+      }
+    }
+
     if (stepIndex === 1 && Number(form.quantityAvailable || 0) < 0) {
       return {
         message: "El stock disponible no puede ser negativo.",
@@ -556,16 +571,12 @@ export default function AdminArticleFormPage() {
     const target = articleStepContentRef.current || articleFormRef.current;
     if (!target) return;
 
-    const header = document.querySelector(".site-header");
-    const headerHeight = Number(header?.offsetHeight || 0);
-    const offset = headerHeight > 0 ? headerHeight + 18 : 86;
-    const targetTop = Math.max(
-      0,
-      target.getBoundingClientRect().top + window.scrollY - offset,
-    );
-
-    window.scrollTo({ top: targetTop, behavior });
-    target.focus?.({ preventScroll: true });
+    scrollElementIntoViewWithSiteChromeOffset(target, {
+      behavior,
+      includeTicker: true,
+      extra: 18,
+      focus: true,
+    });
   }
 
   function scheduleArticleWizardScroll(options = {}) {
@@ -608,7 +619,9 @@ export default function AdminArticleFormPage() {
     if (validationIssue) {
       setError(validationIssue.message);
       setActiveStep(validationIssue.stepIndex);
-      notifyFormStatus(notifyMobileStatus, "error", validationIssue.message);
+      notifyFormStatus(notifyMobileStatus, "error", validationIssue.message, {
+        target: validationIssue.target,
+      });
       focusFieldAfterRender(validationIssue.target, event.currentTarget);
       return;
     }
@@ -1269,7 +1282,8 @@ export default function AdminArticleFormPage() {
                   name="article-sale-price"
                   data-validation-field="article-sale-price"
                   type="number"
-                  min="0"
+                  min={marginPreview.minimumArticlePrice}
+                  step="0.01"
                   value={form.salePrice}
                   onChange={(event) => update("salePrice", event.target.value)}
                   required
@@ -1379,8 +1393,11 @@ export default function AdminArticleFormPage() {
                 <span>Valor de descuento</span>
                 <input
                   className="input"
+                  name="article-discount-value"
+                  data-validation-field="article-discount-value"
                   type="number"
                   min="0"
+                  step="0.01"
                   value={form.discountValue}
                   onChange={(event) =>
                     update("discountValue", event.target.value)
@@ -1515,10 +1532,6 @@ export default function AdminArticleFormPage() {
                 aria-live="polite"
               >
                 <p className="summary-line">
-                  <span>Precio efectivo de venta</span>
-                  <strong>{formatMarginCurrency(marginPreview.effectiveSalePrice)}</strong>
-                </p>
-                <p className="summary-line">
                   <span>Costo artículo</span>
                   <strong>{formatMarginCurrency(marginPreview.purchasePriceItem)}</strong>
                 </p>
@@ -1527,20 +1540,28 @@ export default function AdminArticleFormPage() {
                   <strong>{formatMarginCurrency(marginPreview.purchasePriceShipping)}</strong>
                 </p>
                 <p className="summary-line">
-                  <span>Costo envío MVD</span>
-                  <strong>{formatMarginCurrency(marginPreview.purchasePriceCourier)}</strong>
-                </p>
-                <p className="summary-line">
-                  <span>Costo compra</span>
-                  <strong>{formatMarginCurrency(marginPreview.totalPurchasePrice)}</strong>
+                  <span>Base impuestos bancarios</span>
+                  <strong>{formatMarginCurrency(marginPreview.bankTaxBase)}</strong>
                 </p>
                 <p className="summary-line">
                   <span>Impuestos bancarios 2,5%</span>
                   <strong>{formatMarginCurrency(marginPreview.bankTax)}</strong>
                 </p>
                 <p className="summary-line">
-                  <span>Costo total estimado</span>
+                  <span>Costo envío MVD</span>
+                  <strong>{formatMarginCurrency(marginPreview.purchasePriceCourier)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo total mínimo</span>
                   <strong>{formatMarginCurrency(marginPreview.totalCost)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Precio de venta</span>
+                  <strong>{formatMarginCurrency(marginPreview.salePrice)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Precio efectivo con descuento</span>
+                  <strong>{formatMarginCurrency(marginPreview.effectiveSalePrice)}</strong>
                 </p>
                 <p className="summary-line article-margin-preview__highlight article-margin-preview__profit">
                   <span>Ganancia estimada neta</span>

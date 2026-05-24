@@ -173,9 +173,10 @@ export default function AdminOrderDetailPage() {
       setTrackingSubmitting(true);
       setError('');
       setMessage('');
+      const normalizedTrackingCode = trackingCode.trim().replace(/\s+/g, ' ');
       const response = await apiFetch(`/api/admin/orders/${id}/tracking`, {
         method: 'PATCH',
-        body: { trackingCode },
+        body: { trackingCode: normalizedTrackingCode },
       });
       setOrder(response.order);
       setTrackingCode(response.order?.trackingCode || '');

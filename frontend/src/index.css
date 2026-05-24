@@ -12192,41 +12192,30 @@ textarea,
 }
 
 .app-shell--footer-scroll-active .site-header {
-  opacity: calc(1 - var(--header-footer-hide-progress, 0)) !important;
-  transform: translateY(
-    calc(-100% * var(--header-footer-hide-progress, 0))
-  ) !important;
-  transition:
-    opacity 120ms linear,
-    transform 120ms linear;
-  will-change: opacity, transform;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  will-change: auto;
 }
 
 @media (min-width: 961px) {
   .app-shell--footer-scroll-active
     .page-offer-ticker.hero-offer-ticker--sticky {
-    opacity: calc(1 - var(--header-footer-hide-progress, 0)) !important;
-    transform: translateY(
-      calc(
-        var(--header-height, 72px) * -1 *
-          var(--header-footer-hide-progress, 0)
-      )
-    ) !important;
-    transition:
-      opacity 120ms linear,
-      transform 120ms linear;
-    will-change: opacity, transform;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
   }
 }
 
 .app-shell--footer-scroll-deep .site-header {
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 @media (min-width: 961px) {
   .app-shell--footer-scroll-deep
     .page-offer-ticker.hero-offer-ticker--sticky {
-    pointer-events: none;
+    pointer-events: auto;
   }
 }
 
@@ -16931,5 +16920,119 @@ dialog,
 @media (max-width: 720px) {
   .checkout-interest-fallback-section {
     margin-top: 1.25rem;
+  }
+}
+
+/* === ESADAR site chrome offset and footer reveal stabilization === */
+.app-shell {
+  --site-ticker-height: 0px;
+  --site-chrome-scroll-margin: calc(
+    var(--header-height, 88px) + var(--site-ticker-height, 0px) + 18px
+  );
+}
+
+.app-shell--has-offer-ticker {
+  --site-ticker-height: 32px;
+}
+
+.catalog-wide,
+.article-wizard-step-content-anchor,
+[data-validation-field],
+.section-card {
+  scroll-margin-top: var(--site-chrome-scroll-margin);
+}
+
+@media (min-width: 961px) {
+  .site-chrome {
+    position: relative;
+    z-index: 95;
+    background: var(--surface);
+  }
+
+  .site-chrome--ticker-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 95;
+  }
+
+  .site-chrome--ticker-sticky .site-header {
+    position: relative !important;
+    top: auto !important;
+    z-index: 2 !important;
+  }
+
+  .site-chrome--ticker-sticky
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    position: relative !important;
+    top: auto !important;
+    z-index: 1 !important;
+  }
+
+  .site-header {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  :root[data-theme="alt"] .site-header {
+    background: var(--surface) !important;
+  }
+
+  .app-shell--footer-scroll-active .site-header,
+  .app-shell--footer-scroll-deep .site-header,
+  .app-shell--footer-reveal-suppressed .site-header,
+  .app-shell--footer-navigation-guard .site-header,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+    .site-header,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep
+    .site-header,
+  .app-shell--footer-scroll-active
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-scroll-deep
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-reveal-suppressed
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    pointer-events: auto !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell--has-offer-ticker {
+    --site-ticker-height: var(--offer-ticker-mobile-height, 30px);
+  }
+
+  .site-chrome {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  .app-shell--offer-ticker-sticky > .site-chrome + .page-shell {
+    margin-top: calc(
+      var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px
+    ) !important;
+  }
+
+  .app-shell--has-offer-ticker:not(.app-shell--offer-ticker-sticky)
+    > .site-chrome
+    + .page-shell {
+    margin-top: 0 !important;
+  }
+
+  .catalog-wide,
+  .article-wizard-step-content-anchor,
+  [data-validation-field],
+  .section-card {
+    scroll-margin-top: var(--site-chrome-scroll-margin);
   }
 }
