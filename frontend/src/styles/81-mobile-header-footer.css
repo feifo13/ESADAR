@@ -253,7 +253,6 @@
   .featured-rail .featured-motion-card {
     min-height: clamp(300px, 94vw, 360px) !important;
     height: clamp(300px, 94vw, 360px) !important;
-    contain-intrinsic-size: auto 340px !important;
   }
 
   .featured-rail .featured-motion-card__link,

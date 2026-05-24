@@ -291,6 +291,17 @@ dialog,
   }
 }
 
+@media (max-width: 960px) {
+  /* iOS/WebKit: avoid mobile scroll jitter caused by deferred card rendering. */
+  .article-card,
+  .featured-motion-card,
+  .summary-item-card {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+    contain: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-carousel__track,
   .hero-offer-ticker__track,
