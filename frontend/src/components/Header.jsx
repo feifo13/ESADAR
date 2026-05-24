@@ -418,7 +418,11 @@ export default function Header({ hideBrand = false }) {
     { key: "admin-shipping", label: "Envíos", to: "/admin/shipping" },
     ...(canManageUsers
       ? [
-          { key: "admin-site-hero", label: "Hero / ticker", to: "/admin/site-hero" },
+          {
+            key: "admin-site-hero",
+            label: "Hero / ticker",
+            to: "/admin/site-hero",
+          },
         ]
       : []),
     { key: "admin-statistics", label: "Estadísticas", to: "/admin/statistics" },
@@ -487,7 +491,9 @@ export default function Header({ hideBrand = false }) {
         <span
           className={[
             "mobile-catalog-indicators",
-            catalogFiltersCount > 0 ? "mobile-catalog-indicators--filters-active" : "",
+            catalogFiltersCount > 0
+              ? "mobile-catalog-indicators--filters-active"
+              : "",
             catalogSortActive ? "mobile-catalog-indicators--sort-active" : "",
           ]
             .filter(Boolean)
@@ -624,13 +630,13 @@ export default function Header({ hideBrand = false }) {
                   "Guardados",
                   <HeartIcon />,
                 )}
+                {renderCartButton(desktopCartButtonRef)}
                 {renderIconNavLink(
                   "/guia-de-compra",
                   "Guía de compra",
                   <HelpIcon />,
                   "header-icon-button--help",
                 )}
-                {renderCartButton(desktopCartButtonRef)}
                 {renderIconButton(handleLogout, "Salir", <LogoutIcon />)}
               </>
             ) : (
