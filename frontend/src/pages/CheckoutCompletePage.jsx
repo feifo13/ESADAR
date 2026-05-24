@@ -127,8 +127,14 @@ export default function CheckoutCompletePage() {
           correo para que los tengas a mano.
         </p>
         <p className="checkout-complete-copy payment-reference-note">
-          Importante: en el motivo/concepto de la transferencia escribí tu
-          número de orden: {completedOrder.orderNumber}.
+          Importante
+        </p>
+        <p className="checkout-complete-copy payment-reference-note">
+          En el motivo/concepto de la transferencia escribí tu número de
+          orden:{" "}
+        </p>
+        <p className="checkout-complete-copy payment-reference-note">
+          {completedOrder.orderNumber}.
         </p>
 
         <div className="checkout-complete-payment-details">
@@ -191,10 +197,10 @@ export default function CheckoutCompletePage() {
             Orden <strong>{completedOrder.orderNumber}</strong>
           </p>
           <p className="checkout-complete-copy">
-            Una vez aprobada y despachada la orden, te enviaremos el código de
-            seguimiento en el mail de confirmación de envío, sujeto a
-            disponibilidad del proveedor del servicio de cadetería o
-            correspondencia.
+            Cuando tu orden sea aprobada y despachada, te enviaremos un correo
+            de notificación con la información del envío y el código de
+            seguimiento, siempre que el proveedor de cadetería o correspondencia
+            lo tenga disponible.
           </p>
 
           {renderTransferDetails()}

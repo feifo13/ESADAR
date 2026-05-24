@@ -60,7 +60,7 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
   textLines.push(
     "",
     "Adjuntamos el comprobante de compra en PDF.",
-    "Cuando tu orden sea despachada, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.",
+    "Cuando tu orden sea enviada te enviaremos un nuevo correo electrónico confirmando el envío. En el verás el codigo de seguimiento de la orden, sujeto a disponibilidad del proveedor del servicio de correspondencia/correo.",
     "Podés revisar los detalles desde tu cuenta.",
     orderUrl,
     "",
@@ -72,7 +72,7 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
     <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">aprobada</strong>.</p>
     <p style="margin:0 0 14px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
     <p style="margin:0 0 18px;">Adjuntamos el comprobante de compra en PDF.</p>
-    <p style="margin:0 0 18px; color:#56737a; font-size:14px; line-height:1.55;">Cuando tu orden sea despachada, te enviaremos el código de seguimiento en el mail de orden enviada, sujeto a disponibilidad del proveedor del servicio de correo.</p>
+    <p style="margin:0 0 18px; color:#56737a; font-size:14px; line-height:1.55;">Cuando tu orden sea enviada te enviaremos un nuevo correo electrónico confirmando el envío. En el verás el codigo de seguimiento de la orden, sujeto a disponibilidad del proveedor del servicio de correspondencia/correo.</p>
   `;
 
   const detailsHtml = `

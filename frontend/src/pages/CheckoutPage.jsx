@@ -1354,10 +1354,10 @@ export default function CheckoutPage() {
             </p>
           ) : null}
           <p className="muted-copy checkout-tracking-availability-copy">
-            Una vez aprobada y despachada la orden, te enviaremos el código de
-            seguimiento en el mail de confirmación de envío, sujeto a
-            disponibilidad del proveedor del servicio de cadetería o
-            correspondencia.
+            Cuando tu orden sea aprobada y despachada, te enviaremos un correo
+            de notificación con la información del envío y el código de
+            seguimiento, siempre que el proveedor de cadetería o correspondencia
+            lo tenga disponible.
           </p>
         </div>
 
