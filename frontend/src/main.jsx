@@ -10,9 +10,16 @@ import { CartProvider } from './contexts/CartContext.jsx';
 import { LookupsProvider } from './contexts/LookupsContext.jsx';
 import { SiteSeoProvider } from './contexts/SiteSeoContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
+import {
+  applyMobileDebugClasses,
+  syncMobileDebugFlagsFromUrl,
+} from './lib/mobileDebugFlags.js';
 import './index.css';
 
 if (typeof window !== 'undefined') {
+  const mobileDebugFlags = syncMobileDebugFlagsFromUrl();
+  applyMobileDebugClasses(document.documentElement, mobileDebugFlags);
+
   if ('scrollRestoration' in window.history) {
     window.history.scrollRestoration = 'manual';
   }

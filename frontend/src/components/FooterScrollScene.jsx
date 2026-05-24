@@ -52,7 +52,19 @@ function clamp01(value) {
   return Math.max(0, Math.min(1, value));
 }
 
-export default function FooterScrollScene() {
+function isCompactDebugViewport() {
+  if (typeof window === "undefined") return false;
+  if (typeof window.matchMedia === "function") {
+    return window.matchMedia("(max-width: 960px)").matches;
+  }
+  return window.innerWidth <= 960;
+}
+
+function isMobileDebugFlagActive(flags, key) {
+  return Boolean(flags?.enabled && flags[key] && isCompactDebugViewport());
+}
+
+export default function FooterScrollScene({ mobileDebugFlags = null }) {
   const sceneRef = useRef(null);
   const suppressRevealUntilRef = useRef(0);
   const suppressRevealUntilManualRef = useRef(false);
@@ -91,6 +103,18 @@ export default function FooterScrollScene() {
 
     let frameId = 0;
     let suppressTimerId = 0;
+    const disableFooterRevealMobile = isMobileDebugFlagActive(
+      mobileDebugFlags,
+      "disableFooterRevealMobile",
+    );
+    const disableVisualViewport = isMobileDebugFlagActive(
+      mobileDebugFlags,
+      "disableVisualViewport",
+    );
+    const disableFooterCurtainCover = isMobileDebugFlagActive(
+      mobileDebugFlags,
+      "disableFooterCurtainCover",
+    );
 
     function setFooterRevealSuppressed(isSuppressed) {
       appShell.classList.toggle(
@@ -109,6 +133,12 @@ export default function FooterScrollScene() {
         "app-shell--footer-scroll-deep",
         "app-shell--footer-curtain-cover",
       );
+    }
+
+    if (disableFooterRevealMobile) {
+      setFooterRevealSuppressed(false);
+      resetFooterReveal();
+      return undefined;
     }
 
     function update() {
@@ -130,7 +160,9 @@ export default function FooterScrollScene() {
 
       setFooterRevealSuppressed(false);
 
-      const visualViewportHeight = Number(window.visualViewport?.height || 0);
+      const visualViewportHeight = disableVisualViewport
+        ? 0
+        : Number(window.visualViewport?.height || 0);
       const layoutViewportHeight = Math.max(
         document.documentElement.clientHeight || 0,
         window.innerHeight || 0,
@@ -187,21 +219,21 @@ export default function FooterScrollScene() {
           ? 1
           : 0
         : clamp01((revealProgress - 0.44) / 0.28);
-      const browserChromeHint = Math.max(
-        0,
-        (window.innerHeight || 0) - visualViewportHeight,
-      );
+      const browserChromeHint = disableVisualViewport
+        ? 0
+        : Math.max(0, (window.innerHeight || 0) - visualViewportHeight);
       const coverStartDistance = Math.max(
         headerHeight + 96,
         browserChromeHint + headerHeight + 64,
       );
       const coverFullDistance = Math.max(18, browserChromeHint + 18);
-      const rawHeaderCoverProgress = isCompactViewport
-        ? clamp01(
-            (coverStartDistance - remainingScroll) /
-              Math.max(coverStartDistance - coverFullDistance, 1),
-          )
-        : 0;
+      const rawHeaderCoverProgress =
+        !disableFooterCurtainCover && isCompactViewport
+          ? clamp01(
+              (coverStartDistance - remainingScroll) /
+                Math.max(coverStartDistance - coverFullDistance, 1),
+            )
+          : 0;
       const headerCoverProgress = isCompactViewport
         ? rawHeaderCoverProgress *
           rawHeaderCoverProgress *
@@ -231,7 +263,7 @@ export default function FooterScrollScene() {
       );
       appShell.classList.toggle(
         "app-shell--footer-curtain-cover",
-        headerCoverProgress > 0.001,
+        !disableFooterCurtainCover && headerCoverProgress > 0.001,
       );
       const compactEndThreshold = Math.max(24, layoutViewportHeight * 0.04);
       const isDeepFooterReveal = isCompactViewport
@@ -318,8 +350,10 @@ export default function FooterScrollScene() {
     window.addEventListener("keydown", handleManualScrollIntent);
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
-    window.visualViewport?.addEventListener("resize", scheduleUpdate);
-    window.visualViewport?.addEventListener("scroll", scheduleUpdate);
+    if (!disableVisualViewport) {
+      window.visualViewport?.addEventListener("resize", scheduleUpdate);
+      window.visualViewport?.addEventListener("scroll", scheduleUpdate);
+    }
 
     return () => {
       if (frameId) window.cancelAnimationFrame(frameId);
@@ -334,8 +368,10 @@ export default function FooterScrollScene() {
       window.removeEventListener("keydown", handleManualScrollIntent);
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
-      window.visualViewport?.removeEventListener("resize", scheduleUpdate);
-      window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
+      if (!disableVisualViewport) {
+        window.visualViewport?.removeEventListener("resize", scheduleUpdate);
+        window.visualViewport?.removeEventListener("scroll", scheduleUpdate);
+      }
       appShell.style.removeProperty("--footer-scroll-progress");
       appShell.style.removeProperty("--header-footer-hide-progress");
       appShell.style.removeProperty("--footer-header-cover-progress");
@@ -347,7 +383,7 @@ export default function FooterScrollScene() {
         "app-shell--footer-reveal-suppressed",
       );
     };
-  }, [prefersReducedMotion, location.key]);
+  }, [prefersReducedMotion, location.key, mobileDebugFlags]);
 
   return (
     <footer

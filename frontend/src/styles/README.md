@@ -9,7 +9,8 @@ El punto de entrada es `frontend/src/index.css`, que importa `styles/index.css`.
 3. `20-*`, `30-*`, `40-*`, `50-*`: dominios de producto, admin, cuenta y checkout.
 4. `60-*` a `62-*`: responsive general.
 5. `70-*` a `84-*`: overrides historicos conservados en orden de cascada para no cambiar la UI.
-6. `rails.css` y `feedback.css`: componentes globales pequenos que antes se importaban desde `main.jsx`.
+6. `85-*`: diagnostico temporal de mobile; debe quedar inerte sin clases `html.esadar-debug-*`.
+7. `rails.css` y `feedback.css`: componentes globales pequenos que antes se importaban desde `main.jsx`.
 
 ## Donde agregar estilos
 

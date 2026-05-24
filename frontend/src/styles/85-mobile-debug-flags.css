@@ -1,0 +1,174 @@
+/* Mobile diagnostic flags. These rules are inert until html.esadar-debug-mobile is present. */
+
+.mobile-debug-badge {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 9100;
+  max-width: min(280px, calc(100vw - 20px));
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0;
+  background: rgba(7, 28, 34, 0.92);
+  color: #ffffff;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  pointer-events: none;
+  text-transform: none;
+}
+
+.mobile-debug-badge strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.mobile-debug-badge span {
+  display: block;
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.78);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 961px) {
+  .mobile-debug-badge {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 960px) {
+  html.esadar-debug-disable-footer-reveal-mobile
+    .app-shell:not(.app-shell--has-footer-reveal)
+    .page-shell {
+    margin-bottom: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html.esadar-debug-disable-footer-reveal-mobile
+    .app-shell:not(.app-shell--has-footer-reveal)
+    .footer-scroll-scene {
+    position: relative !important;
+    inset: auto !important;
+    display: block !important;
+    min-height: auto !important;
+    height: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+  }
+
+  html.esadar-debug-disable-footer-reveal-mobile
+    .app-shell:not(.app-shell--has-footer-reveal)
+    .footer-scroll-scene__sticky {
+    min-height: auto !important;
+    height: auto !important;
+    padding-top: calc(var(--header-height, 74px) + 18px) !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  html.esadar-debug-disable-footer-reveal-mobile .app-shell::before,
+  html.esadar-debug-disable-footer-curtain-cover .app-shell::before,
+  html.esadar-debug-disable-footer-curtain-cover
+    .app-shell--footer-curtain-cover::before {
+    content: none !important;
+    opacity: 0 !important;
+    transform: none !important;
+  }
+
+  html.esadar-debug-disable-footer-curtain-cover .app-shell {
+    --footer-header-cover-progress: 0 !important;
+    --footer-header-cover-offset: -140px !important;
+  }
+
+  html.esadar-debug-disable-card-content-visibility .article-card,
+  html.esadar-debug-disable-card-content-visibility .featured-motion-card,
+  html.esadar-debug-disable-card-content-visibility .summary-item-card {
+    content-visibility: visible !important;
+    contain: none !important;
+    contain-intrinsic-size: none !important;
+  }
+
+  html.esadar-debug-disable-card-content-visibility .article-card-media,
+  html.esadar-debug-disable-card-content-visibility .article-card-media--catalog,
+  html.esadar-debug-disable-card-content-visibility .featured-motion-card__media {
+    contain: none !important;
+  }
+
+  html.esadar-debug-pause-ticker-mobile .hero-offer-ticker__track {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile .site-chrome {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    height: calc(var(--offer-ticker-mobile-height, 30px) + 1px) !important;
+    margin-top: calc(var(--header-height, 74px) - 1px) !important;
+    z-index: 1 !important;
+  }
+
+  html.esadar-debug-disable-ticker-fixed-mobile
+    .app-shell--offer-ticker-sticky
+    > .site-chrome
+    + .page-shell {
+    margin-top: 0 !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome .site-chrome--has-ticker {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 1000 !important;
+    background: var(--surface) !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome
+    .site-chrome--has-ticker
+    .site-header {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    z-index: 2 !important;
+    transform: none !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome
+    .site-chrome--has-ticker
+    .page-offer-ticker.hero-offer-ticker {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    margin-top: 0 !important;
+    z-index: 1 !important;
+  }
+
+  html.esadar-debug-unify-mobile-chrome
+    .app-shell--has-offer-ticker
+    > .site-chrome
+    + .page-shell {
+    margin-top: calc(
+      var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px
+    ) !important;
+  }
+}
