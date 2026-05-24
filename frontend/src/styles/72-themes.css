@@ -1,0 +1,546 @@
+/* Comic theme variants and theme-specific overrides.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* === Comic Pop theme === */
+:root[data-theme="comic-pop"] body {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      var(--comic-dot) 1.4px,
+      transparent 1.5px
+    ),
+    linear-gradient(180deg, var(--comic-sheen-top), var(--comic-sheen-bottom)),
+    var(--bg);
+  background-size:
+    18px 18px,
+    auto,
+    auto;
+}
+
+:root[data-theme="comic-pop"] .site-header,
+:root[data-theme="comic-pop"] .catalog-topbar-shell,
+:root[data-theme="comic-pop"] .theme-dock {
+  background: color-mix(in srgb, var(--surface) 94%, white 6%);
+  border: 3px solid var(--border);
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
+}
+
+:root[data-theme="comic-pop"] .site-header {
+  border-inline: 0;
+  border-top: 0;
+}
+
+:root[data-theme="comic-pop"] .theme-dock {
+  padding: 12px;
+}
+
+:root[data-theme="comic-pop"] .section-card,
+:root[data-theme="comic-pop"] .nested-card,
+:root[data-theme="comic-pop"] .input,
+:root[data-theme="comic-pop"] .button,
+:root[data-theme="comic-pop"] .ghost-button,
+:root[data-theme="comic-pop"] .admin-tab,
+:root[data-theme="comic-pop"] .badge,
+:root[data-theme="comic-pop"] .article-card,
+:root[data-theme="comic-pop"] .gallery-main,
+:root[data-theme="comic-pop"] .gallery-thumb,
+:root[data-theme="comic-pop"] .checkout-item,
+:root[data-theme="comic-pop"] .radio-card,
+:root[data-theme="comic-pop"] .stat-card,
+:root[data-theme="comic-pop"] .sticky-panel,
+:root[data-theme="comic-pop"] .view-toggle button,
+:root[data-theme="comic-pop"] .checkbox-chip,
+:root[data-theme="comic-pop"] .catalog-topbar-shell,
+:root[data-theme="comic-pop"] .theme-swatch,
+:root[data-theme="comic-pop"] .offer-page .detail-sidebar-article,
+:root[data-theme="comic-pop"] .admin-row-card,
+:root[data-theme="comic-pop"] .brand-block--large {
+  border-radius: 18px !important;
+  border: 3px solid var(--border) !important;
+  box-shadow: 8px 8px 0 var(--comic-shadow-color) !important;
+}
+
+:root[data-theme="comic-pop"] .button,
+:root[data-theme="comic-pop"] .ghost-button,
+:root[data-theme="comic-pop"] .admin-tab,
+:root[data-theme="comic-pop"] .view-toggle button,
+:root[data-theme="comic-pop"] .theme-swatch {
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    background-color 0.14s ease;
+}
+
+:root[data-theme="comic-pop"] .button:hover,
+:root[data-theme="comic-pop"] .ghost-button:hover,
+:root[data-theme="comic-pop"] .admin-tab:hover,
+:root[data-theme="comic-pop"] .view-toggle button:hover,
+:root[data-theme="comic-pop"] .theme-swatch:hover,
+:root[data-theme="comic-pop"] .article-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 var(--comic-shadow-color) !important;
+}
+
+:root[data-theme="comic-pop"] .button-primary,
+:root[data-theme="comic-pop"] .view-toggle button.active,
+:root[data-theme="comic-pop"] .admin-tab.active {
+  background: linear-gradient(135deg, var(--orange), var(--button-primary-end));
+  border-color: var(--border) !important;
+  color: var(--button-primary-text);
+}
+
+:root[data-theme="comic-pop"] .button-secondary,
+:root[data-theme="comic-pop"] .ghost-button,
+:root[data-theme="comic-pop"] .checkbox-chip,
+:root[data-theme="comic-pop"] .view-toggle button,
+:root[data-theme="comic-pop"] .input,
+:root[data-theme="comic-pop"] .sort-select,
+:root[data-theme="comic-pop"] .filters-sidebar .input,
+:root[data-theme="comic-pop"] .filters-sidebar select.input {
+  background: #fffef7;
+}
+
+:root[data-theme="comic-pop"] .input:focus,
+:root[data-theme="comic-pop"] .sort-select:focus,
+:root[data-theme="comic-pop"] .gallery-thumb.active {
+  border-color: var(--navy) !important;
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    8px 8px 0 var(--comic-shadow-color) !important;
+}
+
+:root[data-theme="comic-pop"] .article-grid,
+:root[data-theme="comic-pop"] .rail-scroller,
+:root[data-theme="comic-pop"] .gallery-thumbs,
+:root[data-theme="comic-pop"] .about-collage {
+  gap: 22px;
+}
+
+:root[data-theme="comic-pop"] .article-card {
+  overflow: hidden;
+  background: #fffef7;
+  border-top-width: 3px !important;
+}
+
+:root[data-theme="comic-pop"] .article-card-body {
+  padding: 16px;
+}
+
+:root[data-theme="comic-pop"] .article-card-media,
+:root[data-theme="comic-pop"] .gallery-main,
+:root[data-theme="comic-pop"] .gallery-thumb,
+:root[data-theme="comic-pop"] .checkout-item img,
+:root[data-theme="comic-pop"] .admin-row-card img,
+:root[data-theme="comic-pop"] .about-card {
+  border: 3px solid var(--border);
+  border-radius: 14px;
+}
+
+:root[data-theme="comic-pop"] .gallery-main {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(18, 187, 255, 0.16) 1.2px,
+      transparent 1.3px
+    ),
+    #fffef7;
+  background-size: 16px 16px;
+}
+
+:root[data-theme="comic-pop"] .pill {
+  border: 2px solid var(--border);
+  box-shadow: 4px 4px 0 rgba(13, 21, 32, 0.9);
+}
+
+:root[data-theme="comic-pop"] .pill-featured {
+  background: var(--pill-featured-bg);
+  color: var(--pill-featured-text);
+}
+
+:root[data-theme="comic-pop"] .pill-offer {
+  background: var(--pill-offer-bg);
+  color: var(--pill-offer-text);
+}
+
+:root[data-theme="comic-pop"] .pill-discount {
+  background: var(--pill-discount-bg);
+  color: var(--pill-discount-text);
+}
+
+:root[data-theme="comic-pop"] .section-kicker,
+:root[data-theme="comic-pop"] .eyebrow,
+:root[data-theme="comic-pop"] .theme-dock-label,
+:root[data-theme="comic-pop"] .article-card-title,
+:root[data-theme="comic-pop"] .detail-titlebar h1,
+:root[data-theme="comic-pop"] .catalog-summary-row h2,
+:root[data-theme="comic-pop"] .brand-main,
+:root[data-theme="comic-pop"] .brand-kicker,
+:root[data-theme="comic-pop"] .button,
+:root[data-theme="comic-pop"] .ghost-button {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme="comic-pop"] .detail-titlebar h1,
+:root[data-theme="comic-pop"] .catalog-summary-row h2,
+:root[data-theme="comic-pop"] .article-card-title,
+:root[data-theme="comic-pop"] .brand-main {
+  font-weight: 800;
+  text-shadow: 2px 2px 0 var(--title-shadow);
+}
+
+:root[data-theme="comic-pop"] .hero-strip--logo .brand-block--large {
+  max-width: min(980px, 100%);
+  padding: clamp(18px, 3vw, 28px);
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(255, 91, 58, 0.14) 1.2px,
+      transparent 1.3px
+    ),
+    #fffef7;
+  background-size: 18px 18px;
+}
+
+:root[data-theme="comic-pop"] .brand-logo--large {
+  filter: drop-shadow(6px 6px 0 rgba(13, 21, 32, 0.22));
+}
+
+:root[data-theme="comic-pop"] .about-card {
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
+}
+
+:root[data-theme="comic-pop"] .offer-page .detail-sidebar-article {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      var(--offer-dot) 1.2px,
+      transparent 1.3px
+    ),
+    linear-gradient(180deg, var(--navy), var(--offer-grad-end));
+  background-size:
+    16px 16px,
+    auto;
+}
+
+@media (max-width: 640px) {
+  :root[data-theme="comic-pop"] .section-card,
+  :root[data-theme="comic-pop"] .nested-card,
+  :root[data-theme="comic-pop"] .article-card,
+  :root[data-theme="comic-pop"] .gallery-main,
+  :root[data-theme="comic-pop"] .sticky-panel,
+  :root[data-theme="comic-pop"] .theme-dock,
+  :root[data-theme="comic-pop"] .catalog-topbar-shell,
+  :root[data-theme="comic-pop"] .brand-block--large {
+    box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
+  }
+}
+
+/* === Comic Sharp theme === */
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) body {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      var(--comic-dot) 1.4px,
+      transparent 1.5px
+    ),
+    linear-gradient(180deg, var(--comic-sheen-top), var(--comic-sheen-bottom)),
+    var(--bg);
+  background-size:
+    18px 18px,
+    auto,
+    auto;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .site-header,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .catalog-topbar-shell,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .theme-dock {
+  background: color-mix(in srgb, var(--surface) 94%, white 6%);
+  border: 3px solid var(--border);
+  box-shadow: 8px 8px 0 var(--comic-shadow-color);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .site-header {
+  border-inline: 0;
+  border-top: 0;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .theme-dock {
+  padding: 12px;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .section-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .nested-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .input,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .ghost-button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .admin-tab,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .badge,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-main,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-thumb,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .checkout-item,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .radio-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .stat-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .sticky-panel,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .view-toggle
+  button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .checkbox-chip,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .catalog-topbar-shell,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .theme-swatch,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .offer-page
+  .detail-sidebar-article,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .admin-row-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .brand-block--large,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .pill,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .about-card,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .checkout-item
+  img,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .admin-row-card
+  img,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card-media,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-arrows
+  button {
+  border-radius: 0 !important;
+  border: 3px solid var(--border) !important;
+  box-shadow: 8px 8px 0 var(--comic-shadow-color) !important;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .ghost-button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .admin-tab,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .view-toggle
+  button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .theme-swatch {
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    background-color 0.14s ease;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .button:hover,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .ghost-button:hover,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .admin-tab:hover,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .view-toggle
+  button:hover,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .theme-swatch:hover,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0 var(--comic-shadow-color) !important;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .button-primary,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .view-toggle
+  button.active,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .admin-tab.active {
+  background: linear-gradient(135deg, var(--orange), var(--button-primary-end));
+  border-color: var(--border) !important;
+  color: var(--button-primary-text);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .button-secondary,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .ghost-button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .checkbox-chip,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .view-toggle
+  button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .input,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .sort-select,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .filters-sidebar
+  .input,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .filters-sidebar
+  select.input {
+  background: var(--field-bg);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .input:focus,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .sort-select:focus,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-thumb.active {
+  border-color: var(--navy) !important;
+  box-shadow:
+    0 0 0 4px var(--focus-ring),
+    8px 8px 0 var(--comic-shadow-color) !important;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-grid,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .rail-scroller,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-thumbs,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .about-collage {
+  gap: 22px;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card {
+  overflow: hidden;
+  background: var(--field-bg);
+  border-top-width: 3px !important;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card-body {
+  padding: 16px;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .gallery-main {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(18, 187, 255, 0.16) 1.2px,
+      transparent 1.3px
+    ),
+    #fffef8;
+  background-size: 16px 16px;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .pill-featured {
+  background: var(--pill-featured-bg);
+  color: var(--pill-featured-text);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .pill-offer {
+  background: var(--pill-offer-bg);
+  color: var(--pill-offer-text);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .pill-discount {
+  background: var(--pill-discount-bg);
+  color: var(--pill-discount-text);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .section-kicker,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .eyebrow,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .theme-dock-label,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card-title,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .detail-titlebar
+  h1,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .catalog-summary-row
+  h2,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .brand-main,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .brand-kicker,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .button,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .ghost-button {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .detail-titlebar
+  h1,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .catalog-summary-row
+  h2,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .article-card-title,
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"]) .brand-main {
+  font-weight: 800;
+  text-shadow: 2px 2px 0 var(--title-shadow);
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .hero-strip--logo
+  .brand-block--large {
+  max-width: min(980px, 100%);
+  padding: clamp(18px, 3vw, 28px);
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      rgba(255, 91, 58, 0.14) 1.2px,
+      transparent 1.3px
+    ),
+    #fffef8;
+  background-size: 18px 18px;
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .brand-logo--large {
+  filter: drop-shadow(6px 6px 0 rgba(13, 21, 32, 0.22));
+}
+
+:root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+  .offer-page
+  .detail-sidebar-article {
+  background:
+    radial-gradient(
+      circle at 2px 2px,
+      var(--offer-dot) 1.2px,
+      transparent 1.3px
+    ),
+    linear-gradient(180deg, var(--navy), var(--offer-grad-end));
+  background-size:
+    16px 16px,
+    auto;
+}
+
+@media (max-width: 640px) {
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .section-card,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .nested-card,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .article-card,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .gallery-main,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .sticky-panel,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .theme-dock,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .catalog-topbar-shell,
+  :root:is([data-theme="comic-sharp"], [data-theme^="comic-sharp-"])
+    .brand-block--large {
+    box-shadow: 5px 5px 0 var(--comic-shadow-color) !important;
+  }
+}

@@ -1,0 +1,335 @@
+/* Shipping method ranges and site hero admin/editor styles.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* Shipping methods: configurable weight ranges */
+.shipping-rates-editor {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.shipping-rates-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.shipping-rates-grid__header,
+.shipping-rates-grid__row {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.8fr) minmax(92px, 0.8fr) minmax(110px, 0.8fr) minmax(150px, 1.2fr) minmax(96px, 0.7fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.shipping-rates-grid__header {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #64748b);
+}
+
+.shipping-rate-check,
+.shipping-active-check {
+  align-self: end;
+  min-height: 44px;
+}
+
+.shipping-rates-empty {
+  border: 1px dashed var(--border-color, rgba(15, 23, 42, 0.18));
+  padding: 0.9rem;
+}
+
+.checkout-shipping-summary-card {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.checkout-shipping-summary-main {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.checkout-shipping-summary-main > span {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text, #64748b);
+}
+
+.checkout-shipping-summary-main > strong {
+  font-size: 1.3rem;
+}
+
+.checkout-shipping-rates-link {
+  justify-self: start;
+  width: auto;
+  margin-top: 0.15rem;
+}
+
+.checkout-shipping-weight-warning {
+  margin: 0;
+  padding-left: 0.7rem;
+  border-left: 3px solid color-mix(in srgb, var(--orange) 64%, var(--border));
+  color: color-mix(in srgb, var(--text) 74%, var(--orange));
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.checkout-shipping-rate-alert {
+  margin-top: -0.35rem;
+  margin-bottom: 1rem;
+}
+
+.radio-card.is-unavailable {
+  border-color: color-mix(in srgb, var(--orange) 42%, var(--border));
+  background: color-mix(in srgb, var(--orange) 7%, var(--surface));
+}
+
+@media (max-width: 860px) {
+  .shipping-rates-grid__header {
+    display: none;
+  }
+
+  .shipping-rates-grid__row {
+    grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--border-color, rgba(15, 23, 42, 0.12));
+    padding: 0.8rem;
+  }
+
+  .shipping-rates-grid__row > input:nth-of-type(4),
+  .shipping-rates-grid__row > .shipping-rate-check {
+    grid-column: 1 / -1;
+  }
+
+  .checkout-shipping-summary-main {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .checkout-shipping-rates-link {
+    justify-self: stretch;
+    width: 100%;
+  }
+}
+
+/* === ESADAR simplified hero: one selected image, no carousel/config leftovers === */
+.home-hero-section {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.home-hero-frame {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.home-hero-picture {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.home-hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  min-width: 0;
+  object-fit: contain;
+  object-position: center center;
+  background: var(--surface);
+}
+
+.home-hero-section.site-hero {
+  --site-hero-height: 50vh;
+}
+
+.home-hero-section.site-hero--full-screen {
+  --site-hero-height: 100vh;
+}
+
+@supports (height: 100svh) {
+  .home-hero-section.site-hero--full-screen {
+    --site-hero-height: 100svh;
+  }
+}
+
+.home-hero-section.site-hero--custom {
+  --site-hero-height: var(--hero-height, 70vh);
+}
+
+.home-hero-section.site-hero .home-hero-frame,
+.home-hero-section.site-hero .home-hero-picture {
+  height: var(--site-hero-height);
+  min-height: var(--site-hero-height);
+}
+
+.home-hero-section.site-hero .home-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.home-hero-carousel {
+  position: relative;
+}
+
+.home-hero-carousel__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 480ms var(--ease-smooth);
+}
+
+.home-hero-carousel__slide.is-active {
+  position: relative;
+  z-index: 1;
+  opacity: 1;
+}
+
+@media (max-width: 780px) {
+  .home-hero-section.site-hero--half-screen {
+    --site-hero-height: 50svh;
+  }
+
+  .home-hero-section.site-hero--custom {
+    --site-hero-height: min(var(--hero-height, 70vh), 90svh);
+  }
+}
+
+.admin-site-hero-heading {
+  align-items: start;
+}
+
+.admin-site-hero-heading .button {
+  justify-self: end;
+}
+
+.admin-site-hero-preview-card {
+  align-items: start;
+}
+
+.admin-site-hero-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, min(260px, 100%)));
+  gap: 1rem;
+  align-items: start;
+  justify-content: start;
+}
+
+.admin-site-hero-preview-item {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.admin-site-hero-preview-item figcaption {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-site-hero-preview__media {
+  width: min(520px, 100%) !important;
+  height: auto !important;
+  max-height: 260px !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  justify-self: start;
+}
+
+.admin-site-hero-image-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 200px)) !important;
+  align-items: start;
+  justify-content: start;
+}
+
+.admin-site-hero-image-grid .image-manager-card {
+  max-width: 200px;
+}
+
+.admin-site-hero-thumb__media,
+.admin-site-hero-image-grid .image-manager-card__media {
+  width: 100% !important;
+  height: 120px !important;
+  max-height: 120px !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.admin-site-ticker-preview {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.admin-site-ticker-preview__bar {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding-inline: 18px;
+  overflow: hidden;
+  color: #ffffff;
+  background: var(--ticker-background, var(--orange));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .admin-site-hero-heading {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-site-hero-heading .button {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .admin-site-hero-preview__media {
+    width: 100% !important;
+    max-height: 220px !important;
+  }
+  .admin-site-hero-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .admin-site-hero-image-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  }
+}

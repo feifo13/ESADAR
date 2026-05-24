@@ -1,0 +1,87 @@
+/* Buttons, badges, text helpers and small utilities.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.button,
+.ghost-button,
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 12px 18px;
+  transition: 160ms ease;
+}
+.button-primary {
+  background: linear-gradient(135deg, var(--aqua), var(--navy));
+  color: white;
+}
+.button-primary:hover {
+  transform: translateY(-1px);
+}
+.button-secondary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.ghost-button {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.linklike {
+  text-decoration: none;
+}
+.badge {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--orange);
+  color: white;
+  font-size: 0.85rem;
+}
+.eyebrow,
+.section-kicker {
+  margin: 0 0 6px;
+  color: var(--aqua);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.muted-copy {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.error-copy {
+  color: #b42318;
+  margin: 0;
+}
+.success-copy {
+  color: #0e8f62;
+  margin: 0;
+}
+.stack-gap-xs {
+  display: grid;
+  gap: 8px;
+}
+.stack-gap-sm {
+  display: grid;
+  gap: 12px;
+}
+.align-end {
+  justify-items: end;
+}
+.inline-note {
+  color: var(--muted);
+}
+
+.payment-reference-note {
+  color: var(--orange) !important;
+  font-weight: 800;
+  line-height: 1.55;
+}

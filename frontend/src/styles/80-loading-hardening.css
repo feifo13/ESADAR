@@ -1,0 +1,422 @@
+/* Unified loading state, final hardening and production image/loading patches.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* ESADAR unified loading state */
+.app-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 96px;
+}
+
+.app-loader--page,
+.app-loader--card {
+  min-height: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.app-loader--inline {
+  width: auto;
+  min-height: 40px;
+}
+
+.app-loader--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  min-height: 100dvh;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.app-loader__logo {
+  width: 54px;
+  height: auto;
+  animation: esadar-loader-spin 1.05s linear infinite;
+  transform-origin: center;
+}
+
+.app-loader--inline .app-loader__logo {
+  width: 32px;
+}
+
+@keyframes esadar-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loader__logo {
+    animation: none;
+  }
+}
+
+.error-boundary-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* ESADAR final hardening overrides: fixed light theme, footer loading guard, offer color, galleries and admin toolbar split. */
+:root,
+:root[data-theme],
+:root[data-color-mode] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #eef7f8;
+  --text: #102b34;
+  --muted: #667b82;
+  --border: rgba(16, 43, 52, 0.14);
+  --aqua: #00a7b3;
+  --orange: #fc4c02;
+  --navy: #002244;
+  --pill-offer-bg: var(--orange);
+  --pill-offer-text: #ffffff;
+}
+
+.app-shell--route-loading .footer-scroll-scene,
+.app-shell--intro-active .footer-scroll-scene,
+.app-shell:not(.app-shell--content-ready) .footer-scroll-scene {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.app-shell--has-footer-reveal.app-shell--route-loading,
+.app-shell--has-footer-reveal.app-shell--intro-active {
+  margin-bottom: 0 !important;
+}
+
+.article-gallery-layout--single,
+.gallery-shell--single {
+  align-items: stretch;
+}
+
+.article-gallery-layout--single .article-gallery-thumbs,
+.gallery-shell--single .gallery-thumbs {
+  display: flex;
+}
+
+.article-card-ribbon--offerable,
+.pill-offer,
+.badge-offer,
+.offer-badge,
+.summary-item-card__offer-badge {
+  background: var(--orange) !important;
+  border-color: var(--orange) !important;
+  color: #ffffff !important;
+}
+
+.admin-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.admin-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-toolbar__group--right {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.admin-icon-action--danger {
+  border-color: color-mix(in srgb, var(--orange) 42%, var(--border)) !important;
+  color: var(--orange) !important;
+}
+
+@media (max-width: 899px) {
+  .admin-toolbar {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .admin-toolbar__group {
+    display: contents;
+  }
+}
+
+/* ESADAR hotfix: keep single-image thumbnail compact beside main image. */
+@media (min-width: 781px) {
+  .article-gallery-layout--single {
+    grid-template-columns: 88px minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumbs {
+    display: grid !important;
+    grid-template-columns: 88px !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: unset !important;
+    align-items: start !important;
+    align-content: start !important;
+    justify-items: stretch !important;
+    overflow: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumb {
+    width: 88px !important;
+    height: 88px !important;
+    min-width: 88px !important;
+    min-height: 88px !important;
+    max-width: 88px !important;
+    max-height: 88px !important;
+    flex: 0 0 88px !important;
+    align-self: start !important;
+  }
+
+  .article-gallery-layout--single .article-gallery-thumb__image {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+  }
+
+  .gallery-shell--single .gallery-thumbs {
+    display: grid !important;
+    grid-template-columns: 88px !important;
+    grid-auto-columns: unset !important;
+    align-content: start !important;
+    justify-content: start !important;
+  }
+
+  .gallery-shell--single .gallery-thumb {
+    width: 88px !important;
+    height: 88px !important;
+    min-width: 88px !important;
+    min-height: 88px !important;
+    max-width: 88px !important;
+    max-height: 88px !important;
+    flex: 0 0 88px !important;
+  }
+
+  .gallery-shell--single .gallery-thumb-image {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+  }
+}
+
+/* === ESADAR production hardening patch: loader, sold-out ribbon, checkout stock ticker and mobile header stability === */
+.article-card-ribbon:not(.article-card-ribbon--offerable) {
+  background: #000000 !important;
+  border-color: #000000 !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28) !important;
+}
+
+.app-loader--page {
+  min-height: calc(100dvh - var(--header-height, 72px));
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader--card {
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader__logo {
+  animation-duration: 2.1s !important;
+}
+
+.cart-unavailable-ticker {
+  position: sticky;
+  top: var(--header-height, 72px);
+  z-index: 45;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  background: #c1121f;
+  color: #ffffff;
+  border-block: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.cart-unavailable-ticker__message {
+  display: block;
+  width: 100%;
+  padding: 0.48rem clamp(14px, 4vw, 28px);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cart-unavailable-ticker__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 960px) {
+  .app-shell--footer-scroll-active .site-header {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+
+  .app-shell--footer-scroll-deep .site-header {
+    pointer-events: auto !important;
+  }
+
+  .cart-unavailable-ticker {
+    top: var(--header-height, 72px);
+    min-height: 30px;
+  }
+
+  .cart-unavailable-ticker__message {
+    padding-block: 0.44rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* === ESADAR loading view correction: keep header visible, white body, centered slow logo === */
+.app-loader--page {
+  display: grid !important;
+  place-items: center !important;
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+  background: #ffffff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-loader--page .app-loader__logo,
+.catalog-filter-loading-splash__logo {
+  width: 130px !important;
+  max-width: 130px !important;
+  filter: none !important;
+  animation: esadar-loader-spin 2.1s linear infinite !important;
+}
+
+.catalog-content--loading {
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+}
+
+.catalog-filter-loading-splash {
+  position: fixed !important;
+  inset: var(--header-height, 72px) 0 0 0 !important;
+  z-index: 48 !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: calc(100dvh - var(--header-height, 72px)) !important;
+  border: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  animation: none !important;
+}
+
+.catalog-filter-loading-splash__logo-wrap {
+  padding: 0 !important;
+}
+
+.quick-toggle-switch:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+/* === ESADAR image UI refinement: catalog/related/offer cards fill their media box === */
+.article-card--catalog .article-card-media img,
+.article-horizontal-card-track .article-card--catalog .article-card-media img,
+.related-articles-track .article-card--catalog .article-card-media img,
+.article-grid .article-card--catalog .article-card-media img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  background: var(--surface-soft) !important;
+}
+
+.article-gallery-main {
+  place-items: center !important;
+}
+
+.article-image-zoom,
+.article-image-zoom .iiz {
+  place-items: center !important;
+}
+
+.article-image-zoom .iiz__img,
+.article-image-zoom__image,
+.article-image-zoom__fallback-image {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+/*
+  react-inner-image-zoom renders: figure.iiz > div > picture > img.
+  The library leaves the intermediate wrapper/picture sizing to content, so
+  centered product photos can look tiny inside the pale zoom canvas. Stretch
+  only the visible image pipeline; do not force the zoom overlay dimensions.
+*/
+.article-image-zoom .iiz {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.article-image-zoom .iiz > div,
+.article-image-zoom .iiz picture {
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.article-image-zoom .iiz__img.article-image-zoom__image,
+.article-image-zoom__fallback-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 78vh !important;
+  display: block !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+@media (max-width: 960px) {
+  .article-image-zoom .iiz > div,
+  .article-image-zoom .iiz picture {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .article-image-zoom .iiz__img.article-image-zoom__image,
+  .article-image-zoom__fallback-image {
+    height: auto !important;
+    max-height: 68vh !important;
+  }
+}

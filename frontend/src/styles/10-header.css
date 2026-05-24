@@ -1,0 +1,67 @@
+/* Header, brand mark and primary navigation core.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(16px);
+  background: rgba(247, 250, 251, 0.82);
+  border-bottom: 1px solid var(--border);
+}
+:root[data-theme="alt"] .site-header {
+  background: rgba(6, 19, 29, 0.82);
+}
+.header-inner {
+  min-height: var(--header-height);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.header-inner--compact {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.brand-mark {
+  display: grid;
+}
+.brand-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--aqua);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.brand-main {
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+.primary-nav {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.primary-nav a {
+  color: var(--muted);
+  font-weight: 500;
+}
+.primary-nav a.active {
+  color: var(--text);
+}
+.header-actions,
+.header-user {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.header-actions--ordered {
+  justify-self: end;
+}
+.user-greeting {
+  font-weight: 600;
+}

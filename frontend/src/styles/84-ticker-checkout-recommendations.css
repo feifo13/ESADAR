@@ -1,0 +1,259 @@
+/* Offer ticker visibility, checkout recommendations and site chrome/footer offsets.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* === ESADAR iteration: ticker mobile visibility + tablet/laptop hero size === */
+.site-hero--tablet-laptop {
+  --site-hero-height: 64vh;
+}
+
+.home-hero-section.site-hero--tablet-laptop {
+  --site-hero-height: 64vh;
+}
+
+@media (min-width: 781px) and (max-width: 1280px) {
+  .site-hero--tablet-laptop,
+  .home-hero-section.site-hero--tablet-laptop {
+    --site-hero-height: clamp(480px, 62svh, 680px);
+  }
+}
+
+@media (max-width: 780px) {
+  .site-hero--tablet-laptop,
+  .home-hero-section.site-hero--tablet-laptop {
+    --site-hero-height: 56svh;
+  }
+}
+
+@media (max-width: 960px) {
+  .page-offer-ticker.hero-offer-ticker {
+    --offer-ticker-mobile-height: 30px;
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: var(--offer-ticker-mobile-height) !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: hidden !important;
+    color: #ffffff !important;
+    border: 0 !important;
+    border-block: 0 !important;
+    box-shadow: none !important;
+    transform: translate3d(0, 0, 0) !important;
+    translate: none !important;
+    scale: none !important;
+    rotate: none !important;
+    animation: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    contain: layout paint style !important;
+    z-index: 999;
+  }
+
+  .page-offer-ticker.hero-offer-ticker--sticky {
+    position: fixed !important;
+    inset: calc(var(--header-height, 74px) - 1px) 0 auto 0 !important;
+    top: calc(var(--header-height, 74px) - 1px) !important;
+    right: 0 !important;
+    left: 0 !important;
+    height: calc(var(--offer-ticker-mobile-height) + 1px) !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) {
+    position: relative !important;
+    margin-top: calc(var(--header-height, 74px) - 1px) !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker--sticky + .page-shell {
+    margin-top: calc(var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px) !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker:not(.hero-offer-ticker--sticky) + .page-shell {
+    margin-top: 0 !important;
+  }
+
+  .page-offer-ticker.hero-offer-ticker + .page-shell.page-shell--hero {
+    padding-top: 0 !important;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__track {
+    display: flex !important;
+    align-items: center !important;
+    width: max-content !important;
+    min-width: max-content !important;
+    height: 100% !important;
+    animation: hero-offer-ticker-marquee 99s linear infinite !important;
+    will-change: transform !important;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 100% !important;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group span {
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__group span::after {
+    margin-inline: 14px;
+  }
+
+  .page-offer-ticker .hero-offer-ticker__label {
+    display: none !important;
+  }
+}
+
+/* === ESADAR checkout recommendations rail === */
+.checkout-interest-scroll-section {
+  margin-top: clamp(1.5rem, 4vw, 2.25rem);
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  padding-top: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.checkout-interest-scroll-section .article-horizontal-card-track {
+  margin-top: 16px;
+}
+
+@media (max-width: 720px) {
+  .checkout-interest-scroll-section {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+  }
+}
+
+.checkout-interest-fallback-section {
+  margin-top: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+@media (max-width: 720px) {
+  .checkout-interest-fallback-section {
+    margin-top: 1.25rem;
+  }
+}
+
+/* === ESADAR site chrome offset and footer reveal stabilization === */
+.app-shell {
+  --site-ticker-height: 0px;
+  --site-chrome-scroll-margin: calc(
+    var(--header-height, 88px) + var(--site-ticker-height, 0px) + 18px
+  );
+}
+
+.app-shell--has-offer-ticker {
+  --site-ticker-height: 32px;
+}
+
+.catalog-wide,
+.article-wizard-step-content-anchor,
+[data-validation-field],
+.section-card {
+  scroll-margin-top: var(--site-chrome-scroll-margin);
+}
+
+@media (min-width: 961px) {
+  .site-chrome {
+    position: relative;
+    z-index: 95;
+    background: var(--surface);
+  }
+
+  .site-chrome--ticker-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 95;
+  }
+
+  .site-chrome--ticker-sticky .site-header {
+    position: relative !important;
+    top: auto !important;
+    z-index: 2 !important;
+  }
+
+  .site-chrome--ticker-sticky
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    position: relative !important;
+    top: auto !important;
+    z-index: 1 !important;
+  }
+
+  .site-header {
+    background: var(--surface) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  :root[data-theme="alt"] .site-header {
+    background: var(--surface) !important;
+  }
+
+  .app-shell--footer-scroll-active .site-header,
+  .app-shell--footer-scroll-deep .site-header,
+  .app-shell--footer-reveal-suppressed .site-header,
+  .app-shell--footer-navigation-guard .site-header,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+    .site-header,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep
+    .site-header,
+  .app-shell--footer-scroll-active
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-scroll-deep
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-reveal-suppressed
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-active
+    .page-offer-ticker.hero-offer-ticker--sticky,
+  .app-shell--footer-navigation-guard.app-shell--footer-scroll-deep
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    pointer-events: auto !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell--has-offer-ticker {
+    --site-ticker-height: var(--offer-ticker-mobile-height, 30px);
+  }
+
+  .site-chrome {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  .app-shell--offer-ticker-sticky > .site-chrome + .page-shell {
+    margin-top: calc(
+      var(--header-height, 74px) + var(--offer-ticker-mobile-height, 30px) - 1px
+    ) !important;
+  }
+
+  .app-shell--has-offer-ticker:not(.app-shell--offer-ticker-sticky)
+    > .site-chrome
+    + .page-shell {
+    margin-top: 0 !important;
+  }
+
+  .catalog-wide,
+  .article-wizard-step-content-anchor,
+  [data-validation-field],
+  .section-card {
+    scroll-margin-top: var(--site-chrome-scroll-margin);
+  }
+}

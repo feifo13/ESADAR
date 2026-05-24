@@ -1,0 +1,47 @@
+/* Design tokens and root theme variables.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #eef7f8;
+  --text: #102b34;
+  --muted: #667b82;
+  --border: rgba(16, 43, 52, 0.14);
+  --aqua: #00a7b3;
+  --orange: #fc4c02;
+  --navy: #002244;
+  --shadow: 0 16px 40px rgba(0, 34, 68, 0.08);
+  --radius: 24px;
+  --header-height: 88px;
+  --field-bg: var(--surface);
+  --field-bg-soft: var(--surface-soft);
+  --field-option-bg: var(--surface);
+  --field-text: var(--text);
+  --field-placeholder: var(--muted);
+  --button-primary-text: #ffffff;
+  --button-secondary-text: var(--text);
+  --motion-fast: 240ms;
+  --motion-smooth: 520ms;
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-primary: "Neo Grotesk", system-ui, sans-serif;
+  --font-body: var(--font-primary);
+  --font-display: "Neo Grotesk", system-ui, sans-serif;
+}
+
+:root[data-theme="alt"] {
+  --bg: #06131d;
+  --surface: #0f2431;
+  --surface-soft: #122c38;
+  --text: #eff8fa;
+  --muted: #b1c6cc;
+  --border: rgba(239, 248, 250, 0.1);
+  --shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-color-mode="light"] {
+  color-scheme: light;
+}
+:root[data-color-mode="dark"] {
+  color-scheme: dark;
+}

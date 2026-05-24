@@ -11,8 +11,6 @@ import { LookupsProvider } from './contexts/LookupsContext.jsx';
 import { SiteSeoProvider } from './contexts/SiteSeoContext.jsx';
 import { WishlistProvider } from './contexts/WishlistContext.jsx';
 import './index.css';
-import './styles/rails.css';
-import './styles/feedback.css';
 
 if (typeof window !== 'undefined') {
   if ('scrollRestoration' in window.history) {

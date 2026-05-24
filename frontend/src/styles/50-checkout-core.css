@@ -1,0 +1,89 @@
+/* Checkout and order summary core layout.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.checkout-grid,
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 22px;
+}
+.checkout-items,
+.checkout-sidebar,
+.quantity-row,
+.order-summary-card {
+  display: grid;
+  gap: 16px;
+}
+.checkout-item,
+.radio-card,
+.admin-row-card {
+  display: grid;
+  gap: 14px;
+}
+.checkout-item {
+  grid-template-columns: 92px 1fr auto;
+  align-items: center;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.checkout-item img,
+.admin-row-card img {
+  width: 92px;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+.checkout-item-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+.quantity-row {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+.radio-card {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+.summary-line.total {
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 1.1rem;
+}
+
+.about-collage {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 16px;
+}
+.about-card {
+  min-height: 180px;
+  border-radius: 30px;
+  padding: 20px;
+  display: grid;
+  align-items: end;
+  color: white;
+  background:
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55)),
+    linear-gradient(135deg, rgba(0, 142, 151, 0.85), rgba(0, 34, 68, 0.9));
+}
+.about-card.large {
+  min-height: 240px;
+}
+.about-card span {
+  font-size: 1.3rem;
+  line-height: 1.2;
+  font-weight: 600;
+}

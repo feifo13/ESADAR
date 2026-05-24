@@ -1,0 +1,243 @@
+/* Responsive spacing, mobile action rhythm and admin/account spacing.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* === ESADAR responsive spacing and mobile action rhythm === */
+.page-stack > .section-card,
+.admin-page-shell > .section-card,
+.account-page-shell > .section-card,
+.checkout-page-stack > .section-card {
+  margin-block: clamp(14px, 2vw, 24px);
+}
+
+.section-card form,
+.nested-card form,
+.auth-card form,
+.contact-form,
+.lead-capture-form,
+.stock-alert-inline-form,
+.checkout-shell form,
+.admin-page-shell form,
+.account-page-shell form {
+  display: grid;
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.form-grid-two,
+.admin-filter-grid,
+.checkout-step-grid,
+.checkout-confirmation-grid,
+.admin-detail-meta,
+.detail-meta-list,
+.history-list,
+.summary-item-card-list {
+  gap: clamp(14px, 1.8vw, 22px);
+}
+
+.field-group {
+  gap: 10px;
+}
+
+.field-group + .field-group,
+.nested-card + .nested-card,
+.section-heading + form,
+.section-heading + .responsive-filter-panel,
+.section-heading + .table-shell,
+.section-heading + .account-mobile-list,
+.account-mobile-list + .account-desktop-table {
+  margin-top: clamp(10px, 1.4vw, 18px);
+}
+
+.pagination-row .table-actions,
+.table-actions.pagination-actions,
+.pagination-row__manual-actions,
+.wizard-navigation-actions {
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-row .table-actions .button,
+.table-actions.pagination-actions .button,
+.pagination-row__manual-actions .button,
+.wizard-navigation-actions .button {
+  flex: 0 0 auto;
+  min-width: 128px;
+}
+
+@media (max-width: 780px) {
+  .responsive-filter-trigger,
+  .responsive-filter-panel,
+  .mobile-sort-panel {
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--orange) 42%, var(--border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--orange) 20%, var(--surface)) 0%,
+      color-mix(in srgb, var(--orange) 8%, var(--surface)) 100%
+    ) !important;
+  }
+
+  .responsive-filter-panel__toolbar,
+  .responsive-filter-panel__actions {
+    align-items: stretch;
+  }
+
+  .responsive-filter-trigger .button,
+  .responsive-filter-panel__toolbar .button,
+  .responsive-filter-panel__actions .button,
+  .mobile-sort-panel .button {
+    width: 100%;
+  }
+
+  .responsive-filter-trigger__summary,
+  .responsive-filter-panel__summary {
+    color: color-mix(in srgb, var(--text) 82%, var(--orange));
+    font-weight: 700;
+  }
+
+  .section-card,
+  .nested-card,
+  .admin-page-shell .section-card,
+  .account-page-shell .section-card,
+  .checkout-page-stack .section-card {
+    padding: clamp(18px, 5vw, 24px);
+  }
+
+  .page-stack,
+  .page-stack-sm,
+  .admin-page-shell,
+  .account-page-shell,
+  .checkout-page-stack {
+    gap: clamp(16px, 5vw, 26px);
+  }
+
+  .form-grid-two,
+  .admin-filter-grid,
+  .checkout-step-grid,
+  .checkout-confirmation-grid {
+    gap: 16px;
+  }
+
+  .button,
+  .ghost-button,
+  a.button,
+  button.button,
+  button.ghost-button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .header-icon-button,
+  .cart-button,
+  .theme-dock-mini-button,
+  .gallery-zoom-button,
+  .gallery-arrows button,
+  .gallery-zoom-nav button,
+  .sortable-th-button {
+    width: auto;
+  }
+
+  .icon-action-button {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    flex: 0 0 38px;
+    padding: 0;
+  }
+
+  .table-actions,
+  .inline-action-group,
+  .toolbar-inline,
+  .dialog-actions,
+  .contact-form-actions,
+  .admin-detail-form-actions {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .table-actions:not(.pagination-actions),
+  .inline-action-group,
+  .toolbar-inline,
+  .dialog-actions,
+  .contact-form-actions,
+  .admin-detail-form-actions {
+    flex-direction: column;
+  }
+
+  .pagination-row {
+    align-items: stretch;
+  }
+
+  .pagination-row .table-actions,
+  .table-actions.pagination-actions,
+  .pagination-row__manual-actions,
+  .wizard-navigation-actions {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .checkout-navigation {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .pagination-row .table-actions .button,
+  .table-actions.pagination-actions .button,
+  .pagination-row__manual-actions .button,
+  .wizard-navigation-actions > .button {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: min(42vw, 148px);
+  }
+
+  .checkout-navigation > .button {
+    width: auto;
+    flex: 1 1 0;
+    min-width: min(42vw, 148px);
+  }
+
+  .checkout-navigation-status {
+    flex: 1 1 auto;
+  }
+
+  .data-table .table-actions,
+  .summary-item-card__actions,
+  .summary-item-card .table-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .data-table .table-actions .button,
+  .data-table .table-actions .ghost-button {
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell--footer-scroll-active .site-header,
+  .app-shell--footer-scroll-active
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    transition: none !important;
+  }
+
+  .footer-scroll-scene {
+    min-height: 100dvh;
+  }
+
+  .footer-scroll-scene__sticky {
+    position: relative;
+    min-height: 100dvh;
+    height: 100dvh;
+    transform: none !important;
+  }
+
+  .footer-scroll-scene__content,
+  .footer-scroll-scene__ring {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

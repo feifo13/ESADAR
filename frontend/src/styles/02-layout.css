@@ -1,0 +1,103 @@
+/* Containers, page shells, cards and layout primitives.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.container {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+.page-shell {
+  min-height: calc(100vh - 220px);
+  padding: 24px 0 64px;
+  overflow-x: clip;
+}
+.app-breadcrumbs {
+  width: calc(100% - 40px);
+  max-width: none;
+  margin: 0 auto 14px;
+}
+.app-breadcrumbs__list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 0 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.app-breadcrumbs__list::-webkit-scrollbar {
+  display: none;
+}
+.app-breadcrumbs__item {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: min(260px, 46vw);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-breadcrumbs__item:last-child {
+  max-width: min(420px, 58vw);
+}
+.app-breadcrumbs__item:not(:last-child)::after {
+  content: "/";
+  color: color-mix(in srgb, var(--muted) 48%, transparent);
+}
+.app-breadcrumbs__item a,
+.app-breadcrumbs__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-breadcrumbs__item a {
+  color: inherit;
+}
+.app-breadcrumbs__item a:hover,
+.app-breadcrumbs__item a:focus-visible {
+  color: var(--text);
+}
+.app-breadcrumbs__item [aria-current="page"] {
+  color: var(--text);
+}
+.page-stack {
+  display: grid;
+  /* gap: 24px; */
+}
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+.nested-card {
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+.centered-card {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: 220px;
+}
+.error-card {
+  color: #b42318;
+  border-color: rgba(180, 35, 24, 0.2);
+}
+.auth-shell {
+  display: grid;
+  place-items: center;
+  min-height: 70vh;
+}
+.auth-card {
+  width: min(760px, 100%);
+}

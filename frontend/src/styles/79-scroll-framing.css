@@ -1,0 +1,308 @@
+/* Scroll framing, footer reveal suppression, ticker and performance safeguards.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+/* === ESADAR scroll framing refinements === */
+.checkout-step-content-anchor:focus,
+.article-wizard-step-content-anchor:focus {
+  outline: none;
+}
+
+/* === ESADAR footer reveal suppression: avoid flashes on programmatic catalog scrolls === */
+.app-shell--footer-reveal-suppressed .site-header {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+@media (min-width: 961px) {
+  .app-shell--footer-reveal-suppressed
+    .page-offer-ticker.hero-offer-ticker--sticky {
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
+
+.app-shell--footer-reveal-suppressed .page-shell {
+  box-shadow: none !important;
+}
+
+.app-shell--footer-reveal-suppressed .footer-scroll-scene {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: none !important;
+}
+
+/* === ESADAR checkout wizard framing spacer ===
+   The post-wizard recommendations/fallback section now provides the needed
+   scroll runway on every viewport, so avoid forcing a large blank tail on
+   /checkout and its child routes. */
+.app-shell--checkout-view .checkout-page-stack {
+  padding-bottom: clamp(18px, 3vw, 32px);
+}
+
+.offer-page .offer-eligibility-notice {
+  border-color: color-mix(in srgb, var(--orange) 42%, var(--border)) !important;
+  background: color-mix(in srgb, var(--orange) 7%, var(--surface)) !important;
+}
+
+.offer-page .offer-eligibility-notice strong {
+  display: block;
+  color: var(--text);
+}
+
+/* === ESADAR offer ticker, brand fonts and footer logo action === */
+body,
+button,
+input,
+select,
+textarea,
+table,
+dialog,
+.section-card,
+.nested-card,
+.article-card,
+.admin-row-card,
+.modal-card {
+  font-family: var(--font-body);
+}
+
+.page-shell--hero {
+  padding-top: 0;
+}
+
+.page-shell--hero .hero-strip--carousel {
+  padding-top: 0;
+}
+
+.hero-strip--carousel {
+  position: relative;
+}
+
+.hero-offer-ticker {
+  position: relative;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: #ffffff;
+  background: var(--ticker-background, linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--orange) 88%, var(--navy)),
+    var(--orange) 42%,
+    color-mix(in srgb, var(--orange) 92%, #ffffff)
+  ));
+  border-block: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  text-decoration: none;
+  pointer-events: auto;
+  z-index: 45;
+}
+
+.hero-offer-ticker:hover,
+.hero-offer-ticker:focus-visible {
+  color: #ffffff;
+  text-decoration: none;
+  filter: brightness(1.03);
+}
+
+.hero-offer-ticker:focus-visible {
+  outline: 2px solid color-mix(in srgb, #ffffff 72%, var(--orange));
+  outline-offset: -2px;
+}
+
+.hero-offer-ticker--sticky {
+  position: sticky;
+  top: var(--header-height, 72px);
+}
+
+.hero-offer-ticker__track {
+  display: flex;
+  width: max-content;
+  animation: hero-offer-ticker-marquee 99s linear infinite;
+  will-change: transform;
+}
+
+.hero-offer-ticker__group {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.hero-offer-ticker__group span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.hero-offer-ticker__group span::after {
+  content: "\2022";
+  margin: 0 18px;
+  opacity: 0.72;
+}
+
+.page-offer-ticker {
+  border-top: 0;
+}
+
+@keyframes hero-offer-ticker-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.footer-scroll-scene__logo-button {
+  display: block;
+  width: min(760px, 82vw);
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform var(--motion-fast) var(--ease-smooth),
+    filter var(--motion-fast) var(--ease-smooth);
+}
+
+.footer-scroll-scene__logo-button:hover,
+.footer-scroll-scene__logo-button:focus-visible {
+  filter: brightness(1.04);
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.footer-scroll-scene__logo-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--orange) 50%, #ffffff);
+  outline-offset: 10px;
+}
+
+.footer-scroll-scene__logo-button .footer-scroll-scene__logo {
+  width: 100%;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .hero-offer-ticker {
+    min-height: 26px;
+  }
+
+  .hero-offer-ticker__group {
+    font-size: 0.68rem;
+  }
+
+  .hero-offer-ticker__group span::after {
+    margin-inline: 12px;
+  }
+}
+
+.hero-offer-ticker__label {
+  display: none;
+}
+
+
+@media (max-width: 820px) {
+  .footer-scroll-scene__logo-button {
+    width: min(350px, 78vw);
+  }
+}
+
+@media (max-width: 960px) {
+  .page-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+    overflow-x: clip;
+  }
+
+  .page-transition-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home-page,
+  .hero-strip--carousel,
+  .hero-offer-ticker,
+  .hero-carousel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-inline: 0;
+  }
+
+  .hero-strip--carousel {
+    padding-inline: 0;
+    overflow: clip;
+  }
+
+  .hero-carousel {
+    border-inline: 0;
+  }
+}
+
+/* === ESADAR performance pass: mobile/all-viewports rendering safeguards === */
+.article-card,
+.featured-motion-card,
+.summary-item-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 520px;
+}
+
+.article-card-media,
+.article-card-media--catalog,
+.featured-motion-card__media,
+.article-gallery-main,
+.gallery-main {
+  contain: layout paint;
+}
+
+.hero-carousel__image,
+.article-card img,
+.article-gallery-thumb__image,
+.gallery-thumb-image,
+.gallery-main-image {
+  image-rendering: auto;
+}
+
+@media (max-width: 780px) {
+  .article-card,
+  .featured-motion-card,
+  .summary-item-card {
+    contain-intrinsic-size: 1px 460px;
+  }
+
+  .hero-carousel__track,
+  .hero-offer-ticker__track,
+  .footer-scroll-scene__sticky {
+    will-change: transform;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-carousel__track,
+  .hero-offer-ticker__track,
+  .footer-scroll-scene__sticky,
+  .intro-splash__logo,
+  .cart-fly-token,
+  .cart-fly-token__core,
+  .wishlist-heart-button__spark,
+  .button-cart-added,
+  .cart-button--pulse {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

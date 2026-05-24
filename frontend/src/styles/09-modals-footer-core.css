@@ -1,0 +1,44 @@
+/* Modal and footer core surfaces.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 80;
+}
+.modal-card {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 14px;
+}
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0 44px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.footer-title {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+.footer-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.footer-links {
+  display: grid;
+  gap: 8px;
+}

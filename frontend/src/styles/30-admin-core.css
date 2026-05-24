@@ -1,0 +1,203 @@
+/* Admin toolbar, lists, tables and status badges core.
+   Keep import order in ./index.css; these rules preserve the original cascade. */
+
+.admin-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-tab {
+  background: var(--surface);
+  border-color: var(--border);
+}
+.admin-tab.active {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+}
+.toolbar-inline {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.admin-list {
+  display: grid;
+  gap: 14px;
+}
+.admin-row-card {
+  grid-template-columns: 92px 1fr auto;
+  align-items: center;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.admin-row-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+.compact-list {
+  gap: 10px;
+}
+.compact-row {
+  grid-template-columns: 72px 1fr auto;
+  padding: 12px;
+}
+.compact-row img {
+  width: 72px;
+  height: 72px;
+}
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+.history-row {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.table-shell {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.data-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+.data-table th,
+.data-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.data-table th {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.cell-stack {
+  display: grid;
+  gap: 4px;
+}
+.cell-copy {
+  min-width: 240px;
+  max-width: 380px;
+}
+.table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pagination-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 0px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.status-pending,
+.status-new {
+  background: rgba(180, 123, 0, 0.12);
+  color: #9a6700;
+}
+.status-read {
+  background: rgba(0, 142, 151, 0.12);
+  color: var(--aqua);
+}
+.status-reserved {
+  background: rgba(0, 142, 151, 0.12);
+  color: var(--aqua);
+}
+.status-approved {
+  background: rgba(14, 143, 98, 0.12);
+  color: #0e8f62;
+}
+.status-accepted,
+.status-replied,
+.status-paid {
+  background: rgba(14, 143, 98, 0.12);
+  color: #0e8f62;
+}
+.status-used {
+  background: rgba(252, 76, 2, 0.14);
+  color: var(--orange);
+}
+.status-shipped {
+  background: rgba(0, 34, 68, 0.12);
+  color: var(--navy);
+}
+.status-rejected,
+.status-failed,
+.status-cancelled,
+.status-expired {
+  background: rgba(180, 35, 24, 0.12);
+  color: #b42318;
+}
+.status-refunded,
+.status-archived {
+  background: rgba(71, 84, 103, 0.12);
+  color: #475467;
+}
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 28px;
+}
+.image-preview-section {
+  display: grid;
+  gap: 14px;
+}
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+.image-preview-card {
+  display: grid;
+  gap: 8px;
+}
+.image-preview-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.image-preview-card figcaption {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.image-preview-card--pending figcaption {
+  color: var(--orange);
+}
+
+img[data-fallback="true"] {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 34, 68, 0.18),
+    rgba(0, 167, 179, 0.08)
+  );
+  object-fit: cover;
+}
