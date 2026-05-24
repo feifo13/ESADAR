@@ -245,7 +245,10 @@
   padding-right: clamp(10px, 1.2vw, 18px);
 }
 
-.account-order-detail-page .account-order-detail-meta .summary-line + .summary-line {
+.account-order-detail-page
+  .account-order-detail-meta
+  .summary-line
+  + .summary-line {
   padding-left: clamp(12px, 1.4vw, 20px);
   border-left: 1px solid var(--border);
 }
@@ -266,7 +269,10 @@
   overflow-wrap: anywhere;
 }
 
-.account-order-detail-page .account-order-detail-meta .summary-line strong:has(.status-badge) {
+.account-order-detail-page
+  .account-order-detail-meta
+  .summary-line
+  strong:has(.status-badge) {
   display: inline-flex;
 }
 
@@ -275,7 +281,9 @@
     grid-template-columns: repeat(3, minmax(160px, 1fr));
   }
 
-  .account-order-detail-page .account-order-detail-meta .summary-line:nth-child(4) {
+  .account-order-detail-page
+    .account-order-detail-meta
+    .summary-line:nth-child(4) {
     padding-left: 0;
     border-left: 0;
   }
@@ -303,7 +311,10 @@
   }
 
   .account-order-detail-page .account-order-detail-meta .summary-line,
-  .account-order-detail-page .account-order-detail-meta .summary-line + .summary-line {
+  .account-order-detail-page
+    .account-order-detail-meta
+    .summary-line
+    + .summary-line {
     padding-left: 0;
     padding-right: 0;
     border-left: 0;
@@ -333,7 +344,10 @@
 }
 
 .admin-order-detail-meta .summary-line + .summary-line,
-.account-order-detail-page .account-order-detail-meta .summary-line + .summary-line {
+.account-order-detail-page
+  .account-order-detail-meta
+  .summary-line
+  + .summary-line {
   padding-left: 0;
   border-left: 0;
 }
@@ -351,7 +365,10 @@
   }
 
   .admin-order-detail-meta .summary-line + .summary-line,
-  .account-order-detail-page .account-order-detail-meta .summary-line + .summary-line {
+  .account-order-detail-page
+    .account-order-detail-meta
+    .summary-line
+    + .summary-line {
     padding-left: clamp(8px, 0.8vw, 12px);
     border-left: 1px solid var(--border);
   }
@@ -498,5 +515,74 @@
   .article-margin-preview .summary-line {
     display: grid;
     gap: 3px;
+  }
+}
+
+/* Desktop: compactar solo el bloque superior de datos del detalle de orden.
+   No afecta mobile ni otras partes de la app. */
+@media (min-width: 1024px) {
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 0 !important;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line {
+    gap: 4px !important;
+    padding-inline: 10px !important;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line:first-child {
+    padding-left: 0 !important;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line
+    + .summary-line {
+    border-left: 1px solid var(--border) !important;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line.total {
+    padding-top: 0 !important;
+    border-top: 0 !important;
+    font-size: 1rem !important;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line
+    span {
+    font-size: 0.95rem;
+    line-height: 1.15;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .summary-line
+    strong {
+    font-size: 0.95rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .account-order-detail-page
+    .account-order-detail-hero-card
+    > .account-order-detail-meta.account-order-detail-meta--wide
+    .status-badge {
+    white-space: nowrap;
   }
 }
