@@ -11,7 +11,11 @@ import { useCart } from "../contexts/CartContext.jsx";
 import { useWishlist } from "../contexts/WishlistContext.jsx";
 import { useNotification } from "../contexts/NotificationContext.jsx";
 import SmartImage from "./SmartImage.jsx";
-import { buildArticleImageSrcSet, getArticleImageSizes, getArticleImageSrc } from "../lib/article-images.js";
+import {
+  buildArticleImageSrcSet,
+  getArticleImageSizes,
+  getArticleImageSrc,
+} from "../lib/article-images.js";
 import WishlistHeartButton from "./WishlistHeartButton.jsx";
 
 const SHOW_CARD_BADGES = false;
@@ -144,7 +148,7 @@ export default function ArticleCard({
           ) : null}
           {!isSoldOut && showOfferRibbon ? (
             <span className="article-card-ribbon article-card-ribbon--offerable">
-              Oferta!
+              ¡Ofertá!
             </span>
           ) : null}
           <div className="featured-motion-card__media">
@@ -210,7 +214,7 @@ export default function ArticleCard({
           ) : null}
           {!isSoldOut && showOfferRibbon ? (
             <span className="article-card-ribbon article-card-ribbon--offerable">
-              Oferta!
+              ¡Ofertá!
             </span>
           ) : null}
           <SmartImage
@@ -249,7 +253,7 @@ export default function ArticleCard({
           {article.acceptedOffer ? (
             <span className="pill pill-offer">Oferta aceptada</span>
           ) : article.allowOffers ? (
-            <span className="pill pill-offer">¡Oferta!!</span>
+            <span className="pill pill-offer">¡Ofertá!</span>
           ) : null}
           {discounted ? (
             <span className="pill pill-discount">Descuento</span>
