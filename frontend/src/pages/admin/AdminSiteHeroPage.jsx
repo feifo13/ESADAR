@@ -129,8 +129,13 @@ function toTickerForm(ticker) {
 }
 
 function getTickerFormMessages(tickerForm) {
-  const messages = normalizeTickerMessages(tickerForm?.messages, tickerForm?.text);
-  return messages.length ? messages : [""];
+  if (Array.isArray(tickerForm?.messages)) {
+    const messages = tickerForm.messages.map((message) => String(message ?? "").slice(0, 180));
+    return messages.length ? messages : [""];
+  }
+
+  const text = String(tickerForm?.text ?? "").slice(0, 180);
+  return text ? [text] : [""];
 }
 
 function getCleanTickerMessages(tickerForm) {
