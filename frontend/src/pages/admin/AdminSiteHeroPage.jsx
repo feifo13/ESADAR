@@ -8,6 +8,7 @@ import {
   buildTickerTargetUrl,
   DEFAULT_SITE_TICKER,
   normalizeSiteTicker,
+  normalizeTickerMessages,
   resolveTickerBackgroundColor,
 } from "../../lib/siteTicker.js";
 
@@ -125,6 +126,15 @@ function toHeroForm(hero) {
 
 function toTickerForm(ticker) {
   return normalizeSiteTicker(ticker);
+}
+
+function getTickerFormMessages(tickerForm) {
+  const messages = normalizeTickerMessages(tickerForm?.messages, tickerForm?.text);
+  return messages.length ? messages : [""];
+}
+
+function getCleanTickerMessages(tickerForm) {
+  return normalizeTickerMessages(tickerForm?.messages, tickerForm?.text);
 }
 
 function getSelectedImage(images, viewportTarget) {
@@ -247,6 +257,32 @@ export default function AdminSiteHeroPage() {
 
   function updateTickerField(name, value) {
     setTickerForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function updateTickerMessage(index, value) {
+    setTickerForm((current) => {
+      const messages = getTickerFormMessages(current);
+      const nextMessages = messages.map((message, messageIndex) =>
+        messageIndex === index ? value : message,
+      );
+      return { ...current, messages: nextMessages, text: nextMessages[0] || "" };
+    });
+  }
+
+  function addTickerMessage() {
+    setTickerForm((current) => {
+      const messages = getTickerFormMessages(current);
+      return { ...current, messages: [...messages, ""] };
+    });
+  }
+
+  function removeTickerMessage(index) {
+    setTickerForm((current) => {
+      const messages = getTickerFormMessages(current);
+      const nextMessages = messages.filter((_, messageIndex) => messageIndex !== index);
+      const safeMessages = nextMessages.length ? nextMessages : [""];
+      return { ...current, messages: safeMessages, text: safeMessages[0] || "" };
+    });
   }
 
   function updateImage(index, name, value) {
@@ -388,17 +424,19 @@ export default function AdminSiteHeroPage() {
   async function handleTickerSubmit(event) {
     event.preventDefault();
 
+    const messages = getCleanTickerMessages(tickerForm);
     const nextTicker = {
       ...tickerForm,
-      text: String(tickerForm.text || "").trim(),
+      text: messages[0] || "",
+      messages,
       targetUrl: String(tickerForm.targetUrl || DEFAULT_SITE_TICKER.targetUrl).trim(),
       targetSection: String(tickerForm.targetSection || "").trim().toLowerCase(),
       backgroundColor: String(tickerForm.backgroundColor || DEFAULT_SITE_TICKER.backgroundColor).trim(),
       isEnabled: Boolean(tickerForm.isEnabled),
       isSticky: Boolean(tickerForm.isSticky),
     };
-    if (nextTicker.isEnabled && !nextTicker.text.trim()) {
-      notifyError("El texto del ticker es obligatorio.");
+    if (nextTicker.isEnabled && !nextTicker.messages.length) {
+      notifyError("Agrega al menos un mensaje para activar el ticker.");
       return;
     }
     if (
@@ -417,6 +455,7 @@ export default function AdminSiteHeroPage() {
         body: {
           isEnabled: nextTicker.isEnabled,
           text: nextTicker.text,
+          messages: nextTicker.messages,
           targetUrl: nextTicker.targetUrl,
           targetSection: nextTicker.targetSection,
           backgroundColor: nextTicker.backgroundColor,
@@ -432,6 +471,8 @@ export default function AdminSiteHeroPage() {
       setSavingTicker(false);
     }
   }
+
+  const tickerPreviewMessages = getCleanTickerMessages(tickerForm);
 
   return (
     <div className="container page-stack admin-page-shell">
@@ -844,16 +885,36 @@ export default function AdminSiteHeroPage() {
                 <span>Mantener ticker fijo al hacer scroll</span>
               </label>
 
-              <label className="field-group form-grid-span-two">
-                <span>Texto</span>
-                <input
-                  className="input"
-                  value={tickerForm.text}
-                  onChange={(event) => updateTickerField("text", event.target.value)}
-                  maxLength={180}
-                  placeholder="Nuevas prendas disponibles — ver catálogo"
-                />
-              </label>
+              <div className="field-group form-grid-span-two admin-site-ticker-messages">
+                <span>Mensajes</span>
+                {getTickerFormMessages(tickerForm).map((message, index) => (
+                  <div className="admin-site-ticker-message-row" key={`ticker-message-${index}`}>
+                    <input
+                      className="input"
+                      value={message}
+                      onChange={(event) => updateTickerMessage(index, event.target.value)}
+                      maxLength={180}
+                      placeholder="Nuevas prendas disponibles — ver catálogo"
+                    />
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => removeTickerMessage(index)}
+                      disabled={getTickerFormMessages(tickerForm).length <= 1}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="button button-secondary admin-site-ticker-add-message"
+                  onClick={addTickerMessage}
+                  disabled={getTickerFormMessages(tickerForm).length >= 12}
+                >
+                  Agregar mensaje
+                </button>
+              </div>
 
               <label className="field-group">
                 <span>URL destino</span>
@@ -904,7 +965,7 @@ export default function AdminSiteHeroPage() {
                 className="admin-site-ticker-preview__bar"
                 style={{ "--ticker-background": resolveTickerBackgroundColor(tickerForm.backgroundColor) }}
               >
-                <span>{tickerForm.text || DEFAULT_SITE_TICKER.text}</span>
+                <span>{tickerPreviewMessages.length ? tickerPreviewMessages.join(" / ") : "Sin mensajes"}</span>
               </div>
               <p className="field-helper">
                 Destino: {buildTickerTargetUrl(tickerForm)}

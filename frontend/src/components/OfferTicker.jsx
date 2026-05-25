@@ -6,13 +6,25 @@ import {
   resolveTickerBackgroundColor,
 } from "../lib/siteTicker.js";
 
-const OFFER_TICKER_GROUPS = Array.from({ length: 5 }, (_, groupIndex) => groupIndex);
-const OFFER_TICKER_ITEMS = Array.from({ length: 4 }, (_, itemIndex) => itemIndex);
+const OFFER_TICKER_GROUPS = Array.from({ length: 2 }, (_, groupIndex) => groupIndex);
+const MIN_OFFER_TICKER_ITEMS = 8;
+
+function buildTickerSequence(messages) {
+  const sequence = [];
+  while (sequence.length < Math.max(MIN_OFFER_TICKER_ITEMS, messages.length)) {
+    sequence.push(...messages);
+  }
+  return sequence;
+}
 
 export default function OfferTicker({ className = "", config = DEFAULT_SITE_TICKER }) {
   const ticker = normalizeSiteTicker(config);
+  const messages = ticker.messages?.length ? ticker.messages : ticker.text ? [ticker.text] : [];
 
-  if (!ticker.isEnabled || !ticker.text) return null;
+  if (!ticker.isEnabled || !messages.length) return null;
+
+  const marqueeMessages = buildTickerSequence(messages);
+  const accessibleText = messages.join(". ");
 
   return (
     <Link
@@ -25,14 +37,14 @@ export default function OfferTicker({ className = "", config = DEFAULT_SITE_TICK
         .filter(Boolean)
         .join(" ")}
       style={{ "--ticker-background": resolveTickerBackgroundColor(ticker.backgroundColor) }}
-      aria-label={`${ticker.text}. Ir al catálogo`}
+      aria-label={`${accessibleText}. Ir al catálogo`}
     >
-      <span className="hero-offer-ticker__label">{ticker.text}</span>
+      <span className="hero-offer-ticker__label">{accessibleText}</span>
       <div className="hero-offer-ticker__track" aria-hidden="true">
         {OFFER_TICKER_GROUPS.map((group) => (
           <span className="hero-offer-ticker__group" key={group}>
-            {OFFER_TICKER_ITEMS.map((item) => (
-              <span key={`${group}-${item}`}>{ticker.text}</span>
+            {marqueeMessages.map((message, item) => (
+              <span key={`${group}-${item}`}>{message}</span>
             ))}
           </span>
         ))}

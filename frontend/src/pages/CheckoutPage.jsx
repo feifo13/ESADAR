@@ -349,8 +349,8 @@ export default function CheckoutPage() {
   const unavailableItemsCount = unavailableItems.length;
   const unavailableTickerLabel =
     unavailableItemsCount === 1
-      ? "1 artículo no disponible"
-      : `${unavailableItemsCount} artículos no disponibles`;
+      ? "Hay 1 artículo no disponible en tu carrito"
+      : `Hay ${unavailableItemsCount} artículos no disponibles en tu carrito`;
   const availableItems = useMemo(
     () => items.filter((item) => !isCheckoutItemUnavailable(item)),
     [items],

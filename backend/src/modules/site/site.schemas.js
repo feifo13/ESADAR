@@ -26,6 +26,16 @@ function isTickerBackgroundColor(value) {
   return tickerColorTokens.has(normalized.toLowerCase());
 }
 
+const tickerMessagesSchema = z.preprocess(
+  (value) => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((message) => String(message ?? '').trim())
+      .filter(Boolean);
+  },
+  z.array(z.string().min(1).max(180)).max(12),
+);
+
 const booleanFromFormValue = (fallback) =>
   z.preprocess((value) => {
     if (value == null || value === '') return fallback;
@@ -91,8 +101,10 @@ export const siteTickerUpdateSchema = z.object({
   isEnabled: booleanFromFormValue(true),
   text: z.preprocess(
     (value) => String(value ?? '').trim(),
-    z.string().min(1, 'El texto del ticker es obligatorio.').max(180),
+    z.string().max(180).default(''),
   ),
+  messages: tickerMessagesSchema.optional(),
+  tickerMessages: tickerMessagesSchema.optional(),
   targetUrl: z.preprocess(
     (value) => String(value ?? '/articles').trim(),
     z.string().max(500).refine(isSafeInternalTickerUrl, {
@@ -110,4 +122,35 @@ export const siteTickerUpdateSchema = z.object({
     }),
   ),
   isSticky: booleanFromFormValue(false),
+}).superRefine((value, ctx) => {
+  const messages = value.messages?.length
+    ? value.messages
+    : value.tickerMessages?.length
+      ? value.tickerMessages
+      : value.text
+        ? [value.text]
+        : [];
+
+  if (value.isEnabled && messages.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['messages'],
+      message: 'Agrega al menos un mensaje para activar el ticker.',
+    });
+  }
+}).transform((value) => {
+  const messages = value.messages?.length
+    ? value.messages
+    : value.tickerMessages?.length
+      ? value.tickerMessages
+      : value.text
+        ? [value.text]
+        : [];
+
+  return {
+    ...value,
+    text: messages[0] || value.text || '',
+    messages,
+    tickerMessages: messages,
+  };
 });

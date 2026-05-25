@@ -37,6 +37,7 @@ async function ensureTickerTable(connection = pool) {
       id TINYINT UNSIGNED NOT NULL DEFAULT 1,
       ticker_enabled TINYINT(1) NOT NULL DEFAULT 1,
       ticker_text VARCHAR(180) NOT NULL DEFAULT 'ACEPTAMOS OFERTAS EN ARTÍCULOS SELECCIONADOS',
+      ticker_messages JSON NULL,
       ticker_target_url VARCHAR(500) NOT NULL DEFAULT '/articles',
       ticker_target_section VARCHAR(80) NULL,
       ticker_background_color VARCHAR(32) NOT NULL DEFAULT '#ec672b',
@@ -50,6 +51,29 @@ async function ensureTickerTable(connection = pool) {
       CONSTRAINT fk_site_ticker_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
     ) ENGINE=InnoDB
   `);
+
+  const [messageColumnRows] = await connection.execute(
+    `
+      SELECT COUNT(*) AS count
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'site_ticker_settings'
+        AND COLUMN_NAME = 'ticker_messages'
+    `,
+  );
+
+  if (Number(messageColumnRows?.[0]?.count || 0) === 0) {
+    await connection.execute(
+      'ALTER TABLE site_ticker_settings ADD COLUMN ticker_messages JSON NULL AFTER ticker_text',
+    );
+    await connection.execute(
+      `
+        UPDATE site_ticker_settings
+        SET ticker_messages = JSON_ARRAY(ticker_text)
+        WHERE NULLIF(TRIM(ticker_text), '') IS NOT NULL
+      `,
+    );
+  }
 
   tickerTableEnsured = true;
 }
@@ -79,11 +103,43 @@ function normalizeTickerBackgroundColor(value) {
   return TICKER_COLOR_TOKENS.has(token) ? token : DEFAULT_TICKER_BACKGROUND_COLOR;
 }
 
+function normalizeTickerMessages(value, fallbackText = '') {
+  let source = value;
+
+  if (typeof source === 'string') {
+    try {
+      source = JSON.parse(source);
+    } catch {
+      source = [];
+    }
+  }
+
+  const messages = Array.isArray(source)
+    ? source
+        .map((message) => String(message || '').trim())
+        .filter(Boolean)
+        .map((message) => message.slice(0, 180))
+    : [];
+
+  if (messages.length) return messages.slice(0, 12);
+
+  const legacyText = String(fallbackText || '').trim();
+  return legacyText ? [legacyText.slice(0, 180)] : [];
+}
+
 function normalizeTickerRow(row) {
+  const legacyText = row
+    ? String(row.tickerText ?? '').trim()
+    : DEFAULT_TICKER_TEXT;
+  const messages = normalizeTickerMessages(row?.tickerMessages, legacyText);
+  const text = messages[0] || legacyText;
+
   return {
     id: Number(row?.id || TICKER_SETTINGS_ID),
     isEnabled: row?.tickerEnabled == null ? true : Boolean(row.tickerEnabled),
-    text: String(row?.tickerText || DEFAULT_TICKER_TEXT).trim() || DEFAULT_TICKER_TEXT,
+    text,
+    messages,
+    tickerMessages: messages,
     targetUrl: normalizeTickerTargetUrl(row?.tickerTargetUrl),
     targetSection: normalizeTickerTargetSection(row?.tickerTargetSection),
     backgroundColor: normalizeTickerBackgroundColor(row?.tickerBackgroundColor),
@@ -457,6 +513,7 @@ async function selectTickerRow(connection = pool) {
         id,
         ticker_enabled AS tickerEnabled,
         ticker_text AS tickerText,
+        ticker_messages AS tickerMessages,
         ticker_target_url AS tickerTargetUrl,
         ticker_target_section AS tickerTargetSection,
         ticker_background_color AS tickerBackgroundColor,
@@ -490,11 +547,12 @@ async function ensureTickerSettingsRow(connection) {
         id,
         ticker_enabled,
         ticker_text,
+        ticker_messages,
         ticker_target_url,
         ticker_target_section,
         ticker_background_color,
         ticker_sticky
-      ) VALUES (?, 1, ?, ?, NULL, ?, 0)
+      ) VALUES (?, 1, ?, NULL, ?, NULL, ?, 0)
     `,
     [
       TICKER_SETTINGS_ID,
@@ -526,7 +584,8 @@ export async function getAdminSiteTicker() {
 export async function updateAdminSiteTicker(input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await ensureTickerSettingsRow(connection);
-    const text = String(input.text || DEFAULT_TICKER_TEXT).trim() || DEFAULT_TICKER_TEXT;
+    const messages = normalizeTickerMessages(input.messages, input.text);
+    const text = messages[0] || '';
     const targetUrl = normalizeTickerTargetUrl(input.targetUrl);
     const targetSection = normalizeTickerTargetSection(input.targetSection);
     const backgroundColor = normalizeTickerBackgroundColor(input.backgroundColor);
@@ -537,6 +596,7 @@ export async function updateAdminSiteTicker(input, auditContext) {
         SET
           ticker_enabled = ?,
           ticker_text = ?,
+          ticker_messages = ?,
           ticker_target_url = ?,
           ticker_target_section = ?,
           ticker_background_color = ?,
@@ -547,6 +607,7 @@ export async function updateAdminSiteTicker(input, auditContext) {
       [
         input.isEnabled ? 1 : 0,
         text,
+        messages.length ? JSON.stringify(messages) : null,
         targetUrl,
         targetSection || null,
         backgroundColor,

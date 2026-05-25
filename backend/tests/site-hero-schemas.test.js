@@ -133,7 +133,7 @@ test('site hero service returns ordered active images for public hero payloads',
 test('site ticker schema accepts internal destinations and boolean flags', () => {
   const parsed = siteTickerUpdateSchema.parse({
     isEnabled: 'true',
-    text: 'Nuevas prendas disponibles',
+    messages: [' Nuevas prendas disponibles ', 'Ofertas seleccionadas'],
     targetUrl: '/articles?featured=true',
     targetSection: 'offers',
     backgroundColor: '#ff6b00',
@@ -141,9 +141,24 @@ test('site ticker schema accepts internal destinations and boolean flags', () =>
   });
 
   assert.equal(parsed.isEnabled, true);
+  assert.deepEqual(parsed.messages, ['Nuevas prendas disponibles', 'Ofertas seleccionadas']);
+  assert.equal(parsed.text, 'Nuevas prendas disponibles');
   assert.equal(parsed.targetUrl, '/articles?featured=true');
   assert.equal(parsed.targetSection, 'offers');
   assert.equal(parsed.isSticky, false);
+});
+
+test('site ticker schema keeps legacy single text fallback', () => {
+  const parsed = siteTickerUpdateSchema.parse({
+    isEnabled: true,
+    text: 'Ticker heredado',
+    targetUrl: '/articles',
+    backgroundColor: '#ff6b00',
+    isSticky: false,
+  });
+
+  assert.deepEqual(parsed.messages, ['Ticker heredado']);
+  assert.equal(parsed.text, 'Ticker heredado');
 });
 
 test('site ticker schema rejects unsafe URLs and invalid colors', () => {

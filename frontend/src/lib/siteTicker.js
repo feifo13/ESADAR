@@ -82,13 +82,36 @@ function normalizeTickerBackgroundValue(value) {
     : DEFAULT_SITE_TICKER.backgroundColor;
 }
 
+export function normalizeTickerMessages(value, fallbackText = "") {
+  const source = Array.isArray(value) ? value : [];
+  const messages = source
+    .map((message) => String(message || "").trim())
+    .filter(Boolean)
+    .map((message) => message.slice(0, 180));
+
+  if (messages.length) return messages.slice(0, 12);
+
+  const legacyText = String(fallbackText || "").trim();
+  return legacyText ? [legacyText.slice(0, 180)] : [];
+}
+
 export function normalizeSiteTicker(rawTicker) {
   const source = rawTicker && typeof rawTicker === "object" ? rawTicker : {};
-  const text = String(source.text || DEFAULT_SITE_TICKER.text).trim();
+  const hasSource = Boolean(rawTicker && typeof rawTicker === "object");
+  const fallbackText = hasSource
+    ? String(source.text ?? "").trim()
+    : DEFAULT_SITE_TICKER.text;
+  const rawMessages = Array.isArray(source.messages) && source.messages.length
+    ? source.messages
+    : source.tickerMessages || source.messages;
+  const messages = normalizeTickerMessages(rawMessages, fallbackText);
+  const text = messages[0] || fallbackText;
 
   return {
     isEnabled: source.isEnabled == null ? DEFAULT_SITE_TICKER.isEnabled : Boolean(source.isEnabled),
-    text: text || DEFAULT_SITE_TICKER.text,
+    text,
+    messages,
+    tickerMessages: messages,
     targetUrl: sanitizeInternalPath(source.targetUrl),
     targetSection: normalizeTickerSection(source.targetSection),
     backgroundColor: normalizeTickerBackgroundValue(source.backgroundColor),

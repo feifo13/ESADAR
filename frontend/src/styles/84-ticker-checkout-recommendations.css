@@ -170,6 +170,18 @@
     background: var(--surface);
   }
 
+  .app-shell--checkout-view > .site-chrome {
+    position: sticky;
+    top: 0;
+    z-index: 95;
+  }
+
+  .app-shell--checkout-view > .site-chrome .site-header {
+    position: relative !important;
+    top: auto !important;
+    z-index: 2 !important;
+  }
+
   .site-chrome--ticker-sticky {
     position: sticky;
     top: 0;

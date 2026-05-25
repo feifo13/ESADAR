@@ -292,6 +292,27 @@
   max-width: 720px;
 }
 
+.admin-site-ticker-messages {
+  gap: 10px;
+}
+
+.admin-site-ticker-message-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-site-ticker-message-row .button,
+.admin-site-ticker-message-row .ghost-button {
+  min-height: 42px;
+  white-space: nowrap;
+}
+
+.admin-site-ticker-add-message {
+  justify-self: start;
+}
+
 .admin-site-ticker-preview__bar {
   display: flex;
   align-items: center;
@@ -316,6 +337,17 @@
   }
 
   .admin-site-hero-heading .button {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .admin-site-ticker-message-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-site-ticker-message-row .button,
+  .admin-site-ticker-message-row .ghost-button,
+  .admin-site-ticker-add-message {
     width: 100%;
     justify-self: stretch;
   }
