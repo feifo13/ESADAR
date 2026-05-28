@@ -32,7 +32,53 @@ const EMPTY_MARKET_STUDY = {
   paymentShipping: [],
 };
 
+const SALES_GROUP_OPTIONS = [
+  { value: "month", label: "Mes" },
+  { value: "week", label: "Semana" },
+  { value: "day", label: "Día" },
+];
+
 const ARTICLE_MARGIN_STATUSES = new Set(["DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"]);
+
+function getGroupByLabel(groupBy) {
+  return SALES_GROUP_OPTIONS.find((option) => option.value === groupBy)?.label || "Mes";
+}
+
+function formatCompactCurrency(value) {
+  const numeric = Number(value || 0);
+  const absolute = Math.abs(numeric);
+
+  if (absolute >= 1000000) {
+    return `$${(numeric / 1000000).toFixed(1)}M`;
+  }
+
+  if (absolute >= 1000) {
+    return `$${Math.round(numeric / 1000)}k`;
+  }
+
+  return `$${Math.round(numeric)}`;
+}
+
+function formatPeriodLabel(periodLabel, groupBy) {
+  const label = String(periodLabel || "");
+
+  if (groupBy === "day") {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(label);
+    return match ? `${match[3]}/${match[2]}` : label;
+  }
+
+  if (groupBy === "week") {
+    const match = /^(\d{4})-W(\d{2})$/.exec(label);
+    return match ? `S${Number(match[2])} ${match[1]}` : label;
+  }
+
+  if (groupBy === "month") {
+    const match = /^(\d{4})-(\d{2})$/.exec(label);
+    return match ? `${match[2]}/${match[1]}` : label;
+  }
+
+  return label;
+}
 
 function buildArticleMarginsQuery(filters) {
   const queryFilters = {
@@ -87,44 +133,164 @@ function HorizontalBars({
   );
 }
 
-function LineChart({ items, valueKey = "revenue" }) {
-  if (!items.length) {
+function LineChart({
+  items,
+  valueKey = "revenue",
+  groupBy = "month",
+  valueFormatter = formatCurrency,
+}) {
+  const chartItems = Array.isArray(items)
+    ? items.filter((item) => item?.periodLabel)
+    : [];
+
+  if (!chartItems.length) {
     return (
       <p className="muted-copy">No hay datos en el periodo seleccionado.</p>
     );
   }
 
-  const width = 480;
-  const height = 160;
-  const values = items.map((item) => Number(item[valueKey] || 0));
-  const maxValue = Math.max(...values, 1);
-  const points = values
-    .map((value, index) => {
-      const x = (index / Math.max(items.length - 1, 1)) * (width - 24) + 12;
-      const y = height - ((value / maxValue) * (height - 24) + 12);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const height = 240;
+  const topPadding = 18;
+  const rightPadding = 18;
+  const bottomPadding = 42;
+  const leftPadding = 62;
+  const stepWidth = groupBy === "day" ? 72 : groupBy === "week" ? 88 : 96;
+  const width = Math.max(
+    560,
+    leftPadding + rightPadding + Math.max(chartItems.length - 1, 1) * stepWidth,
+  );
+  const plotWidth = width - leftPadding - rightPadding;
+  const plotHeight = height - topPadding - bottomPadding;
+  const values = chartItems.map((item) => Number(item[valueKey] || 0));
+  const maxValue = Math.max(...values, 0);
+  const chartMax = maxValue > 0 ? maxValue : 1;
+  const totalValue = values.reduce((sum, value) => sum + value, 0);
+  const totalOrders = chartItems.reduce(
+    (sum, item) => sum + Number(item.ordersCount || 0),
+    0,
+  );
+  const totalItems = chartItems.reduce(
+    (sum, item) => sum + Number(item.itemsSold || 0),
+    0,
+  );
+  const points = chartItems.map((item, index) => {
+    const value = Number(item[valueKey] || 0);
+    const x = chartItems.length === 1
+      ? leftPadding + plotWidth / 2
+      : leftPadding + (index / (chartItems.length - 1)) * plotWidth;
+    const y = topPadding + plotHeight - (value / chartMax) * plotHeight;
+    return { item, value, x, y };
+  });
+  const polylinePoints = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const yTicks = maxValue > 0
+    ? [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
+        value: chartMax * (1 - ratio),
+        y: topPadding + ratio * plotHeight,
+      }))
+    : [{ value: 0, y: topPadding + plotHeight }];
 
   return (
-    <div className="stats-line-chart">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label="Grafica de ventas"
-      >
-        <polyline
-          points={points}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <div className="stats-line-chart__labels">
-        {items.map((item) => (
-          <span key={item.periodLabel}>{item.periodLabel}</span>
+    <div
+      className="stats-line-chart"
+      style={{ "--stats-chart-width": `${width}px` }}
+    >
+      <div className="stats-line-chart__summary">
+        <span>
+          <strong>{valueFormatter(totalValue)}</strong>
+          <small>Total</small>
+        </span>
+        <span>
+          <strong>{totalOrders}</strong>
+          <small>Órdenes</small>
+        </span>
+        <span>
+          <strong>{totalItems}</strong>
+          <small>Unidades</small>
+        </span>
+      </div>
+
+      <div className="stats-line-chart__canvas">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-label={`Gráfica de ventas por ${getGroupByLabel(groupBy).toLowerCase()}`}
+        >
+          <title>{`Ventas por ${getGroupByLabel(groupBy).toLowerCase()}`}</title>
+          {yTicks.map((tick) => (
+            <g key={`${tick.value}-${tick.y}`}>
+              <line
+                className="stats-line-chart__grid"
+                x1={leftPadding}
+                x2={width - rightPadding}
+                y1={tick.y}
+                y2={tick.y}
+              />
+              <text
+                className="stats-line-chart__axis-label"
+                x={leftPadding - 10}
+                y={tick.y + 4}
+                textAnchor="end"
+              >
+                {formatCompactCurrency(tick.value)}
+              </text>
+            </g>
+          ))}
+
+          <line
+            className="stats-line-chart__axis"
+            x1={leftPadding}
+            x2={width - rightPadding}
+            y1={topPadding + plotHeight}
+            y2={topPadding + plotHeight}
+          />
+
+          {points.length > 1 ? (
+            <polyline
+              className="stats-line-chart__line"
+              points={polylinePoints}
+              fill="none"
+              strokeLinecap="square"
+              strokeLinejoin="miter"
+            />
+          ) : null}
+
+          {points.map((point) => (
+            <rect
+              key={point.item.periodLabel}
+              className="stats-line-chart__point"
+              x={point.x - 5}
+              y={point.y - 5}
+              width="10"
+              height="10"
+            >
+              <title>
+                {`${formatPeriodLabel(point.item.periodLabel, groupBy)}: ${valueFormatter(point.value)} / ${point.item.ordersCount || 0} órdenes / ${point.item.itemsSold || 0} uds`}
+              </title>
+            </rect>
+          ))}
+
+          {points.map((point) => (
+            <text
+              key={`${point.item.periodLabel}-label`}
+              className="stats-line-chart__x-label"
+              x={point.x}
+              y={height - 10}
+              textAnchor="middle"
+            >
+              {formatPeriodLabel(point.item.periodLabel, groupBy)}
+            </text>
+          ))}
+        </svg>
+      </div>
+
+      <div className="stats-line-chart__values" aria-label="Valores por periodo">
+        {chartItems.map((item) => (
+          <span key={item.periodLabel}>
+            <strong>{valueFormatter(item[valueKey])}</strong>
+            <small>
+              {formatPeriodLabel(item.periodLabel, groupBy)} / {item.ordersCount || 0} ord.
+            </small>
+          </span>
         ))}
       </div>
     </div>
@@ -258,6 +424,11 @@ export default function AdminStatisticsPage() {
   function clearFilters() {
     setDraftFilters(initialFilters);
     setFilters(initialFilters);
+  }
+
+  function updateSalesGroupBy(groupBy) {
+    setDraftFilters((current) => ({ ...current, groupBy }));
+    setFilters((current) => ({ ...current, groupBy }));
   }
 
   async function handleExport(type) {
@@ -429,10 +600,11 @@ export default function AdminStatisticsPage() {
                 value={draftFilters.groupBy}
                 onChange={(event) => updateDraft("groupBy", event.target.value)}
               >
-                <option value="day">Día</option>
-                <option value="week">Semana</option>
-                <option value="month">Mes</option>
-                <option value="year">Año</option>
+                {SALES_GROUP_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
@@ -573,13 +745,35 @@ export default function AdminStatisticsPage() {
       <section className="admin-detail-grid">
         <div className="page-stack">
           <section className="section-card page-stack">
-            <div className="section-heading">
+            <div className="section-heading section-heading-wrap">
               <div>
                 <p className="section-kicker">Tendencia</p>
                 <h2>Cuándo se vendió más</h2>
+                <p className="stats-chart-caption">
+                  Ingresos por {getGroupByLabel(filters.groupBy).toLowerCase()}
+                </p>
+              </div>
+              <div className="stats-chart-toolbar" role="group" aria-label="Agrupar ventas">
+                {SALES_GROUP_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`stats-group-button${
+                      filters.groupBy === option.value ? " is-active" : ""
+                    }`}
+                    aria-pressed={filters.groupBy === option.value}
+                    onClick={() => updateSalesGroupBy(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
-            <LineChart items={salesOverTime} valueKey="revenue" />
+            <LineChart
+              items={salesOverTime}
+              valueKey="revenue"
+              groupBy={filters.groupBy}
+            />
           </section>
 
           <section className="section-card page-stack">

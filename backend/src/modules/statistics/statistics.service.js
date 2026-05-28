@@ -17,6 +17,7 @@ const ORDER_ITEM_BANK_TAX_EXPR = `ROUND((${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_
 const ORDER_ITEM_TOTAL_COST_EXPR = `(${ORDER_ITEM_COST_TOTAL_EXPR} + ${ORDER_ITEM_BANK_TAX_EXPR})`;
 const ORDER_ITEM_PROFIT_EXPR = `(COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR}) - ${ORDER_ITEM_BANK_TAX_EXPR})`;
 const ORDER_ITEM_INCOMPLETE_COST_EXPR = `CASE WHEN ${ORDER_ITEM_COST_TOTAL_EXPR} <= 0 THEN 1 ELSE 0 END`;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function normalizePositiveInt(value, fallback, max = 50) {
   const numeric = Number(value);
@@ -156,6 +157,141 @@ function buildWishlistFiltersForStats(filters = {}) {
       ? filters.status
       : undefined,
   };
+}
+
+function padPeriodPart(value) {
+  return String(value).padStart(2, '0');
+}
+
+function parseDateOnly(value) {
+  if (!value) return null;
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (![year, month, day].every(Number.isInteger)) return null;
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function formatDateOnlyKey(date) {
+  return [
+    date.getUTCFullYear(),
+    padPeriodPart(date.getUTCMonth() + 1),
+    padPeriodPart(date.getUTCDate()),
+  ].join('-');
+}
+
+function getIsoWeekKey(date) {
+  const copy = new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  ));
+  const weekday = copy.getUTCDay() || 7;
+  copy.setUTCDate(copy.getUTCDate() + 4 - weekday);
+  const yearStart = new Date(Date.UTC(copy.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((copy - yearStart) / MS_PER_DAY) + 1) / 7);
+  return `${copy.getUTCFullYear()}-W${padPeriodPart(week)}`;
+}
+
+function getPeriodKey(date, groupBy) {
+  if (groupBy === 'day') return formatDateOnlyKey(date);
+  if (groupBy === 'week') return getIsoWeekKey(date);
+  if (groupBy === 'year') return String(date.getUTCFullYear());
+  return `${date.getUTCFullYear()}-${padPeriodPart(date.getUTCMonth() + 1)}`;
+}
+
+function startOfPeriod(date, groupBy) {
+  const copy = new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  ));
+
+  if (groupBy === 'week') {
+    const weekday = copy.getUTCDay() || 7;
+    copy.setUTCDate(copy.getUTCDate() - weekday + 1);
+  } else if (groupBy === 'month') {
+    copy.setUTCDate(1);
+  } else if (groupBy === 'year') {
+    copy.setUTCMonth(0, 1);
+  }
+
+  return copy;
+}
+
+function addPeriod(date, groupBy) {
+  const copy = new Date(date.getTime());
+  if (groupBy === 'day') {
+    copy.setUTCDate(copy.getUTCDate() + 1);
+  } else if (groupBy === 'week') {
+    copy.setUTCDate(copy.getUTCDate() + 7);
+  } else if (groupBy === 'year') {
+    copy.setUTCFullYear(copy.getUTCFullYear() + 1);
+  } else {
+    copy.setUTCMonth(copy.getUTCMonth() + 1);
+  }
+  return copy;
+}
+
+function buildEmptySalesPeriod(periodLabel) {
+  return {
+    periodLabel,
+    ordersCount: 0,
+    itemsSold: 0,
+    revenue: 0,
+    bankTax: 0,
+    totalCost: 0,
+    estimatedProfit: 0,
+    averageMargin: 0,
+    total: 0,
+  };
+}
+
+function normalizeSalesPeriodRow(row) {
+  const revenue = Number(row.revenue || 0);
+  const estimatedProfit = Number(row.estimatedProfit || 0);
+
+  return {
+    periodLabel: row.periodLabel,
+    ordersCount: Number(row.ordersCount || 0),
+    itemsSold: Number(row.itemsSold || 0),
+    revenue,
+    bankTax: Number(row.bankTax || 0),
+    totalCost: Number(row.totalCost || 0),
+    estimatedProfit,
+    averageMargin: revenue
+      ? Number(((estimatedProfit / revenue) * 100).toFixed(2))
+      : 0,
+    total: revenue,
+  };
+}
+
+export function fillMissingSalesPeriods(items, filters = {}, groupBy = 'month') {
+  const start = parseDateOnly(filters.dateFrom);
+  const end = parseDateOnly(filters.dateTo);
+  if (!start || !end || start > end) return items;
+
+  const byPeriod = new Map(items.map((item) => [item.periodLabel, item]));
+  const filled = [];
+  let current = startOfPeriod(start, groupBy);
+  const last = startOfPeriod(end, groupBy);
+
+  while (current <= last) {
+    if (filled.length >= 1500) return items;
+    const periodLabel = getPeriodKey(current, groupBy);
+    filled.push(byPeriod.get(periodLabel) || buildEmptySalesPeriod(periodLabel));
+    current = addPeriod(current, groupBy);
+  }
+
+  return filled;
 }
 
 async function getOrderTotals(filters = {}) {
@@ -382,19 +518,8 @@ export async function getStatisticsSalesOverTime(filters = {}) {
     params,
   );
 
-  return rows.map((row) => ({
-    periodLabel: row.periodLabel,
-    ordersCount: Number(row.ordersCount || 0),
-    itemsSold: Number(row.itemsSold || 0),
-    revenue: Number(row.revenue || 0),
-    bankTax: Number(row.bankTax || 0),
-    totalCost: Number(row.totalCost || 0),
-    estimatedProfit: Number(row.estimatedProfit || 0),
-    averageMargin: Number(row.revenue || 0)
-      ? Number(((Number(row.estimatedProfit || 0) / Number(row.revenue || 0)) * 100).toFixed(2))
-      : 0,
-    total: Number(row.revenue || 0),
-  }));
+  const items = rows.map(normalizeSalesPeriodRow);
+  return fillMissingSalesPeriods(items, filters, groupBy);
 }
 
 async function getWishlistConversion(filters = {}) {
