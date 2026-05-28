@@ -838,6 +838,12 @@ export default function ArticlePage() {
                       : `${article.quantityAvailable} disponibles`}
                   </strong>
                 </div>
+                {garmentDetails.map((item) => (
+                  <div key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
                 <div>
                   <span>Precio</span>
                   <div className="detail-pricing">
@@ -850,19 +856,6 @@ export default function ArticlePage() {
                   </div>
                 </div>
               </div>
-
-              {garmentDetails.length ? (
-                <div className="page-stack-sm article-garment-details">
-                  <div className="detail-meta-list">
-                    {garmentDetails.map((item) => (
-                      <div key={item.label}>
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
             </div>
 
             {/* <div className="detail-pricing detail-pricing--hero">

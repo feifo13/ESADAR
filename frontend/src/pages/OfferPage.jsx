@@ -382,16 +382,16 @@ export default function OfferPage() {
                   <span>Medidas</span>
                   <strong>{article.measurementsText || "A confirmar"}</strong>
                 </div>
-                <div>
-                  <span>Precio publicado</span>
-                  <strong>{formatCurrency(article.salePrice)}</strong>
-                </div>
                 {article.description ? (
                   <div>
                     <span>Descripción</span>
                     <strong>{article.description}</strong>
                   </div>
                 ) : null}
+                <div>
+                  <span>Precio publicado</span>
+                  <strong>{formatCurrency(article.salePrice)}</strong>
+                </div>
               </div>
             </div>
 
