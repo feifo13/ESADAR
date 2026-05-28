@@ -221,6 +221,10 @@ export async function listOffers({ filters, pagination }) {
         a.internal_code AS articleInternalCode,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
+        a.gender AS articleGender,
+        a.age_group AS articleAgeGroup,
+        a.description AS articleDescription,
+        a.measurements_text AS articleMeasurementsText,
         inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
@@ -300,6 +304,10 @@ export async function listAcceptedOffersForUser(userId) {
         a.slug AS articleSlug,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
+        a.gender AS articleGender,
+        a.age_group AS articleAgeGroup,
+        a.description AS articleDescription,
+        a.measurements_text AS articleMeasurementsText,
         inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
@@ -372,6 +380,10 @@ export async function listOffersForUser(userId) {
         a.internal_code AS articleInternalCode,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
+        a.gender AS articleGender,
+        a.age_group AS articleAgeGroup,
+        a.description AS articleDescription,
+        a.measurements_text AS articleMeasurementsText,
         inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
@@ -733,6 +745,10 @@ async function getOfferById(id, connection, options = {}) {
         a.slug AS articleSlug,
         a.sale_price AS articleSalePrice,
         a.discounted_price AS articleDiscountedPrice,
+        a.gender AS articleGender,
+        a.age_group AS articleAgeGroup,
+        a.description AS articleDescription,
+        a.measurements_text AS articleMeasurementsText,
         inv.quantity_available AS articleQuantityAvailable,
         (
           SELECT COALESCE(ai.thumb_file_path, ai.card_file_path, ai.file_path)
@@ -808,6 +824,10 @@ function normalizeOfferRow(row) {
       internalCode: row.articleInternalCode,
       categoryName: row.categoryName,
       brandName: row.brandName,
+      gender: row.articleGender || null,
+      ageGroup: row.articleAgeGroup || null,
+      description: row.articleDescription || null,
+      measurementsText: row.articleMeasurementsText || null,
       salePrice: row.articleSalePrice != null ? Number(row.articleSalePrice) : null,
       discountedPrice: row.articleDiscountedPrice != null ? Number(row.articleDiscountedPrice) : null,
       quantityAvailable: row.articleQuantityAvailable != null ? Number(row.articleQuantityAvailable) : null,

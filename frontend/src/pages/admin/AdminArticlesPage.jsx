@@ -1163,7 +1163,6 @@ export default function AdminArticlesPage() {
                       article.sizeText ||
                       article.sizeCode ||
                       "Sin talle";
-
                     return (
                       <tr key={article.id}>
                         {isSuperAdmin ? (

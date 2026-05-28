@@ -1,6 +1,6 @@
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
-import { badRequest, notFound } from '../../utils/app-error.js';
+import { badRequest, forbidden, notFound } from '../../utils/app-error.js';
 import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
@@ -216,12 +216,25 @@ async function resolveRoleIds(connection, roleCodes) {
   return rows.map((row) => ({ id: Number(row.id), code: row.code }));
 }
 
+function sameRoleSet(left = [], right = []) {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  if (leftSet.size !== rightSet.size) return false;
+  return [...leftSet].every((role) => rightSet.has(role));
+}
+
 export async function updateUserForAdmin(userId, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getUserForAdmin(userId, connection, { forUpdate: true });
     if (!before) throw notFound('Usuario no encontrado.');
 
-    const nextRoles = [...new Set(input.roles || [])];
+    const actorIsSuperAdmin = (auditContext.actorRoles || []).includes('SUPER_ADMIN');
+    const requestedRoles = [...new Set(input.roles || [])];
+    if (!actorIsSuperAdmin && !sameRoleSet(before.roles, requestedRoles)) {
+      throw forbidden('Solo SUPER_ADMIN puede modificar roles de usuarios.');
+    }
+
+    const nextRoles = actorIsSuperAdmin ? requestedRoles : before.roles;
     const nextHasAdminRole = nextRoles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
     const beforeHasAdminRole = before.roles.some((role) => ['SUPER_ADMIN', 'ADMIN'].includes(role));
 
@@ -278,13 +291,15 @@ export async function updateUserForAdmin(userId, input, auditContext) {
       ],
     );
 
-    const roles = await resolveRoleIds(connection, nextRoles);
-    await connection.execute('DELETE FROM user_roles WHERE user_id = ?', [userId]);
-    for (const role of roles) {
-      await connection.execute(
-        'INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES (?, ?, ?)',
-        [userId, role.id, auditContext.actorUserId || null],
-      );
+    if (actorIsSuperAdmin) {
+      const roles = await resolveRoleIds(connection, nextRoles);
+      await connection.execute('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+      for (const role of roles) {
+        await connection.execute(
+          'INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES (?, ?, ?)',
+          [userId, role.id, auditContext.actorUserId || null],
+        );
+      }
     }
 
     const after = await getUserForAdmin(userId, connection);

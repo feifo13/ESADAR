@@ -7,6 +7,7 @@ function getAuditContext(req) {
   return {
     actorUserId: req.auth?.userId || null,
     actorLabel: req.auth?.email || null,
+    actorRoles: req.auth?.roles || [],
     source: req.auditSource,
     ipAddress: req.ip,
     userAgent: req.headers['user-agent'] || null,

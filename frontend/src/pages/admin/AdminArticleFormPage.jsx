@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import PreviousNextControls from "../../components/PreviousNextControls.jsx";
-import SmartImage from "../../components/SmartImage.jsx";
-import BulkArticleImageChecklist, {
+import ArticleImageSlotManager from "../../components/admin/ArticleImageSlotManager.jsx";
+import {
   createEmptyImageState,
   IMAGE_ROLE_DEFINITIONS,
 } from "../../components/admin/BulkArticleImageChecklist.jsx";
@@ -26,6 +26,8 @@ const FORM_STEPS = [
   { key: "images", label: "Paso 3", title: "Imagenes" },
   { key: "meta", label: "Paso 4", title: "Metadatos publicos" },
 ];
+
+const MAX_ARTICLE_IMAGE_SLOTS = 10;
 
 const GENDER_OPTIONS = [
   { value: "", label: "Sin definir" },
@@ -111,16 +113,35 @@ function getArticleApiValidationMessage(error) {
 
 function sortImages(images = []) {
   return [...images].sort((left, right) => {
-    if (Number(left.isPrimary) !== Number(right.isPrimary)) {
-      return Number(right.isPrimary) - Number(left.isPrimary);
-    }
-
     if (Number(left.sortOrder || 0) !== Number(right.sortOrder || 0)) {
       return Number(left.sortOrder || 0) - Number(right.sortOrder || 0);
     }
 
     return Number(left.id || 0) - Number(right.id || 0);
   });
+}
+
+function resolveImagePreview(file) {
+  if (!file) return "";
+  return URL.createObjectURL(file);
+}
+
+function createImageUploadState(role = {}) {
+  return {
+    file: null,
+    preview: "",
+    altText: "",
+    isPrimary: Boolean(role.defaultPrimary),
+  };
+}
+
+function buildExtraImageSlot(index) {
+  const displayNumber = index + 2;
+  return {
+    key: `extra-${displayNumber}`,
+    label: `Imagen adicional ${displayNumber}`,
+    helper: "Opcional",
+  };
 }
 
 function toFormState(article) {
@@ -282,6 +303,7 @@ export default function AdminArticleFormPage() {
     createEmptyImageState(),
   );
   const [existingImages, setExistingImages] = useState([]);
+  const [extraImageSlotCount, setExtraImageSlotCount] = useState(0);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [imageActionId, setImageActionId] = useState("");
@@ -301,6 +323,7 @@ export default function AdminArticleFormPage() {
         if (!ignore) {
           setForm(toFormState(response.article));
           setExistingImages(sortImages(response.article.images || []));
+          setExtraImageSlotCount(0);
         }
       } catch (err) {
         if (!ignore) setError(err.message || "No se pudo cargar el artículo");
@@ -315,13 +338,47 @@ export default function AdminArticleFormPage() {
     };
   }, [id]);
 
+  const visibleImageSlots = useMemo(() => {
+    const extraSlotsForExisting = Math.max(
+      0,
+      existingImages.length - IMAGE_ROLE_DEFINITIONS.length,
+    );
+    const dynamicSlotCount = Math.max(
+      extraImageSlotCount,
+      extraSlotsForExisting,
+    );
+
+    return [
+      ...IMAGE_ROLE_DEFINITIONS,
+      ...Array.from({ length: dynamicSlotCount }, (_, index) =>
+        buildExtraImageSlot(index),
+      ),
+    ];
+  }, [existingImages.length, extraImageSlotCount]);
+
+  const imageSlotLimit = Math.max(
+    MAX_ARTICLE_IMAGE_SLOTS,
+    existingImages.length,
+  );
+  const canAddImageSlot = visibleImageSlots.length < imageSlotLimit;
+  const addImageSlotDisabledReason =
+    visibleImageSlots.length >= imageSlotLimit
+      ? `Maximo ${imageSlotLimit} imagenes para este articulo`
+      : "";
+
   const selectedImageUploads = useMemo(
     () =>
-      IMAGE_ROLE_DEFINITIONS.map((role) => ({
-        role,
-        value: imageChecklist[role.key],
-      })).filter((item) => Boolean(item.value?.file)),
-    [imageChecklist],
+      visibleImageSlots
+        .map((slot, slotIndex) => ({
+          slot,
+          slotIndex,
+          value: {
+            ...createImageUploadState(slot),
+            ...(imageChecklist[slot.key] || {}),
+          },
+        }))
+        .filter((item) => Boolean(item.value?.file)),
+    [imageChecklist, visibleImageSlots],
   );
 
   const hasConditionWarning = useMemo(
@@ -416,10 +473,54 @@ export default function AdminArticleFormPage() {
       return;
     }
 
+    const slot = visibleImageSlots.find((item) => item.key === roleKey) || {};
     setImageChecklist((current) => ({
       ...current,
-      [roleKey]: value,
+      [roleKey]: normalizeImageUploadValue(
+        value,
+        current[roleKey],
+        slot,
+      ),
     }));
+  }
+
+  function normalizeImageUploadValue(value, currentValue, slot) {
+    const hasFileChange = Object.prototype.hasOwnProperty.call(value, "file");
+    const nextValue = {
+      ...createImageUploadState(slot),
+      ...(currentValue || {}),
+      ...value,
+    };
+
+    if (hasFileChange) {
+      nextValue.preview = value.file ? resolveImagePreview(value.file) : "";
+    }
+
+    return nextValue;
+  }
+
+  function setImageUploadPrimary(roleKey) {
+    setImageChecklist((current) => {
+      const keys = new Set([
+        ...Object.keys(current),
+        ...visibleImageSlots.map((slot) => slot.key),
+      ]);
+      const next = {};
+      keys.forEach((key) => {
+        const slot = visibleImageSlots.find((item) => item.key === key) || {};
+        next[key] = {
+          ...createImageUploadState(slot),
+          ...(current[key] || {}),
+          isPrimary: key === roleKey,
+        };
+      });
+      return next;
+    });
+  }
+
+  function addImageSlot() {
+    if (!canAddImageSlot) return;
+    setExtraImageSlotCount((current) => current + 1);
   }
 
   function validateStep(stepIndex) {
@@ -711,6 +812,9 @@ export default function AdminArticleFormPage() {
 
       if (selectedImageUploads.length) {
         const previousImagesCount = existingImages.length;
+        const previousImageIds = new Set(
+          existingImages.map((image) => Number(image.id)),
+        );
         const formData = new FormData();
         selectedImageUploads.forEach(({ value }) =>
           formData.append("images", value.file),
@@ -719,8 +823,8 @@ export default function AdminArticleFormPage() {
           `/api/admin/articles/${articleId}/images`,
           { method: "POST", body: formData },
         );
-        const uploadedImages = sortImages(imageResponse.images || []).slice(
-          previousImagesCount,
+        const uploadedImages = sortImages(imageResponse.images || []).filter(
+          (image) => !previousImageIds.has(Number(image.id)),
         );
 
         const pendingPrimaryPatch = [];
@@ -731,8 +835,8 @@ export default function AdminArticleFormPage() {
           const patchPayload = {
             altText:
               normalizeLabel(upload.value.altText) ||
-              `${payload.title} - ${upload.role.label.toLowerCase()}`,
-            sortOrder: previousImagesCount + index,
+              `${payload.title} - ${upload.slot.label.toLowerCase()}`,
+            sortOrder: upload.slotIndex,
           };
 
           const shouldMarkPrimary =
@@ -763,6 +867,7 @@ export default function AdminArticleFormPage() {
         }
 
         setImageChecklist(createEmptyImageState());
+        setExtraImageSlotCount(0);
       }
 
       const successMessage = isEdit
@@ -1583,142 +1688,26 @@ export default function AdminArticleFormPage() {
               <h2>Imagenes</h2>
             </div>
 
-            {existingImages.length ? (
-              <div className="image-manager-grid">
-                {existingImages.map((image, index) => (
-                  <article
-                    key={`existing-${image.id}`}
-                    className="image-manager-card"
-                  >
-                    <SmartImage
-                      src={
-                        image.cardFilePath ||
-                        image.detailFilePath ||
-                        image.filePath
-                      }
-                      alt={image.altText || form.title}
-                      fallbackLabel={form.title || "ESADAR"}
-                      className="image-manager-card__media"
-                    />
-
-                    <div className="page-stack stack-gap-xs">
-                      <div className="table-actions table-actions-spread">
-                        <strong>
-                          {image.isPrimary ? "Primaria" : `Imagen ${index + 1}`}
-                        </strong>
-                        <span className="muted-copy">
-                          Orden {image.sortOrder}
-                        </span>
-                      </div>
-
-                      <label className="field-group">
-                        <span>Alt text</span>
-                        <input
-                          className="input"
-                          value={image.altText || ""}
-                          onChange={(event) =>
-                            updateExistingImage(
-                              image.id,
-                              "altText",
-                              event.target.value,
-                            )
-                          }
-                          placeholder="Descripción útil para Google Images y accesibilidad"
-                        />
-                      </label>
-
-                      <div className="image-manager-meta">
-                        <span>
-                          {image.width && image.height
-                            ? `${image.width}x${image.height}`
-                            : "Sin metadata"}
-                        </span>
-                        <span>{image.processedStatus || "DONE"}</span>
-                      </div>
-
-                      <div className="inline-action-group">
-                        <button
-                          type="button"
-                          className="button button-secondary"
-                          onClick={() => saveImageDraft(image.id)}
-                          disabled={Boolean(imageActionId)}
-                        >
-                          {imageActionId === `save-${image.id}`
-                            ? "Guardando..."
-                            : "Guardar alt"}
-                        </button>
-
-                        <button
-                          type="button"
-                          className="button button-secondary"
-                          onClick={() => markImageAsPrimary(image.id)}
-                          disabled={Boolean(imageActionId) || image.isPrimary}
-                        >
-                          {imageActionId === `primary-${image.id}`
-                            ? "Actualizando..."
-                            : image.isPrimary
-                              ? "Ya es primaria"
-                              : "Marcar primaria"}
-                        </button>
-                      </div>
-
-                      <div className="inline-action-group">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => moveImage(image.id, -1)}
-                          disabled={Boolean(imageActionId) || index === 0}
-                        >
-                          Subir
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => moveImage(image.id, 1)}
-                          disabled={
-                            Boolean(imageActionId) ||
-                            index === existingImages.length - 1
-                          }
-                        >
-                          Bajar
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() => deleteImage(image.id)}
-                          disabled={Boolean(imageActionId)}
-                        >
-                          {imageActionId === `delete-${image.id}`
-                            ? "Eliminando..."
-                            : "Borrar"}
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="centered-card nested-card image-manager-empty">
-                <p className="muted-copy">
-                  Todavía no hay imágenes cargadas para este artículo.
-                </p>
-              </div>
-            )}
-
-            <div className="page-stack-sm">
-              <h3>Imagenes nuevas</h3>
-              {/* <p className="field-helper">
-                Carga las mismas tarjetas guiadas que en crear múltiples
-                artículos: frente, espalda, etiqueta, textura y detalles. Las
-                imágenes se suben al guardar el artículo.
-              </p> */}
-              <BulkArticleImageChecklist
-                value={imageChecklist}
-                title={form.title}
-                onChange={handleImageChecklistChange}
-                hasConditionWarning={hasConditionWarning}
-              />
-            </div>
+            <ArticleImageSlotManager
+              slots={visibleImageSlots}
+              title={form.title}
+              existingImages={existingImages}
+              uploads={imageChecklist}
+              imageActionId={imageActionId}
+              canAddSlot={canAddImageSlot}
+              addSlotDisabledReason={addImageSlotDisabledReason}
+              hasConditionWarning={hasConditionWarning}
+              onAddSlot={addImageSlot}
+              onUploadChange={handleImageChecklistChange}
+              onSetUploadPrimary={setImageUploadPrimary}
+              onExistingAltChange={(imageId, value) =>
+                updateExistingImage(imageId, "altText", value)
+              }
+              onSaveExisting={saveImageDraft}
+              onMarkExistingPrimary={markImageAsPrimary}
+              onDeleteExisting={deleteImage}
+              onMoveExisting={moveImage}
+            />
           </section>
         ) : null}
 

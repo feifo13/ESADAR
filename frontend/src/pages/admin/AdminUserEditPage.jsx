@@ -13,6 +13,11 @@ const ROLE_OPTIONS = [
   { value: 'CUSTOMER', label: 'Cliente' },
 ];
 
+const ROLE_LABELS = ROLE_OPTIONS.reduce(
+  (accumulator, role) => ({ ...accumulator, [role.value]: role.label }),
+  {},
+);
+
 const emptyForm = {
   firstName: '',
   lastName: '',
@@ -43,7 +48,8 @@ export default function AdminUserEditPage() {
   const [error, setError] = useState('');
 
   const isEditingSelf = Number(currentUser?.id) === Number(id);
-  const canChangePasswords = currentUser?.roles?.includes('SUPER_ADMIN');
+  const isSuperAdmin = currentUser?.roles?.includes('SUPER_ADMIN');
+  const canChangePasswords = isSuperAdmin;
   const selectedRoles = useMemo(() => new Set(form.roles || []), [form.roles]);
 
   useEffect(() => {
@@ -89,6 +95,7 @@ export default function AdminUserEditPage() {
   }
 
   function toggleRole(role) {
+    if (!isSuperAdmin) return;
     setForm((current) => {
       const roles = new Set(current.roles || []);
       if (roles.has(role)) {
@@ -225,14 +232,27 @@ export default function AdminUserEditPage() {
 
           <div className="nested-card page-stack-sm">
             <h2>Roles</h2>
-            <div className="toolbar-inline">
-              {ROLE_OPTIONS.map((role) => (
-                <label key={role.value} className="checkbox-field checkbox-field-compact">
-                  <input type="checkbox" checked={selectedRoles.has(role.value)} onChange={() => toggleRole(role.value)} />
-                  <span>{role.label}</span>
-                </label>
-              ))}
-            </div>
+            {isSuperAdmin ? (
+              <div className="toolbar-inline">
+                {ROLE_OPTIONS.map((role) => (
+                  <label key={role.value} className="checkbox-field checkbox-field-compact">
+                    <input type="checkbox" checked={selectedRoles.has(role.value)} onChange={() => toggleRole(role.value)} />
+                    <span>{role.label}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="page-stack-sm">
+                <div className="toolbar-inline">
+                  {(form.roles || []).map((role) => (
+                    <span key={role} className="pill pill-featured">
+                      {ROLE_LABELS[role] || role}
+                    </span>
+                  ))}
+                </div>
+                <p className="muted-copy">Solo SUPER_ADMIN puede modificar roles.</p>
+              </div>
+            )}
           </div>
 
 

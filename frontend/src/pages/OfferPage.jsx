@@ -3,6 +3,10 @@ import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { apiFetch } from "../lib/api.js";
+import {
+  formatArticleAgeGroup,
+  formatArticleGender,
+} from "../lib/articleMeta.js";
 import { formatCurrency } from "../lib/format.js";
 import { useSiteSeo } from "../contexts/SiteSeoContext.jsx";
 import { toAbsoluteUrl } from "../lib/seo.js";
@@ -296,6 +300,8 @@ export default function OfferPage() {
   const canSubmitOffer =
     Boolean(article.allowOffers) &&
     !(offerEligibility && !offerEligibility.canOffer);
+  const genderLabel = formatArticleGender(article.gender);
+  const ageGroupLabel = formatArticleAgeGroup(article.ageGroup);
 
   return (
     <div className="container article-page-shell page-stack offer-page">
@@ -360,6 +366,18 @@ export default function OfferPage() {
                   <span>Marca</span>
                   <strong>{article.brandName || "Sin marca"}</strong>
                 </div>
+                {genderLabel ? (
+                  <div>
+                    <span>Género</span>
+                    <strong>{genderLabel}</strong>
+                  </div>
+                ) : null}
+                {ageGroupLabel ? (
+                  <div>
+                    <span>Grupo de edad</span>
+                    <strong>{ageGroupLabel}</strong>
+                  </div>
+                ) : null}
                 <div>
                   <span>Medidas</span>
                   <strong>{article.measurementsText || "A confirmar"}</strong>
@@ -370,7 +388,7 @@ export default function OfferPage() {
                 </div>
                 {article.description ? (
                   <div>
-                    <span>Descripción de la prenda</span>
+                    <span>Descripción</span>
                     <strong>{article.description}</strong>
                   </div>
                 ) : null}

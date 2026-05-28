@@ -12,6 +12,10 @@ import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import { EditIcon } from "../components/ActionIcons.jsx";
 import { apiFetch } from "../lib/api.js";
 import {
+  formatArticleAgeGroup,
+  formatArticleGender,
+} from "../lib/articleMeta.js";
+import {
   formatCurrency,
   getDiscountedPrice,
   hasDiscount,
@@ -265,6 +269,12 @@ export default function ArticlePage() {
     },
     { name: article.title, url: canonicalUrl },
   ];
+  const garmentDetails = [
+    { label: "Género", value: formatArticleGender(article.gender) },
+    { label: "Grupo de edad", value: formatArticleAgeGroup(article.ageGroup) },
+    { label: "Medidas reales", value: article.measurementsText },
+    { label: "Descripción", value: article.description },
+  ].filter((item) => String(item.value || "").trim());
 
   if (isUnavailable) {
     const unavailableMessage =
@@ -840,6 +850,19 @@ export default function ArticlePage() {
                   </div>
                 </div>
               </div>
+
+              {garmentDetails.length ? (
+                <div className="page-stack-sm article-garment-details">
+                  <div className="detail-meta-list">
+                    {garmentDetails.map((item) => (
+                      <div key={item.label}>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* <div className="detail-pricing detail-pricing--hero">

@@ -624,13 +624,13 @@ export default function Header({ hideBrand = false }) {
                   "Guardados",
                   <HeartIcon />,
                 )}
+                {renderCartButton(desktopCartButtonRef)}
                 {renderIconNavLink(
                   "/guia-de-compra",
                   "Guía de compra",
                   <HelpIcon />,
                   "header-icon-button--help",
                 )}
-                {renderCartButton(desktopCartButtonRef)}
                 {renderIconButton(handleLogout, "Salir", <LogoutIcon />)}
               </>
             ) : (

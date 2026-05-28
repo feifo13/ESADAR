@@ -12,6 +12,11 @@ import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import {
+  formatArticleAgeGroup,
+  formatArticleGender,
+  truncateArticleMeta,
+} from "../../lib/articleMeta.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import { buildQueryString } from "../../lib/query.js";
 import AppLoader from "../../components/AppLoader.jsx";
@@ -492,6 +497,20 @@ export default function AdminOffersPage() {
                       ? "USED"
                       : offer.status;
                   const isBatchSelectable = offer.status === "PENDING";
+                  const genderLabel = formatArticleGender(
+                    offer.article?.gender,
+                  );
+                  const ageGroupLabel = formatArticleAgeGroup(
+                    offer.article?.ageGroup,
+                  );
+                  const measurementsPreview = truncateArticleMeta(
+                    offer.article?.measurementsText,
+                    76,
+                  );
+                  const descriptionPreview = truncateArticleMeta(
+                    offer.article?.description,
+                    86,
+                  );
                   return (
                     <tr key={offer.id}>
                       {isSuperAdmin ? (
@@ -515,8 +534,8 @@ export default function AdminOffersPage() {
                         />
                       </td>
                       <td>{formatDate(offer.createdAt)}</td>
-                      <td>
-                        <div className="cell-stack">
+                      <td data-label="Articulo">
+                        <div className="cell-stack cell-copy">
                           <strong>{offer.article.title}</strong>
                           <span className="muted-copy">
                             {offer.article.internalCode ||
@@ -526,6 +545,38 @@ export default function AdminOffersPage() {
                             {offer.article.categoryName || "Sin categoría"} -{" "}
                             {offer.article.brandName || "Sin marca"}
                           </span>
+                          {genderLabel || ageGroupLabel ? (
+                            <span className="inline-action-group">
+                              {genderLabel ? (
+                                <span className="pill pill-featured">
+                                  {genderLabel}
+                                </span>
+                              ) : null}
+                              {ageGroupLabel ? (
+                                <span className="pill pill-offer">
+                                  {ageGroupLabel}
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : null}
+                          {measurementsPreview ? (
+                            <span
+                              className="muted-copy"
+                              title={
+                                offer.article.measurementsText || undefined
+                              }
+                            >
+                              Medidas: {measurementsPreview}
+                            </span>
+                          ) : null}
+                          {descriptionPreview ? (
+                            <span
+                              className="muted-copy"
+                              title={offer.article.description || undefined}
+                            >
+                              Desc: {descriptionPreview}
+                            </span>
+                          ) : null}
                         </div>
                       </td>
                       <td>
