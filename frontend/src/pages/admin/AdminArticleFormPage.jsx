@@ -311,6 +311,30 @@ export default function AdminArticleFormPage() {
   const [message, setMessage] = useState("");
   const [activeStep, setActiveStep] = useState(0);
   const [metaAdvancedOpen, setMetaAdvancedOpen] = useState(false);
+  const [costingSettings, setCostingSettings] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCostingSettings() {
+      try {
+        const response = await apiFetch("/api/admin/articles/costing-settings");
+        if (!ignore) {
+          setCostingSettings({
+            bankTaxRate: response.bankTaxRate,
+            bankTaxPercent: response.bankTaxPercent,
+          });
+        }
+      } catch {
+        if (!ignore) setCostingSettings(null);
+      }
+    }
+
+    loadCostingSettings();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -419,8 +443,11 @@ export default function AdminArticleFormPage() {
   ]);
 
   const marginPreview = useMemo(
-    () => calculateArticleMarginPreview(form),
+    () => calculateArticleMarginPreview(form, {
+      bankTaxRate: costingSettings?.bankTaxRate,
+    }),
     [
+      costingSettings?.bankTaxRate,
       form.discountType,
       form.discountValue,
       form.purchasePriceCourier,
@@ -568,7 +595,9 @@ export default function AdminArticleFormPage() {
     }
 
     if (stepIndex === 1) {
-      const priceValidationIssue = getArticlePriceValidationIssue(form);
+      const priceValidationIssue = getArticlePriceValidationIssue(form, {
+        bankTaxRate: costingSettings?.bankTaxRate,
+      });
       if (priceValidationIssue) {
         return {
           message: priceValidationIssue.message,
@@ -1645,19 +1674,27 @@ export default function AdminArticleFormPage() {
                   <strong>{formatMarginCurrency(marginPreview.purchasePriceShipping)}</strong>
                 </p>
                 <p className="summary-line">
-                  <span>Base impuestos bancarios</span>
-                  <strong>{formatMarginCurrency(marginPreview.bankTaxBase)}</strong>
-                </p>
-                <p className="summary-line">
-                  <span>Impuestos bancarios 2,5%</span>
-                  <strong>{formatMarginCurrency(marginPreview.bankTax)}</strong>
-                </p>
-                <p className="summary-line">
                   <span>Costo envío MVD</span>
                   <strong>{formatMarginCurrency(marginPreview.purchasePriceCourier)}</strong>
                 </p>
                 <p className="summary-line">
-                  <span>Costo total mínimo</span>
+                  <span>Costo compra</span>
+                  <strong>{formatMarginCurrency(marginPreview.totalPurchasePrice)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Base impuestos bancarios</span>
+                  <strong>{formatMarginCurrency(marginPreview.bankTaxBase)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Tasa impuestos bancarios</span>
+                  <strong>{marginPreview.bankTaxPercent.toFixed(2)}%</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Impuestos bancarios</span>
+                  <strong>{formatMarginCurrency(marginPreview.bankTax)}</strong>
+                </p>
+                <p className="summary-line">
+                  <span>Costo total / mínimo recomendado de venta</span>
                   <strong>{formatMarginCurrency(marginPreview.totalCost)}</strong>
                 </p>
                 <p className="summary-line">
@@ -1669,11 +1706,11 @@ export default function AdminArticleFormPage() {
                   <strong>{formatMarginCurrency(marginPreview.effectiveSalePrice)}</strong>
                 </p>
                 <p className="summary-line article-margin-preview__highlight article-margin-preview__profit">
-                  <span>Ganancia estimada neta</span>
+                  <span>Ganancia estimada</span>
                   <strong>{formatMarginCurrency(marginPreview.estimatedProfit)}</strong>
                 </p>
                 <p className="summary-line article-margin-preview__highlight">
-                  <span>Margen estimado neto</span>
+                  <span>Margen estimado</span>
                   <strong>{marginPreview.estimatedMargin.toFixed(2)}%</strong>
                 </p>
               </div>

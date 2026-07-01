@@ -20,6 +20,7 @@ import { deriveStockStatus } from '../inventory/inventory.constants.js';
 import { buildImportedImageRecord, deleteArticleImageFiles, processUploadedArticleImage } from './article-image-processing.js';
 import { getArticlePriceValidationIssue } from './article-pricing-calculator.js';
 import { enrichArticleSeo } from './articles.seo.js';
+import { getCostingSettings } from '../collecting/collecting.service.js';
 
 const publicBaseSelect = `
   SELECT
@@ -583,7 +584,8 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     isUpdate,
   };
 
-  const priceIssue = getArticlePriceValidationIssue(payload);
+  const { bankTaxRate } = await getCostingSettings(connection);
+  const priceIssue = getArticlePriceValidationIssue(payload, { bankTaxRate });
   if (priceIssue) {
     throw badRequest(priceIssue.message, {
       code: 'ARTICLE_PRICE_BELOW_COST',

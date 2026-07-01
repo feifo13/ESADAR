@@ -92,9 +92,9 @@ test("received pending payment email asks to include order number in transfer re
   assert.match(email.html, /ES-42/);
   assert.match(email.text, /motivo\/concepto/);
   assert.match(email.text, /ES-42/);
-  assert.match(email.html, /orden enviada/);
-  assert.match(email.text, /orden enviada/);
-  assert.match(email.html, /sujeto a disponibilidad/);
+  assert.match(email.html, /orden sea aprobada y despachada/);
+  assert.match(email.text, /orden sea aprobada y despachada/);
+  assert.match(email.html, /lo tenga disponible/);
 });
 
 test("approved email defers tracking code to shipped email", () => {
@@ -105,8 +105,8 @@ test("approved email defers tracking code to shipped email", () => {
 
   assert.doesNotMatch(email.html, /UY123456/);
   assert.doesNotMatch(email.text, /UY123456/);
-  assert.match(email.html, /orden enviada/);
-  assert.match(email.text, /orden enviada/);
+  assert.match(email.html, /orden sea enviada/);
+  assert.match(email.text, /orden sea enviada/);
   assert.match(email.html, /sujeto a disponibilidad/);
 });
 

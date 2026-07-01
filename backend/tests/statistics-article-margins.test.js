@@ -15,7 +15,9 @@ test('article margin metrics calculate values without discount', () => {
   });
 
   assert.equal(metrics.effectiveSalePrice, 2000);
+  assert.equal(metrics.bankTaxBase, 1150);
   assert.equal(metrics.bankTax, 28.75);
+  assert.equal(metrics.bankTaxPercent, 2.5);
   assert.equal(metrics.purchasePriceTotal, 1250);
   assert.equal(metrics.totalCost, 1278.75);
   assert.equal(metrics.estimatedProfit, 721.25);
@@ -87,6 +89,7 @@ test('article margin metrics expose negative profit', () => {
 
 test('bank tax uses only item cost and USA shipping cost', () => {
   assert.equal(calculateBankTax(1000, 150), 28.75);
+  assert.equal(calculateBankTax(1000, 150, { bankTaxRate: 0.03 }), 34.5);
   assert.notEqual(calculateBankTax(1000, 150), 50);
 
   const metrics = calculateArticleMarginMetrics({
@@ -122,6 +125,7 @@ test('article margin totals accumulate costs and calculate weighted total margin
   const totals = calculateTotals(rows);
   assert.equal(totals.articleCount, 2);
   assert.equal(totals.totalEffectiveSalePrice, 3500);
+  assert.equal(totals.totalBankTaxBase, 2300);
   assert.equal(totals.totalBankTax, 57.5);
   assert.equal(totals.totalCost, 2557.5);
   assert.equal(totals.totalEstimatedProfit, 942.5);

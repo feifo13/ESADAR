@@ -30,11 +30,12 @@ import {
   findCustomerByUserId,
 } from "../customers/customer-helpers.js";
 import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
-import { getCollectingSettings } from "../collecting/collecting.service.js";
+import { getCollectingSettings, getCostingSettings } from "../collecting/collecting.service.js";
 import {
   calculateShippingCost,
   usesWeightRanges,
 } from "../shipping/shipping-pricing.js";
+import { calculateArticlePricing } from "../articles/article-pricing-calculator.js";
 
 const ORDER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -56,23 +57,30 @@ function parseJsonValue(value) {
   }
 }
 
-function buildOrderItemCostSnapshot(article, quantity, lineTotal) {
+function buildOrderItemCostSnapshot(article, quantity, lineTotal, bankTaxRate) {
   const itemQuantity = Number(quantity || 0);
-  const purchasePriceItemSnapshot =
-    Number(article.purchasePriceItem || 0) * itemQuantity;
-  const purchasePriceShippingSnapshot =
-    Number(article.purchasePriceShipping || 0) * itemQuantity;
-  const purchasePriceCourierSnapshot =
-    Number(article.purchasePriceCourier || 0) * itemQuantity;
-  const purchasePriceTotalSnapshot =
-    Number(article.purchasePriceTotal || 0) * itemQuantity;
+  const metrics = calculateArticlePricing(
+    {
+      purchasePriceItem: Number(article.purchasePriceItem || 0) * itemQuantity,
+      purchasePriceShipping: Number(article.purchasePriceShipping || 0) * itemQuantity,
+      purchasePriceCourier: Number(article.purchasePriceCourier || 0) * itemQuantity,
+      salePrice: Number(lineTotal || 0),
+      discountType: "NONE",
+      discountValue: 0,
+    },
+    { bankTaxRate },
+  );
 
   return {
-    purchasePriceItemSnapshot,
-    purchasePriceShippingSnapshot,
-    purchasePriceCourierSnapshot,
-    purchasePriceTotalSnapshot,
-    profitSnapshot: Number(lineTotal || 0) - purchasePriceTotalSnapshot,
+    purchasePriceItemSnapshot: metrics.purchasePriceItem,
+    purchasePriceShippingSnapshot: metrics.purchasePriceShipping,
+    purchasePriceCourierSnapshot: metrics.purchasePriceCourier,
+    purchasePriceTotalSnapshot: metrics.purchasePriceTotal,
+    bankTaxRateSnapshot: metrics.bankTaxRate,
+    bankTaxBaseSnapshot: metrics.bankTaxBase,
+    bankTaxSnapshot: metrics.bankTax,
+    totalCostSnapshot: metrics.totalCost,
+    profitSnapshot: metrics.estimatedProfit,
   };
 }
 
@@ -176,6 +184,7 @@ export async function createOrder(input, actor, auditContext) {
       }
     }
 
+    const costingSettings = await getCostingSettings(connection);
     const orderItems = [];
     let subtotal = 0;
     let discountTotal = 0;
@@ -219,6 +228,7 @@ export async function createOrder(input, actor, auditContext) {
           article,
           offerQuantity,
           lineTotal,
+          costingSettings.bankTaxRate,
         );
         subtotal += salePrice * offerQuantity;
         discountTotal += (salePrice - acceptedOfferPrice) * offerQuantity;
@@ -253,6 +263,7 @@ export async function createOrder(input, actor, auditContext) {
           article,
           regularQuantity,
           lineTotal,
+          costingSettings.bankTaxRate,
         );
         subtotal += salePrice * regularQuantity;
         discountTotal += perUnitDiscount * regularQuantity;
@@ -372,11 +383,15 @@ export async function createOrder(input, actor, auditContext) {
             purchase_price_shipping_snapshot,
             purchase_price_courier_snapshot,
             purchase_price_total_snapshot,
+            bank_tax_rate_snapshot,
+            bank_tax_base_snapshot,
+            bank_tax_snapshot,
+            total_cost_snapshot,
             profit_snapshot,
             accepted_offer_id,
             accepted_offer_price_snapshot,
             accepted_offer_quantity_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           orderId,
@@ -400,6 +415,10 @@ export async function createOrder(input, actor, auditContext) {
           item.purchasePriceShippingSnapshot,
           item.purchasePriceCourierSnapshot,
           item.purchasePriceTotalSnapshot,
+          item.bankTaxRateSnapshot,
+          item.bankTaxBaseSnapshot,
+          item.bankTaxSnapshot,
+          item.totalCostSnapshot,
           item.profitSnapshot,
           item.acceptedOfferId,
           item.acceptedOfferPriceSnapshot,
@@ -1778,6 +1797,10 @@ async function getOrderById(id, connection) {
         purchase_price_shipping_snapshot AS purchasePriceShippingSnapshot,
         purchase_price_courier_snapshot AS purchasePriceCourierSnapshot,
         purchase_price_total_snapshot AS purchasePriceTotalSnapshot,
+        bank_tax_rate_snapshot AS bankTaxRateSnapshot,
+        bank_tax_base_snapshot AS bankTaxBaseSnapshot,
+        bank_tax_snapshot AS bankTaxSnapshot,
+        total_cost_snapshot AS totalCostSnapshot,
         profit_snapshot AS profitSnapshot,
         accepted_offer_id AS acceptedOfferId,
         accepted_offer_price_snapshot AS acceptedOfferPrice,
@@ -1856,6 +1879,22 @@ async function getOrderById(id, connection) {
     purchasePriceTotalSnapshot:
       row.purchasePriceTotalSnapshot != null
         ? Number(row.purchasePriceTotalSnapshot)
+        : null,
+    bankTaxRateSnapshot:
+      row.bankTaxRateSnapshot != null
+        ? Number(row.bankTaxRateSnapshot)
+        : null,
+    bankTaxBaseSnapshot:
+      row.bankTaxBaseSnapshot != null
+        ? Number(row.bankTaxBaseSnapshot)
+        : null,
+    bankTaxSnapshot:
+      row.bankTaxSnapshot != null
+        ? Number(row.bankTaxSnapshot)
+        : null,
+    totalCostSnapshot:
+      row.totalCostSnapshot != null
+        ? Number(row.totalCostSnapshot)
         : null,
     profitSnapshot:
       row.profitSnapshot != null ? Number(row.profitSnapshot) : null,

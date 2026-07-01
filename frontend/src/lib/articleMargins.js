@@ -7,7 +7,8 @@ function roundMoney(value) {
   return Number(asNumber(value).toFixed(2));
 }
 
-export const BANK_TAX_RATE = 0.025;
+export const DEFAULT_BANK_TAX_RATE = 0.025;
+export const BANK_TAX_RATE = DEFAULT_BANK_TAX_RATE;
 
 export function getEffectiveSalePrice({
   salePrice,
@@ -35,28 +36,53 @@ export function calculateBankTaxBase({
   return roundMoney(asNumber(purchasePriceItem) + asNumber(purchasePriceShipping));
 }
 
-export function calculateBankTax(articleOrCostItem = {}, costUsaShipping = 0) {
-  if (typeof articleOrCostItem === "object" && articleOrCostItem !== null) {
-    return roundMoney(calculateBankTaxBase(articleOrCostItem) * BANK_TAX_RATE);
-  }
+export function normalizeBankTaxRate(value = DEFAULT_BANK_TAX_RATE) {
+  const numeric = asNumber(value);
+  if (numeric < 0) return 0;
+  if (numeric > 1) return 1;
+  return numeric;
+}
 
-  return roundMoney(
-    (asNumber(articleOrCostItem) + asNumber(costUsaShipping)) * BANK_TAX_RATE,
+export function bankTaxRateToPercent(value = DEFAULT_BANK_TAX_RATE) {
+  return Number((normalizeBankTaxRate(value) * 100).toFixed(2));
+}
+
+function resolveBankTaxRate(article = {}, options = {}) {
+  return normalizeBankTaxRate(
+    options.bankTaxRate ?? article.bankTaxRate ?? DEFAULT_BANK_TAX_RATE,
   );
 }
 
-export function calculateMinimumArticlePrice(article = {}) {
+export function calculateBankTax(articleOrCostItem = {}, costUsaShipping = 0, options = {}) {
+  if (typeof articleOrCostItem === "object" && articleOrCostItem !== null) {
+    const resolvedOptions =
+      costUsaShipping && typeof costUsaShipping === "object"
+        ? costUsaShipping
+        : options;
+    return roundMoney(calculateBankTaxBase(articleOrCostItem) * resolveBankTaxRate(articleOrCostItem, resolvedOptions));
+  }
+
   return roundMoney(
-    calculateBankTaxBase(article) +
-      calculateBankTax(article) +
+    (asNumber(articleOrCostItem) + asNumber(costUsaShipping)) * resolveBankTaxRate({}, options),
+  );
+}
+
+export function calculatePurchasePriceTotal(article = {}) {
+  return roundMoney(
+    asNumber(article.purchasePriceItem) +
+      asNumber(article.purchasePriceShipping) +
       asNumber(article.purchasePriceCourier),
   );
 }
 
-export function getArticlePriceValidationIssue(article = {}) {
+export function calculateMinimumArticlePrice(article = {}, options = {}) {
+  return roundMoney(calculatePurchasePriceTotal(article) + calculateBankTax(article, 0, options));
+}
+
+export function getArticlePriceValidationIssue(article = {}, options = {}) {
   const salePrice = roundMoney(article.salePrice);
   const effectiveSalePrice = getEffectiveSalePrice(article);
-  const minimumArticlePrice = calculateMinimumArticlePrice(article);
+  const minimumArticlePrice = calculateMinimumArticlePrice(article, options);
 
   if (salePrice < minimumArticlePrice) {
     return {
@@ -90,18 +116,17 @@ function formatMinimumPrice(value) {
   }).format(asNumber(value))}`;
 }
 
-export function calculateArticleMarginPreview(article = {}) {
+export function calculateArticleMarginPreview(article = {}, options = {}) {
   const purchasePriceItem = asNumber(article.purchasePriceItem);
   const purchasePriceShipping = asNumber(article.purchasePriceShipping);
   const purchasePriceCourier = asNumber(article.purchasePriceCourier);
   const salePrice = asNumber(article.salePrice);
+  const bankTaxRate = resolveBankTaxRate(article, options);
   const bankTaxBase = calculateBankTaxBase(article);
-  const totalPurchasePrice = roundMoney(
-    purchasePriceItem + purchasePriceShipping + purchasePriceCourier,
-  );
+  const totalPurchasePrice = calculatePurchasePriceTotal(article);
   const effectiveSalePrice = getEffectiveSalePrice(article);
-  const bankTax = calculateBankTax(article);
-  const totalCost = calculateMinimumArticlePrice(article);
+  const bankTax = calculateBankTax(article, 0, { bankTaxRate });
+  const totalCost = calculateMinimumArticlePrice(article, { bankTaxRate });
   const estimatedProfit = roundMoney(effectiveSalePrice - totalCost);
   const estimatedMargin = effectiveSalePrice > 0
     ? Number(((estimatedProfit / effectiveSalePrice) * 100).toFixed(2))
@@ -113,6 +138,8 @@ export function calculateArticleMarginPreview(article = {}) {
     purchasePriceCourier,
     salePrice,
     bankTaxBase,
+    bankTaxRate,
+    bankTaxPercent: bankTaxRateToPercent(bankTaxRate),
     bankTax,
     totalPurchasePrice,
     totalCost,

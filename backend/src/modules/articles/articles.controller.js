@@ -40,10 +40,12 @@ import {
 import {
   buildArticleExport,
   buildArticleImportTemplate,
+  buildArticleProfitProjectionExport,
   previewArticleImport,
   runManualBulkArticleCreate,
   runArticleImport,
 } from './articles.batch.service.js';
+import { getCostingSettings } from '../collecting/collecting.service.js';
 
 function getAuditContext(req) {
   return {
@@ -100,6 +102,11 @@ export async function getAdminArticle(req, res) {
   return res.json({ ok: true, article });
 }
 
+export async function getAdminArticleCostingSettings(_req, res) {
+  const settings = await getCostingSettings();
+  return res.json({ ok: true, ...settings });
+}
+
 export async function previewAdminArticleImport(req, res) {
   if (!req.file) {
     throw badRequest('Debes adjuntar un archivo CSV');
@@ -151,6 +158,24 @@ export async function exportAdminArticles(req, res) {
   const query = articleExportQuerySchema.parse(req.query);
   const { format, ...filters } = query;
   const result = await buildArticleExport({
+    filters,
+    format,
+    auditContext: getAuditContext(req),
+  });
+
+  res.setHeader('Content-Type', result.contentType);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
+  );
+  res.setHeader('X-Export-Count', String(result.itemCount));
+  return res.send(result.payload);
+}
+
+export async function exportAdminArticleProfitProjection(req, res) {
+  const query = articleExportQuerySchema.parse(req.query);
+  const { format, ...filters } = query;
+  const result = await buildArticleProfitProjectionExport({
     filters,
     format,
     auditContext: getAuditContext(req),

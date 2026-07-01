@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
+import { DEFAULT_BANK_TAX_RATE, bankTaxRateToPercent } from "../../lib/articleMargins.js";
 import AppLoader from "../../components/AppLoader.jsx";
 
 const initialForm = {
+  bankTaxRate: DEFAULT_BANK_TAX_RATE,
+  bankTaxPercent: bankTaxRateToPercent(DEFAULT_BANK_TAX_RATE),
   isBankTransferEnabled: true,
   bankAccountHolder: "",
   bankName: "",
@@ -33,6 +36,8 @@ function normalizeSettings(settings = {}) {
   return {
     ...initialForm,
     ...settings,
+    bankTaxRate: Number(settings.bankTaxRate ?? initialForm.bankTaxRate),
+    bankTaxPercent: Number(settings.bankTaxPercent ?? initialForm.bankTaxPercent),
     isBankTransferEnabled: Boolean(settings.isBankTransferEnabled ?? true),
     isMercadoPagoEnabled: Boolean(settings.isMercadoPagoEnabled ?? true),
     mercadoPagoEnvironment: settings.mercadoPagoEnvironment === "production" ? "production" : "test",
@@ -86,9 +91,16 @@ export default function AdminCollectingPage() {
     try {
       setSaving(true);
       setError("");
+      const bankTaxPercent = Number(form.bankTaxPercent);
+      if (!Number.isFinite(bankTaxPercent) || bankTaxPercent < 0 || bankTaxPercent > 100) {
+        throw new Error("La tasa de impuestos bancarios debe estar entre 0% y 100%.");
+      }
       const response = await apiFetch("/api/admin/collecting", {
         method: "PUT",
-        body: form,
+        body: {
+          ...form,
+          bankTaxPercent,
+        },
       });
       setForm(normalizeSettings(response.settings));
       notifySuccess("Configuracion de cobros guardada correctamente.");
@@ -121,6 +133,36 @@ export default function AdminCollectingPage() {
 
         {!loading ? (
           <form className="page-stack" onSubmit={handleSubmit}>
+            <section className="section-card page-stack-sm">
+              <div className="section-heading section-heading-wrap">
+                <div>
+                  <p className="section-kicker">Costos y márgenes</p>
+                  <h2>Impuestos bancarios</h2>
+                  <p className="muted-copy">
+                    Se aplica sobre costo artículo + envío USA. Ejemplo esperado: 2,5.
+                  </p>
+                </div>
+              </div>
+
+              <div className="form-grid-two">
+                <label className="field-group">
+                  <span>Tasa impuestos bancarios (%)</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={form.bankTaxPercent}
+                    onChange={(event) => updateField("bankTaxPercent", event.target.value)}
+                  />
+                  <span className="field-helper">
+                    Se guarda como tasa decimal. 2,5% equivale a 0,025.
+                  </span>
+                </label>
+              </div>
+            </section>
+
             <section className="section-card page-stack-sm">
               <div className="section-heading section-heading-wrap">
                 <div>

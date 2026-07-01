@@ -23,23 +23,24 @@ const LOGO_PATH = fileURLToPath(
 );
 
 const TABLE_COLUMNS = [
-  { key: 'intakeDate', label: 'Fecha ingreso', width: 55 },
-  { key: 'internalCode', label: 'Código interno', width: 62 },
-  { key: 'title', label: 'Artículo', width: 130 },
-  { key: 'brandName', label: 'Marca', width: 58 },
-  { key: 'categoryName', label: 'Categoría', width: 62 },
-  { key: 'sizeLabel', label: 'Talle', width: 32 },
-  { key: 'salePrice', label: 'Precio venta', width: 58, align: 'right', type: 'currency' },
-  { key: 'effectiveSalePrice', label: 'Precio efectivo', width: 64, align: 'right', type: 'currency' },
-  { key: 'purchasePriceItem', label: 'Costo artículo', width: 60, align: 'right', type: 'currency' },
-  { key: 'purchasePriceShipping', label: 'Costo envío USA', width: 62, align: 'right', type: 'currency' },
-  { key: 'purchasePriceCourier', label: 'Costo envío MVD', width: 62, align: 'right', type: 'currency' },
-  { key: 'bankTax', label: 'Impuestos bancarios', width: 70, align: 'right', type: 'currency' },
-  { key: 'purchasePriceTotal', label: 'Costo compra', width: 62, align: 'right', type: 'currency' },
-  { key: 'totalCost', label: 'Costo total', width: 60, align: 'right', type: 'currency' },
-  { key: 'estimatedProfit', label: 'Ganancia estimada', width: 68, align: 'right', type: 'currency' },
-  { key: 'estimatedMargin', label: 'Margen %', width: 46, align: 'right', type: 'percent' },
-  { key: 'totalPerArticle', label: 'Total por artículo', width: 68, align: 'right', type: 'currency' },
+  { key: 'intakeDate', label: 'Fecha ingreso', width: 50 },
+  { key: 'internalCode', label: 'Código interno', width: 56 },
+  { key: 'title', label: 'Artículo', width: 120 },
+  { key: 'brandName', label: 'Marca', width: 50 },
+  { key: 'categoryName', label: 'Categoría', width: 56 },
+  { key: 'sizeLabel', label: 'Talle', width: 28 },
+  { key: 'salePrice', label: 'Precio venta', width: 54, align: 'right', type: 'currency' },
+  { key: 'effectiveSalePrice', label: 'Precio efectivo', width: 58, align: 'right', type: 'currency' },
+  { key: 'purchasePriceItem', label: 'Costo artículo', width: 54, align: 'right', type: 'currency' },
+  { key: 'purchasePriceShipping', label: 'Envío USA', width: 54, align: 'right', type: 'currency' },
+  { key: 'purchasePriceCourier', label: 'Envío MVD', width: 54, align: 'right', type: 'currency' },
+  { key: 'purchasePriceTotal', label: 'Costo compra', width: 56, align: 'right', type: 'currency' },
+  { key: 'bankTaxBase', label: 'Base impuestos', width: 58, align: 'right', type: 'currency' },
+  { key: 'bankTaxPercent', label: 'Tasa imp.', width: 44, align: 'right', type: 'percent' },
+  { key: 'bankTax', label: 'Impuestos bancarios', width: 56, align: 'right', type: 'currency' },
+  { key: 'totalCost', label: 'Costo total', width: 56, align: 'right', type: 'currency' },
+  { key: 'estimatedProfit', label: 'Ganancia estimada', width: 62, align: 'right', type: 'currency' },
+  { key: 'estimatedMargin', label: 'Margen %', width: 42, align: 'right', type: 'percent' },
 ];
 
 function asNumber(value) {
@@ -158,6 +159,12 @@ function drawHeader(doc, report) {
     color: COLORS.muted,
     align: 'right',
   });
+  drawText(doc, `Tasa impuestos bancarios: ${formatPercent(report.bankTaxPercent)}`, rightX, top + 41, {
+    width: 250,
+    size: 8.5,
+    color: COLORS.muted,
+    align: 'right',
+  });
 
   doc
     .save()
@@ -198,8 +205,9 @@ function drawSummary(doc, summary = {}) {
     ['Total costo artículo', formatCurrency(summary.totalPurchasePriceItem)],
     ['Total costo envío USA', formatCurrency(summary.totalPurchasePriceShipping)],
     ['Total costo envío MVD', formatCurrency(summary.totalPurchasePriceCourier)],
-    ['Total impuestos bancarios', formatCurrency(summary.totalBankTax)],
     ['Total costo compra', formatCurrency(summary.totalPurchasePrice)],
+    ['Total base impuestos', formatCurrency(summary.totalBankTaxBase)],
+    ['Total impuestos bancarios', formatCurrency(summary.totalBankTax)],
     ['Total costo total', formatCurrency(summary.totalCost)],
     ['Ganancia estimada total', formatCurrency(summary.totalEstimatedProfit), true],
     ['Margen total', formatPercent(summary.totalMargin), true],
@@ -225,7 +233,8 @@ function drawSummary(doc, summary = {}) {
     );
   });
 
-  return startY + 2 * height + gap + 24;
+  const rowCount = Math.ceil(metrics.length / 5);
+  return startY + rowCount * height + Math.max(0, rowCount - 1) * gap + 24;
 }
 
 function drawTableHeader(doc, y) {
@@ -330,12 +339,13 @@ function buildTotalsRow(summary = {}) {
     purchasePriceItem: summary.totalPurchasePriceItem,
     purchasePriceShipping: summary.totalPurchasePriceShipping,
     purchasePriceCourier: summary.totalPurchasePriceCourier,
-    bankTax: summary.totalBankTax,
     purchasePriceTotal: summary.totalPurchasePrice,
+    bankTaxBase: summary.totalBankTaxBase,
+    bankTaxPercent: summary.bankTaxPercent,
+    bankTax: summary.totalBankTax,
     totalCost: summary.totalCost,
     estimatedProfit: summary.totalEstimatedProfit,
     estimatedMargin: summary.totalMargin,
-    totalPerArticle: summary.totalPerArticle,
   };
 }
 

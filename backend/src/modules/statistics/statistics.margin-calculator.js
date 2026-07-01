@@ -1,4 +1,13 @@
-export const BANK_TAX_RATE = 0.025;
+import {
+  DEFAULT_BANK_TAX_RATE,
+  calculateArticlePricing,
+  calculateBankTax as calculateArticleBankTax,
+  calculateBankTaxBase,
+  calculateEffectiveSalePrice,
+  normalizeBankTaxRate,
+} from '../articles/article-pricing-calculator.js';
+
+export const BANK_TAX_RATE = DEFAULT_BANK_TAX_RATE;
 
 function asNumber(value) {
   const numeric = Number(value ?? 0);
@@ -13,59 +22,18 @@ function roundPercent(value) {
   return Number(asNumber(value).toFixed(2));
 }
 
-export function calculateEffectiveSalePrice({
-  salePrice,
-  discountType,
-  discountValue,
-} = {}) {
-  const basePrice = asNumber(salePrice);
-  const discount = asNumber(discountValue);
-  const type = String(discountType || 'NONE').toUpperCase();
+export { calculateEffectiveSalePrice };
 
-  if (type === 'PERCENT') {
-    return roundMoney(Math.max(basePrice - (basePrice * discount) / 100, 0));
-  }
-
-  if (type === 'FIXED') {
-    return roundMoney(Math.max(basePrice - discount, 0));
-  }
-
-  return roundMoney(basePrice);
+export function calculateBankTax(costItem, costUsaShipping, options = {}) {
+  const bankTaxRate = normalizeBankTaxRate(options.bankTaxRate ?? BANK_TAX_RATE);
+  return calculateArticleBankTax({
+    purchasePriceItem: costItem,
+    purchasePriceShipping: costUsaShipping,
+  }, { bankTaxRate });
 }
 
-export function calculateBankTax(costItem, costUsaShipping) {
-  return roundMoney((asNumber(costItem) + asNumber(costUsaShipping)) * BANK_TAX_RATE);
-}
-
-export function calculateArticleMargin(article = {}) {
-  const salePrice = roundMoney(article.salePrice);
-  const effectiveSalePrice = calculateEffectiveSalePrice(article);
-  const purchasePriceItem = roundMoney(article.purchasePriceItem);
-  const purchasePriceShipping = roundMoney(article.purchasePriceShipping);
-  const purchasePriceCourier = roundMoney(article.purchasePriceCourier);
-  const purchasePriceTotal = roundMoney(
-    purchasePriceItem + purchasePriceShipping + purchasePriceCourier,
-  );
-  const bankTax = calculateBankTax(purchasePriceItem, purchasePriceShipping);
-  const totalCost = roundMoney(purchasePriceTotal + bankTax);
-  const estimatedProfit = roundMoney(effectiveSalePrice - totalCost);
-  const estimatedMargin = effectiveSalePrice > 0
-    ? roundPercent((estimatedProfit / effectiveSalePrice) * 100)
-    : 0;
-
-  return {
-    salePrice,
-    effectiveSalePrice,
-    purchasePriceItem,
-    purchasePriceShipping,
-    purchasePriceCourier,
-    bankTax,
-    purchasePriceTotal,
-    totalCost,
-    totalPerArticle: totalCost,
-    estimatedProfit,
-    estimatedMargin,
-  };
+export function calculateArticleMargin(article = {}, options = {}) {
+  return calculateArticlePricing(article, options);
 }
 
 export function calculateTotals(rows = []) {
@@ -77,6 +45,7 @@ export function calculateTotals(rows = []) {
       totalPurchasePriceItem: accumulator.totalPurchasePriceItem + asNumber(row.purchasePriceItem),
       totalPurchasePriceShipping: accumulator.totalPurchasePriceShipping + asNumber(row.purchasePriceShipping),
       totalPurchasePriceCourier: accumulator.totalPurchasePriceCourier + asNumber(row.purchasePriceCourier),
+      totalBankTaxBase: accumulator.totalBankTaxBase + asNumber(row.bankTaxBase ?? calculateBankTaxBase(row)),
       totalBankTax: accumulator.totalBankTax + asNumber(row.bankTax),
       totalPurchasePrice: accumulator.totalPurchasePrice + asNumber(row.purchasePriceTotal),
       totalCost: accumulator.totalCost + asNumber(row.totalCost),
@@ -90,6 +59,7 @@ export function calculateTotals(rows = []) {
       totalPurchasePriceItem: 0,
       totalPurchasePriceShipping: 0,
       totalPurchasePriceCourier: 0,
+      totalBankTaxBase: 0,
       totalBankTax: 0,
       totalPurchasePrice: 0,
       totalCost: 0,
@@ -105,6 +75,7 @@ export function calculateTotals(rows = []) {
     totalPurchasePriceItem: roundMoney(totals.totalPurchasePriceItem),
     totalPurchasePriceShipping: roundMoney(totals.totalPurchasePriceShipping),
     totalPurchasePriceCourier: roundMoney(totals.totalPurchasePriceCourier),
+    totalBankTaxBase: roundMoney(totals.totalBankTaxBase),
     totalBankTax: roundMoney(totals.totalBankTax),
     totalPurchasePrice: roundMoney(totals.totalPurchasePrice),
     totalCost: roundMoney(totals.totalCost),

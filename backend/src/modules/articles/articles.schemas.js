@@ -11,7 +11,6 @@ import {
   pageSizeSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
-import { getArticlePriceValidationIssue } from './article-pricing-calculator.js';
 
 const numericMoney = z.coerce.number().min(0);
 const optionalNullableId = z.preprocess(
@@ -126,7 +125,6 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
     });
   }
 
-  addArticlePriceIssue(value, ctx);
 });
 
 export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, ctx) => {
@@ -138,14 +136,6 @@ export const articleUpdateSchema = articleUpdateBaseSchema.superRefine((value, c
     });
   }
 
-  if (
-    value.salePrice !== undefined &&
-    value.purchasePriceItem !== undefined &&
-    value.purchasePriceShipping !== undefined &&
-    value.purchasePriceCourier !== undefined
-  ) {
-    addArticlePriceIssue(value, ctx);
-  }
 });
 
 export const articleStatusSchema = z.object({
@@ -273,7 +263,7 @@ export const bulkArticleRowSchema = z.object({
     z.string().trim().max(4000),
     z.array(z.string().trim().max(500)),
   ]).optional().nullable(),
-}).superRefine(addArticlePriceIssue);
+});
 
 export const adminBulkArticleCreateSchema = z.object({
   createMissingLookups: z.coerce.boolean().default(false),
@@ -295,15 +285,4 @@ export const adminArticleBatchActionSchema = z.object({
 
 function quantityTotalIsInvalid(total, available, reserved, sold) {
   return total < available + reserved + sold;
-}
-
-function addArticlePriceIssue(value, ctx) {
-  const issue = getArticlePriceValidationIssue(value);
-  if (!issue) return;
-
-  ctx.addIssue({
-    code: 'custom',
-    path: issue.path,
-    message: issue.message,
-  });
 }

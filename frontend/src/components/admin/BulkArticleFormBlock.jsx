@@ -1,4 +1,5 @@
 import BulkArticleImageChecklist from "./BulkArticleImageChecklist.jsx";
+import { calculateArticleMarginPreview } from "../../lib/articleMargins.js";
 
 const CONDITION_LABEL_OPTIONS = [
   "Nuevo",
@@ -8,6 +9,15 @@ const CONDITION_LABEL_OPTIONS = [
   "Con detalles",
 ];
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat("es-UY", {
+    style: "currency",
+    currency: "UYU",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
+}
+
 export default function BulkArticleFormBlock({
   index,
   article,
@@ -16,11 +26,15 @@ export default function BulkArticleFormBlock({
   sizeOptions,
   onChange,
   onImageChange,
+  costingSettings,
   onToggleExpand,
   onDuplicate,
   onRemove,
 }) {
   const isReady = article.title.trim() && Number(article.salePrice) > 0;
+  const marginPreview = calculateArticleMarginPreview(article, {
+    bankTaxRate: costingSettings?.bankTaxRate,
+  });
   const hasConditionWarning =
     /detalle|desgaste|defecto|mancha|rotura/i.test(
       article.conditionLabel || "",
@@ -106,6 +120,38 @@ export default function BulkArticleFormBlock({
                   }
                 />
               </label>
+            </div>
+            <div
+              className={[
+                "article-margin-preview",
+                marginPreview.isNegative ? "article-margin-preview--negative" : "",
+              ].filter(Boolean).join(" ")}
+              aria-live="polite"
+            >
+              <p className="summary-line">
+                <span>Costo compra</span>
+                <strong>{formatCurrency(marginPreview.totalPurchasePrice)}</strong>
+              </p>
+              <p className="summary-line">
+                <span>Base impuestos bancarios</span>
+                <strong>{formatCurrency(marginPreview.bankTaxBase)}</strong>
+              </p>
+              <p className="summary-line">
+                <span>Tasa impuestos bancarios</span>
+                <strong>{marginPreview.bankTaxPercent.toFixed(2)}%</strong>
+              </p>
+              <p className="summary-line">
+                <span>Impuestos bancarios</span>
+                <strong>{formatCurrency(marginPreview.bankTax)}</strong>
+              </p>
+              <p className="summary-line">
+                <span>Costo total / mínimo recomendado de venta</span>
+                <strong>{formatCurrency(marginPreview.totalCost)}</strong>
+              </p>
+              <p className="summary-line article-margin-preview__highlight">
+                <span>Ganancia estimada</span>
+                <strong>{formatCurrency(marginPreview.estimatedProfit)}</strong>
+              </p>
             </div>
           </div>
 
@@ -246,7 +292,7 @@ export default function BulkArticleFormBlock({
                 />
               </label>
               <label className="field-group">
-              <span>Precio compra artículo</span>
+              <span>Costo artículo</span>
                 <input
                   className="input"
                   type="number"
@@ -259,7 +305,7 @@ export default function BulkArticleFormBlock({
                 />
               </label>
               <label className="field-group">
-                <span>Precio compra envío</span>
+                <span>Costo envío USA</span>
                 <input
                   className="input"
                   type="number"
@@ -272,7 +318,7 @@ export default function BulkArticleFormBlock({
                 />
               </label>
               <label className="field-group">
-                <span>Precio compra courier</span>
+                <span>Costo envío MVD</span>
                 <input
                   className="input"
                   type="number"

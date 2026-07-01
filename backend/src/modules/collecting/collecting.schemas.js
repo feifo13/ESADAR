@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 function emptyToNull(value) {
   if (value == null) return null;
   if (typeof value === 'string' && value.trim() === '') return null;
@@ -24,7 +23,14 @@ const booleanishDefault = (defaultValue = false) =>
     return value;
   }, z.boolean().default(defaultValue));
 
+const bankTaxPercent = z.preprocess((value) => {
+  if (value == null || value === '') return undefined;
+  return value;
+}, z.coerce.number().min(0).max(100).optional());
+
 export const updateCollectingSettingsSchema = z.object({
+  bankTaxPercent,
+  bankTaxRate: z.coerce.number().min(0).max(1).optional(),
   isBankTransferEnabled: booleanishDefault(true),
   bankAccountHolder: nullableText(150),
   bankName: nullableText(150),

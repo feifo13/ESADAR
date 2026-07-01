@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   calculateBankTax,
   calculateBankTaxBase,
+  calculateArticlePricing,
   calculateEffectiveSalePrice,
   calculateMinimumArticlePrice,
   getArticlePriceValidationIssue,
@@ -28,6 +29,7 @@ const baseCosts = {
 test('article pricing calculates bank tax only over item cost and USA shipping', () => {
   assert.equal(calculateBankTaxBase(baseCosts), 1150);
   assert.equal(calculateBankTax(baseCosts), 28.75);
+  assert.equal(calculateBankTax(baseCosts, { bankTaxRate: 0.03 }), 34.5);
   assert.equal(
     calculateBankTax({ ...baseCosts, purchasePriceCourier: 900 }),
     28.75,
@@ -36,6 +38,11 @@ test('article pricing calculates bank tax only over item cost and USA shipping',
 
 test('article pricing calculates minimum total article price', () => {
   assert.equal(calculateMinimumArticlePrice(baseCosts), 1278.75);
+  const metrics = calculateArticlePricing(baseCosts);
+  assert.equal(metrics.purchasePriceTotal, 1250);
+  assert.equal(metrics.bankTaxBase, 1150);
+  assert.equal(metrics.bankTax, 28.75);
+  assert.equal(metrics.totalCost, 1278.75);
 });
 
 test('article pricing rejects sale price below cost and accepts exact cost', () => {
@@ -73,33 +80,30 @@ test('article pricing rejects percentage discount below minimum cost', () => {
   assert.equal(getArticlePriceValidationIssue(article)?.reason, 'discount');
 });
 
-test('article create, update and bulk schemas reject prices below cost', () => {
-  assert.throws(
+test('article create, update and bulk schemas leave configurable cost validation to services', () => {
+  assert.doesNotThrow(
     () => articleCreateSchema.parse({
       title: 'Campera test',
       ...baseCosts,
       salePrice: 1200,
     }),
-    /precio de venta/i,
   );
 
-  assert.throws(
+  assert.doesNotThrow(
     () => articleUpdateSchema.parse({
       ...baseCosts,
       salePrice: 2000,
       discountType: 'FIXED',
       discountValue: 800,
     }),
-    /precio final con descuento/i,
   );
 
-  assert.throws(
+  assert.doesNotThrow(
     () => bulkArticleRowSchema.parse({
       title: 'Campera lote',
       ...baseCosts,
       salePrice: 1200,
     }),
-    /precio de venta/i,
   );
 });
 
@@ -110,6 +114,7 @@ test('article service validates the merged payload for partial updates', () => {
   );
 
   assert.match(source, /\.\.\.before,\s*\n\s*\.\.\.input/);
-  assert.match(source, /getArticlePriceValidationIssue\(payload\)/);
+  assert.match(source, /getCostingSettings\(connection\)/);
+  assert.match(source, /getArticlePriceValidationIssue\(payload,\s*\{ bankTaxRate \}\)/);
   assert.match(source, /ARTICLE_PRICE_BELOW_COST/);
 });

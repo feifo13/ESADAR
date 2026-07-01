@@ -5,6 +5,7 @@ import {
   calculateArticleMargin,
   calculateTotals,
 } from './statistics.margin-calculator.js';
+import { getCostingSettings } from '../collecting/collecting.service.js';
 
 const ARTICLE_STATUSES = new Set(['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED']);
 
@@ -49,8 +50,10 @@ function buildArticleMarginsFilters(filters = {}) {
   };
 }
 
-function normalizeArticleMarginRow(row) {
-  const metrics = calculateArticleMarginMetrics(row);
+function normalizeArticleMarginRow(row, costingSettings) {
+  const metrics = calculateArticleMarginMetrics(row, {
+    bankTaxRate: costingSettings.bankTaxRate,
+  });
 
   return {
     articleId: Number(row.articleId || 0),
@@ -67,6 +70,7 @@ function normalizeArticleMarginRow(row) {
 
 export async function getArticleMarginsReport(filters = {}) {
   const { where, params } = buildArticleMarginsFilters(filters);
+  const costingSettings = await getCostingSettings();
   const [rows] = await pool.execute(
     `
       SELECT
@@ -94,11 +98,16 @@ export async function getArticleMarginsReport(filters = {}) {
     params,
   );
 
-  const items = rows.map(normalizeArticleMarginRow);
+  const items = rows.map((row) => normalizeArticleMarginRow(row, costingSettings));
+  const summary = calculateTotals(items);
+  summary.bankTaxPercent = costingSettings.bankTaxPercent;
+
   return {
     filters,
+    bankTaxRate: costingSettings.bankTaxRate,
+    bankTaxPercent: costingSettings.bankTaxPercent,
     generatedAt: new Date(),
-    summary: calculateTotals(items),
+    summary,
     items,
   };
 }

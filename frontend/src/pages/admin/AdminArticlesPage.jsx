@@ -353,6 +353,31 @@ export default function AdminArticlesPage() {
     }
   }
 
+  async function handleProfitProjectionExport() {
+    const format = "xlsx";
+
+    try {
+      setExportingFormat("profitProjection");
+      setError("");
+      setMessage("");
+      const query = buildQueryString({ ...filters, format });
+      const today = new Date().toISOString().slice(0, 10);
+      await apiDownload(`/api/admin/articles/profit-projection/export?${query}`, {
+        fileName: `esadar-proyeccion-ganancias-articulos-${today}.${format}`,
+        extension: format,
+      });
+      const successMessage = "Proyección de ganancias generada correctamente.";
+      setMessage(successMessage);
+      notifyFormStatus(notifyMobileStatus, "success", successMessage);
+    } catch (err) {
+      const errorMessage = err.message || "No se pudo exportar la proyección de ganancias";
+      setError(errorMessage);
+      notifyFormStatus(notifyMobileStatus, "error", errorMessage);
+    } finally {
+      setExportingFormat("");
+    }
+  }
+
   async function handleDownloadTemplate(format, type) {
     const key = `${type}-${format}`;
 
@@ -612,6 +637,16 @@ export default function AdminArticlesPage() {
               onClick={() => setImportPanelOpen((current) => !current)}
             >
               {importPanelOpen ? "Ocultar importacion" : "Importar CSV"}
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={handleProfitProjectionExport}
+              disabled={Boolean(exportingFormat)}
+            >
+              {exportingFormat === "profitProjection"
+                ? "Exportando proyección..."
+                : "Exportar proyección de ganancias"}
             </button>
             <button
               type="button"

@@ -210,6 +210,7 @@ CREATE TABLE shipping_method_weight_rates (
 
 CREATE TABLE company_collecting_settings (
   id TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  bank_tax_rate DECIMAL(8,6) NOT NULL DEFAULT 0.025000,
   is_bank_transfer_enabled TINYINT(1) NOT NULL DEFAULT 1,
   bank_account_holder VARCHAR(150) NULL,
   bank_name VARCHAR(150) NULL,
@@ -236,6 +237,7 @@ CREATE TABLE company_collecting_settings (
   updated_by BIGINT UNSIGNED NULL,
   PRIMARY KEY (id),
   CONSTRAINT chk_company_collecting_settings_singleton CHECK (id = 1),
+  CONSTRAINT chk_company_collecting_settings_bank_tax_rate CHECK (bank_tax_rate >= 0 AND bank_tax_rate <= 1),
   KEY idx_company_collecting_created_by (created_by),
   KEY idx_company_collecting_updated_by (updated_by),
   CONSTRAINT fk_company_collecting_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -644,6 +646,10 @@ CREATE TABLE order_items (
   purchase_price_shipping_snapshot DECIMAL(12,2) NULL,
   purchase_price_courier_snapshot DECIMAL(12,2) NULL,
   purchase_price_total_snapshot DECIMAL(12,2) NULL,
+  bank_tax_rate_snapshot DECIMAL(8,6) NULL,
+  bank_tax_base_snapshot DECIMAL(12,2) NULL,
+  bank_tax_snapshot DECIMAL(12,2) NULL,
+  total_cost_snapshot DECIMAL(12,2) NULL,
   profit_snapshot DECIMAL(12,2) NULL,
   accepted_offer_id BIGINT UNSIGNED NULL,
   accepted_offer_price_snapshot DECIMAL(12,2) NULL,
@@ -663,6 +669,10 @@ CREATE TABLE order_items (
   CONSTRAINT chk_order_items_purchase_price_shipping_snapshot CHECK (purchase_price_shipping_snapshot IS NULL OR purchase_price_shipping_snapshot >= 0),
   CONSTRAINT chk_order_items_purchase_price_courier_snapshot CHECK (purchase_price_courier_snapshot IS NULL OR purchase_price_courier_snapshot >= 0),
   CONSTRAINT chk_order_items_purchase_price_total_snapshot CHECK (purchase_price_total_snapshot IS NULL OR purchase_price_total_snapshot >= 0),
+  CONSTRAINT chk_order_items_bank_tax_rate_snapshot CHECK (bank_tax_rate_snapshot IS NULL OR (bank_tax_rate_snapshot >= 0 AND bank_tax_rate_snapshot <= 1)),
+  CONSTRAINT chk_order_items_bank_tax_base_snapshot CHECK (bank_tax_base_snapshot IS NULL OR bank_tax_base_snapshot >= 0),
+  CONSTRAINT chk_order_items_bank_tax_snapshot CHECK (bank_tax_snapshot IS NULL OR bank_tax_snapshot >= 0),
+  CONSTRAINT chk_order_items_total_cost_snapshot CHECK (total_cost_snapshot IS NULL OR total_cost_snapshot >= 0),
   CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_order_items_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
@@ -1385,6 +1395,7 @@ WHERE sm.description = 'Ahiva / Correo Uruguayo'
 
 INSERT INTO company_collecting_settings (
   id,
+  bank_tax_rate,
   is_bank_transfer_enabled,
   bank_currency,
   bank_instructions,
@@ -1396,6 +1407,7 @@ INSERT INTO company_collecting_settings (
 )
 VALUES (
   1,
+  0.025000,
   1,
   'UYU',
   'Luego de transferir, responde este correo con el comprobante para validar tu orden.',

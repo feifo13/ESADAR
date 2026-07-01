@@ -4,6 +4,11 @@ import { pool } from "../../db/pool.js";
 import { withTransaction } from "../../db/transaction.js";
 import { logAudit } from "../audit/audit.service.js";
 import { getPaymentMethodLabel } from "../payment-methods.js";
+import {
+  DEFAULT_BANK_TAX_RATE,
+  bankTaxRateToPercent,
+  normalizeBankTaxRate,
+} from "../articles/article-pricing-calculator.js";
 
 const MERCADO_PAGO_PREFERENCE_URL =
   "https://api.mercadopago.com/checkout/preferences";
@@ -105,9 +110,28 @@ function bool(value, fallback = false) {
   return Boolean(Number(value));
 }
 
+function resolveBankTaxRateInput(input = {}, fallback = DEFAULT_BANK_TAX_RATE) {
+  if (input.bankTaxPercent != null && input.bankTaxPercent !== "") {
+    return normalizeBankTaxRate(Number(input.bankTaxPercent) / 100);
+  }
+
+  if (input.bankTaxRate != null && input.bankTaxRate !== "") {
+    return normalizeBankTaxRate(input.bankTaxRate);
+  }
+
+  return normalizeBankTaxRate(fallback);
+}
+
 function normalizeSettingsRow(row = {}) {
+  const bankTaxRate = resolveBankTaxRateInput(
+    { bankTaxRate: row.bankTaxRate },
+    DEFAULT_BANK_TAX_RATE,
+  );
+
   return {
     id: Number(row.id || 1),
+    bankTaxRate,
+    bankTaxPercent: bankTaxRateToPercent(bankTaxRate),
     isBankTransferEnabled: bool(row.isBankTransferEnabled, true),
     bankAccountHolder: row.bankAccountHolder || "",
     bankName: row.bankName || "",
@@ -175,6 +199,7 @@ export async function getCollectingSettings(connection = pool) {
     `
       SELECT
         id,
+        bank_tax_rate AS bankTaxRate,
         is_bank_transfer_enabled AS isBankTransferEnabled,
         bank_account_holder AS bankAccountHolder,
         bank_name AS bankName,
@@ -206,14 +231,24 @@ export async function getCollectingSettings(connection = pool) {
   return normalizeSettingsRow(rows[0] || { id: 1 });
 }
 
+export async function getCostingSettings(connection = pool) {
+  const settings = await getCollectingSettings(connection);
+  return {
+    bankTaxRate: settings.bankTaxRate,
+    bankTaxPercent: settings.bankTaxPercent,
+  };
+}
+
 export async function updateCollectingSettings(input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getCollectingSettings(connection);
+    const bankTaxRate = resolveBankTaxRateInput(input, before.bankTaxRate);
 
     await connection.execute(
       `
         UPDATE company_collecting_settings
         SET
+          bank_tax_rate = ?,
           is_bank_transfer_enabled = ?,
           bank_account_holder = ?,
           bank_name = ?,
@@ -238,6 +273,7 @@ export async function updateCollectingSettings(input, auditContext) {
         WHERE id = 1
       `,
       [
+        bankTaxRate,
         input.isBankTransferEnabled ? 1 : 0,
         clean(input.bankAccountHolder),
         clean(input.bankName),
@@ -277,6 +313,16 @@ export async function updateCollectingSettings(input, auditContext) {
         entityId: 1,
         beforeJson: normalizeSettingsForAudit(before),
         afterJson: normalizeSettingsForAudit(after),
+        metadataJson: {
+          bankTaxRate: {
+            from: before.bankTaxRate,
+            to: after.bankTaxRate,
+          },
+          bankTaxPercent: {
+            from: before.bankTaxPercent,
+            to: after.bankTaxPercent,
+          },
+        },
         source: auditContext.source,
         ipAddress: auditContext.ipAddress,
         userAgent: auditContext.userAgent,

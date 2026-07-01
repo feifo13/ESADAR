@@ -13,9 +13,16 @@ const ORDER_ITEM_COST_ITEM_EXPR = 'COALESCE(oi.purchase_price_item_snapshot, COA
 const ORDER_ITEM_COST_USA_EXPR = 'COALESCE(oi.purchase_price_shipping_snapshot, COALESCE(a.purchase_price_shipping, 0) * oi.quantity)';
 const ORDER_ITEM_COST_MVD_EXPR = 'COALESCE(oi.purchase_price_courier_snapshot, COALESCE(a.purchase_price_courier, 0) * oi.quantity)';
 const ORDER_ITEM_COST_TOTAL_EXPR = `COALESCE(oi.purchase_price_total_snapshot, ${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_ITEM_COST_USA_EXPR} + ${ORDER_ITEM_COST_MVD_EXPR})`;
-const ORDER_ITEM_BANK_TAX_EXPR = `ROUND((${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_ITEM_COST_USA_EXPR}) * ${BANK_TAX_RATE}, 2)`;
-const ORDER_ITEM_TOTAL_COST_EXPR = `(${ORDER_ITEM_COST_TOTAL_EXPR} + ${ORDER_ITEM_BANK_TAX_EXPR})`;
-const ORDER_ITEM_PROFIT_EXPR = `(COALESCE(oi.profit_snapshot, oi.line_total_snapshot - ${ORDER_ITEM_COST_TOTAL_EXPR}) - ${ORDER_ITEM_BANK_TAX_EXPR})`;
+// Legacy order_items created before bank tax snapshots use the historic 2.5% rate.
+const ORDER_ITEM_BANK_TAX_RATE_EXPR = `COALESCE(oi.bank_tax_rate_snapshot, ${BANK_TAX_RATE})`;
+const ORDER_ITEM_BANK_TAX_BASE_EXPR = `COALESCE(oi.bank_tax_base_snapshot, ${ORDER_ITEM_COST_ITEM_EXPR} + ${ORDER_ITEM_COST_USA_EXPR})`;
+const ORDER_ITEM_BANK_TAX_EXPR = `COALESCE(oi.bank_tax_snapshot, ROUND(${ORDER_ITEM_BANK_TAX_BASE_EXPR} * ${ORDER_ITEM_BANK_TAX_RATE_EXPR}, 2))`;
+const ORDER_ITEM_TOTAL_COST_EXPR = `COALESCE(oi.total_cost_snapshot, ${ORDER_ITEM_COST_TOTAL_EXPR} + ${ORDER_ITEM_BANK_TAX_EXPR})`;
+const ORDER_ITEM_PROFIT_EXPR = `(CASE
+  WHEN oi.total_cost_snapshot IS NOT NULL THEN COALESCE(oi.profit_snapshot, oi.line_total_snapshot - oi.total_cost_snapshot)
+  WHEN oi.profit_snapshot IS NOT NULL THEN oi.profit_snapshot - ${ORDER_ITEM_BANK_TAX_EXPR}
+  ELSE oi.line_total_snapshot - ${ORDER_ITEM_TOTAL_COST_EXPR}
+END)`;
 const ORDER_ITEM_INCOMPLETE_COST_EXPR = `CASE WHEN ${ORDER_ITEM_COST_TOTAL_EXPR} <= 0 THEN 1 ELSE 0 END`;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

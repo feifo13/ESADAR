@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminToolbar from '../../components/admin/AdminToolbar.jsx';
 import BulkArticleFormBlock from '../../components/admin/BulkArticleFormBlock.jsx';
@@ -7,6 +7,7 @@ import { IMAGE_ROLE_DEFINITIONS, createEmptyImageState } from '../../components/
 import { useLookups } from '../../contexts/LookupsContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiFetch } from '../../lib/api.js';
+import { getArticlePriceValidationIssue } from '../../lib/articleMargins.js';
 import { focusFieldAfterRender } from '../../lib/validation.js';
 
 function createEmptyArticle() {
@@ -122,6 +123,30 @@ export default function BulkArticleCreatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [costingSettings, setCostingSettings] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCostingSettings() {
+      try {
+        const response = await apiFetch('/api/admin/articles/costing-settings');
+        if (!ignore) {
+          setCostingSettings({
+            bankTaxRate: response.bankTaxRate,
+            bankTaxPercent: response.bankTaxPercent,
+          });
+        }
+      } catch {
+        if (!ignore) setCostingSettings(null);
+      }
+    }
+
+    loadCostingSettings();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function updateArticle(articleId, field, value) {
     setArticles((current) => current.map((article) => (
@@ -170,6 +195,17 @@ export default function BulkArticleCreatePage() {
           articleId: article.id,
           target: `bulk-sale-price-${article.id}`,
           message: `${rowLabel}: ingresa un precio de venta mayor a 0.`,
+        };
+      }
+
+      const priceValidationIssue = getArticlePriceValidationIssue(article, {
+        bankTaxRate: costingSettings?.bankTaxRate,
+      });
+      if (priceValidationIssue) {
+        return {
+          articleId: article.id,
+          target: `bulk-sale-price-${article.id}`,
+          message: `${rowLabel}: ${priceValidationIssue.message}`,
         };
       }
 
@@ -283,6 +319,7 @@ export default function BulkArticleCreatePage() {
           sizeOptions={sizeOptions}
           onChange={(field, value) => updateArticle(article.id, field, value)}
           onImageChange={(roleKey, nextValue, isWholeState) => updateArticleImages(article.id, roleKey, nextValue, isWholeState)}
+          costingSettings={costingSettings}
           onToggleExpand={() => updateArticle(article.id, 'expanded', !article.expanded)}
           onDuplicate={() => addAnotherArticle(article)}
           onRemove={() => removeArticle(article.id)}

@@ -3,7 +3,12 @@ import { pool } from '../../db/pool.js';
 import { buildSqlPlaceholders } from '../../utils/sql-safety.js';
 import { badRequest } from '../../utils/app-error.js';
 import { normalizePublicAssetPath } from '../../utils/assets.js';
-import { rowsToCsvBuffer, rowsToXlsxBuffer } from '../../utils/export-files.js';
+import {
+  createWorkbook,
+  rowsToCsvBuffer,
+  rowsToXlsxBuffer,
+  workbookToXlsxBuffer,
+} from '../../utils/export-files.js';
 import { logAudit } from '../audit/audit.service.js';
 import {
   createArticle,
@@ -15,7 +20,11 @@ import {
   updateArticle,
 } from './articles.service.js';
 import { articleCreateSchema } from './articles.schemas.js';
-import { getArticlePriceValidationIssue } from './article-pricing-calculator.js';
+import {
+  calculateArticlePricing,
+  getArticlePriceValidationIssue,
+} from './article-pricing-calculator.js';
+import { getCostingSettings } from '../collecting/collecting.service.js';
 
 const SIMPLE_TEMPLATE_COLUMNS = [
   'title',
@@ -77,6 +86,40 @@ const FULL_EXPORT_COLUMNS = [
   'originNotes',
   'primaryImage',
   'additionalImages',
+];
+
+const PROFIT_PROJECTION_COLUMNS = [
+  { key: 'internalCode', header: 'Código interno', width: 18 },
+  { key: 'title', header: 'Título', width: 34 },
+  { key: 'status', header: 'Estado', width: 14 },
+  { key: 'categoryName', header: 'Categoría', width: 18 },
+  { key: 'brandName', header: 'Marca', width: 18 },
+  { key: 'sizeLabel', header: 'Talle', width: 12 },
+  { key: 'intakeDate', header: 'Fecha ingreso', width: 14 },
+  { key: 'quantityTotal', header: 'Stock total', width: 12 },
+  { key: 'quantityAvailable', header: 'Stock disponible', width: 16 },
+  { key: 'quantityReserved', header: 'Stock reservado', width: 16 },
+  { key: 'quantitySold', header: 'Stock vendido', width: 14 },
+  { key: 'salePrice', header: 'Precio de venta', width: 16, type: 'currency' },
+  { key: 'discountType', header: 'Tipo descuento', width: 16 },
+  { key: 'discountValue', header: 'Valor descuento', width: 16, type: 'number' },
+  { key: 'effectiveSalePrice', header: 'Precio efectivo', width: 16, type: 'currency' },
+  { key: 'purchasePriceItem', header: 'Costo artículo', width: 16, type: 'currency' },
+  { key: 'purchasePriceShipping', header: 'Envío USA', width: 14, type: 'currency' },
+  { key: 'purchasePriceCourier', header: 'Envío MVD', width: 14, type: 'currency' },
+  { key: 'purchasePriceTotal', header: 'Costo compra', width: 16, type: 'currency' },
+  { key: 'bankTaxBase', header: 'Base impuestos bancarios', width: 22, type: 'currency' },
+  { key: 'bankTaxPercent', header: 'Tasa impuestos bancarios %', width: 22, type: 'percentValue' },
+  { key: 'bankTax', header: 'Impuestos bancarios', width: 19, type: 'currency' },
+  { key: 'totalCost', header: 'Costo total', width: 16, type: 'currency' },
+  { key: 'estimatedProfit', header: 'Ganancia estimada', width: 18, type: 'currency' },
+  { key: 'estimatedMargin', header: 'Margen estimado %', width: 18, type: 'percentValue' },
+  { key: 'result', header: 'Resultado', width: 14 },
+];
+
+const PROFIT_PROJECTION_SUMMARY_COLUMNS = [
+  { key: 'metric', header: 'Métrica', width: 34 },
+  { key: 'value', header: 'Valor', width: 22 },
 ];
 
 const HEADER_ALIASES = new Map([
@@ -347,7 +390,7 @@ function buildRowWarnings(row, referenceData, options) {
   return warnings;
 }
 
-function validateImportRow(row, referenceData) {
+function validateImportRow(row, referenceData, pricingOptions = {}) {
   const errors = [];
 
   if (!row.title || String(row.title).trim().length < 2) {
@@ -358,7 +401,7 @@ function validateImportRow(row, referenceData) {
     errors.push('salePrice / precio es obligatorio y debe ser mayor a 0');
   }
 
-  const priceIssue = getArticlePriceValidationIssue(row);
+  const priceIssue = getArticlePriceValidationIssue(row, pricingOptions);
   if (priceIssue) {
     errors.push(priceIssue.message);
   }
@@ -494,6 +537,8 @@ function parseImportFile(file) {
 async function prepareImportRows(file, { updateExisting = false, createMissingLookups = false } = {}) {
   const parsedRows = parseImportFile(file);
   const referenceData = await loadImportReferenceData();
+  const costingSettings = await getCostingSettings();
+  const pricingOptions = { bankTaxRate: costingSettings.bankTaxRate };
   const codes = parsedRows
     .map((entry) => entry.normalizedRow.internalCode)
     .filter(Boolean)
@@ -512,7 +557,7 @@ async function prepareImportRows(file, { updateExisting = false, createMissingLo
     const row = entry.normalizedRow;
     const internalCode = row.internalCode ? String(row.internalCode).trim() : '';
     const warnings = buildRowWarnings(row, referenceData, { createMissingLookups });
-    const errors = validateImportRow(row, referenceData);
+    const errors = validateImportRow(row, referenceData, pricingOptions);
 
     if (internalCode && duplicateCodes.has(internalCode)) {
       errors.push(`El código ${internalCode} está repetido dentro del archivo`);
@@ -534,6 +579,7 @@ async function prepareImportRows(file, { updateExisting = false, createMissingLo
       internalCode,
       title: row.title || '',
       action,
+      pricing: calculateArticlePricing(row, pricingOptions),
       errors,
       warnings,
       existingArticle,
@@ -659,6 +705,7 @@ function buildPreviewRows(preparedRows) {
     action: row.action,
     internalCode: row.internalCode || '',
     title: row.title || row.normalizedRow.title || '',
+    pricing: row.pricing || null,
     errors: row.errors || [],
     warnings: row.warnings || [],
   }));
@@ -820,10 +867,12 @@ async function materializeImportPayload(preparedRow, referenceData, options, aud
 export async function previewArticleImport({ file, options = {} }) {
   const batchType = detectBatchType(file?.originalname);
   const preparedRows = await prepareImportRows(file, options);
+  const costingSettings = await getCostingSettings();
 
   return {
     batchType,
     columns: FULL_EXPORT_COLUMNS,
+    costing: costingSettings,
     summary: buildImportSummary(preparedRows),
     rows: buildPreviewRows(preparedRows),
   };
@@ -985,6 +1034,8 @@ function buildManualBulkWarnings(row, referenceData, options) {
 
 export async function runManualBulkArticleCreate({ articles = [], options = {}, auditContext }) {
   const referenceData = await loadImportReferenceData();
+  const costingSettings = await getCostingSettings();
+  const pricingOptions = { bankTaxRate: costingSettings.bankTaxRate };
   const codes = articles
     .map((row) => (row?.internalCode ? String(row.internalCode).trim() : ''))
     .filter(Boolean);
@@ -1005,7 +1056,7 @@ export async function runManualBulkArticleCreate({ articles = [], options = {}, 
     const rowNumber = index + 1;
     const internalCode = row?.internalCode ? String(row.internalCode).trim() : '';
     const warnings = buildManualBulkWarnings(row, referenceData, options);
-    const errors = validateImportRow(row, referenceData);
+    const errors = validateImportRow(row, referenceData, pricingOptions);
 
     if (internalCode && duplicateCodes.has(internalCode)) {
       errors.push(`El código ${internalCode} está repetido dentro del lote.`);
@@ -1189,6 +1240,336 @@ export async function buildArticleImportTemplate({ type }) {
     contentType: 'text/csv; charset=utf-8',
     fileName,
     payload: rowsToCsvBuffer(rows, columns),
+  };
+}
+
+function asNumber(value) {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function roundMoney(value) {
+  return Number(asNumber(value).toFixed(2));
+}
+
+function roundPercent(value) {
+  return Number(asNumber(value).toFixed(2));
+}
+
+function formatExportDate(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function getDiscountTypeLabel(value) {
+  const type = String(value || 'NONE').toUpperCase();
+  if (type === 'PERCENT') return 'Porcentaje';
+  if (type === 'FIXED') return 'Monto fijo';
+  return 'Sin descuento';
+}
+
+function getProfitResult(estimatedProfit) {
+  const cents = Math.round(asNumber(estimatedProfit) * 100);
+  if (cents > 0) return 'Ganancia';
+  if (cents < 0) return 'Pérdida';
+  return 'Equilibrio';
+}
+
+function getArticleSizeLabel(row) {
+  return row.sizeCode || row.sizeText || row.size?.code || '';
+}
+
+function buildProfitProjectionRows(rows, costingSettings) {
+  return rows.map((row) => {
+    const metrics = calculateArticlePricing(row, {
+      bankTaxRate: costingSettings.bankTaxRate,
+    });
+
+    return {
+      internalCode: row.internalCode || '',
+      title: row.title || '',
+      status: row.status || row.publicationStatus || '',
+      categoryName: row.categoryName || row.category?.name || '',
+      brandName: row.brandName || row.brand?.name || '',
+      sizeLabel: getArticleSizeLabel(row),
+      intakeDate: formatExportDate(row.intakeDate),
+      quantityTotal: asNumber(row.quantityTotal),
+      quantityAvailable: asNumber(row.quantityAvailable),
+      quantityReserved: asNumber(row.quantityReserved),
+      quantitySold: asNumber(row.quantitySold),
+      salePrice: metrics.salePrice,
+      discountType: getDiscountTypeLabel(row.discountType),
+      discountValue: asNumber(row.discountValue),
+      effectiveSalePrice: metrics.effectiveSalePrice,
+      purchasePriceItem: metrics.purchasePriceItem,
+      purchasePriceShipping: metrics.purchasePriceShipping,
+      purchasePriceCourier: metrics.purchasePriceCourier,
+      purchasePriceTotal: metrics.purchasePriceTotal,
+      bankTaxBase: metrics.bankTaxBase,
+      bankTaxPercent: metrics.bankTaxPercent,
+      bankTax: metrics.bankTax,
+      totalCost: metrics.totalCost,
+      estimatedProfit: metrics.estimatedProfit,
+      estimatedMargin: metrics.estimatedMargin,
+      result: getProfitResult(metrics.estimatedProfit),
+    };
+  });
+}
+
+function calculateProfitProjectionSummary(rows) {
+  const totals = rows.reduce(
+    (accumulator, row) => {
+      const estimatedProfit = asNumber(row.estimatedProfit);
+      accumulator.articleCount += 1;
+      accumulator.totalSalePrice += asNumber(row.salePrice);
+      accumulator.totalEffectiveSalePrice += asNumber(row.effectiveSalePrice);
+      accumulator.totalPurchasePriceItem += asNumber(row.purchasePriceItem);
+      accumulator.totalPurchasePriceShipping += asNumber(row.purchasePriceShipping);
+      accumulator.totalPurchasePriceCourier += asNumber(row.purchasePriceCourier);
+      accumulator.totalPurchasePrice += asNumber(row.purchasePriceTotal);
+      accumulator.totalBankTaxBase += asNumber(row.bankTaxBase);
+      accumulator.totalBankTax += asNumber(row.bankTax);
+      accumulator.totalCost += asNumber(row.totalCost);
+      accumulator.totalEstimatedProfit += estimatedProfit;
+
+      const result = getProfitResult(estimatedProfit);
+      if (result === 'Ganancia') accumulator.profitCount += 1;
+      if (result === 'Pérdida') accumulator.lossCount += 1;
+      if (result === 'Equilibrio') accumulator.breakEvenCount += 1;
+
+      return accumulator;
+    },
+    {
+      articleCount: 0,
+      totalSalePrice: 0,
+      totalEffectiveSalePrice: 0,
+      totalPurchasePriceItem: 0,
+      totalPurchasePriceShipping: 0,
+      totalPurchasePriceCourier: 0,
+      totalPurchasePrice: 0,
+      totalBankTaxBase: 0,
+      totalBankTax: 0,
+      totalCost: 0,
+      totalEstimatedProfit: 0,
+      profitCount: 0,
+      lossCount: 0,
+      breakEvenCount: 0,
+    },
+  );
+
+  return {
+    articleCount: totals.articleCount,
+    totalSalePrice: roundMoney(totals.totalSalePrice),
+    totalEffectiveSalePrice: roundMoney(totals.totalEffectiveSalePrice),
+    totalPurchasePriceItem: roundMoney(totals.totalPurchasePriceItem),
+    totalPurchasePriceShipping: roundMoney(totals.totalPurchasePriceShipping),
+    totalPurchasePriceCourier: roundMoney(totals.totalPurchasePriceCourier),
+    totalPurchasePrice: roundMoney(totals.totalPurchasePrice),
+    totalBankTaxBase: roundMoney(totals.totalBankTaxBase),
+    totalBankTax: roundMoney(totals.totalBankTax),
+    totalCost: roundMoney(totals.totalCost),
+    totalEstimatedProfit: roundMoney(totals.totalEstimatedProfit),
+    weightedMargin: totals.totalEffectiveSalePrice > 0
+      ? roundPercent((totals.totalEstimatedProfit / totals.totalEffectiveSalePrice) * 100)
+      : 0,
+    profitCount: totals.profitCount,
+    lossCount: totals.lossCount,
+    breakEvenCount: totals.breakEvenCount,
+  };
+}
+
+function buildProfitProjectionTotalRow(summary, bankTaxPercent) {
+  return {
+    internalCode: 'TOTAL',
+    title: '',
+    status: '',
+    categoryName: '',
+    brandName: '',
+    sizeLabel: '',
+    intakeDate: '',
+    quantityTotal: '',
+    quantityAvailable: '',
+    quantityReserved: '',
+    quantitySold: '',
+    salePrice: summary.totalSalePrice,
+    discountType: '',
+    discountValue: '',
+    effectiveSalePrice: summary.totalEffectiveSalePrice,
+    purchasePriceItem: summary.totalPurchasePriceItem,
+    purchasePriceShipping: summary.totalPurchasePriceShipping,
+    purchasePriceCourier: summary.totalPurchasePriceCourier,
+    purchasePriceTotal: summary.totalPurchasePrice,
+    bankTaxBase: summary.totalBankTaxBase,
+    bankTaxPercent,
+    bankTax: summary.totalBankTax,
+    totalCost: summary.totalCost,
+    estimatedProfit: summary.totalEstimatedProfit,
+    estimatedMargin: summary.weightedMargin,
+    result: '',
+  };
+}
+
+function toHeaderRow(row) {
+  return Object.fromEntries(
+    PROFIT_PROJECTION_COLUMNS.map((column) => [column.header, row[column.key] ?? '']),
+  );
+}
+
+function buildSummaryRows(summary) {
+  return [
+    { metric: 'Cantidad de artículos', value: summary.articleCount },
+    { metric: 'Total precio de venta', value: summary.totalSalePrice },
+    { metric: 'Total precio efectivo', value: summary.totalEffectiveSalePrice },
+    { metric: 'Total costo artículo', value: summary.totalPurchasePriceItem },
+    { metric: 'Total envío USA', value: summary.totalPurchasePriceShipping },
+    { metric: 'Total envío MVD', value: summary.totalPurchasePriceCourier },
+    { metric: 'Total costo compra', value: summary.totalPurchasePrice },
+    { metric: 'Total base impuestos bancarios', value: summary.totalBankTaxBase },
+    { metric: 'Total impuestos bancarios', value: summary.totalBankTax },
+    { metric: 'Total costo total', value: summary.totalCost },
+    { metric: 'Total ganancia estimada', value: summary.totalEstimatedProfit },
+    { metric: 'Margen total ponderado %', value: summary.weightedMargin },
+    { metric: 'Artículos con ganancia', value: summary.profitCount },
+    { metric: 'Artículos en pérdida', value: summary.lossCount },
+    { metric: 'Artículos en equilibrio', value: summary.breakEvenCount },
+  ];
+}
+
+function styleHeader(row) {
+  row.font = { bold: true, color: { argb: 'FF102B34' } };
+  row.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFEAF6F7' },
+  };
+  row.border = {
+    bottom: { style: 'thin', color: { argb: 'FFBFD7DB' } },
+  };
+}
+
+function addProfitProjectionWorksheet(workbook, rows, summary, costingSettings) {
+  const worksheet = workbook.addWorksheet('Proyección', {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  });
+  worksheet.columns = PROFIT_PROJECTION_COLUMNS.map((column) => ({
+    key: column.key,
+    header: column.header,
+    width: column.width,
+  }));
+
+  styleHeader(worksheet.getRow(1));
+  const rowsWithTotal = [
+    ...rows,
+    buildProfitProjectionTotalRow(summary, costingSettings.bankTaxPercent),
+  ];
+
+  rowsWithTotal.forEach((row) => {
+    const excelRow = worksheet.addRow(row);
+    const isTotal = row.internalCode === 'TOTAL';
+    const isLoss = asNumber(row.estimatedProfit) < 0;
+
+    excelRow.eachCell((cell, columnIndex) => {
+      const column = PROFIT_PROJECTION_COLUMNS[columnIndex - 1];
+      cell.border = {
+        bottom: { style: 'hair', color: { argb: 'FFD6E3E6' } },
+      };
+
+      if (column?.type === 'currency') cell.numFmt = '$ #,##0.00';
+      if (column?.type === 'number') cell.numFmt = '#,##0.00';
+      if (column?.type === 'percentValue') cell.numFmt = '0.00';
+
+      if (isTotal) {
+        cell.font = { bold: true, color: { argb: 'FF102B34' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFF4ED' },
+        };
+      } else if (isLoss) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFF1F0' },
+        };
+      }
+    });
+  });
+
+  worksheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: PROFIT_PROJECTION_COLUMNS.length },
+  };
+}
+
+function addProfitProjectionSummaryWorksheet(workbook, summary) {
+  const worksheet = workbook.addWorksheet('Resumen');
+  worksheet.columns = PROFIT_PROJECTION_SUMMARY_COLUMNS;
+  styleHeader(worksheet.getRow(1));
+
+  buildSummaryRows(summary).forEach((row) => {
+    const excelRow = worksheet.addRow(row);
+    excelRow.getCell('A').font = { bold: true };
+    if (/Total|Margen/.test(row.metric)) {
+      excelRow.getCell('B').numFmt = /Margen/.test(row.metric) ? '0.00' : '$ #,##0.00';
+    }
+  });
+}
+
+async function buildProfitProjectionXlsxBuffer(rows, summary, costingSettings) {
+  const workbook = createWorkbook();
+  addProfitProjectionWorksheet(workbook, rows, summary, costingSettings);
+  addProfitProjectionSummaryWorksheet(workbook, summary);
+  return workbookToXlsxBuffer(workbook);
+}
+
+export async function buildArticleProfitProjectionExport({ filters, format, auditContext }) {
+  const costingSettings = await getCostingSettings();
+  const rows = await listAdminArticlesForExport({ filters });
+  const projectionRows = buildProfitProjectionRows(rows, costingSettings);
+  const summary = calculateProfitProjectionSummary(projectionRows);
+  const today = new Date().toISOString().slice(0, 10);
+  const safeFormat = format === 'csv' ? 'csv' : 'xlsx';
+  const fileName = `esadar-proyeccion-ganancias-articulos-${today}.${safeFormat}`;
+
+  await logAudit({
+    actorUserId: auditContext.actorUserId,
+    actorLabel: auditContext.actorLabel,
+    actionCode: 'ARTICLE_PROFIT_PROJECTION_EXPORT_CREATED',
+    entityType: 'articles',
+    entityId: null,
+    metadataJson: {
+      format: safeFormat,
+      itemCount: projectionRows.length,
+      filters,
+      bankTaxRate: costingSettings.bankTaxRate,
+      totalEstimatedProfit: summary.totalEstimatedProfit,
+    },
+    source: auditContext.source,
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
+  });
+
+  if (safeFormat === 'csv') {
+    const csvRows = [
+      ...projectionRows,
+      buildProfitProjectionTotalRow(summary, costingSettings.bankTaxPercent),
+    ].map(toHeaderRow);
+
+    return {
+      contentType: 'text/csv; charset=utf-8',
+      fileName,
+      payload: rowsToCsvBuffer(csvRows, PROFIT_PROJECTION_COLUMNS.map((column) => column.header)),
+      itemCount: projectionRows.length,
+      summary,
+    };
+  }
+
+  return {
+    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    fileName,
+    payload: await buildProfitProjectionXlsxBuffer(projectionRows, summary, costingSettings),
+    itemCount: projectionRows.length,
+    summary,
   };
 }
 
