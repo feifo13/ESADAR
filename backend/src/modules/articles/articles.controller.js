@@ -118,6 +118,7 @@ export async function previewAdminArticleImport(req, res) {
     options: {
       updateExisting: Boolean(options.updateExisting),
       createMissingLookups: Boolean(options.createMissingLookups),
+      createMissingLots: Boolean(options.createMissingLots),
     },
   });
 
@@ -135,6 +136,7 @@ export async function importAdminArticles(req, res) {
     options: {
       updateExisting: Boolean(options.updateExisting),
       createMissingLookups: Boolean(options.createMissingLookups),
+      createMissingLots: Boolean(options.createMissingLots),
     },
     auditContext: getAuditContext(req),
   });
@@ -202,6 +204,7 @@ export async function createAdminBulkArticles(req, res) {
     articles: input.articles,
     options: {
       createMissingLookups: Boolean(input.createMissingLookups),
+      lotId: input.lotId || null,
     },
     auditContext: getAuditContext(req),
   });
@@ -253,6 +256,7 @@ export async function batchAdminArticles(req, res) {
   const result = await batchUpdateArticles({
     ids: input.ids,
     action: input.action,
+    lotId: input.lotId || null,
     auditContext: getAuditContext(req),
   });
 

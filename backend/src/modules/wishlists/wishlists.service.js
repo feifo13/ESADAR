@@ -86,6 +86,17 @@ function buildWishlistFilters(filters = {}) {
     params.push(filters.categoryId);
   }
 
+  if (filters.lotId) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM wishlist_items wi_lot
+      INNER JOIN articles a_lot ON a_lot.id = wi_lot.article_id
+      WHERE wi_lot.wishlist_id = w.id
+        AND a_lot.lot_id = ?
+    )`);
+    params.push(filters.lotId);
+  }
+
   if (filters.brandId) {
     clauses.push(`EXISTS (
       SELECT 1

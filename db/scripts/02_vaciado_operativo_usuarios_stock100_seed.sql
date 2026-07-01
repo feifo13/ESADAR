@@ -145,6 +145,34 @@ SET @super_admin_role_id := (SELECT id FROM roles WHERE code = 'SUPER_ADMIN' LIM
 SET @admin_role_id := (SELECT id FROM roles WHERE code = 'ADMIN' LIMIT 1);
 SET @customer_role_id := (SELECT id FROM roles WHERE code = 'CUSTOMER' LIMIT 1);
 
+INSERT INTO article_lots (
+  code,
+  name,
+  description,
+  status,
+  created_by,
+  updated_by
+) VALUES (
+  'LOTE-0001',
+  'Lote inicial ESADAR',
+  'Articulos iniciales cargados antes de la gestion formal de lotes.',
+  'OPEN',
+  @admin_user_id,
+  @admin_user_id
+)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  description = VALUES(description),
+  status = IF(status = 'ARCHIVED', status, VALUES(status)),
+  updated_by = VALUES(updated_by);
+
+SET @initial_lot_id := (
+  SELECT id
+  FROM article_lots
+  WHERE code = 'LOTE-0001'
+  LIMIT 1
+);
+
 UPDATE users
 SET created_by = COALESCE(created_by, @admin_user_id),
     updated_by = @admin_user_id
@@ -363,6 +391,7 @@ ON DUPLICATE KEY UPDATE
 
 UPDATE articles
 SET status = 'ACTIVE',
+    lot_id = COALESCE(lot_id, @initial_lot_id),
     updated_by = @admin_user_id;
 
 INSERT INTO article_inventory (

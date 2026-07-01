@@ -194,6 +194,10 @@ function maybeInvalidatePublicCacheAfterMutation(path, method) {
     invalidatePublicCache('/api/public/articles');
   }
 
+  if (normalizedPath.startsWith('/api/admin/article-lots')) {
+    invalidatePublicCache('/api/public/articles');
+  }
+
   if (normalizedPath.startsWith('/api/admin/shipping')) {
     invalidatePublicCache('/api/public/lookups');
   }

@@ -37,6 +37,7 @@ const articleBaseShape = {
   ageGroup: articleAgeGroupSchema.optional().nullable(),
   imageAltOverride: z.string().trim().max(255).optional().nullable(),
   canonicalUrl: z.string().trim().url().max(500).optional().nullable(),
+  lotId: optionalNullableId,
   categoryId: optionalNullableId,
   categoryName: z.string().trim().max(120).optional().nullable(),
   brandId: optionalNullableId,
@@ -79,6 +80,7 @@ const articleUpdateBaseSchema = z.object({
   ageGroup: articleBaseShape.ageGroup,
   imageAltOverride: articleBaseShape.imageAltOverride,
   canonicalUrl: articleBaseShape.canonicalUrl,
+  lotId: articleBaseShape.lotId,
   categoryId: articleBaseShape.categoryId,
   categoryName: articleBaseShape.categoryName,
   brandId: articleBaseShape.brandId,
@@ -168,6 +170,8 @@ export const adminArticleListQuerySchema = z.object({
   featured: optionalBooleanish,
   offerable: optionalBooleanish,
   categoryId: optionalPositiveInt,
+  lotId: optionalPositiveInt,
+  lotCode: optionalTrimmedString(80),
   brandId: optionalPositiveInt,
   sizeId: optionalPositiveInt,
   dateFrom: optionalDateString,
@@ -182,6 +186,8 @@ export const adminArticleListQuerySchema = z.object({
     'quantityAvailable',
     'categoryName',
     'brandName',
+    'lotCode',
+    'lotName',
     'internalCode',
     'updatedAt',
   ]),
@@ -213,6 +219,7 @@ export const publicRelatedArticlesQuerySchema = z.object({
 export const articleImportOptionsSchema = z.object({
   updateExisting: optionalBooleanish,
   createMissingLookups: optionalBooleanish,
+  createMissingLots: optionalBooleanish,
 });
 
 export const articleImportTemplateQuerySchema = z.object({
@@ -239,6 +246,7 @@ export const bulkArticleRowSchema = z.object({
   title: articleBaseShape.title,
   salePrice: articleBaseShape.salePrice,
   categoryId: articleBaseShape.categoryId,
+  lotId: articleBaseShape.lotId,
   categoryName: z.string().trim().max(120).optional().nullable(),
   brandId: articleBaseShape.brandId,
   brandName: z.string().trim().max(120).optional().nullable(),
@@ -267,6 +275,7 @@ export const bulkArticleRowSchema = z.object({
 
 export const adminBulkArticleCreateSchema = z.object({
   createMissingLookups: z.coerce.boolean().default(false),
+  lotId: optionalNullableId,
   articles: z.array(bulkArticleRowSchema).min(1).max(100),
 });
 
@@ -278,9 +287,19 @@ export const adminArticleBatchActionSchema = z.object({
     'UNFEATURE',
     'ALLOW_OFFERS',
     'DISALLOW_OFFERS',
+    'ASSIGN_LOT',
   ]),
+  lotId: optionalNullableId,
   ids: z.array(z.coerce.number().int().positive()).min(1).max(100)
     .transform((ids) => Array.from(new Set(ids))),
+}).superRefine((value, ctx) => {
+  if (value.action === 'ASSIGN_LOT' && !value.lotId) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['lotId'],
+      message: 'lotId es requerido para asignar lote',
+    });
+  }
 });
 
 function quantityTotalIsInvalid(total, available, reserved, sold) {

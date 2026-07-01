@@ -24,6 +24,7 @@ import statisticsRoutes from './modules/statistics/statistics.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import collectingRoutes from './modules/collecting/collecting.routes.js';
 import shippingRoutes from './modules/shipping/shipping.routes.js';
+import articleLotsRoutes from './modules/article-lots/article-lots.routes.js';
 import mercadoPagoWebhookRoutes from './modules/webhooks/mercado-pago.webhook.routes.js';
 import { publicRouter as clientLogRoutes, adminRouter as adminClientLogRoutes } from './modules/client-logs/client-logs.routes.js';
 import pageVisitRoutes from './modules/page-visits/page-visits.routes.js';
@@ -88,6 +89,7 @@ export function createApp() {
   app.use('/api/admin', usersRoutes);
   app.use('/api/admin', collectingRoutes);
   app.use('/api/admin', shippingRoutes);
+  app.use('/api/admin', articleLotsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

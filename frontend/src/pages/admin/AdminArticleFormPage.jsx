@@ -80,6 +80,7 @@ const STOCK_ADJUSTMENT_REASONS = [
 
 const ARTICLE_FIELD_LABELS = {
   title: "nombre",
+  lotId: "lote",
   salePrice: "precio",
   categoryId: "categoría",
   categoryName: "categoría",
@@ -152,6 +153,7 @@ function toFormState(article) {
     seoTitle: article?.seoTitle || "",
     seoDescription: article?.seoDescription || "",
     canonicalUrl: article?.canonicalUrl || "",
+    lotId: article?.lotId || article?.lot?.id || "",
     googleProductCategory: article?.googleProductCategory || "",
     conditionLabel: article?.conditionLabel || "",
     color: article?.color || "",
@@ -312,6 +314,31 @@ export default function AdminArticleFormPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [metaAdvancedOpen, setMetaAdvancedOpen] = useState(false);
   const [costingSettings, setCostingSettings] = useState(null);
+  const [lotOptions, setLotOptions] = useState([]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLotOptions() {
+      try {
+        const response = await apiFetch("/api/admin/article-lots/options?includeArchived=true");
+        if (!ignore) setLotOptions(response.items || []);
+      } catch {
+        if (!ignore) setLotOptions([]);
+      }
+    }
+
+    loadLotOptions();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isEdit || form.lotId || !lotOptions.length) return;
+    const initialLot = lotOptions.find((option) => option.code === "LOTE-0001") || lotOptions[0];
+    if (initialLot?.id) update("lotId", initialLot.id);
+  }, [form.lotId, isEdit, lotOptions]);
 
   useEffect(() => {
     let ignore = false;
@@ -559,6 +586,14 @@ export default function AdminArticleFormPage() {
       };
     }
 
+    if (stepIndex === 0 && !form.lotId) {
+      return {
+        message: "Selecciona un lote para el articulo.",
+        target: "article-lot",
+        stepIndex,
+      };
+    }
+
     if (stepIndex === 0 && isCreateNewLookup(form.categoryId) && !normalizeLabel(form.categoryName)) {
       return {
         message: "Ingresá el nombre de la nueva categoría.",
@@ -645,6 +680,12 @@ export default function AdminArticleFormPage() {
         target: "article-title",
         stepIndex: 0,
         invalid: !normalizeLabel(form.title),
+      },
+      {
+        label: "lote",
+        target: "article-lot",
+        stepIndex: 0,
+        invalid: !form.lotId,
       },
       {
         label: "categoría",
@@ -771,6 +812,7 @@ export default function AdminArticleFormPage() {
         ...form,
         internalCode: normalizeLabel(form.internalCode) || undefined,
         slug: normalizeLabel(form.slug) || suggestedSlug,
+        lotId: form.lotId ? Number(form.lotId) : null,
         categoryId:
           form.categoryId && !isCreateNewLookup(form.categoryId)
             ? Number(form.categoryId)
@@ -1154,6 +1196,25 @@ export default function AdminArticleFormPage() {
                   onChange={(event) => update("title", event.target.value)}
                   required
                 />
+              </label>
+
+              <label className="field-group">
+                <span>Lote</span>
+                <select
+                  className="input"
+                  name="article-lot"
+                  data-validation-field="article-lot"
+                  value={form.lotId}
+                  onChange={(event) => update("lotId", event.target.value)}
+                  required
+                >
+                  <option value="">Seleccionar lote</option>
+                  {lotOptions.map((option) => (
+                    <option key={option.id} value={option.id} disabled={option.status === "ARCHIVED"}>
+                      {option.code} - {option.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="field-group field-group--quick-lookup">

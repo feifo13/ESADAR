@@ -328,8 +328,34 @@ CREATE TABLE potential_customers (
 -- 4) Catalog
 -- =========================================================
 
+CREATE TABLE article_lots (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  code VARCHAR(80) NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  description TEXT NULL,
+  source_label VARCHAR(120) NULL,
+  acquisition_date DATE NULL,
+  arrival_date DATE NULL,
+  status ENUM('OPEN','CLOSED','ARCHIVED') NOT NULL DEFAULT 'OPEN',
+  notes TEXT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  updated_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_article_lots_code (code),
+  KEY idx_article_lots_status (status),
+  KEY idx_article_lots_acquisition_date (acquisition_date),
+  KEY idx_article_lots_arrival_date (arrival_date),
+  KEY idx_article_lots_created_by (created_by),
+  KEY idx_article_lots_updated_by (updated_by),
+  CONSTRAINT fk_article_lots_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT fk_article_lots_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE articles (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  lot_id BIGINT UNSIGNED NULL,
   internal_code VARCHAR(80) NOT NULL,
   slug VARCHAR(180) NOT NULL,
   title VARCHAR(255) NOT NULL,
@@ -379,6 +405,7 @@ CREATE TABLE articles (
   PRIMARY KEY (id),
   UNIQUE KEY uq_articles_internal_code (internal_code),
   UNIQUE KEY uq_articles_slug (slug),
+  KEY idx_articles_lot_id (lot_id),
   KEY idx_articles_category_id (category_id),
   KEY idx_articles_brand_id (brand_id),
   KEY idx_articles_size_id (size_id),
@@ -402,6 +429,7 @@ CREATE TABLE articles (
   CONSTRAINT chk_articles_purchase_price_shipping CHECK (purchase_price_shipping >= 0),
   CONSTRAINT chk_articles_purchase_price_courier CHECK (purchase_price_courier >= 0),
   CONSTRAINT chk_articles_offers_vs_discount CHECK (NOT (allow_offers = 1 AND discount_type <> 'NONE' AND discount_value > 0)),
+  CONSTRAINT fk_articles_lot FOREIGN KEY (lot_id) REFERENCES article_lots(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_articles_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_articles_brand FOREIGN KEY (brand_id) REFERENCES brands(id) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT fk_articles_size FOREIGN KEY (size_id) REFERENCES sizes(id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -635,6 +663,9 @@ CREATE TABLE order_items (
   size_snapshot VARCHAR(80) NULL,
   measurements_snapshot TEXT NULL,
   image_snapshot VARCHAR(500) NULL,
+  lot_id_snapshot BIGINT UNSIGNED NULL,
+  lot_code_snapshot VARCHAR(80) NULL,
+  lot_name_snapshot VARCHAR(160) NULL,
   sale_price_snapshot DECIMAL(12,2) NOT NULL,
   discount_type_snapshot ENUM('NONE','PERCENT','FIXED') NOT NULL DEFAULT 'NONE',
   discount_value_snapshot DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -658,6 +689,7 @@ CREATE TABLE order_items (
   PRIMARY KEY (id),
   KEY idx_order_items_order_id (order_id),
   KEY idx_order_items_article_id (article_id),
+  KEY idx_order_items_lot_id_snapshot (lot_id_snapshot),
   KEY idx_order_items_accepted_offer_id (accepted_offer_id),
   CONSTRAINT chk_order_items_quantity CHECK (quantity > 0),
   CONSTRAINT chk_order_items_sale_price_snapshot CHECK (sale_price_snapshot >= 0),
@@ -674,6 +706,7 @@ CREATE TABLE order_items (
   CONSTRAINT chk_order_items_bank_tax_snapshot CHECK (bank_tax_snapshot IS NULL OR bank_tax_snapshot >= 0),
   CONSTRAINT chk_order_items_total_cost_snapshot CHECK (total_cost_snapshot IS NULL OR total_cost_snapshot >= 0),
   CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_order_items_lot_snapshot FOREIGN KEY (lot_id_snapshot) REFERENCES article_lots(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_order_items_article FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -1097,6 +1130,22 @@ INSERT INTO roles (code, name) VALUES
   ('OPERATOR', 'Operator'),
   ('CUSTOMER', 'Customer')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO article_lots (
+  code,
+  name,
+  description,
+  status
+) VALUES (
+  'LOTE-0001',
+  'Lote inicial ESADAR',
+  'Articulos iniciales cargados antes de la gestion formal de lotes.',
+  'OPEN'
+)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  description = VALUES(description),
+  status = VALUES(status);
 
 INSERT INTO sizes (code, description, sort_order) VALUES
   ('XS', 'Extra Small', 10),

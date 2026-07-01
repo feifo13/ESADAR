@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminBatchSnackbar from "../../components/admin/AdminBatchSnackbar.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
@@ -49,6 +49,7 @@ const initialFilters = {
   featured: "",
   offerable: "",
   categoryId: "",
+  lotId: "",
   brandId: "",
   sizeId: "",
   dateFrom: "",
@@ -126,12 +127,17 @@ function QuickToggle({ checked, label, onText, offText, onClick, disabled = fals
 }
 
 export default function AdminArticlesPage() {
+  const [searchParams] = useSearchParams();
+  const initialFiltersForPage = useMemo(
+    () => ({ ...initialFilters, lotId: searchParams.get("lotId") || "" }),
+    [],
+  );
   const { user } = useAuth();
   const { categoryOptions, brandOptions, sizeOptions } = useLookups();
   const { notifyMobileStatus } = useMobileMenu();
   const { notifySuccess, notifyError } = useNotification();
-  const [draftFilters, setDraftFilters] = useState(initialFilters);
-  const [filters, setFilters] = useState(initialFilters);
+  const [draftFilters, setDraftFilters] = useState(initialFiltersForPage);
+  const [filters, setFilters] = useState(initialFiltersForPage);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -144,6 +150,7 @@ export default function AdminArticlesPage() {
   const [importFile, setImportFile] = useState(null);
   const [updateExisting, setUpdateExisting] = useState(false);
   const [createMissingLookups, setCreateMissingLookups] = useState(false);
+  const [createMissingLots, setCreateMissingLots] = useState(false);
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -155,6 +162,8 @@ export default function AdminArticlesPage() {
   const [pendingToggles, setPendingToggles] = useState({});
   const [selectedArticleIds, setSelectedArticleIds] = useState([]);
   const [batchBusy, setBatchBusy] = useState(false);
+  const [lotOptions, setLotOptions] = useState([]);
+  const [batchLotId, setBatchLotId] = useState("");
 
   const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN");
 
@@ -174,6 +183,7 @@ export default function AdminArticlesPage() {
       filters.featured,
       filters.offerable,
       filters.categoryId,
+      filters.lotId,
       filters.brandId,
       filters.sizeId,
       filters.dateFrom,
@@ -192,6 +202,24 @@ export default function AdminArticlesPage() {
   const allSelectableArticlesChecked =
     selectableArticleIds.length > 0 &&
     selectableArticleIds.every((id) => selectedArticleIdSet.has(id));
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLotOptions() {
+      try {
+        const response = await apiFetch("/api/admin/article-lots/options?includeArchived=true");
+        if (!ignore) setLotOptions(response.items || []);
+      } catch {
+        if (!ignore) setLotOptions([]);
+      }
+    }
+
+    loadLotOptions();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -283,6 +311,7 @@ export default function AdminArticlesPage() {
 
   function clearSelection() {
     setSelectedArticleIds([]);
+    setBatchLotId("");
   }
 
   async function handleBatchArticles(action) {
@@ -325,6 +354,39 @@ export default function AdminArticlesPage() {
       const errorMessage = err.message || "No se pudo ejecutar la acción batch";
       notifyError(errorMessage);
       clearSelection();
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
+  async function handleBatchAssignLot() {
+    if (!selectedArticleIds.length || !batchLotId) return;
+
+    const selectedLot = lotOptions.find((option) => Number(option.id) === Number(batchLotId));
+    const confirmed = window.confirm(
+      `Vas a asignar ${selectedArticleIds.length} articulo(s) al lote ${selectedLot?.code || batchLotId}. Continuar?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBatchBusy(true);
+      const response = await apiFetch("/api/admin/articles/batch", {
+        method: "PATCH",
+        body: { action: "ASSIGN_LOT", lotId: Number(batchLotId), ids: selectedArticleIds },
+      });
+      const successMessage = `${response.succeeded || 0} articulo(s) asignado(s).${
+        response.failed ? ` ${response.failed} con error.` : ""
+      }`;
+      if (response.failed) {
+        notifyError(successMessage);
+      } else {
+        notifySuccess(successMessage);
+      }
+      clearSelection();
+      setBatchLotId("");
+      setRefreshNonce((current) => current + 1);
+    } catch (err) {
+      notifyError(err.message || "No se pudo asignar el lote.");
     } finally {
       setBatchBusy(false);
     }
@@ -425,6 +487,7 @@ export default function AdminArticlesPage() {
         "createMissingLookups",
         createMissingLookups ? "true" : "false",
       );
+      formData.append("createMissingLots", createMissingLots ? "true" : "false");
       const response = await apiFetch("/api/admin/articles/import/preview", {
         method: "POST",
         body: formData,
@@ -461,6 +524,7 @@ export default function AdminArticlesPage() {
         "createMissingLookups",
         createMissingLookups ? "true" : "false",
       );
+      formData.append("createMissingLots", createMissingLots ? "true" : "false");
       const response = await apiFetch("/api/admin/articles/import", {
         method: "POST",
         body: formData,
@@ -728,6 +792,37 @@ export default function AdminArticlesPage() {
           />
         ) : null}
 
+        {isSuperAdmin && selectedArticleIds.length ? (
+          <div className="toolbar-inline">
+            <label className="field-group">
+              <span>Asignar lote</span>
+              <select
+                className="input"
+                value={batchLotId}
+                onChange={(event) => setBatchLotId(event.target.value)}
+                disabled={batchBusy}
+              >
+                <option value="">Seleccionar lote</option>
+                {lotOptions
+                  .filter((option) => option.status !== "ARCHIVED")
+                  .map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.code} - {option.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={handleBatchAssignLot}
+              disabled={batchBusy || !batchLotId}
+            >
+              Asignar lote
+            </button>
+          </div>
+        ) : null}
+
         <ResponsiveFilterPanel
           title="Filtros de artículos"
           description=""
@@ -834,6 +929,22 @@ export default function AdminArticlesPage() {
             </label>
 
             <label className="field-group">
+              <span>Lote</span>
+              <select
+                className="input"
+                value={draftFilters.lotId}
+                onChange={(event) => updateDraft("lotId", event.target.value)}
+              >
+                <option value="">Todos</option>
+                {lotOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.code} - {option.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field-group">
               <span>Talle</span>
               <select
                 className="input"
@@ -887,6 +998,7 @@ export default function AdminArticlesPage() {
                 <option value="status">Estado</option>
                 <option value="categoryName">Categoría</option>
                 <option value="brandName">Marca</option>
+                <option value="lotCode">Lote</option>
                 <option value="updatedAt">Actualización</option>
               </select>
             </label>
@@ -1005,6 +1117,16 @@ export default function AdminArticlesPage() {
                     }
                   />
                   <span>Crear categorías, marcas y talles faltantes</span>
+                </label>
+                <label className="field-group checkbox-field checkbox-field-compact">
+                  <input
+                    type="checkbox"
+                    checked={createMissingLots}
+                    onChange={(event) =>
+                      setCreateMissingLots(event.target.checked)
+                    }
+                  />
+                  <span>Crear lotes faltantes por lotCode</span>
                 </label>
               </div>
             </div>
@@ -1152,6 +1274,13 @@ export default function AdminArticlesPage() {
                     >
                       Marca
                     </SortableTh>
+                    <SortableTh
+                      sortKey="lotCode"
+                      sort={{ key: filters.sortBy, direction: filters.sortDir }}
+                      onSort={changeSort}
+                    >
+                      Lote
+                    </SortableTh>
                     <th>Talle</th>
                     <SortableTh
                       sortKey="discountedPrice"
@@ -1245,6 +1374,15 @@ export default function AdminArticlesPage() {
                         </td>
                         <td>{categoryName}</td>
                         <td>{brandName}</td>
+                        <td>
+                          {article.lotId ? (
+                            <Link to={`/admin/article-lots/${article.lotId}`} className="table-strong-link">
+                              {article.lotCode || "Lote"}
+                            </Link>
+                          ) : (
+                            "Sin lote"
+                          )}
+                        </td>
                         <td>{sizeName}</td>
                         <td>
                           <strong>

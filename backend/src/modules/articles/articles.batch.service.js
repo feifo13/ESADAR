@@ -27,6 +27,7 @@ import {
 import { getCostingSettings } from '../collecting/collecting.service.js';
 
 const SIMPLE_TEMPLATE_COLUMNS = [
+  'lotCode',
   'title',
   'salePrice',
   'categoryName',
@@ -45,6 +46,9 @@ const SIMPLE_TEMPLATE_COLUMNS = [
 ];
 
 const FULL_EXPORT_COLUMNS = [
+  'lotCode',
+  'lotName',
+  'lotStatus',
   'internalCode',
   'slug',
   'title',
@@ -89,6 +93,9 @@ const FULL_EXPORT_COLUMNS = [
 ];
 
 const PROFIT_PROJECTION_COLUMNS = [
+  { key: 'lotCode', header: 'Codigo lote', width: 18 },
+  { key: 'lotName', header: 'Nombre lote', width: 24 },
+  { key: 'lotStatus', header: 'Estado lote', width: 14 },
   { key: 'internalCode', header: 'Código interno', width: 18 },
   { key: 'title', header: 'Título', width: 34 },
   { key: 'status', header: 'Estado', width: 14 },
@@ -126,6 +133,11 @@ const HEADER_ALIASES = new Map([
   ['internalcode', 'internalCode'],
   ['code', 'internalCode'],
   ['sku', 'internalCode'],
+  ['lotcode', 'lotCode'],
+  ['codigolote', 'lotCode'],
+  ['lote', 'lotCode'],
+  ['lotname', 'lotName'],
+  ['nombrelote', 'lotName'],
   ['slug', 'slug'],
   ['title', 'title'],
   ['titulo', 'title'],
@@ -304,6 +316,7 @@ async function loadImportReferenceData() {
   const [categories] = await pool.execute('SELECT id, name FROM categories');
   const [brands] = await pool.execute('SELECT id, name FROM brands');
   const [sizes] = await pool.execute('SELECT id, code FROM sizes');
+  const [lots] = await pool.execute('SELECT id, code, name, status FROM article_lots');
 
   return {
     categoriesById: new Map(categories.map((row) => [String(row.id), Number(row.id)])),
@@ -312,6 +325,15 @@ async function loadImportReferenceData() {
     brandsByName: new Map(brands.map((row) => [normalizeLookupKey(row.name), Number(row.id)])),
     sizesById: new Map(sizes.map((row) => [String(row.id), Number(row.id)])),
     sizesByCode: new Map(sizes.map((row) => [normalizeLookupKey(row.code), Number(row.id)])),
+    lotsByCode: new Map(lots.map((row) => [
+      normalizeLookupKey(row.code),
+      {
+        id: Number(row.id),
+        code: row.code,
+        name: row.name,
+        status: row.status,
+      },
+    ])),
   };
 }
 
@@ -357,6 +379,16 @@ function buildRowWarnings(row, referenceData, options) {
     warnings.push('Se usará la categoría Sin categoría.');
   }
 
+  if (!row.lotCode) {
+    warnings.push('Se usara LOTE-0001 como lote por defecto.');
+  } else if (!referenceData.lotsByCode.get(normalizeLookupKey(row.lotCode))) {
+    if (options.createMissingLots) {
+      warnings.push(`Se creara el lote "${String(row.lotCode).trim().toUpperCase()}".`);
+    } else {
+      warnings.push(`El lote "${row.lotCode}" no existe.`);
+    }
+  }
+
   if (row.categoryName && !referenceData.categoriesByName.get(normalizeLookupKey(row.categoryName))) {
     if (options.createMissingLookups) {
       warnings.push(`Se creará la categoría "${row.categoryName}".`);
@@ -390,7 +422,7 @@ function buildRowWarnings(row, referenceData, options) {
   return warnings;
 }
 
-function validateImportRow(row, referenceData, pricingOptions = {}) {
+function validateImportRow(row, referenceData, pricingOptions = {}, options = {}) {
   const errors = [];
 
   if (!row.title || String(row.title).trim().length < 2) {
@@ -412,6 +444,10 @@ function validateImportRow(row, referenceData, pricingOptions = {}) {
     validateReferenceId(referenceData.sizesById, row.sizeId, 'Talle');
   } catch (error) {
     errors.push(error.message || 'Referencia inválida');
+  }
+
+  if (row.lotCode && !referenceData.lotsByCode.get(normalizeLookupKey(row.lotCode)) && !options.createMissingLots) {
+    errors.push(`Lote inexistente: ${row.lotCode}`);
   }
 
   return errors;
@@ -534,7 +570,7 @@ function parseImportFile(file) {
   return parseCsvFile(file);
 }
 
-async function prepareImportRows(file, { updateExisting = false, createMissingLookups = false } = {}) {
+async function prepareImportRows(file, { updateExisting = false, createMissingLookups = false, createMissingLots = false } = {}) {
   const parsedRows = parseImportFile(file);
   const referenceData = await loadImportReferenceData();
   const costingSettings = await getCostingSettings();
@@ -556,8 +592,8 @@ async function prepareImportRows(file, { updateExisting = false, createMissingLo
   return parsedRows.map((entry) => {
     const row = entry.normalizedRow;
     const internalCode = row.internalCode ? String(row.internalCode).trim() : '';
-    const warnings = buildRowWarnings(row, referenceData, { createMissingLookups });
-    const errors = validateImportRow(row, referenceData, pricingOptions);
+    const warnings = buildRowWarnings(row, referenceData, { createMissingLookups, createMissingLots });
+    const errors = validateImportRow(row, referenceData, pricingOptions, { createMissingLots });
 
     if (internalCode && duplicateCodes.has(internalCode)) {
       errors.push(`El código ${internalCode} está repetido dentro del archivo`);
@@ -813,13 +849,78 @@ async function resolveSizeData(row, options, referenceData, auditContext) {
   };
 }
 
+async function findOrCreateLotByCode(row, options, referenceData, auditContext) {
+  if (row.lotId != null && row.lotId !== '') {
+    const numericLotId = Number(row.lotId);
+    if (!Number.isInteger(numericLotId) || numericLotId <= 0) {
+      throw new Error(`Lote inexistente: ${row.lotId}`);
+    }
+    return numericLotId;
+  }
+
+  const rawCode = row.lotCode ? String(row.lotCode).trim().toUpperCase() : 'LOTE-0001';
+  const key = normalizeLookupKey(rawCode);
+  const existing = referenceData.lotsByCode.get(key);
+  if (existing) {
+    return existing.id;
+  }
+
+  if (!options.createMissingLots) {
+    throw new Error(`Lote inexistente: ${rawCode}`);
+  }
+
+  const lotName = row.lotName ? String(row.lotName).trim() : rawCode;
+  const [result] = await pool.execute(
+    `
+      INSERT INTO article_lots (
+        code,
+        name,
+        description,
+        status,
+        created_by,
+        updated_by
+      ) VALUES (?, ?, ?, 'OPEN', ?, ?)
+    `,
+    [
+      rawCode,
+      lotName,
+      `Lote creado desde importacion de articulos (${rawCode}).`,
+      auditContext.actorUserId || null,
+      auditContext.actorUserId || null,
+    ],
+  );
+
+  const created = {
+    id: Number(result.insertId),
+    code: rawCode,
+    name: lotName,
+    status: 'OPEN',
+  };
+  await logAudit({
+    actorUserId: auditContext.actorUserId,
+    actorLabel: auditContext.actorLabel,
+    actionCode: 'ARTICLE_LOT_CREATED',
+    entityType: 'article_lots',
+    entityId: created.id,
+    afterJson: created,
+    metadataJson: { source: 'ARTICLE_IMPORT', lotCode: rawCode },
+    source: auditContext.source,
+    ipAddress: auditContext.ipAddress,
+    userAgent: auditContext.userAgent,
+  });
+  referenceData.lotsByCode.set(key, created);
+  return created.id;
+}
+
 async function materializeImportPayload(preparedRow, referenceData, options, auditContext) {
   const row = preparedRow.normalizedRow;
   const categoryId = await resolveCategoryId(row, options, referenceData, auditContext);
   const brandId = await resolveBrandId(row, options, referenceData, auditContext);
   const sizeData = await resolveSizeData(row, options, referenceData, auditContext);
+  const lotId = await findOrCreateLotByCode(row, options, referenceData, auditContext);
 
   const payload = {
+    lotId,
     internalCode: preparedRow.internalCode || undefined,
     slug: row.slug || undefined,
     title: row.title,
@@ -1006,6 +1107,7 @@ export async function runArticleImport({ file, options = {}, auditContext }) {
       ...summary,
       updateExisting: Boolean(options.updateExisting),
       createMissingLookups: Boolean(options.createMissingLookups),
+      createMissingLots: Boolean(options.createMissingLots),
     },
     source: auditContext.source,
     ipAddress: auditContext.ipAddress,
@@ -1055,8 +1157,12 @@ export async function runManualBulkArticleCreate({ articles = [], options = {}, 
   for (const [index, row] of articles.entries()) {
     const rowNumber = index + 1;
     const internalCode = row?.internalCode ? String(row.internalCode).trim() : '';
-    const warnings = buildManualBulkWarnings(row, referenceData, options);
-    const errors = validateImportRow(row, referenceData, pricingOptions);
+    const normalizedRow = {
+      ...row,
+      lotId: row.lotId || options.lotId || null,
+    };
+    const warnings = buildManualBulkWarnings(normalizedRow, referenceData, options);
+    const errors = validateImportRow(normalizedRow, referenceData, pricingOptions, options);
 
     if (internalCode && duplicateCodes.has(internalCode)) {
       errors.push(`El código ${internalCode} está repetido dentro del lote.`);
@@ -1084,7 +1190,7 @@ export async function runManualBulkArticleCreate({ articles = [], options = {}, 
         {
           rowNumber,
           internalCode,
-          normalizedRow: row,
+          normalizedRow,
         },
         referenceData,
         options,
@@ -1168,6 +1274,9 @@ export async function runManualBulkArticleCreate({ articles = [], options = {}, 
 function buildTemplateRows(type) {
   if (type === 'full') {
     return [{
+      lotCode: 'LOTE-0001',
+      lotName: 'Lote inicial ESADAR',
+      lotStatus: 'OPEN',
       internalCode: '',
       slug: '',
       title: 'Buzo vintage seleccionado',
@@ -1213,6 +1322,7 @@ function buildTemplateRows(type) {
   }
 
   return [{
+    lotCode: 'LOTE-0001',
     title: 'Campera seleccionada',
     salePrice: 1890,
     categoryName: 'Camperas',
@@ -1286,6 +1396,9 @@ function buildProfitProjectionRows(rows, costingSettings) {
     });
 
     return {
+      lotCode: row.lotCode || '',
+      lotName: row.lotName || '',
+      lotStatus: row.lotStatus || '',
       internalCode: row.internalCode || '',
       title: row.title || '',
       status: row.status || row.publicationStatus || '',
@@ -1380,6 +1493,9 @@ function calculateProfitProjectionSummary(rows) {
 
 function buildProfitProjectionTotalRow(summary, bankTaxPercent) {
   return {
+    lotCode: '',
+    lotName: '',
+    lotStatus: '',
     internalCode: 'TOTAL',
     title: '',
     status: '',
@@ -1415,8 +1531,13 @@ function toHeaderRow(row) {
   );
 }
 
-function buildSummaryRows(summary) {
+function buildSummaryRows(summary, lot = null) {
   return [
+    ...(lot ? [
+      { metric: 'Codigo lote', value: lot.code },
+      { metric: 'Nombre lote', value: lot.name },
+      { metric: 'Estado lote', value: lot.status },
+    ] : []),
     { metric: 'Cantidad de artículos', value: summary.articleCount },
     { metric: 'Total precio de venta', value: summary.totalSalePrice },
     { metric: 'Total precio efectivo', value: summary.totalEffectiveSalePrice },
@@ -1501,12 +1622,12 @@ function addProfitProjectionWorksheet(workbook, rows, summary, costingSettings) 
   };
 }
 
-function addProfitProjectionSummaryWorksheet(workbook, summary) {
+function addProfitProjectionSummaryWorksheet(workbook, summary, lot = null) {
   const worksheet = workbook.addWorksheet('Resumen');
   worksheet.columns = PROFIT_PROJECTION_SUMMARY_COLUMNS;
   styleHeader(worksheet.getRow(1));
 
-  buildSummaryRows(summary).forEach((row) => {
+  buildSummaryRows(summary, lot).forEach((row) => {
     const excelRow = worksheet.addRow(row);
     excelRow.getCell('A').font = { bold: true };
     if (/Total|Margen/.test(row.metric)) {
@@ -1515,32 +1636,42 @@ function addProfitProjectionSummaryWorksheet(workbook, summary) {
   });
 }
 
-async function buildProfitProjectionXlsxBuffer(rows, summary, costingSettings) {
+async function buildProfitProjectionXlsxBuffer(rows, summary, costingSettings, lot = null) {
   const workbook = createWorkbook();
   addProfitProjectionWorksheet(workbook, rows, summary, costingSettings);
-  addProfitProjectionSummaryWorksheet(workbook, summary);
+  addProfitProjectionSummaryWorksheet(workbook, summary, lot);
   return workbookToXlsxBuffer(workbook);
 }
 
-export async function buildArticleProfitProjectionExport({ filters, format, auditContext }) {
+export async function buildArticleProfitProjectionExport({
+  filters,
+  format,
+  auditContext,
+  lot = null,
+  auditActionCode = 'ARTICLE_PROFIT_PROJECTION_EXPORT_CREATED',
+  auditEntityType = 'articles',
+  auditEntityId = null,
+}) {
   const costingSettings = await getCostingSettings();
   const rows = await listAdminArticlesForExport({ filters });
   const projectionRows = buildProfitProjectionRows(rows, costingSettings);
   const summary = calculateProfitProjectionSummary(projectionRows);
   const today = new Date().toISOString().slice(0, 10);
   const safeFormat = format === 'csv' ? 'csv' : 'xlsx';
-  const fileName = `esadar-proyeccion-ganancias-articulos-${today}.${safeFormat}`;
+  const lotSuffix = lot?.code ? `-${String(lot.code).toLowerCase()}` : '';
+  const fileName = `esadar-proyeccion-ganancias-articulos${lotSuffix}-${today}.${safeFormat}`;
 
   await logAudit({
     actorUserId: auditContext.actorUserId,
     actorLabel: auditContext.actorLabel,
-    actionCode: 'ARTICLE_PROFIT_PROJECTION_EXPORT_CREATED',
-    entityType: 'articles',
-    entityId: null,
+    actionCode: auditActionCode,
+    entityType: auditEntityType,
+    entityId: auditEntityId,
     metadataJson: {
       format: safeFormat,
       itemCount: projectionRows.length,
       filters,
+      lot: lot ? { id: lot.id, code: lot.code, name: lot.name, status: lot.status } : null,
       bankTaxRate: costingSettings.bankTaxRate,
       totalEstimatedProfit: summary.totalEstimatedProfit,
     },
@@ -1567,7 +1698,7 @@ export async function buildArticleProfitProjectionExport({ filters, format, audi
   return {
     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     fileName,
-    payload: await buildProfitProjectionXlsxBuffer(projectionRows, summary, costingSettings),
+    payload: await buildProfitProjectionXlsxBuffer(projectionRows, summary, costingSettings, lot),
     itemCount: projectionRows.length,
     summary,
   };
@@ -1576,6 +1707,9 @@ export async function buildArticleProfitProjectionExport({ filters, format, audi
 export async function buildArticleExport({ filters, format, auditContext }) {
   const rows = await listAdminArticlesForExport({ filters });
   const exportRows = rows.map((row) => ({
+    lotCode: row.lotCode || '',
+    lotName: row.lotName || '',
+    lotStatus: row.lotStatus || '',
     internalCode: row.internalCode,
     slug: row.slug,
     title: row.title,

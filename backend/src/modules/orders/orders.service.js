@@ -132,6 +132,9 @@ export async function createOrder(input, actor, auditContext) {
           a.purchase_price_courier AS purchasePriceCourier,
           a.purchase_price_total AS purchasePriceTotal,
           a.weight_kg AS weightKg,
+          a.lot_id AS lotIdSnapshot,
+          al.code AS lotCodeSnapshot,
+          al.name AS lotNameSnapshot,
           inv.quantity_available AS quantityAvailable,
           inv.quantity_reserved AS quantityReserved,
           inv.quantity_sold AS quantitySold,
@@ -149,6 +152,7 @@ export async function createOrder(input, actor, auditContext) {
         FROM articles a
         INNER JOIN article_inventory inv ON inv.article_id = a.id
         INNER JOIN categories c ON c.id = a.category_id
+        LEFT JOIN article_lots al ON al.id = a.lot_id
         LEFT JOIN brands b ON b.id = a.brand_id
         LEFT JOIN sizes s ON s.id = a.size_id
         WHERE a.id IN (${placeholders})
@@ -243,6 +247,9 @@ export async function createOrder(input, actor, auditContext) {
           sizeSnapshot: article.sizeSnapshot || null,
           measurementsSnapshot: article.measurementsText || null,
           imageSnapshot: article.imageSnapshot || null,
+          lotIdSnapshot: article.lotIdSnapshot || null,
+          lotCodeSnapshot: article.lotCodeSnapshot || null,
+          lotNameSnapshot: article.lotNameSnapshot || null,
           salePriceSnapshot: salePrice,
           discountTypeSnapshot: article.discountType,
           discountValueSnapshot: Number(article.discountValue),
@@ -278,6 +285,9 @@ export async function createOrder(input, actor, auditContext) {
           sizeSnapshot: article.sizeSnapshot || null,
           measurementsSnapshot: article.measurementsText || null,
           imageSnapshot: article.imageSnapshot || null,
+          lotIdSnapshot: article.lotIdSnapshot || null,
+          lotCodeSnapshot: article.lotCodeSnapshot || null,
+          lotNameSnapshot: article.lotNameSnapshot || null,
           salePriceSnapshot: salePrice,
           discountTypeSnapshot: article.discountType,
           discountValueSnapshot: Number(article.discountValue),
@@ -372,6 +382,9 @@ export async function createOrder(input, actor, auditContext) {
             size_snapshot,
             measurements_snapshot,
             image_snapshot,
+            lot_id_snapshot,
+            lot_code_snapshot,
+            lot_name_snapshot,
             sale_price_snapshot,
             discount_type_snapshot,
             discount_value_snapshot,
@@ -391,7 +404,7 @@ export async function createOrder(input, actor, auditContext) {
             accepted_offer_id,
             accepted_offer_price_snapshot,
             accepted_offer_quantity_snapshot
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           orderId,
@@ -404,6 +417,9 @@ export async function createOrder(input, actor, auditContext) {
           item.sizeSnapshot,
           item.measurementsSnapshot,
           item.imageSnapshot,
+          item.lotIdSnapshot,
+          item.lotCodeSnapshot,
+          item.lotNameSnapshot,
           item.salePriceSnapshot,
           item.discountTypeSnapshot,
           item.discountValueSnapshot,
@@ -1786,6 +1802,9 @@ async function getOrderById(id, connection) {
         size_snapshot AS size,
         measurements_snapshot AS measurements,
         image_snapshot AS image,
+        lot_id_snapshot AS lotIdSnapshot,
+        lot_code_snapshot AS lotCodeSnapshot,
+        lot_name_snapshot AS lotNameSnapshot,
         sale_price_snapshot AS salePrice,
         discount_type_snapshot AS discountType,
         discount_value_snapshot AS discountValue,
@@ -1864,6 +1883,10 @@ async function getOrderById(id, connection) {
       row.weightKgSnapshot != null ? Number(row.weightKgSnapshot) : 0,
     lineWeightKgSnapshot:
       row.lineWeightKgSnapshot != null ? Number(row.lineWeightKgSnapshot) : 0,
+    lotIdSnapshot:
+      row.lotIdSnapshot != null ? Number(row.lotIdSnapshot) : null,
+    lotCodeSnapshot: row.lotCodeSnapshot || null,
+    lotNameSnapshot: row.lotNameSnapshot || null,
     purchasePriceItemSnapshot:
       row.purchasePriceItemSnapshot != null
         ? Number(row.purchasePriceItemSnapshot)

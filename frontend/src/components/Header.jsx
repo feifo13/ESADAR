@@ -389,6 +389,7 @@ export default function Header({ hideBrand = false }) {
   }
 
   const adminMenuChildren = [
+    { key: "admin-article-lots", label: "Lotes", to: "/admin/article-lots" },
     { key: "admin-articles", label: "Artículos", to: "/admin/articles" },
     {
       key: "admin-article-new",

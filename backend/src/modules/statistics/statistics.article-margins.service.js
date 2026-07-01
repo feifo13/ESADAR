@@ -22,6 +22,11 @@ function buildArticleMarginsFilters(filters = {}) {
     params.push(filters.categoryId);
   }
 
+  if (filters.lotId) {
+    clauses.push('a.lot_id = ?');
+    params.push(filters.lotId);
+  }
+
   if (filters.brandId) {
     clauses.push('a.brand_id = ?');
     params.push(filters.brandId);
@@ -59,6 +64,9 @@ function normalizeArticleMarginRow(row, costingSettings) {
     articleId: Number(row.articleId || 0),
     intakeDate: row.intakeDate || null,
     internalCode: row.internalCode || '',
+    lotCode: row.lotCode || '',
+    lotName: row.lotName || '',
+    lotStatus: row.lotStatus || '',
     title: row.title || '',
     brandName: row.brandName || '',
     categoryName: row.categoryName || '',
@@ -71,12 +79,30 @@ function normalizeArticleMarginRow(row, costingSettings) {
 export async function getArticleMarginsReport(filters = {}) {
   const { where, params } = buildArticleMarginsFilters(filters);
   const costingSettings = await getCostingSettings();
+  let lot = null;
+  if (filters.lotId) {
+    const [lotRows] = await pool.execute(
+      'SELECT id, code, name, status FROM article_lots WHERE id = ? LIMIT 1',
+      [filters.lotId],
+    );
+    if (lotRows.length) {
+      lot = {
+        id: Number(lotRows[0].id),
+        code: lotRows[0].code,
+        name: lotRows[0].name,
+        status: lotRows[0].status,
+      };
+    }
+  }
   const [rows] = await pool.execute(
     `
       SELECT
         a.id AS articleId,
         a.intake_date AS intakeDate,
         a.internal_code AS internalCode,
+        al.code AS lotCode,
+        al.name AS lotName,
+        al.status AS lotStatus,
         a.title,
         a.status,
         COALESCE(b.name, '') AS brandName,
@@ -89,6 +115,7 @@ export async function getArticleMarginsReport(filters = {}) {
         a.purchase_price_shipping AS purchasePriceShipping,
         a.purchase_price_courier AS purchasePriceCourier
       FROM articles a
+      LEFT JOIN article_lots al ON al.id = a.lot_id
       LEFT JOIN brands b ON b.id = a.brand_id
       LEFT JOIN categories cat ON cat.id = a.category_id
       LEFT JOIN sizes s ON s.id = a.size_id
@@ -106,6 +133,7 @@ export async function getArticleMarginsReport(filters = {}) {
     filters,
     bankTaxRate: costingSettings.bankTaxRate,
     bankTaxPercent: costingSettings.bankTaxPercent,
+    lot,
     generatedAt: new Date(),
     summary,
     items,

@@ -10,6 +10,8 @@ const ROUTES = [
   '/cuenta/guardados',
   '/cuenta/ordenes',
   '/admin/articles',
+  '/admin/article-lots',
+  '/admin/article-lots/1',
   '/admin/offers',
 ];
 

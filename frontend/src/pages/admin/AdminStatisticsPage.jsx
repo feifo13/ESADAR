@@ -12,6 +12,7 @@ const initialFilters = {
   dateFrom: "",
   dateTo: "",
   categoryId: "",
+  lotId: "",
   brandId: "",
   status: "",
   paymentMethod: "",
@@ -85,6 +86,7 @@ function buildArticleMarginsQuery(filters) {
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     categoryId: filters.categoryId,
+    lotId: filters.lotId,
     brandId: filters.brandId,
     q: filters.q,
   };
@@ -319,6 +321,7 @@ export default function AdminStatisticsPage() {
   const [marketStudy, setMarketStudy] = useState(null);
   const [marketStudyMessage, setMarketStudyMessage] = useState("");
   const [exporting, setExporting] = useState("");
+  const [lotOptions, setLotOptions] = useState([]);
   const hasMarketStudyData = Boolean(
     marketStudy &&
     [
@@ -339,12 +342,31 @@ export default function AdminStatisticsPage() {
       filters.dateFrom,
       filters.dateTo,
       filters.categoryId,
+      filters.lotId,
       filters.brandId,
       filters.status,
       filters.paymentMethod,
       filters.shippingMethod,
     ].filter(Boolean).length +
     (filters.groupBy !== initialFilters.groupBy ? 1 : 0);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLotOptions() {
+      try {
+        const response = await apiFetch("/api/admin/article-lots/options?includeArchived=true");
+        if (!ignore) setLotOptions(response.items || []);
+      } catch {
+        if (!ignore) setLotOptions([]);
+      }
+    }
+
+    loadLotOptions();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -539,6 +561,21 @@ export default function AdminStatisticsPage() {
                 {brandOptions.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field-group">
+              <span>Lote</span>
+              <select
+                className="input"
+                value={draftFilters.lotId}
+                onChange={(event) => updateDraft("lotId", event.target.value)}
+              >
+                <option value="">Todos</option>
+                {lotOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.code} - {option.name}
                   </option>
                 ))}
               </select>

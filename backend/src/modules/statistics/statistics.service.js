@@ -55,6 +55,17 @@ function buildCompletedOrderFilters(filters = {}) {
     params.push(filters.shippingMethod);
   }
 
+  if (filters.lotId) {
+    clauses.push(`EXISTS (
+      SELECT 1
+      FROM order_items oi_lot
+      LEFT JOIN articles a_lot ON a_lot.id = oi_lot.article_id
+      WHERE oi_lot.order_id = o.id
+        AND COALESCE(oi_lot.lot_id_snapshot, a_lot.lot_id) = ?
+    )`);
+    params.push(filters.lotId);
+  }
+
   if (filters.categoryId) {
     clauses.push(`EXISTS (
       SELECT 1
@@ -125,6 +136,11 @@ function buildSalesItemFilters(filters = {}) {
     params.push(filters.shippingMethod);
   }
 
+  if (filters.lotId) {
+    clauses.push('COALESCE(oi.lot_id_snapshot, a.lot_id) = ?');
+    params.push(filters.lotId);
+  }
+
   if (filters.categoryId) {
     clauses.push('a.category_id = ?');
     params.push(filters.categoryId);
@@ -159,6 +175,7 @@ function buildWishlistFiltersForStats(filters = {}) {
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     categoryId: filters.categoryId,
+    lotId: filters.lotId,
     brandId: filters.brandId,
     status: filters.status && ['ACTIVE', 'INACTIVE', 'RESERVED', 'SOLD_OUT'].includes(filters.status)
       ? filters.status
@@ -603,12 +620,20 @@ export async function getStatisticsWishlist(filters = {}) {
       INNER JOIN articles a ON a.id = wi.article_id
       INNER JOIN categories cat ON cat.id = a.category_id
       WHERE (? IS NULL OR a.category_id = ?)
+        AND (? IS NULL OR a.lot_id = ?)
         AND (? IS NULL OR a.brand_id = ?)
       GROUP BY cat.name
       ORDER BY savesCount DESC, cat.name ASC
       LIMIT 10
     `,
-    [filters.categoryId || null, filters.categoryId || null, filters.brandId || null, filters.brandId || null],
+    [
+      filters.categoryId || null,
+      filters.categoryId || null,
+      filters.lotId || null,
+      filters.lotId || null,
+      filters.brandId || null,
+      filters.brandId || null,
+    ],
   );
 
   return {
@@ -634,6 +659,11 @@ async function getDemandByDimension(filters, { labelExpr, joinSql, extraWhere = 
   if (filters.categoryId) {
     articleClauses.push('a.category_id = ?');
     articleParams.push(filters.categoryId);
+  }
+
+  if (filters.lotId) {
+    articleClauses.push('a.lot_id = ?');
+    articleParams.push(filters.lotId);
   }
 
   if (filters.brandId) {
@@ -741,6 +771,9 @@ export async function getStatisticsMarketStudy(filters = {}) {
     labelExpr: `COALESCE(a.size_text, s.code)`,
     joinSql: 'LEFT JOIN sizes s ON s.id = a.size_id',
   });
+  const lotArticleClause = filters.lotId ? 'AND a.lot_id = ?' : '';
+  const lotSalesClause = filters.lotId ? 'AND COALESCE(oi.lot_id_snapshot, a.lot_id) = ?' : '';
+  const lotParams = filters.lotId ? [filters.lotId] : [];
 
   const [colorSaveRows, colorSoldRows, materialSaveRows, materialSoldRows] = await Promise.all([
     pool.execute(
@@ -749,8 +782,10 @@ export async function getStatisticsMarketStudy(filters = {}) {
         FROM wishlist_items wi
         INNER JOIN articles a ON a.id = wi.article_id
         WHERE a.color IS NOT NULL AND a.color <> ''
+          ${lotArticleClause}
         GROUP BY a.color
       `,
+      lotParams,
     ),
     pool.execute(
       `
@@ -761,8 +796,10 @@ export async function getStatisticsMarketStudy(filters = {}) {
         WHERE o.order_status IN ('APPROVED', 'SHIPPED')
           AND a.color IS NOT NULL
           AND a.color <> ''
+          ${lotSalesClause}
         GROUP BY a.color
       `,
+      lotParams,
     ),
     pool.execute(
       `
@@ -770,8 +807,10 @@ export async function getStatisticsMarketStudy(filters = {}) {
         FROM wishlist_items wi
         INNER JOIN articles a ON a.id = wi.article_id
         WHERE a.material IS NOT NULL AND a.material <> ''
+          ${lotArticleClause}
         GROUP BY a.material
       `,
+      lotParams,
     ),
     pool.execute(
       `
@@ -782,8 +821,10 @@ export async function getStatisticsMarketStudy(filters = {}) {
         WHERE o.order_status IN ('APPROVED', 'SHIPPED')
           AND a.material IS NOT NULL
           AND a.material <> ''
+          ${lotSalesClause}
         GROUP BY a.material
       `,
+      lotParams,
     ),
   ]);
 
@@ -833,10 +874,12 @@ export async function getStatisticsMarketStudy(filters = {}) {
         ) AS soldCount
       FROM articles a
       WHERE a.status = 'ACTIVE'
+        ${lotArticleClause}
       HAVING soldCount = 0 AND (viewsCount > 0 OR savesCount > 0 OR offersCount > 0)
       ORDER BY savesCount DESC, viewsCount DESC, offersCount DESC
       LIMIT 10
     `,
+    lotParams,
   );
 
   const [lowRotationRows] = await pool.execute(
@@ -867,10 +910,12 @@ export async function getStatisticsMarketStudy(filters = {}) {
         ) AS soldRows
       FROM articles a
       WHERE a.status = 'ACTIVE'
+        ${lotArticleClause}
       HAVING daysPublished >= 30 AND viewsCount <= 5 AND savesCount <= 2 AND soldRows = 0
       ORDER BY daysPublished DESC, viewsCount ASC, savesCount ASC
       LIMIT 10
     `,
+    lotParams,
   );
 
   const [soldOutDemandRows] = await pool.execute(
@@ -887,11 +932,13 @@ export async function getStatisticsMarketStudy(filters = {}) {
       LEFT JOIN article_interest_alerts aia ON aia.article_id = a.id AND aia.status = 'ACTIVE'
       WHERE a.status = 'ACTIVE'
         AND COALESCE(inv.quantity_available, 0) <= 0
+        ${lotArticleClause}
       GROUP BY a.id, a.slug, a.title
       HAVING savesCount > 0 OR alertsCount > 0
       ORDER BY savesCount DESC, alertsCount DESC, a.id DESC
       LIMIT 10
     `,
+    lotParams,
   );
 
   const [offersRows] = await pool.execute(
@@ -903,7 +950,9 @@ export async function getStatisticsMarketStudy(filters = {}) {
         AVG(CASE WHEN a.sale_price > 0 THEN ((a.sale_price - off.offered_price) / a.sale_price) * 100 ELSE NULL END) AS averageRequestedDiscount
       FROM offers off
       LEFT JOIN articles a ON a.id = off.article_id
+      ${filters.lotId ? 'WHERE a.lot_id = ?' : ''}
     `,
+    lotParams,
   );
 
   const completedFilters = buildCompletedOrderFilters(filters);

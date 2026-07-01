@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
 const leftLinks = [
+  { to: '/admin/article-lots', label: 'Lotes' },
   { to: '/admin/articles', label: 'Artículos', end: true },
   { to: '/admin/orders', label: 'Órdenes' },
   { to: '/admin/offers', label: 'Ofertas' },

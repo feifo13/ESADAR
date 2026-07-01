@@ -25,6 +25,10 @@ import { getCostingSettings } from '../collecting/collecting.service.js';
 const publicBaseSelect = `
   SELECT
     a.id,
+    a.lot_id AS lotId,
+    al.code AS lotCode,
+    al.name AS lotName,
+    al.status AS lotStatus,
     a.internal_code AS internalCode,
     a.slug,
     a.title,
@@ -122,6 +126,7 @@ const publicBaseSelect = `
       LIMIT 1
     ) AS primaryImageAlt
   FROM articles a
+  LEFT JOIN article_lots al ON al.id = a.lot_id
   INNER JOIN categories c ON c.id = a.category_id
   LEFT JOIN brands b ON b.id = a.brand_id
   LEFT JOIN sizes s ON s.id = a.size_id
@@ -138,6 +143,8 @@ const ADMIN_ARTICLE_SORTS = {
   quantityAvailable: (direction) => `inv.quantity_available ${direction}, a.id DESC`,
   categoryName: (direction) => `c.name ${direction}, a.id DESC`,
   brandName: (direction) => `COALESCE(b.name, '') ${direction}, a.id DESC`,
+  lotCode: (direction) => `COALESCE(al.code, '') ${direction}, a.id DESC`,
+  lotName: (direction) => `COALESCE(al.name, '') ${direction}, a.id DESC`,
   internalCode: (direction) => `a.internal_code ${direction}, a.id DESC`,
 };
 
@@ -231,10 +238,12 @@ function buildAdminArticleFilters(filters) {
       OR COALESCE(a.seo_description, '') LIKE ?
       OR c.name LIKE ?
       OR COALESCE(b.name, '') LIKE ?
+      OR COALESCE(al.code, '') LIKE ?
+      OR COALESCE(al.name, '') LIKE ?
       OR COALESCE(s.code, '') LIKE ?
       OR COALESCE(a.size_text, '') LIKE ?
     )`);
-    params.push(like, like, like, like, like, like, like, like, like, like);
+    params.push(like, like, like, like, like, like, like, like, like, like, like, like);
   }
 
   if (filters.status === 'RESERVED') {
@@ -259,6 +268,16 @@ function buildAdminArticleFilters(filters) {
   if (filters.categoryId) {
     clauses.push('a.category_id = ?');
     params.push(filters.categoryId);
+  }
+
+  if (filters.lotId) {
+    clauses.push('a.lot_id = ?');
+    params.push(filters.lotId);
+  }
+
+  if (filters.lotCode) {
+    clauses.push('al.code = ?');
+    params.push(String(filters.lotCode).trim().toUpperCase());
   }
 
   if (filters.brandId) {
@@ -503,6 +522,47 @@ async function resolveArticleSizeId(input, connection, auditContext) {
   return null;
 }
 
+async function getInitialArticleLotId(connection) {
+  const [rows] = await connection.execute(
+    "SELECT id, status FROM article_lots WHERE code = 'LOTE-0001' LIMIT 1",
+    [],
+  );
+
+  if (!rows.length) {
+    throw badRequest('No existe el lote inicial LOTE-0001. Ejecuta la migracion de lotes.');
+  }
+
+  if (rows[0].status === 'ARCHIVED') {
+    throw badRequest('LOTE-0001 esta archivado y no puede asignarse a articulos nuevos.');
+  }
+
+  return Number(rows[0].id);
+}
+
+async function resolveArticleLotId(input, connection, { allowArchived = false } = {}) {
+  const rawLotId = input.lotId ?? input.lot_id ?? null;
+  const lotId = rawLotId == null || rawLotId === '' ? await getInitialArticleLotId(connection) : Number(rawLotId);
+
+  if (!Number.isInteger(lotId) || lotId <= 0) {
+    throw badRequest('Selecciona un lote valido.');
+  }
+
+  const [rows] = await connection.execute(
+    'SELECT id, code, name, status FROM article_lots WHERE id = ? LIMIT 1',
+    [lotId],
+  );
+
+  if (!rows.length) {
+    throw badRequest('El lote seleccionado no existe.');
+  }
+
+  if (!allowArchived && rows[0].status === 'ARCHIVED') {
+    throw badRequest('No se pueden asignar articulos a un lote archivado.');
+  }
+
+  return Number(rows[0].id);
+}
+
 async function normalizeArticleWritePayload(input, connection, auditContext = {}, isUpdate = false, currentId = null) {
   const title = String(input.title || '').trim();
   if (!title) {
@@ -543,8 +603,12 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
   }
 
   const status = resolveWritableArticleStatus(input.status || input.publicationStatus || 'ACTIVE');
+  const lotId = await resolveArticleLotId(input, connection, {
+    allowArchived: Boolean(isUpdate && !input._lotIdExplicit),
+  });
 
   const payload = {
+    lotId,
     internalCode,
     slug,
     title,
@@ -608,6 +672,16 @@ async function getArticleRows(whereClause, params = [], connection = pool) {
 function normalizeArticleRow(row) {
   const normalized = {
     id: Number(row.id),
+    lotId: row.lotId != null ? Number(row.lotId) : null,
+    lotCode: row.lotCode || null,
+    lotName: row.lotName || null,
+    lotStatus: row.lotStatus || null,
+    lot: row.lotId != null ? {
+      id: Number(row.lotId),
+      code: row.lotCode,
+      name: row.lotName,
+      status: row.lotStatus,
+    } : null,
     internalCode: row.internalCode,
     slug: row.slug,
     title: row.title,
@@ -831,6 +905,7 @@ export async function listPublicArticles({ filters, pagination }) {
   const [countRows] = await pool.execute(
     `SELECT COUNT(*) AS total
      FROM articles a
+     LEFT JOIN article_lots al ON al.id = a.lot_id
      INNER JOIN categories c ON c.id = a.category_id
      LEFT JOIN brands b ON b.id = a.brand_id
      LEFT JOIN sizes s ON s.id = a.size_id
@@ -1014,6 +1089,7 @@ export async function createArticle(input, auditContext) {
     const [result] = await connection.execute(
       `
         INSERT INTO articles (
+          lot_id,
           internal_code,
           slug,
           title,
@@ -1047,9 +1123,10 @@ export async function createArticle(input, auditContext) {
           origin_notes,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
+        payload.lotId,
         payload.internalCode,
         payload.slug,
         payload.title,
@@ -1123,10 +1200,14 @@ export async function createArticle(input, auditContext) {
 export async function updateArticle(id, input, auditContext) {
   return withTransaction(async (connection) => {
     const before = await getAdminArticleByIdWithConnection(id, connection);
+    const lotIdExplicit = Object.prototype.hasOwnProperty.call(input, 'lotId')
+      || Object.prototype.hasOwnProperty.call(input, 'lot_id');
     const payload = await normalizeArticleWritePayload(
       {
         ...before,
         ...input,
+        lotId: lotIdExplicit ? input.lotId : before.lotId,
+        _lotIdExplicit: lotIdExplicit,
         quantityReserved: before.quantityReserved,
         quantitySold: before.quantitySold,
         quantityLost: before.quantityLost,
@@ -1145,6 +1226,7 @@ export async function updateArticle(id, input, auditContext) {
       `
         UPDATE articles
         SET
+          lot_id = ?,
           internal_code = ?,
           slug = ?,
           title = ?,
@@ -1180,6 +1262,7 @@ export async function updateArticle(id, input, auditContext) {
         WHERE id = ?
       `,
       [
+        payload.lotId,
         payload.internalCode,
         payload.slug,
         payload.title,
@@ -1232,6 +1315,32 @@ export async function updateArticle(id, input, auditContext) {
     }
 
     const after = await getAdminArticleByIdWithConnection(id, connection);
+
+    if (Number(before.lotId || 0) !== Number(after.lotId || 0)) {
+      await logAudit(
+        {
+          actorUserId: auditContext.actorUserId,
+          actorLabel: auditContext.actorLabel,
+          actionCode: 'ARTICLE_LOT_ASSIGNED',
+          entityType: 'articles',
+          entityId: id,
+          beforeJson: {
+            lotId: before.lotId,
+            lotCode: before.lotCode,
+            lotName: before.lotName,
+          },
+          afterJson: {
+            lotId: after.lotId,
+            lotCode: after.lotCode,
+            lotName: after.lotName,
+          },
+          source: auditContext.source,
+          ipAddress: auditContext.ipAddress,
+          userAgent: auditContext.userAgent,
+        },
+        connection,
+      );
+    }
 
     if (stockChanged) {
       const reason = input.stockAdjustmentReason || 'Ajuste manual desde edicion de articulo';
@@ -1373,10 +1482,14 @@ const ARTICLE_BATCH_ACTION_CONFIG = {
   DISALLOW_OFFERS: { payload: { allowOffers: false } },
 };
 
-export async function batchUpdateArticles({ ids = [], action, auditContext }) {
+export async function batchUpdateArticles({ ids = [], action, lotId = null, auditContext }) {
   const config = ARTICLE_BATCH_ACTION_CONFIG[action];
-  if (!config) {
+  if (!config && action !== 'ASSIGN_LOT') {
     throw badRequest('Acción batch de artículos inválida.');
+  }
+
+  if (action === 'ASSIGN_LOT' && !lotId) {
+    throw badRequest('Selecciona un lote para asignar.');
   }
 
   const uniqueIds = [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))].slice(0, 100);
@@ -1384,7 +1497,9 @@ export async function batchUpdateArticles({ ids = [], action, auditContext }) {
 
   for (const id of uniqueIds) {
     try {
-      const article = await updateArticleQuickFlags(id, config.payload, auditContext);
+      const article = action === 'ASSIGN_LOT'
+        ? await updateArticle(id, { lotId }, auditContext)
+        : await updateArticleQuickFlags(id, config.payload, auditContext);
       results.push({ id, ok: true, article });
     } catch (error) {
       results.push({
@@ -1398,8 +1513,29 @@ export async function batchUpdateArticles({ ids = [], action, auditContext }) {
   const succeeded = results.filter((result) => result.ok).length;
   const failed = results.length - succeeded;
 
+  if (action === 'ASSIGN_LOT') {
+    await logAudit({
+      actorUserId: auditContext.actorUserId,
+      actorLabel: auditContext.actorLabel,
+      actionCode: 'ARTICLE_BATCH_LOT_ASSIGNED',
+      entityType: 'articles',
+      entityId: null,
+      metadataJson: {
+        lotId,
+        requested: uniqueIds.length,
+        succeeded,
+        failed,
+        ids: uniqueIds,
+      },
+      source: auditContext.source,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    });
+  }
+
   return {
     action,
+    lotId,
     requested: uniqueIds.length,
     succeeded,
     failed,

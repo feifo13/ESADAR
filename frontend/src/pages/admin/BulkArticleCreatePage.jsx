@@ -124,6 +124,30 @@ export default function BulkArticleCreatePage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [costingSettings, setCostingSettings] = useState(null);
+  const [lotOptions, setLotOptions] = useState([]);
+  const [lotId, setLotId] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadLotOptions() {
+      try {
+        const response = await apiFetch('/api/admin/article-lots/options');
+        if (ignore) return;
+        const items = response.items || [];
+        setLotOptions(items);
+        const initialLot = items.find((option) => option.code === 'LOTE-0001') || items[0];
+        if (initialLot?.id) setLotId(String(initialLot.id));
+      } catch {
+        if (!ignore) setLotOptions([]);
+      }
+    }
+
+    loadLotOptions();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -178,6 +202,14 @@ export default function BulkArticleCreatePage() {
   }
 
   function validateArticlesForSubmit() {
+    if (!lotId) {
+      return {
+        articleId: articles[0]?.id,
+        target: 'bulk-common-lot',
+        message: 'Selecciona un lote para la carga multiple.',
+      };
+    }
+
     for (const [index, article] of articles.entries()) {
       const rowLabel = `Articulo ${index + 1}`;
 
@@ -245,6 +277,7 @@ export default function BulkArticleCreatePage() {
         method: 'POST',
         body: {
           createMissingLookups,
+          lotId: Number(lotId),
           articles: articles.map(buildPayload),
         },
       });
@@ -305,6 +338,25 @@ export default function BulkArticleCreatePage() {
         <label className="checkbox-field">
           <input type="checkbox" checked={createMissingLookups} onChange={(event) => setCreateMissingLookups(event.target.checked)} />
           <span>Crear categorías, marcas y talles faltantes</span>
+        </label>
+
+        <label className="field-group">
+          <span>Lote comun</span>
+          <select
+            className="input"
+            name="bulk-common-lot"
+            data-validation-field="bulk-common-lot"
+            value={lotId}
+            onChange={(event) => setLotId(event.target.value)}
+            required
+          >
+            <option value="">Seleccionar lote</option>
+            {lotOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.code} - {option.name}
+              </option>
+            ))}
+          </select>
         </label>
 
       </section>

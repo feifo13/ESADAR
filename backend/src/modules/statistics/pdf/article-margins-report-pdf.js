@@ -165,6 +165,14 @@ function drawHeader(doc, report) {
     color: COLORS.muted,
     align: 'right',
   });
+  if (report.lot) {
+    drawText(doc, `Lote: ${report.lot.code} - ${report.lot.name}`, rightX, top + 56, {
+      width: 250,
+      size: 8.5,
+      color: COLORS.muted,
+      align: 'right',
+    });
+  }
 
   doc
     .save()

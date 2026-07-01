@@ -22,6 +22,8 @@ const AccountOrderDetailPage = lazy(() => import('./pages/AccountOrderDetailPage
 const AdminArticlesPage = lazy(() => import('./pages/admin/AdminArticlesPage.jsx'));
 const AdminArticleFormPage = lazy(() => import('./pages/admin/AdminArticleFormPage.jsx'));
 const AdminArticleStockPage = lazy(() => import('./pages/admin/AdminArticleStockPage.jsx'));
+const AdminArticleLotsPage = lazy(() => import('./pages/admin/AdminArticleLotsPage.jsx'));
+const AdminArticleLotDetailPage = lazy(() => import('./pages/admin/AdminArticleLotDetailPage.jsx'));
 const BulkArticleCreatePage = lazy(() => import('./pages/admin/BulkArticleCreatePage.jsx'));
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage.jsx'));
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/AdminOrderDetailPage.jsx'));
@@ -82,6 +84,22 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminArticlesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/article-lots"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminArticleLotsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/article-lots/:id"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminArticleLotDetailPage />
             </ProtectedRoute>
           }
         />
