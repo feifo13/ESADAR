@@ -2,9 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import esadarWordmark from "../assets/esadar-wordmark.webp";
-import { ESADAR_SOCIAL_LINKS, handleMobileSocialLink } from "../lib/socialLinks.js";
+import {
+  ESADAR_SOCIAL_LINKS,
+  handleMobileSocialLink,
+} from "../lib/socialLinks.js";
 import { getSiteChromeOffset } from "../lib/siteChromeOffset.js";
-
 
 function FacebookIcon() {
   return (
@@ -388,7 +390,7 @@ export default function FooterScrollScene() {
               Contacto
             </Link>
           </div>
-          <div
+          {/* <div
             className="footer-scroll-scene__socials"
             aria-label="Redes sociales de ESADAR"
           >
@@ -414,7 +416,7 @@ export default function FooterScrollScene() {
                 </a>
               ))}
             </div>
-          </div>
+          </div> */}
           <Link
             to="/terminos-y-condiciones"
             className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
