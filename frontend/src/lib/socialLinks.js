@@ -1,10 +1,10 @@
 export const ESADAR_SOCIAL_LINKS = [
   {
     key: "instagram",
-    label: "@esadar.uy",
+    label: "@esadar.com.uy",
     platformLabel: "Instagram",
-    webUrl: "https://www.instagram.com/esadar.uy/",
-    appUrl: "instagram://user?username=esadar.uy",
+    webUrl: "https://www.instagram.com/esadar.com.uy/",
+    appUrl: "instagram://user?username=esadar.com.uy",
   },
   {
     key: "facebook",

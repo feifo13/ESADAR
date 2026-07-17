@@ -390,13 +390,18 @@ export default function FooterScrollScene() {
               Contacto
             </Link>
           </div>
-          {/* <div
+          <div
             className="footer-scroll-scene__socials"
             aria-label="Redes sociales de ESADAR"
           >
-            <div className="footer-scroll-scene__social-heading" aria-hidden="true">
+            <div
+              className="footer-scroll-scene__social-heading"
+              aria-hidden="true"
+            >
               <span className="footer-scroll-scene__social-heading-line" />
-              <span className="footer-scroll-scene__social-heading-text">Seguinos</span>
+              <span className="footer-scroll-scene__social-heading-text">
+                Seguinos
+              </span>
               <span className="footer-scroll-scene__social-heading-line" />
             </div>
             <div className="footer-scroll-scene__social-list">
@@ -416,7 +421,7 @@ export default function FooterScrollScene() {
                 </a>
               ))}
             </div>
-          </div> */}
+          </div>
           <Link
             to="/terminos-y-condiciones"
             className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
