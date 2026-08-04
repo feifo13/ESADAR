@@ -29,7 +29,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [googleCredential, setGoogleCredential] = useState("");
   const [googleLinkPassword, setGoogleLinkPassword] = useState("");
-  const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const googleLoginEnabled = Boolean(String(import.meta.env.VITE_GOOGLE_CLIENT_ID || "").trim());
@@ -47,7 +46,6 @@ export default function LoginPage() {
 
   function showError(err, fallback) {
     const errorMessage = getFriendlyErrorMessage(err, fallback);
-    setError(errorMessage);
     notifyFormStatus(notifyMobileStatus, "error", errorMessage);
   }
 
@@ -61,14 +59,12 @@ export default function LoginPage() {
         getMinLengthValidationMessage(password, 6, "la contraseña"),
       );
       if (validationMessage) {
-        setError(validationMessage);
         notifyFormStatus(notifyMobileStatus, "error", validationMessage, {
           focusInvalidRoot: event.currentTarget,
         });
         return;
       }
       setSubmitting(true);
-      setError("");
       await login(email, password);
       navigate(getRedirectTarget(), { replace: true });
     } catch (err) {
@@ -83,13 +79,11 @@ export default function LoginPage() {
       setGoogleSubmitting(true);
       setGoogleCredential("");
       setGoogleLinkPassword("");
-      setError("");
       await loginWithGoogle(credential);
       navigate(getRedirectTarget(), { replace: true });
     } catch (err) {
       if (err?.status === 409 && err?.payload?.details?.code === GOOGLE_LINK_REQUIRED_CODE) {
         setGoogleCredential(credential);
-        setError("");
         return;
       }
       showError(err, "No se pudo iniciar sesión con Google.");
@@ -106,7 +100,6 @@ export default function LoginPage() {
     );
 
     if (validationMessage) {
-      setError(validationMessage);
       notifyFormStatus(notifyMobileStatus, "error", validationMessage, {
         focusInvalidRoot: event.currentTarget,
       });
@@ -115,7 +108,6 @@ export default function LoginPage() {
 
     try {
       setGoogleSubmitting(true);
-      setError("");
       await linkGoogleAccount(googleCredential, googleLinkPassword);
       navigate(getRedirectTarget(), { replace: true });
     } catch (err) {
@@ -128,7 +120,6 @@ export default function LoginPage() {
   function cancelGoogleLink() {
     setGoogleCredential("");
     setGoogleLinkPassword("");
-    setError("");
   }
 
   return (
@@ -190,7 +181,6 @@ export default function LoginPage() {
           </div>
         ) : null}
 
-        {error ? <p className="error-copy" role="alert">{error}</p> : null}
 
         <form onSubmit={handleSubmit} noValidate>
           <label className="field-group">
