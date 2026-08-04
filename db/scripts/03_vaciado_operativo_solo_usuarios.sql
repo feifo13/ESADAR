@@ -5,6 +5,7 @@
 --   - users
 --   - roles
 --   - user_roles
+--   - user_auth_identities
 -- Limpia todo el resto de datos de negocio/catálogo/configuración.
 -- Asegura que exista CUSTOMER y que usuarios sin rol administrativo/operativo
 -- queden como CUSTOMER.

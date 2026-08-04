@@ -63,6 +63,26 @@ export function AuthProvider({ children }) {
         setUser(response.user);
         return response.user;
       },
+      async loginWithGoogle(credential) {
+        const response = await apiFetch('/api/auth/google', {
+          method: 'POST',
+          body: { credential },
+        });
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+        setLoggingOut(false);
+        setUser(response.user);
+        return response.user;
+      },
+      async linkGoogleAccount(credential, password) {
+        const response = await apiFetch('/api/auth/google/link', {
+          method: 'POST',
+          body: { credential, password },
+        });
+        storage.remove(LEGACY_TOKEN_STORAGE_KEY);
+        setLoggingOut(false);
+        setUser(response.user);
+        return response.user;
+      },
       async register(payload) {
         const response = await apiFetch('/api/auth/register', {
           method: 'POST',

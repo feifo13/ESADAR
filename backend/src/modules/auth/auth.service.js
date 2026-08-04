@@ -3,11 +3,13 @@ import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
 import { comparePassword, hashPassword } from '../../utils/password.js';
 import { signAccessToken } from '../../utils/jwt.js';
-import { badRequest, notFound, unauthorized } from '../../utils/app-error.js';
+import { badRequest, conflict, notFound, unauthorized } from '../../utils/app-error.js';
 import { logAudit } from '../audit/audit.service.js';
 import { assertPasswordResetMailerReady, sendPasswordResetEmail, sendWelcomeUserEmail } from './auth.mailer.js';
 import { env } from '../../config/env.js';
 import { sanitizePublicUrl } from '../../utils/assets.js';
+import { verifyGoogleCredential } from './google-identity.js';
+import { isGoogleCustomerEligible } from './google-auth-policy.js';
 
 async function getUserByEmail(email, connection = pool) {
   const [rows] = await connection.execute(
@@ -71,6 +73,60 @@ async function getUserById(userId, connection = pool) {
   return normalizeUserRow(rows[0]);
 }
 
+
+async function getUserByGoogleSubject(subject, connection = pool) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        u.id,
+        u.first_name AS firstName,
+        u.last_name AS lastName,
+        u.birth_date AS birthDate,
+        u.email,
+        u.password_hash AS passwordHash,
+        u.address,
+        u.phone,
+        u.instagram,
+        u.is_active AS isActive,
+        u.last_login_at AS lastLoginAt,
+        GROUP_CONCAT(r.code ORDER BY r.code SEPARATOR ',') AS roleCodes
+      FROM user_auth_identities uai
+      INNER JOIN users u ON u.id = uai.user_id
+      LEFT JOIN user_roles ur ON ur.user_id = u.id
+      LEFT JOIN roles r ON r.id = ur.role_id
+      WHERE uai.provider = 'GOOGLE'
+        AND uai.provider_subject = ?
+      GROUP BY u.id
+      LIMIT 1
+    `,
+    [subject],
+  );
+
+  if (!rows.length) return null;
+  return normalizeUserRow(rows[0]);
+}
+
+async function getGoogleIdentityByUserId(userId, connection = pool) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        id,
+        user_id AS userId,
+        provider_subject AS providerSubject,
+        provider_email AS providerEmail,
+        email_verified AS emailVerified,
+        last_login_at AS lastLoginAt
+      FROM user_auth_identities
+      WHERE user_id = ?
+        AND provider = 'GOOGLE'
+      LIMIT 1
+    `,
+    [userId],
+  );
+
+  return rows[0] || null;
+}
+
 function normalizeUserRow(row) {
   return {
     id: row.id,
@@ -86,6 +142,14 @@ function normalizeUserRow(row) {
     lastLoginAt: row.lastLoginAt,
     roles: row.roleCodes ? String(row.roleCodes).split(',') : [],
   };
+}
+
+function assertGoogleCustomerEligible(user) {
+  if (!isGoogleCustomerEligible(user.roles)) {
+    throw conflict('Esta cuenta debe ingresar con email y contraseña.', {
+      code: 'GOOGLE_LOGIN_NOT_AVAILABLE',
+    });
+  }
 }
 
 function toAuthPayload(user) {
@@ -285,6 +349,387 @@ export async function loginUser(input, auditContext) {
   return { user: sanitizeUser(user), token };
 }
 
+
+
+
+async function completeGoogleLogin(user, googleIdentity, auditContext) {
+  if (!user.isActive) {
+    throw unauthorized('User is inactive');
+  }
+  assertGoogleCustomerEligible(user);
+
+  return withTransaction(async (connection) => {
+    const currentUser = await getUserById(user.id, connection);
+    if (!currentUser || !currentUser.isActive) {
+      throw unauthorized('User is inactive');
+    }
+    assertGoogleCustomerEligible(currentUser);
+
+    await connection.execute(
+      'UPDATE users SET last_login_at = NOW() WHERE id = ?',
+      [currentUser.id],
+    );
+    const [identityUpdate] = await connection.execute(
+      `
+        UPDATE user_auth_identities
+        SET
+          provider_email = ?,
+          email_verified = 1,
+          last_login_at = NOW()
+        WHERE user_id = ?
+          AND provider = 'GOOGLE'
+          AND provider_subject = ?
+      `,
+      [googleIdentity.email, currentUser.id, googleIdentity.subject],
+    );
+    if (identityUpdate.affectedRows !== 1) {
+      throw unauthorized('No se pudo validar la cuenta de Google.');
+    }
+
+    await logAudit(
+      {
+        actorUserId: currentUser.id,
+        actorLabel: currentUser.email,
+        actionCode: 'USER_LOGIN',
+        entityType: 'users',
+        entityId: currentUser.id,
+        metadataJson: {
+          roles: currentUser.roles,
+          provider: 'GOOGLE',
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    const refreshedUser = await getUserById(currentUser.id, connection);
+    const token = signAccessToken(toAuthPayload(refreshedUser));
+    return { user: sanitizeUser(refreshedUser), token };
+  });
+}
+
+async function createGoogleCustomer(googleIdentity, auditContext) {
+  const result = await withTransaction(async (connection) => {
+    const existingBySubject = await getUserByGoogleSubject(googleIdentity.subject, connection);
+    if (existingBySubject) {
+      return { alreadyLinkedUser: existingBySubject };
+    }
+
+    const existingByEmail = await getUserByEmail(googleIdentity.email, connection);
+    if (existingByEmail) {
+      assertGoogleCustomerEligible(existingByEmail);
+      throw conflict('Ya existe una cuenta ESADAR con este email.', {
+        code: 'GOOGLE_ACCOUNT_LINK_REQUIRED',
+        email: googleIdentity.email,
+      });
+    }
+
+    const [userInsert] = await connection.execute(
+      `
+        INSERT INTO users (
+          first_name,
+          last_name,
+          email,
+          password_hash,
+          is_active,
+          last_login_at,
+          created_by,
+          updated_by
+        ) VALUES (?, ?, ?, NULL, 1, NOW(), NULL, NULL)
+      `,
+      [googleIdentity.firstName, googleIdentity.lastName, googleIdentity.email],
+    );
+
+    const userId = userInsert.insertId;
+    const customerRoleId = await ensureCustomerRole(connection);
+
+    await connection.execute(
+      'INSERT INTO user_roles (user_id, role_id, assigned_by) VALUES (?, ?, NULL)',
+      [userId, customerRoleId],
+    );
+
+    await connection.execute(
+      `
+        INSERT INTO customers (
+          user_id,
+          first_name,
+          last_name,
+          email,
+          source,
+          created_by,
+          updated_by
+        ) VALUES (?, ?, ?, ?, 'REGISTERED', NULL, NULL)
+      `,
+      [userId, googleIdentity.firstName, googleIdentity.lastName, googleIdentity.email],
+    );
+
+    const [identityInsert] = await connection.execute(
+      `
+        INSERT INTO user_auth_identities (
+          user_id,
+          provider,
+          provider_subject,
+          provider_email,
+          email_verified,
+          last_login_at
+        ) VALUES (?, 'GOOGLE', ?, ?, 1, NOW())
+      `,
+      [userId, googleIdentity.subject, googleIdentity.email],
+    );
+
+    const user = await getUserById(userId, connection);
+
+    await logAudit(
+      {
+        actorUserId: userId,
+        actorLabel: user.email,
+        actionCode: 'USER_CREATED',
+        entityType: 'users',
+        entityId: userId,
+        afterJson: {
+          id: user.id,
+          email: user.email,
+          roles: user.roles,
+        },
+        metadataJson: {
+          mode: 'google-register',
+          provider: 'GOOGLE',
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    await logAudit(
+      {
+        actorUserId: userId,
+        actorLabel: user.email,
+        actionCode: 'GOOGLE_IDENTITY_LINKED',
+        entityType: 'user_auth_identities',
+        entityId: identityInsert.insertId,
+        metadataJson: {
+          provider: 'GOOGLE',
+          mode: 'google-register',
+        },
+        source: auditContext.source,
+        ipAddress: auditContext.ipAddress,
+        userAgent: auditContext.userAgent,
+      },
+      connection,
+    );
+
+    const token = signAccessToken(toAuthPayload(user));
+    return { user: sanitizeUser(user), token };
+  });
+
+  if (result.alreadyLinkedUser) {
+    return completeGoogleLogin(result.alreadyLinkedUser, googleIdentity, auditContext);
+  }
+
+  sendWelcomeUserEmail({
+    user: result.user,
+    publicSiteUrl: auditContext.publicSiteUrl,
+  }).catch((error) => {
+    console.warn('[auth] Google welcome email failed', error?.message || error);
+  });
+
+  return result;
+}
+
+export async function loginWithGoogle(input, auditContext) {
+  const googleIdentity = await verifyGoogleCredential(input.credential);
+  const linkedUser = await getUserByGoogleSubject(googleIdentity.subject);
+
+  if (linkedUser) {
+    return completeGoogleLogin(linkedUser, googleIdentity, auditContext);
+  }
+
+  const existingUser = await getUserByEmail(googleIdentity.email);
+  if (existingUser) {
+    if (!existingUser.isActive) {
+      throw unauthorized('User is inactive');
+    }
+    assertGoogleCustomerEligible(existingUser);
+    throw conflict('Ya existe una cuenta ESADAR con este email.', {
+      code: 'GOOGLE_ACCOUNT_LINK_REQUIRED',
+      email: googleIdentity.email,
+    });
+  }
+
+  try {
+    return await createGoogleCustomer(googleIdentity, auditContext);
+  } catch (error) {
+    if (error?.code !== 'ER_DUP_ENTRY') throw error;
+
+    const raceLinkedUser = await getUserByGoogleSubject(googleIdentity.subject);
+    if (raceLinkedUser) {
+      return completeGoogleLogin(raceLinkedUser, googleIdentity, auditContext);
+    }
+
+    const raceExistingUser = await getUserByEmail(googleIdentity.email);
+    if (raceExistingUser) {
+      if (!raceExistingUser.isActive) {
+        throw unauthorized('User is inactive');
+      }
+      assertGoogleCustomerEligible(raceExistingUser);
+      throw conflict('Ya existe una cuenta ESADAR con este email.', {
+        code: 'GOOGLE_ACCOUNT_LINK_REQUIRED',
+        email: googleIdentity.email,
+      });
+    }
+
+    throw error;
+  }
+}
+
+export async function linkGoogleAccount(input, auditContext) {
+  const googleIdentity = await verifyGoogleCredential(input.credential);
+  const linkedUser = await getUserByGoogleSubject(googleIdentity.subject);
+
+  if (linkedUser) {
+    return completeGoogleLogin(linkedUser, googleIdentity, auditContext);
+  }
+
+  const user = await getUserByEmail(googleIdentity.email);
+  if (!user || !user.isActive) {
+    throw unauthorized('No se pudo vincular la cuenta de Google.');
+  }
+
+  assertGoogleCustomerEligible(user);
+
+  if (!user.passwordHash) {
+    throw conflict('Esta cuenta no admite vinculación mediante contraseña.', {
+      code: 'GOOGLE_PASSWORD_LOGIN_UNAVAILABLE',
+    });
+  }
+
+  const matches = await comparePassword(input.password, user.passwordHash);
+  if (!matches) {
+    throw unauthorized('Contraseña incorrecta.');
+  }
+
+  try {
+    return await withTransaction(async (connection) => {
+      const currentUser = await getUserById(user.id, connection);
+      if (!currentUser || !currentUser.isActive) {
+        throw unauthorized('No se pudo vincular la cuenta de Google.');
+      }
+      assertGoogleCustomerEligible(currentUser);
+      if (currentUser.passwordHash !== user.passwordHash) {
+        throw unauthorized('La contraseña cambió. Intenta nuevamente.');
+      }
+
+      const identityBySubject = await getUserByGoogleSubject(googleIdentity.subject, connection);
+      if (identityBySubject && identityBySubject.id !== currentUser.id) {
+        throw conflict('Esta cuenta de Google ya está vinculada a otro usuario.', {
+          code: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+        });
+      }
+
+      let identity = await getGoogleIdentityByUserId(currentUser.id, connection);
+      let linkedNow = false;
+
+      if (identity && identity.providerSubject !== googleIdentity.subject) {
+        throw conflict('La cuenta ESADAR ya está vinculada a otra cuenta de Google.', {
+          code: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+        });
+      }
+
+      if (!identity) {
+        const [identityInsert] = await connection.execute(
+          `
+            INSERT INTO user_auth_identities (
+              user_id,
+              provider,
+              provider_subject,
+              provider_email,
+              email_verified,
+              last_login_at
+            ) VALUES (?, 'GOOGLE', ?, ?, 1, NOW())
+          `,
+          [currentUser.id, googleIdentity.subject, googleIdentity.email],
+        );
+        identity = { id: identityInsert.insertId };
+        linkedNow = true;
+      } else {
+        await connection.execute(
+          `
+            UPDATE user_auth_identities
+            SET
+              provider_email = ?,
+              email_verified = 1,
+              last_login_at = NOW()
+            WHERE id = ?
+          `,
+          [googleIdentity.email, identity.id],
+        );
+      }
+
+      await connection.execute(
+        'UPDATE users SET last_login_at = NOW() WHERE id = ?',
+        [currentUser.id],
+      );
+
+      if (linkedNow) {
+        await logAudit(
+          {
+            actorUserId: currentUser.id,
+            actorLabel: currentUser.email,
+            actionCode: 'GOOGLE_IDENTITY_LINKED',
+            entityType: 'user_auth_identities',
+            entityId: identity.id,
+            metadataJson: {
+              provider: 'GOOGLE',
+              mode: 'password-confirmed-link',
+            },
+            source: auditContext.source,
+            ipAddress: auditContext.ipAddress,
+            userAgent: auditContext.userAgent,
+          },
+          connection,
+        );
+      }
+
+      await logAudit(
+        {
+          actorUserId: currentUser.id,
+          actorLabel: currentUser.email,
+          actionCode: 'USER_LOGIN',
+          entityType: 'users',
+          entityId: currentUser.id,
+          metadataJson: {
+            roles: currentUser.roles,
+            provider: 'GOOGLE',
+            linkedNow,
+          },
+          source: auditContext.source,
+          ipAddress: auditContext.ipAddress,
+          userAgent: auditContext.userAgent,
+        },
+        connection,
+      );
+
+      const refreshedUser = await getUserById(currentUser.id, connection);
+      const token = signAccessToken(toAuthPayload(refreshedUser));
+      return { user: sanitizeUser(refreshedUser), token };
+    });
+  } catch (error) {
+    if (error?.code !== 'ER_DUP_ENTRY') throw error;
+
+    const raceLinkedUser = await getUserByGoogleSubject(googleIdentity.subject);
+    if (raceLinkedUser?.id === user.id) {
+      return completeGoogleLogin(raceLinkedUser, googleIdentity, auditContext);
+    }
+
+    throw conflict('Esta cuenta de Google ya está vinculada a otro usuario.', {
+      code: 'GOOGLE_ACCOUNT_ALREADY_LINKED',
+    });
+  }
+}
 
 
 export async function requestPasswordReset(input, auditContext) {

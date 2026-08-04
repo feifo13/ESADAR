@@ -113,6 +113,9 @@ export const env = {
     process.env.AUTH_COOKIE_MAX_AGE || process.env.JWT_EXPIRES_IN || "7d",
     7 * 24 * 60 * 60 * 1000,
   ),
+  google: {
+    clientId: String(process.env.GOOGLE_CLIENT_ID || "").trim(),
+  },
   uploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR || "uploads"),
   articleUploadDir: path.resolve(
     process.cwd(),

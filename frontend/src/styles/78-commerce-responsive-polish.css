@@ -392,3 +392,67 @@ select.input,
     cursor: not-allowed !important;
   }
 }
+
+
+/* === Google authentication === */
+.google-auth-block {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.google-auth-button-shell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-height: 44px;
+}
+
+.google-auth-button {
+  width: min(400px, 100%);
+  min-height: 44px;
+}
+
+.google-auth-button--disabled {
+  opacity: 0.62;
+}
+
+.google-auth-button-blocker {
+  position: absolute;
+  inset: 0;
+  cursor: wait;
+}
+
+.auth-divider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  height: 1px;
+  background: var(--border);
+}
+
+.google-link-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.google-link-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

@@ -1,5 +1,5 @@
-import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from './auth.schemas.js';
-import { getCurrentUser, loginUser, registerUser, requestPasswordReset, resetUserPassword } from './auth.service.js';
+import { forgotPasswordSchema, googleCredentialSchema, googleLinkSchema, loginSchema, registerSchema, resetPasswordSchema } from './auth.schemas.js';
+import { getCurrentUser, linkGoogleAccount, loginUser, loginWithGoogle, registerUser, requestPasswordReset, resetUserPassword } from './auth.service.js';
 import { clearAuthCookie, setAuthCookie } from './auth.cookies.js';
 
 function getAuditContext(req) {
@@ -22,6 +22,20 @@ export async function register(req, res) {
 export async function login(req, res) {
   const input = loginSchema.parse(req.body);
   const result = await loginUser(input, getAuditContext(req));
+  setAuthCookie(res, result.token);
+  return res.json({ ok: true, user: result.user });
+}
+
+export async function googleLogin(req, res) {
+  const input = googleCredentialSchema.parse(req.body);
+  const result = await loginWithGoogle(input, getAuditContext(req));
+  setAuthCookie(res, result.token);
+  return res.json({ ok: true, user: result.user });
+}
+
+export async function googleLink(req, res) {
+  const input = googleLinkSchema.parse(req.body);
+  const result = await linkGoogleAccount(input, getAuditContext(req));
   setAuthCookie(res, result.token);
   return res.json({ ok: true, user: result.user });
 }

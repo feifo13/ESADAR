@@ -2,7 +2,7 @@
 -- ESADAR SANDBOX - VACIADO OPERATIVO + STOCK 100 + SEED MINIMO
 -- =========================================================
 -- Preserva:
---   - users, roles, user_roles
+--   - users, roles, user_roles y user_auth_identities
 --   - customers vinculados a users y sus direcciones
 --   - articles y article_images, sin tocar archivos fisicos del servidor
 --   - catálogos maestros necesarios

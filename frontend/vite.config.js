@@ -1,6 +1,10 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const GOOGLE_POPUP_RESPONSE_HEADERS = {
+  'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+};
+
 function normalizePublicSiteUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
 }
@@ -36,6 +40,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), htmlSocialMetaPlugin(publicSiteUrl)],
     server: {
       port: 5173,
+      headers: GOOGLE_POPUP_RESPONSE_HEADERS,
       proxy: {
         '/api': {
           target: backendProxyTarget,
