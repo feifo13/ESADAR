@@ -125,6 +125,7 @@ export default function RootLayout() {
   const isFooterHiddenView = [
     "/guia-de-compra",
     "/terminos-y-condiciones",
+    "/politica-de-privacidad",
   ].includes(location.pathname);
   const showBreadcrumbs = true;
   const shouldNoIndex =

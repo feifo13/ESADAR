@@ -20,6 +20,9 @@ export default function Footer() {
             <Link to="/terminos-y-condiciones" className="footer-terms-link">
               Términos y condiciones
             </Link>
+            <Link to="/politica-de-privacidad" className="footer-terms-link">
+              Política de privacidad
+            </Link>
           </div>
         </div>
 

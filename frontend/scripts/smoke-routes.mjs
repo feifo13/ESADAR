@@ -5,6 +5,8 @@ const ROUTES = [
   '/articles',
   '/articles/buzo-phantom-xl-buzos-xl',
   '/articles/buzo-phantom-xl-buzos-xl/offer',
+  '/terminos-y-condiciones',
+  '/politica-de-privacidad',
   '/checkout/resumen',
   '/checkout/comprador',
   '/cuenta/guardados',

@@ -422,12 +422,23 @@ export default function FooterScrollScene() {
               ))}
             </div>
           </div>
-          <Link
-            to="/terminos-y-condiciones"
-            className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
+          <div
+            className="footer-scroll-scene__legal-links"
+            aria-label="Información legal"
           >
-            Términos y condiciones
-          </Link>
+            <Link
+              to="/terminos-y-condiciones"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
+            >
+              Términos y condiciones
+            </Link>
+            <Link
+              to="/politica-de-privacidad"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--privacy"
+            >
+              Política de privacidad
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

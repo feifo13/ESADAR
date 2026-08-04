@@ -10,6 +10,7 @@ const ROUTE_LABELS = {
   avisos: "Avisos",
   "guia-de-compra": "Guía de compra",
   "terminos-y-condiciones": "Términos y condiciones",
+  "politica-de-privacidad": "Política de privacidad",
 };
 
 const CHECKOUT_LABELS = {

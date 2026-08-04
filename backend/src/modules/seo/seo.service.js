@@ -144,6 +144,15 @@ function buildSiteFallbackPages() {
       isIndexable: true,
     },
     {
+      route: "/politica-de-privacidad",
+      title: `Política de privacidad | ${env.storeName}`,
+      description:
+        "Cómo ESADAR recopila, usa, protege y conserva datos personales, incluido el acceso mediante Google.",
+      canonicalUrl: null,
+      ogImage: getSocialShareImageUrl(),
+      isIndexable: true,
+    },
+    {
       route: "/contact",
       title: `Contacto | ${env.storeName}`,
       description:
@@ -261,6 +270,7 @@ export async function buildSitemapXml() {
     "/about",
     "/guia-de-compra",
     "/terminos-y-condiciones",
+    "/politica-de-privacidad",
     "/contact",
   ];
   const pageOverrides = new Map(

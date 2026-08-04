@@ -107,6 +107,19 @@
   width: min(680px, 100%);
 }
 
+.footer-scroll-scene__legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.4vw, 16px);
+  width: min(680px, 100%);
+}
+
+.footer-scroll-scene__legal-links .footer-scroll-scene__copy {
+  min-width: min(240px, 74vw);
+}
+
 .footer-scroll-scene__copy {
   margin: 0;
   min-width: min(260px, 74vw);
@@ -277,9 +290,14 @@
     max-width: calc(100vw - 32px);
   }
 
-  .footer-scroll-scene__actions {
+  .footer-scroll-scene__actions,
+  .footer-scroll-scene__legal-links {
     width: 100%;
     gap: 10px;
+  }
+
+  .footer-scroll-scene__legal-links .footer-scroll-scene__copy {
+    width: 100%;
   }
 
   .footer-scroll-scene__copy {
