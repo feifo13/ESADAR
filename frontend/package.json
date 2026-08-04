@@ -10,8 +10,9 @@
     "check:imports": "node scripts/check-unused-imports.mjs",
     "test:smoke": "node scripts/smoke-routes.mjs",
     "test:visual": "node scripts/visual-smoke.mjs",
-    "test:qa": "npm run check:imports && npm run test:google-auth && npm run build && npm run test:smoke && npm run test:visual",
-    "test:google-auth": "node --test scripts/google-identity-runtime.test.mjs"
+    "test:qa": "npm run check:imports && npm run test:google-auth && npm run test:manual-sales && npm run build && npm run test:smoke && npm run test:visual",
+    "test:google-auth": "node --test scripts/google-identity-runtime.test.mjs",
+    "test:manual-sales": "node --test scripts/manual-sales-ui.test.mjs"
   },
   "dependencies": {
     "motion": "^12.38.0",

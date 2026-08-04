@@ -16,6 +16,8 @@ import {
   listAdminArticles,
   listPublicArticles,
   reorderArticleImages,
+  registerArticleInventoryReturn,
+  registerArticleManualSale,
   updateArticleImage,
   updateArticle,
   updateArticleQuickFlags,
@@ -28,10 +30,12 @@ import {
   articleExportQuerySchema,
   articleImageReorderSchema,
   articleImageUpdateSchema,
+  articleInventoryReturnSchema,
   articleImportOptionsSchema,
   articleImportTemplateQuerySchema,
   adminArticleBatchActionSchema,
   articleQuickFlagsSchema,
+  articleManualSaleSchema,
   articleStatusSchema,
   articleStockAdjustmentSchema,
   articleUpdateSchema,
@@ -234,6 +238,26 @@ export async function deleteAdminArticle(req, res) {
 export async function createAdminArticleStockAdjustment(req, res) {
   const input = articleStockAdjustmentSchema.parse(req.body);
   const article = await adjustArticleStock(
+    parsePositiveIntParam(req.params.id, 'id'),
+    input,
+    getAuditContext(req),
+  );
+  return res.json({ ok: true, article });
+}
+
+export async function createAdminArticleManualSale(req, res) {
+  const input = articleManualSaleSchema.parse(req.body);
+  const article = await registerArticleManualSale(
+    parsePositiveIntParam(req.params.id, 'id'),
+    input,
+    getAuditContext(req),
+  );
+  return res.json({ ok: true, article });
+}
+
+export async function createAdminArticleInventoryReturn(req, res) {
+  const input = articleInventoryReturnSchema.parse(req.body);
+  const article = await registerArticleInventoryReturn(
     parsePositiveIntParam(req.params.id, 'id'),
     input,
     getAuditContext(req),

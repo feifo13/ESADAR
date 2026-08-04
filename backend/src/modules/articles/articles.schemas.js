@@ -61,6 +61,7 @@ const articleBaseShape = {
   quantityAvailable: z.coerce.number().int().min(0).optional(),
   quantityReserved: z.coerce.number().int().min(0).default(0),
   quantitySold: z.coerce.number().int().min(0).default(0),
+  initialStockState: z.enum(['AVAILABLE', 'SOLD_OUT']).optional(),
   status: articlePublicationStatusSchema.default('ACTIVE'),
   originNotes: z.string().trim().optional().nullable(),
 };
@@ -111,7 +112,10 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
   const quantityAvailable =
     value.quantityAvailable == null ? value.quantityTotal : value.quantityAvailable;
 
-  if (quantityTotalIsInvalid(value.quantityTotal, quantityAvailable, value.quantityReserved, value.quantitySold)) {
+  if (
+    value.initialStockState == null &&
+    quantityTotalIsInvalid(value.quantityTotal, quantityAvailable, value.quantityReserved, value.quantitySold)
+  ) {
     ctx.addIssue({
       code: 'custom',
       path: ['quantityTotal'],
@@ -124,6 +128,14 @@ export const articleCreateSchema = articleCreateBaseSchema.superRefine((value, c
       code: 'custom',
       path: ['allowOffers'],
       message: 'Articles with discount cannot allow offers',
+    });
+  }
+
+  if (value.initialStockState === 'SOLD_OUT' && value.quantityTotal <= 0) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['quantityTotal'],
+      message: 'quantityTotal must be greater than zero when the article starts sold out',
     });
   }
 
@@ -147,6 +159,16 @@ export const articleStatusSchema = z.object({
 export const articleStockAdjustmentSchema = z.object({
   quantityAvailable: z.coerce.number().int().min(0),
   reason: z.string().trim().min(2).max(255),
+});
+
+export const articleManualSaleSchema = z.object({
+  quantity: z.coerce.number().int().min(1).default(1),
+  reason: z.string().trim().min(2).max(255).optional().nullable(),
+});
+
+export const articleInventoryReturnSchema = z.object({
+  quantity: z.coerce.number().int().min(1).default(1),
+  reason: z.string().trim().min(2).max(255).optional().nullable(),
 });
 
 export const articleQuickFlagsSchema = z

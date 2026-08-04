@@ -201,3 +201,51 @@ img[data-fallback="true"] {
   );
   object-fit: cover;
 }
+
+.admin-inventory-dialog {
+  width: min(520px, 100%);
+}
+
+.admin-inventory-dialog-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-inventory-semantic-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-inventory-semantic-actions p {
+  margin: 4px 0 0;
+}
+
+.admin-inventory-row-action {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .admin-inventory-dialog-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .admin-inventory-dialog {
+    border-radius: 22px;
+  }
+
+  .admin-inventory-semantic-actions,
+  .admin-inventory-semantic-actions .toolbar-inline {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .admin-inventory-semantic-actions .button,
+  .admin-inventory-semantic-actions .linklike {
+    width: 100%;
+    justify-content: center;
+  }
+}

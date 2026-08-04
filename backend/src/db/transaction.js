@@ -1,7 +1,7 @@
 import { pool } from './pool.js';
 
-export async function withTransaction(handler) {
-  const connection = await pool.getConnection();
+export async function withTransaction(handler, connectionPool = pool) {
+  const connection = await connectionPool.getConnection();
   try {
     await connection.beginTransaction();
     const result = await handler(connection);

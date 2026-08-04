@@ -38,6 +38,13 @@ function shouldIconizeControl(control) {
   if (!control) return false;
 
   if (
+    control.dataset.mobileAction === 'text' ||
+    control.classList.contains('admin-inventory-row-action')
+  ) {
+    return false;
+  }
+
+  if (
     control.classList.contains('table-strong-link') ||
     control.classList.contains('table-thumb-link') ||
     control.classList.contains('icon-action-button') ||

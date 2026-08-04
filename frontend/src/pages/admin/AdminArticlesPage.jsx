@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import AdminPagination from "../../components/admin/AdminPagination.jsx";
 import AdminBatchSnackbar from "../../components/admin/AdminBatchSnackbar.jsx";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
+import AdminInventoryMovementDialog from "../../components/admin/AdminInventoryMovementDialog.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import SortableTh from "../../components/SortableTh.jsx";
@@ -22,6 +23,7 @@ import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiDownload, apiFetch } from "../../lib/api.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
+import { getManualInventoryActionAvailability } from "../../lib/adminInventory.js";
 import { buildQueryString } from "../../lib/query.js";
 import { focusValidationTarget, notifyFormStatus } from "../../lib/validation.js";
 import AppLoader from "../../components/AppLoader.jsx";
@@ -164,6 +166,7 @@ export default function AdminArticlesPage() {
   const [batchBusy, setBatchBusy] = useState(false);
   const [lotOptions, setLotOptions] = useState([]);
   const [batchLotId, setBatchLotId] = useState("");
+  const [inventoryDialog, setInventoryDialog] = useState(null);
 
   const isSuperAdmin = user?.roles?.includes("SUPER_ADMIN");
 
@@ -681,6 +684,24 @@ export default function AdminArticlesPage() {
         return rest;
       });
     }
+  }
+
+  function handleInventoryMovementCompleted(updatedArticle) {
+    const nextArticle = normalizeArticleFlags(updatedArticle);
+    setItems((current) => {
+      const nextItems = articleStillMatchesVisibleFilters(nextArticle, filters)
+        ? current.map((item) =>
+            Number(item.id) === Number(nextArticle.id) ? nextArticle : item,
+          )
+        : current.filter((item) => Number(item.id) !== Number(nextArticle.id));
+      if (nextItems.length < current.length) {
+        setPagination((currentPagination) => ({
+          ...currentPagination,
+          total: Math.max(0, Number(currentPagination.total || 0) - 1),
+        }));
+      }
+      return nextItems;
+    });
   }
 
   return (
@@ -1327,6 +1348,8 @@ export default function AdminArticlesPage() {
                       article.sizeText ||
                       article.sizeCode ||
                       "Sin talle";
+                    const inventoryActions =
+                      getManualInventoryActionAvailability(article);
                     return (
                       <tr key={article.id}>
                         {isSuperAdmin ? (
@@ -1448,6 +1471,44 @@ export default function AdminArticlesPage() {
                         </td>
                         <td>
                           <div className="table-actions">
+                            {Number(article.quantityAvailable || 0) > 0 ? (
+                              <button
+                                type="button"
+                                className="button button-secondary button-compact admin-inventory-row-action"
+                                data-mobile-action="text"
+                                aria-label={`Registrar venta manual de ${article.title}`}
+                                disabled={
+                                  inventoryActions.saleBlockedByReservation ||
+                                  getPublicationStatus(article) !== "ACTIVE"
+                                }
+                                title={
+                                  inventoryActions.saleBlockedByReservation
+                                    ? "Resolvé primero las reservas pendientes"
+                                    : getPublicationStatus(article) !== "ACTIVE"
+                                      ? "La publicación debe estar activa"
+                                      : "Registrar venta manual"
+                                }
+                                onClick={() =>
+                                  setInventoryDialog({ article, mode: "sale" })
+                                }
+                              >
+                                Registrar venta
+                              </button>
+                            ) : null}
+                            {inventoryActions.isSoldOutBySale ? (
+                              <button
+                                type="button"
+                                className="button button-secondary button-compact admin-inventory-row-action"
+                                data-mobile-action="text"
+                                aria-label={`Registrar devolución de ${article.title}`}
+                                title="Registrar devolución"
+                                onClick={() =>
+                                  setInventoryDialog({ article, mode: "return" })
+                                }
+                              >
+                                Registrar devolución
+                              </button>
+                            ) : null}
                             <Link
                               to={`/admin/articles/${article.id}/stock`}
                               className="button button-secondary button-compact admin-icon-action"
@@ -1520,6 +1581,12 @@ export default function AdminArticlesPage() {
           }
         />
       </section>
+      <AdminInventoryMovementDialog
+        article={inventoryDialog?.article || null}
+        mode={inventoryDialog?.mode || null}
+        onClose={() => setInventoryDialog(null)}
+        onCompleted={handleInventoryMovementCompleted}
+      />
     </div>
   );
 }

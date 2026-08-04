@@ -1,5 +1,5 @@
 import { pool } from '../../db/pool.js';
-import { badRequest } from '../../utils/app-error.js';
+import { badRequest, conflict } from '../../utils/app-error.js';
 import { INVENTORY_MOVEMENT_TYPES } from './inventory.constants.js';
 import {
   findInventoryByArticleId,
@@ -44,6 +44,23 @@ function assertInventoryBalance(inventory) {
     quantitySold,
     quantityLost,
   };
+}
+
+async function resolveAdministrativeMovementInventory(
+  connection,
+  articleId,
+  lockedInventory,
+) {
+  if (lockedInventory == null) {
+    return getInventoryByArticleIdForUpdate(connection, articleId);
+  }
+
+  const inventory = assertInventoryBalance(lockedInventory);
+  if (Number(inventory.articleId) !== Number(articleId)) {
+    throw badRequest('El inventario bloqueado no corresponde al artículo solicitado.');
+  }
+
+  return inventory;
 }
 
 function buildMovementFromTransition({
@@ -259,6 +276,107 @@ export async function confirmSale(connection, {
   }));
 
   return { before, after };
+}
+
+export async function registerManualSale(connection, {
+  articleId,
+  quantity,
+  userId = null,
+  reason = 'Venta manual registrada desde administración',
+  lockedInventory = null,
+}) {
+  const quantityToSell = normalizePositiveQuantity(quantity, 'La cantidad a vender');
+  const before = await resolveAdministrativeMovementInventory(
+    connection,
+    articleId,
+    lockedInventory,
+  );
+
+  if (before.quantityReserved > 0) {
+    throw conflict(
+      'El artículo tiene unidades reservadas. Resolvé la reserva u orden antes de registrar una venta manual.',
+      { code: 'INVENTORY_RESERVED' },
+    );
+  }
+
+  if (before.quantityAvailable <= 0) {
+    throw conflict('El artículo ya está agotado.', { code: 'ARTICLE_ALREADY_SOLD_OUT' });
+  }
+
+  if (before.quantityAvailable < quantityToSell) {
+    throw conflict(
+      `No hay stock disponible suficiente para vender ${quantityToSell} unidad(es).`,
+      {
+        code: 'INSUFFICIENT_AVAILABLE_STOCK',
+        quantityAvailable: before.quantityAvailable,
+      },
+    );
+  }
+
+  const after = assertInventoryBalance({
+    ...before,
+    quantityAvailable: before.quantityAvailable - quantityToSell,
+    quantitySold: before.quantitySold + quantityToSell,
+    updatedBy: userId || null,
+  });
+
+  await updateInventory(connection, after);
+  await recordInventoryMovement(connection, buildMovementFromTransition({
+    articleId,
+    before,
+    after,
+    movementType: INVENTORY_MOVEMENT_TYPES.SALE,
+    orderId: null,
+    reason,
+    userId,
+  }));
+
+  return { before, after, soldQuantity: quantityToSell };
+}
+
+export async function registerInventoryReturn(connection, {
+  articleId,
+  quantity,
+  userId = null,
+  reason = 'Devolución registrada desde administración',
+  lockedInventory = null,
+}) {
+  const quantityToReturn = normalizePositiveQuantity(quantity, 'La cantidad a devolver');
+  const before = await resolveAdministrativeMovementInventory(
+    connection,
+    articleId,
+    lockedInventory,
+  );
+
+  if (before.quantitySold < quantityToReturn) {
+    throw conflict(
+      `No se pueden devolver ${quantityToReturn} unidad(es); el artículo tiene ${before.quantitySold} vendida(s).`,
+      {
+        code: 'INSUFFICIENT_SOLD_STOCK',
+        quantitySold: before.quantitySold,
+      },
+    );
+  }
+
+  const after = assertInventoryBalance({
+    ...before,
+    quantityAvailable: before.quantityAvailable + quantityToReturn,
+    quantitySold: before.quantitySold - quantityToReturn,
+    updatedBy: userId || null,
+  });
+
+  await updateInventory(connection, after);
+  await recordInventoryMovement(connection, buildMovementFromTransition({
+    articleId,
+    before,
+    after,
+    movementType: INVENTORY_MOVEMENT_TYPES.RETURN,
+    orderId: null,
+    reason,
+    userId,
+  }));
+
+  return { before, after, returnedQuantity: quantityToReturn };
 }
 
 export async function adjustInventory(connection, {

@@ -4,6 +4,8 @@ import {
   adjustInventory,
   confirmSale,
   createInitialInventory,
+  registerInventoryReturn,
+  registerManualSale,
   releaseReservation,
   reserveForOrder,
 } from '../src/modules/inventory/inventory.service.js';
@@ -256,4 +258,143 @@ test('confirmSale rejects sales without enough reserved stock', async () => {
     confirmSale(connection, { articleId: 40, quantity: 2, orderId: 104 }),
     /stock reservado suficiente/,
   );
+});
+
+test('createInitialInventory can create an article already sold without a SALE movement', async () => {
+  const connection = makeConnection();
+
+  await createInitialInventory(connection, {
+    articleId: 41,
+    quantityTotal: 2,
+    quantityAvailable: 0,
+    quantitySold: 2,
+    quantityLost: 0,
+    reason: 'Articulo ingresado inicialmente como vendido',
+  });
+
+  assert.equal(connection.state.inventory.quantityAvailable, 0);
+  assert.equal(connection.state.inventory.quantitySold, 2);
+  assert.equal(connection.state.inventory.quantityLost, 0);
+  assert.equal(connection.state.movements.length, 1);
+  assert.equal(connection.state.movements[0].movementType, INVENTORY_MOVEMENT_TYPES.INITIAL_STOCK);
+  assert.equal(connection.state.movements[0].soldDelta, 2);
+});
+
+test('registerManualSale sells one unique article and produces SOLD_OUT inventory', async () => {
+  const connection = makeConnection(makeInventory(50, {
+    quantityTotal: 1,
+    quantityAvailable: 1,
+  }));
+
+  const result = await registerManualSale(connection, {
+    articleId: 50,
+    quantity: 1,
+    userId: 9,
+    reason: 'Venta por Instagram',
+  });
+
+  assertLastSelectLocked(connection);
+  assert.equal(result.soldQuantity, 1);
+  assert.equal(connection.state.inventory.quantityAvailable, 0);
+  assert.equal(connection.state.inventory.quantitySold, 1);
+  assert.equal(connection.state.inventory.quantityLost, 0);
+  assert.equal(connection.state.movements.at(-1).movementType, INVENTORY_MOVEMENT_TYPES.SALE);
+  assert.equal(connection.state.movements.at(-1).orderId, null);
+  assert.equal(connection.state.movements.at(-1).availableDelta, -1);
+  assert.equal(connection.state.movements.at(-1).soldDelta, 1);
+  assert.equal(connection.state.movements.at(-1).createdBy, 9);
+});
+
+test('registerManualSale supports partial sales and preserves the inventory invariant', async () => {
+  const connection = makeConnection(makeInventory(51, {
+    quantityTotal: 5,
+    quantityAvailable: 4,
+    quantitySold: 1,
+  }));
+
+  await registerManualSale(connection, {
+    articleId: 51,
+    quantity: 2,
+  });
+
+  const inventory = connection.state.inventory;
+  assert.equal(inventory.quantityAvailable, 2);
+  assert.equal(inventory.quantitySold, 3);
+  assert.equal(inventory.quantityLost, 0);
+  assert.equal(
+    inventory.quantityTotal,
+    inventory.quantityAvailable + inventory.quantityReserved + inventory.quantitySold + inventory.quantityLost,
+  );
+});
+
+test('registerManualSale rejects reservations, overselling and a repeated exhausted sale', async () => {
+  const reservedConnection = makeConnection(makeInventory(52, {
+    quantityAvailable: 2,
+    quantityReserved: 1,
+  }));
+  await assert.rejects(
+    registerManualSale(reservedConnection, { articleId: 52, quantity: 1 }),
+    (error) => error.statusCode === 409 && error.details?.code === 'INVENTORY_RESERVED',
+  );
+
+  const oversellConnection = makeConnection(makeInventory(53, {
+    quantityTotal: 2,
+    quantityAvailable: 2,
+  }));
+  await assert.rejects(
+    registerManualSale(oversellConnection, { articleId: 53, quantity: 3 }),
+    (error) => error.statusCode === 409 && error.details?.code === 'INSUFFICIENT_AVAILABLE_STOCK',
+  );
+
+  const exhaustedConnection = makeConnection(makeInventory(54, {
+    quantityTotal: 1,
+    quantityAvailable: 1,
+  }));
+  await registerManualSale(exhaustedConnection, { articleId: 54, quantity: 1 });
+  await assert.rejects(
+    registerManualSale(exhaustedConnection, { articleId: 54, quantity: 1 }),
+    (error) => error.statusCode === 409 && error.details?.code === 'ARTICLE_ALREADY_SOLD_OUT',
+  );
+  assert.equal(exhaustedConnection.state.inventory.quantitySold, 1);
+  assert.equal(exhaustedConnection.state.movements.length, 1);
+});
+
+test('registerInventoryReturn moves sold stock back to available and records RETURN', async () => {
+  const connection = makeConnection(makeInventory(55, {
+    quantityTotal: 4,
+    quantityAvailable: 1,
+    quantitySold: 3,
+  }));
+
+  await registerInventoryReturn(connection, {
+    articleId: 55,
+    quantity: 2,
+    userId: 11,
+    reason: 'Venta anulada',
+  });
+
+  assertLastSelectLocked(connection);
+  assert.equal(connection.state.inventory.quantityAvailable, 3);
+  assert.equal(connection.state.inventory.quantitySold, 1);
+  assert.equal(connection.state.inventory.quantityLost, 0);
+  assert.equal(connection.state.movements.at(-1).movementType, INVENTORY_MOVEMENT_TYPES.RETURN);
+  assert.equal(connection.state.movements.at(-1).orderId, null);
+  assert.equal(connection.state.movements.at(-1).availableDelta, 2);
+  assert.equal(connection.state.movements.at(-1).soldDelta, -2);
+});
+
+test('registerInventoryReturn rejects quantities greater than sold stock', async () => {
+  const connection = makeConnection(makeInventory(56, {
+    quantityTotal: 3,
+    quantityAvailable: 2,
+    quantitySold: 1,
+  }));
+
+  await assert.rejects(
+    registerInventoryReturn(connection, { articleId: 56, quantity: 2 }),
+    (error) => error.statusCode === 409 && error.details?.code === 'INSUFFICIENT_SOLD_STOCK',
+  );
+  assert.equal(connection.state.inventory.quantityAvailable, 2);
+  assert.equal(connection.state.inventory.quantitySold, 1);
+  assert.equal(connection.state.movements.length, 0);
 });

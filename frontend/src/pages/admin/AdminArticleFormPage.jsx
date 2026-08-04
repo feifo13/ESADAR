@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
+import AdminInventoryMovementDialog from "../../components/admin/AdminInventoryMovementDialog.jsx";
 import PreviousNextControls from "../../components/PreviousNextControls.jsx";
 import ArticleImageSlotManager from "../../components/admin/ArticleImageSlotManager.jsx";
 import {
@@ -18,6 +19,11 @@ import {
 import { useMobileMenu } from "../../contexts/MobileMenuContext.jsx";
 import { focusFieldAfterRender, notifyFormStatus } from "../../lib/validation.js";
 import { scrollElementIntoViewWithSiteChromeOffset } from "../../lib/siteChromeOffset.js";
+import {
+  buildInitialInventorySnapshot,
+  getManualInventoryActionAvailability,
+  INITIAL_STOCK_STATES,
+} from "../../lib/adminInventory.js";
 import AppLoader from "../../components/AppLoader.jsx";
 
 const FORM_STEPS = [
@@ -186,6 +192,8 @@ function toFormState(article) {
     quantityAvailable: article?.quantityAvailable ?? 1,
     quantityReserved: article?.quantityReserved ?? 0,
     quantitySold: article?.quantitySold ?? 0,
+    quantityLost: article?.quantityLost ?? 0,
+    initialStockState: INITIAL_STOCK_STATES.AVAILABLE,
     stockAdjustmentReason: "Ajuste administrativo",
     status: article?.publicationStatus || article?.status || "ACTIVE",
     originNotes: article?.originNotes || "",
@@ -315,6 +323,8 @@ export default function AdminArticleFormPage() {
   const [metaAdvancedOpen, setMetaAdvancedOpen] = useState(false);
   const [costingSettings, setCostingSettings] = useState(null);
   const [lotOptions, setLotOptions] = useState([]);
+  const [loadedArticle, setLoadedArticle] = useState(null);
+  const [inventoryDialogMode, setInventoryDialogMode] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -372,6 +382,7 @@ export default function AdminArticleFormPage() {
         setLoading(true);
         const response = await apiFetch(`/api/admin/articles/${id}`);
         if (!ignore) {
+          setLoadedArticle(response.article);
           setForm(toFormState(response.article));
           setExistingImages(sortImages(response.article.images || []));
           setExtraImageSlotCount(0);
@@ -511,6 +522,33 @@ export default function AdminArticleFormPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function updateInitialStockState(initialStockState) {
+    const snapshot = buildInitialInventorySnapshot(
+      form.quantityTotal,
+      initialStockState,
+    );
+    setForm((current) => ({
+      ...current,
+      initialStockState,
+      quantityAvailable: snapshot.quantityAvailable,
+      quantityReserved: snapshot.quantityReserved,
+      quantitySold: snapshot.quantitySold,
+      quantityLost: snapshot.quantityLost,
+    }));
+  }
+
+  function handleInventoryMovementCompleted(article) {
+    setLoadedArticle(article);
+    setForm((current) => ({
+      ...current,
+      quantityTotal: article.quantityTotal,
+      quantityAvailable: article.quantityAvailable,
+      quantityReserved: article.quantityReserved,
+      quantitySold: article.quantitySold,
+      quantityLost: article.quantityLost,
+    }));
+  }
+
   function updateExistingImage(imageId, name, value) {
     setExistingImages((current) =>
       current.map((image) =>
@@ -642,7 +680,15 @@ export default function AdminArticleFormPage() {
       }
     }
 
-    if (stepIndex === 1 && Number(form.quantityAvailable || 0) < 0) {
+    const initialInventory = buildInitialInventorySnapshot(
+      form.quantityTotal,
+      form.initialStockState,
+    );
+    const quantityAvailableForValidation = isEdit
+      ? Number(form.quantityAvailable || 0)
+      : initialInventory.quantityAvailable;
+
+    if (stepIndex === 1 && quantityAvailableForValidation < 0) {
       return {
         message: "El stock disponible no puede ser negativo.",
         target: "article-quantity-available",
@@ -653,6 +699,19 @@ export default function AdminArticleFormPage() {
     if (stepIndex === 1 && Number(form.quantityTotal || 0) < 0) {
       return {
         message: "El stock total no puede ser negativo.",
+        target: "article-quantity-total",
+        stepIndex,
+      };
+    }
+
+    if (
+      stepIndex === 1 &&
+      !isEdit &&
+      form.initialStockState === INITIAL_STOCK_STATES.SOLD_OUT &&
+      Number(form.quantityTotal || 0) <= 0
+    ) {
+      return {
+        message: "Un artículo ingresado como vendido debe tener al menos una unidad.",
         target: "article-quantity-total",
         stepIndex,
       };
@@ -671,8 +730,9 @@ export default function AdminArticleFormPage() {
       normalizeLabel(form.sizeText);
     const salePrice = Number(form.salePrice);
     const quantityTotal = Number(form.quantityTotal);
-    const quantityAvailable =
-      form.quantityAvailable === "" ? quantityTotal : Number(form.quantityAvailable);
+    const quantityAvailable = isEdit
+      ? (form.quantityAvailable === "" ? quantityTotal : Number(form.quantityAvailable))
+      : buildInitialInventorySnapshot(quantityTotal, form.initialStockState).quantityAvailable;
     const hasPrimaryImage = Boolean(existingImages.length || selectedImageUploads.length);
     const issues = [
       {
@@ -718,7 +778,12 @@ export default function AdminArticleFormPage() {
         label: "stock total",
         target: "article-quantity-total",
         stepIndex: 1,
-        invalid: !Number.isFinite(quantityTotal) || quantityTotal < 0,
+        invalid:
+          !Number.isFinite(quantityTotal) ||
+          quantityTotal < 0 ||
+          (!isEdit &&
+            form.initialStockState === INITIAL_STOCK_STATES.SOLD_OUT &&
+            quantityTotal <= 0),
       },
       {
         label: "stock disponible",
@@ -803,10 +868,15 @@ export default function AdminArticleFormPage() {
       setMessage("");
 
       const normalizedQuantityTotal = Number(form.quantityTotal || 0);
-      const normalizedQuantityAvailable =
-        form.quantityAvailable === ""
-          ? normalizedQuantityTotal
-          : Number(form.quantityAvailable);
+      const initialInventory = buildInitialInventorySnapshot(
+        normalizedQuantityTotal,
+        form.initialStockState,
+      );
+      const normalizedQuantityAvailable = isEdit
+        ? (form.quantityAvailable === ""
+            ? normalizedQuantityTotal
+            : Number(form.quantityAvailable))
+        : initialInventory.quantityAvailable;
 
       const payload = {
         ...form,
@@ -847,6 +917,7 @@ export default function AdminArticleFormPage() {
         isFeatured: Boolean(form.isFeatured),
         quantityTotal: normalizedQuantityTotal,
         quantityAvailable: normalizedQuantityAvailable,
+        initialStockState: isEdit ? undefined : form.initialStockState,
         stockAdjustmentReason: isEdit
           ? normalizeLabel(form.stockAdjustmentReason) || "Ajuste administrativo"
           : undefined,
@@ -1507,11 +1578,46 @@ export default function AdminArticleFormPage() {
                   type="number"
                   min="0"
                   value={form.quantityTotal}
-                  onChange={(event) =>
-                    update("quantityTotal", event.target.value)
-                  }
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (isEdit) {
+                      update("quantityTotal", value);
+                      return;
+                    }
+                    const snapshot = buildInitialInventorySnapshot(
+                      value,
+                      form.initialStockState,
+                    );
+                    setForm((current) => ({
+                      ...current,
+                      quantityTotal: value,
+                      quantityAvailable: snapshot.quantityAvailable,
+                      quantitySold: snapshot.quantitySold,
+                    }));
+                  }}
                 />
               </label>
+
+              {!isEdit ? (
+                <label className="field-group admin-field-important">
+                  <span>Estado inicial</span>
+                  <select
+                    className="input"
+                    value={form.initialStockState}
+                    onChange={(event) =>
+                      updateInitialStockState(event.target.value)
+                    }
+                  >
+                    <option value={INITIAL_STOCK_STATES.AVAILABLE}>Disponible</option>
+                    <option value={INITIAL_STOCK_STATES.SOLD_OUT}>
+                      Ya vendido / agotado
+                    </option>
+                  </select>
+                  <span className="field-helper">
+                    “Ya vendido” registra el stock inicial como vendido, no como pérdida.
+                  </span>
+                </label>
+              ) : null}
 
               <label className="field-group admin-field-important">
                 <span>Stock disponible</span>
@@ -1522,6 +1628,7 @@ export default function AdminArticleFormPage() {
                   type="number"
                   min="0"
                   value={form.quantityAvailable}
+                  readOnly={!isEdit}
                   onChange={(event) =>
                     update("quantityAvailable", event.target.value)
                   }
@@ -1530,7 +1637,11 @@ export default function AdminArticleFormPage() {
                   <span className="field-helper">
                     Si cambiás el disponible, se registrará como ajuste manual de inventario.
                   </span>
-                ) : null}
+                ) : (
+                  <span className="field-helper">
+                    Se calcula automáticamente desde el estado inicial.
+                  </span>
+                )}
               </label>
 
               {isEdit ? (
@@ -1634,6 +1745,60 @@ export default function AdminArticleFormPage() {
             </div>
 
             <div className="form-grid-two article-commerce-extra-fields">
+                <label className="field-group">
+                  <span>Cantidad perdida</span>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={form.quantityLost}
+                    readOnly
+                  />
+                  <span className="field-helper">
+                    Las ventas y devoluciones no modifican este contador.
+                  </span>
+                </label>
+                {isEdit && loadedArticle ? (
+                  <div className="form-grid-span-two inline-note admin-inventory-semantic-actions">
+                    <div>
+                      <strong>Acciones de inventario</strong>
+                      <p className="muted-copy">
+                        Usá estas acciones para mover unidades entre disponible y vendido.
+                      </p>
+                    </div>
+                    <div className="toolbar-inline">
+                      {Number(loadedArticle.quantityAvailable || 0) > 0 ? (
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          disabled={
+                            getManualInventoryActionAvailability(loadedArticle)
+                              .saleBlockedByReservation ||
+                            loadedArticle.publicationStatus !== "ACTIVE"
+                          }
+                          onClick={() => setInventoryDialogMode("sale")}
+                        >
+                          Registrar venta
+                        </button>
+                      ) : null}
+                      {Number(loadedArticle.quantitySold || 0) > 0 ? (
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          onClick={() => setInventoryDialogMode("return")}
+                        >
+                          Registrar devolución
+                        </button>
+                      ) : null}
+                      <Link
+                        to={`/admin/articles/${id}/stock`}
+                        className="ghost-button linklike"
+                      >
+                        Gestión completa de stock
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
                 <label className="field-group">
                   <span>Fecha de ingreso</span>
                   <input
@@ -1977,6 +2142,13 @@ export default function AdminArticleFormPage() {
           />
         </div>
       </form>
+
+      <AdminInventoryMovementDialog
+        article={loadedArticle}
+        mode={inventoryDialogMode}
+        onClose={() => setInventoryDialogMode(null)}
+        onCompleted={handleInventoryMovementCompleted}
+      />
 
     </div>
   );

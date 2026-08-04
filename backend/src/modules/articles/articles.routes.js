@@ -4,6 +4,8 @@ import {
   batchAdminArticles,
   createAdminBulkArticles,
   createAdminArticle,
+  createAdminArticleInventoryReturn,
+  createAdminArticleManualSale,
   deleteAdminArticle,
   createAdminArticleStockAdjustment,
   deleteAdminArticleImage,
@@ -61,6 +63,8 @@ adminRouter.post('/', asyncHandler(createAdminArticle));
 adminRouter.put('/:id', asyncHandler(updateAdminArticle));
 adminRouter.delete('/:id', asyncHandler(deleteAdminArticle));
 adminRouter.post('/:id/stock-adjustments', asyncHandler(createAdminArticleStockAdjustment));
+adminRouter.post('/:id/manual-sale', asyncHandler(createAdminArticleManualSale));
+adminRouter.post('/:id/return', asyncHandler(createAdminArticleInventoryReturn));
 adminRouter.patch('/:id/quick-flags', asyncHandler(updateAdminArticleQuickFlags));
 adminRouter.patch('/:id/status', asyncHandler(updateAdminArticleStatus));
 adminRouter.post(

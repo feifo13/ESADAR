@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
+import AdminInventoryMovementDialog from "../../components/admin/AdminInventoryMovementDialog.jsx";
 import SmartImage from "../../components/SmartImage.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
 import { apiFetch } from "../../lib/api.js";
 import { focusValidationTarget } from "../../lib/validation.js";
 import AppLoader from "../../components/AppLoader.jsx";
+import { getManualInventoryActionAvailability } from "../../lib/adminInventory.js";
 
 const ARTICLE_STATUS_LABELS = {
   DRAFT: "Borrador",
@@ -24,12 +26,10 @@ const STOCK_STATUS_LABELS = {
 };
 
 const STOCK_ADJUSTMENT_REASONS = [
-  "Ingreso inicial",
-  "Reposicion",
   "Correccion de inventario",
   "Dano / baja",
   "Perdida",
-  "Devolucion",
+  "Ingreso adicional",
   "Ajuste administrativo",
 ];
 
@@ -44,10 +44,11 @@ export default function AdminArticleStockPage() {
   const [article, setArticle] = useState(null);
   const [form, setForm] = useState({
     quantityAvailable: "",
-    reason: STOCK_ADJUSTMENT_REASONS[1],
+    reason: STOCK_ADJUSTMENT_REASONS[0],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [inventoryDialogMode, setInventoryDialogMode] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -107,7 +108,7 @@ export default function AdminArticleStockPage() {
         ...current,
         quantityAvailable: String(response.article?.quantityAvailable ?? quantityAvailable),
       }));
-      const successMessage = "Stock ajustado correctamente.";
+      const successMessage = "Corrección de inventario registrada correctamente.";
       notifySuccess(successMessage);
     } catch (err) {
       const errorMessage = err.message || "No se pudo ajustar el stock";
@@ -115,6 +116,14 @@ export default function AdminArticleStockPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleInventoryMovementCompleted(updatedArticle) {
+    setArticle(updatedArticle);
+    setForm((current) => ({
+      ...current,
+      quantityAvailable: String(updatedArticle.quantityAvailable ?? 0),
+    }));
   }
 
   if (loading) {
@@ -143,7 +152,7 @@ export default function AdminArticleStockPage() {
         <div className="section-heading section-heading-wrap">
           <div>
             <p className="section-kicker">Inventario</p>
-            <h1>Ajustar stock</h1>
+            <h1>Gestión de stock</h1>
             {article ? (
               <p className="muted-copy">
                 {article.title} · {article.internalCode || "Sin código"}
@@ -168,10 +177,44 @@ export default function AdminArticleStockPage() {
             >
               <div>
                 <p className="section-kicker">Stock</p>
-                <h2>Movimiento manual</h2>
+                <h2>Corrección administrativa</h2>
                 <p className="muted-copy">
-                  Reservado y vendido se actualizan automáticamente por órdenes.
+                  Una baja del disponible se contabiliza como pérdida, no como venta.
                 </p>
+              </div>
+
+              <div className="inline-note admin-inventory-semantic-actions">
+                <div>
+                  <strong>Movimientos comerciales</strong>
+                  <p className="muted-copy">
+                    Venta y devolución mueven unidades entre disponible y vendido sin modificar pérdidas.
+                  </p>
+                </div>
+                <div className="toolbar-inline">
+                  {Number(article.quantityAvailable || 0) > 0 ? (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      disabled={
+                        getManualInventoryActionAvailability(article)
+                          .saleBlockedByReservation ||
+                        article.publicationStatus !== "ACTIVE"
+                      }
+                      onClick={() => setInventoryDialogMode("sale")}
+                    >
+                      Registrar venta manual
+                    </button>
+                  ) : null}
+                  {Number(article.quantitySold || 0) > 0 ? (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => setInventoryDialogMode("return")}
+                    >
+                      Registrar devolución
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="admin-stock-kpi-grid">
@@ -190,6 +233,10 @@ export default function AdminArticleStockPage() {
                 <div className="nested-card admin-kpi-card">
                   <span>Vendido</span>
                   <strong>{article.quantitySold}</strong>
+                </div>
+                <div className="nested-card admin-kpi-card">
+                  <span>Perdido</span>
+                  <strong>{article.quantityLost}</strong>
                 </div>
               </div>
 
@@ -212,7 +259,7 @@ export default function AdminArticleStockPage() {
                     required
                   />
                   <span className="field-helper">
-                    Guardar registra un movimiento de stock manual.
+                    Para una venta usá “Registrar venta manual”. Una reducción aquí pasa a perdido.
                   </span>
                 </label>
 
@@ -309,11 +356,20 @@ export default function AdminArticleStockPage() {
                   Reservado: <strong>{article.quantityReserved}</strong> · Vendido:{" "}
                   <strong>{article.quantitySold}</strong>
                 </div>
+                <div className="inline-note">
+                  Perdido: <strong>{article.quantityLost}</strong>
+                </div>
               </div>
             </aside>
           </div>
         ) : null}
       </section>
+      <AdminInventoryMovementDialog
+        article={article}
+        mode={inventoryDialogMode}
+        onClose={() => setInventoryDialogMode(null)}
+        onCompleted={handleInventoryMovementCompleted}
+      />
     </div>
   );
 }

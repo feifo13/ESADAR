@@ -1263,7 +1263,7 @@ export default function HomePage() {
           <div className="catalog-summary-row">
             <div>
               <p className="section-kicker">Catálogo</p>
-              <h2>{pagination.total || items.length} artículos disponibles</h2>
+              <h2>{pagination.total || items.length} artículos</h2>
             </div>
           </div>
 

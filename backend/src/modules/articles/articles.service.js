@@ -2,7 +2,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../../db/pool.js';
 import { withTransaction } from '../../db/transaction.js';
-import { badRequest, notFound } from '../../utils/app-error.js';
+import { badRequest, conflict, notFound } from '../../utils/app-error.js';
 import {
   buildArticleUploadPublicPath,
   normalizePublicAssetPath,
@@ -15,6 +15,8 @@ import { logAudit } from '../audit/audit.service.js';
 import {
   adjustInventory,
   createInitialInventory,
+  registerInventoryReturn,
+  registerManualSale,
 } from '../inventory/inventory.service.js';
 import { deriveStockStatus } from '../inventory/inventory.constants.js';
 import { buildImportedImageRecord, deleteArticleImageFiles, processUploadedArticleImage } from './article-image-processing.js';
@@ -563,21 +565,32 @@ async function resolveArticleLotId(input, connection, { allowArchived = false } 
   return Number(rows[0].id);
 }
 
-async function normalizeArticleWritePayload(input, connection, auditContext = {}, isUpdate = false, currentId = null) {
-  const title = String(input.title || '').trim();
-  if (!title) {
-    throw badRequest('Title is required');
-  }
-
-  const internalCode = input.internalCode
-    ? String(input.internalCode).trim()
-    : await generateUniqueInternalCode(connection);
-  const slug = await ensureUniqueSlug(connection, input.slug || title, currentId);
+function resolveArticleInventoryQuantities(input, isUpdate = false) {
   let quantityTotal = Number(input.quantityTotal ?? 1);
-  const quantityReserved = Number(input.quantityReserved ?? 0);
-  const quantitySold = Number(input.quantitySold ?? 0);
-  const quantityAvailable = Number(input.quantityAvailable ?? quantityTotal - quantityReserved - quantitySold);
-  let quantityLost = Number(input.quantityLost ?? quantityTotal - quantityAvailable - quantityReserved - quantitySold);
+  const explicitInitialStockState = !isUpdate && ['AVAILABLE', 'SOLD_OUT'].includes(
+    input.initialStockState,
+  )
+    ? input.initialStockState
+    : null;
+  const startsAvailable = explicitInitialStockState === 'AVAILABLE';
+  const startsSoldOut = explicitInitialStockState === 'SOLD_OUT';
+  const hasAuthoritativeInitialState = startsAvailable || startsSoldOut;
+  const quantityReserved = hasAuthoritativeInitialState
+    ? 0
+    : Number(input.quantityReserved ?? 0);
+  const quantitySold = startsSoldOut
+    ? quantityTotal
+    : startsAvailable
+      ? 0
+      : Number(input.quantitySold ?? 0);
+  const quantityAvailable = startsAvailable
+    ? quantityTotal
+    : startsSoldOut
+      ? 0
+      : Number(input.quantityAvailable ?? quantityTotal - quantityReserved - quantitySold);
+  let quantityLost = hasAuthoritativeInitialState
+    ? 0
+    : Number(input.quantityLost ?? quantityTotal - quantityAvailable - quantityReserved - quantitySold);
   const minimumQuantityTotal = quantityAvailable + quantityReserved + quantitySold;
 
   if (
@@ -597,6 +610,35 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
   } else if (quantityLost !== quantityTotal - minimumQuantityTotal) {
     quantityLost = quantityTotal - minimumQuantityTotal;
   }
+
+  return {
+    quantityTotal,
+    quantityAvailable,
+    quantityReserved,
+    quantitySold,
+    quantityLost,
+    initialStockState: explicitInitialStockState,
+  };
+}
+
+async function normalizeArticleWritePayload(input, connection, auditContext = {}, isUpdate = false, currentId = null) {
+  const title = String(input.title || '').trim();
+  if (!title) {
+    throw badRequest('Title is required');
+  }
+
+  const internalCode = input.internalCode
+    ? String(input.internalCode).trim()
+    : await generateUniqueInternalCode(connection);
+  const slug = await ensureUniqueSlug(connection, input.slug || title, currentId);
+  const {
+    quantityTotal,
+    quantityAvailable,
+    quantityReserved,
+    quantitySold,
+    quantityLost,
+    initialStockState,
+  } = resolveArticleInventoryQuantities(input, isUpdate);
 
   if (Boolean(input.allowOffers) && input.discountType !== 'NONE' && Number(input.discountValue || 0) > 0) {
     throw badRequest('Articles with discount cannot allow offers');
@@ -643,6 +685,7 @@ async function normalizeArticleWritePayload(input, connection, auditContext = {}
     quantityReserved,
     quantitySold,
     quantityLost,
+    initialStockState,
     status,
     originNotes: input.originNotes || null,
     isUpdate,
@@ -1173,7 +1216,9 @@ export async function createArticle(input, auditContext) {
       quantitySold: payload.quantitySold,
       quantityLost: payload.quantityLost,
       createdBy: auditContext.actorUserId || null,
-      reason: 'Stock inicial',
+      reason: payload.initialStockState === 'SOLD_OUT'
+        ? 'Artículo ingresado inicialmente como vendido'
+        : 'Stock inicial',
     });
 
     const created = await getAdminArticleByIdWithConnection(articleId, connection);
@@ -1437,6 +1482,203 @@ export async function adjustArticleStock(id, input, auditContext) {
 
     return afterArticle;
   });
+}
+
+async function lockArticleInventoryForAdministrativeMovement(connection, articleId) {
+  const [rows] = await connection.execute(
+    `
+      SELECT
+        a.id AS articleId,
+        a.status AS publicationStatus,
+        inv.quantity_total AS quantityTotal,
+        inv.quantity_available AS quantityAvailable,
+        inv.quantity_reserved AS quantityReserved,
+        inv.quantity_sold AS quantitySold,
+        inv.quantity_lost AS quantityLost,
+        inv.updated_at AS updatedAt,
+        inv.updated_by AS updatedBy
+      FROM articles a
+      INNER JOIN article_inventory inv ON inv.article_id = a.id
+      WHERE a.id = ?
+      LIMIT 1
+      FOR UPDATE
+    `,
+    [articleId],
+  );
+
+  if (!rows.length) {
+    throw notFound('Artículo o inventario no encontrado.');
+  }
+
+  const row = rows[0];
+  return {
+    articleId: Number(row.articleId),
+    publicationStatus: row.publicationStatus,
+    quantityTotal: Number(row.quantityTotal || 0),
+    quantityAvailable: Number(row.quantityAvailable || 0),
+    quantityReserved: Number(row.quantityReserved || 0),
+    quantitySold: Number(row.quantitySold || 0),
+    quantityLost: Number(row.quantityLost || 0),
+    updatedAt: row.updatedAt || null,
+    updatedBy: row.updatedBy != null ? Number(row.updatedBy) : null,
+  };
+}
+
+async function assertNoActiveOffersForManualSale(connection, articleId) {
+  // Keep this as a consistent read after the article/inventory lock. Offer creation
+  // takes that same lock first, while locking offer rows here would invert the order
+  // used by offer status changes and could deadlock.
+  const [rows] = await connection.execute(
+    `
+      SELECT id, status
+      FROM offers
+      WHERE article_id = ?
+        AND status IN ('PENDING', 'ACCEPTED')
+        AND consumed_at IS NULL
+      ORDER BY id ASC
+    `,
+    [articleId],
+  );
+
+  if (rows.length) {
+    throw conflict(
+      'El artículo tiene ofertas pendientes o aceptadas. Resolvé esas ofertas antes de registrar una venta manual.',
+      {
+        code: 'ARTICLE_HAS_ACTIVE_OFFERS',
+        offerIds: rows.map((row) => Number(row.id)),
+      },
+    );
+  }
+}
+
+async function registerArticleManualSaleInTransaction(
+  connection,
+  id,
+  input,
+  auditContext,
+  dependencies = {},
+) {
+  const lockInventory = dependencies.lockArticleInventory
+    || lockArticleInventoryForAdministrativeMovement;
+  const assertNoActiveOffers = dependencies.assertNoActiveOffers
+    || assertNoActiveOffersForManualSale;
+  const getAdminArticle = dependencies.getAdminArticle
+    || getAdminArticleByIdWithConnection;
+  const registerSale = dependencies.registerSale || registerManualSale;
+  const writeAudit = dependencies.writeAudit || logAudit;
+
+  const lockedInventory = await lockInventory(connection, id);
+  if (lockedInventory.publicationStatus !== 'ACTIVE') {
+    throw conflict(
+      'Solo se puede registrar una venta manual para un artículo con publicación activa.',
+      { code: 'ARTICLE_PUBLICATION_NOT_ACTIVE' },
+    );
+  }
+
+  await assertNoActiveOffers(connection, id);
+  const beforeArticle = await getAdminArticle(id, connection);
+  const reason = input.reason || 'Venta manual registrada desde administración';
+  const transition = await registerSale(connection, {
+    articleId: id,
+    quantity: input.quantity,
+    reason,
+    userId: auditContext.actorUserId || null,
+    lockedInventory,
+  });
+  const afterArticle = await getAdminArticle(id, connection);
+
+  await writeAudit(
+    {
+      actorUserId: auditContext.actorUserId,
+      actorLabel: auditContext.actorLabel,
+      actionCode: 'ARTICLE_MANUAL_SALE_REGISTERED',
+      entityType: 'articles',
+      entityId: id,
+      beforeJson: beforeArticle,
+      afterJson: afterArticle,
+      metadataJson: {
+        quantity: transition.soldQuantity,
+        reason,
+        movementType: 'SALE',
+        orderId: null,
+      },
+      source: auditContext.source,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+    connection,
+  );
+
+  return afterArticle;
+}
+
+export async function registerArticleManualSale(id, input, auditContext) {
+  return withTransaction((connection) => registerArticleManualSaleInTransaction(
+    connection,
+    id,
+    input,
+    auditContext,
+  ));
+}
+
+async function registerArticleInventoryReturnInTransaction(
+  connection,
+  id,
+  input,
+  auditContext,
+  dependencies = {},
+) {
+  const lockInventory = dependencies.lockArticleInventory
+    || lockArticleInventoryForAdministrativeMovement;
+  const getAdminArticle = dependencies.getAdminArticle
+    || getAdminArticleByIdWithConnection;
+  const registerReturn = dependencies.registerReturn || registerInventoryReturn;
+  const writeAudit = dependencies.writeAudit || logAudit;
+
+  const lockedInventory = await lockInventory(connection, id);
+  const beforeArticle = await getAdminArticle(id, connection);
+  const reason = input.reason || 'Devolución registrada desde administración';
+  const transition = await registerReturn(connection, {
+    articleId: id,
+    quantity: input.quantity,
+    reason,
+    userId: auditContext.actorUserId || null,
+    lockedInventory,
+  });
+  const afterArticle = await getAdminArticle(id, connection);
+
+  await writeAudit(
+    {
+      actorUserId: auditContext.actorUserId,
+      actorLabel: auditContext.actorLabel,
+      actionCode: 'ARTICLE_INVENTORY_RETURN_REGISTERED',
+      entityType: 'articles',
+      entityId: id,
+      beforeJson: beforeArticle,
+      afterJson: afterArticle,
+      metadataJson: {
+        quantity: transition.returnedQuantity,
+        reason,
+        movementType: 'RETURN',
+        orderId: null,
+      },
+      source: auditContext.source,
+      ipAddress: auditContext.ipAddress,
+      userAgent: auditContext.userAgent,
+    },
+    connection,
+  );
+
+  return afterArticle;
+}
+
+export async function registerArticleInventoryReturn(id, input, auditContext) {
+  return withTransaction((connection) => registerArticleInventoryReturnInTransaction(
+    connection,
+    id,
+    input,
+    auditContext,
+  ));
 }
 
 export async function changeArticleStatus(id, status, auditContext) {
@@ -2115,3 +2357,11 @@ export async function deleteArticle(id, auditContext) {
   await Promise.allSettled((result.images || []).map((image) => deleteArticleImageFiles(image)));
   return { deleted: true, article: result.article };
 }
+
+export const articlesTestInternals = Object.freeze({
+  assertNoActiveOffersForManualSale,
+  lockArticleInventoryForAdministrativeMovement,
+  registerArticleInventoryReturnInTransaction,
+  registerArticleManualSaleInTransaction,
+  resolveArticleInventoryQuantities,
+});
