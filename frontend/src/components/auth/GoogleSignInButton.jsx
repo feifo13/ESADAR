@@ -20,6 +20,11 @@ export default function GoogleSignInButton({ disabled = false, onCredential, onE
     if (!clientId || !containerRef.current) return undefined;
 
     let disposed = false;
+    let googleApi = null;
+    let resizeObserver = null;
+    let renderFrame = 0;
+    let lastRenderedWidth = 0;
+
     const unregisterResponseHandler = googleIdentityRuntime.registerResponseHandler((response) => {
       if (response?.credential) {
         onCredentialRef.current?.(response.credential);
@@ -28,26 +33,54 @@ export default function GoogleSignInButton({ disabled = false, onCredential, onE
       }
     });
 
+    function getButtonWidth() {
+      const availableWidth = Math.floor(
+        containerRef.current?.getBoundingClientRect().width || 0,
+      );
+
+      if (!availableWidth) return 0;
+      return Math.max(240, Math.min(400, availableWidth));
+    }
+
     function renderButton(google) {
       if (disposed || !containerRef.current) return;
-      const width = Math.max(240, Math.min(400, Math.floor(containerRef.current.clientWidth || 400)));
+
+      const width = getButtonWidth();
+      if (!width || width === lastRenderedWidth) return;
+
+      lastRenderedWidth = width;
       containerRef.current.replaceChildren();
       google.accounts.id.renderButton(containerRef.current, {
         type: 'standard',
         theme: 'outline',
         size: 'large',
         text: 'continue_with',
-        shape: 'pill',
+        shape: 'rectangular',
         logo_alignment: 'left',
         width,
       });
       setReady(true);
     }
 
+    function scheduleRender() {
+      if (disposed || !googleApi) return;
+
+      if (renderFrame) {
+        window.cancelAnimationFrame(renderFrame);
+      }
+
+      renderFrame = window.requestAnimationFrame(() => {
+        renderFrame = 0;
+        renderButton(googleApi);
+      });
+    }
+
     googleIdentityRuntime
       .loadScript()
       .then((google) => {
         if (disposed) return;
+
+        googleApi = google;
         googleIdentityRuntime.initialize(google, {
           client_id: clientId,
           ux_mode: 'popup',
@@ -55,7 +88,15 @@ export default function GoogleSignInButton({ disabled = false, onCredential, onE
           cancel_on_tap_outside: true,
           use_fedcm_for_button: true,
         });
+
         renderButton(google);
+
+        if ('ResizeObserver' in window) {
+          resizeObserver = new ResizeObserver(scheduleRender);
+          resizeObserver.observe(containerRef.current);
+        } else {
+          window.addEventListener('resize', scheduleRender);
+        }
       })
       .catch((error) => {
         if (!disposed) onErrorRef.current?.(error);
@@ -63,6 +104,13 @@ export default function GoogleSignInButton({ disabled = false, onCredential, onE
 
     return () => {
       disposed = true;
+
+      if (renderFrame) {
+        window.cancelAnimationFrame(renderFrame);
+      }
+
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', scheduleRender);
       unregisterResponseHandler();
     };
   }, [clientId]);

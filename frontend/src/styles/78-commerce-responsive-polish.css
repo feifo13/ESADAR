@@ -404,12 +404,14 @@ select.input,
 .google-auth-button-shell {
   position: relative;
   display: grid;
+  width: 100%;
   justify-items: center;
   min-height: 44px;
 }
 
 .google-auth-button {
-  width: min(400px, 100%);
+  width: 100%;
+  max-width: 400px;
   min-height: 44px;
 }
 
@@ -455,4 +457,29 @@ select.input,
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/* === Login authentication column alignment === */
+.auth-card--login {
+  width: min(520px, 100%);
+}
+
+.auth-card--login > .section-kicker,
+.auth-card--login > h1,
+.auth-card--login > .google-auth-block,
+.auth-card--login > .error-copy,
+.auth-card--login > form {
+  width: min(400px, 100%);
+  margin-inline: auto;
+}
+
+.auth-card--login .google-auth-button-shell,
+.auth-card--login .google-auth-button {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .auth-card--login {
+    width: 100%;
+  }
 }

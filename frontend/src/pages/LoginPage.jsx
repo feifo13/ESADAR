@@ -133,7 +133,7 @@ export default function LoginPage() {
 
   return (
     <div className="container auth-shell">
-      <section className="section-card auth-card">
+      <section className="section-card auth-card auth-card--login">
         <p className="section-kicker">Ingresar</p>
         <h1>Entrar a tu cuenta</h1>
 

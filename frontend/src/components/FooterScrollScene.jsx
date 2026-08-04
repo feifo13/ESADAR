@@ -427,16 +427,16 @@ export default function FooterScrollScene() {
             aria-label="Información legal"
           >
             <Link
+              to="/politica-de-privacidad"
+              className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms footer-scroll-scene__copy--privacy"
+            >
+              Política de privacidad
+            </Link>
+            <Link
               to="/terminos-y-condiciones"
               className="button footer-scroll-scene__copy footer-scroll-scene__copy--terms"
             >
               Términos y condiciones
-            </Link>
-            <Link
-              to="/politica-de-privacidad"
-              className="button footer-scroll-scene__copy footer-scroll-scene__copy--privacy"
-            >
-              Política de privacidad
             </Link>
           </div>
         </div>
