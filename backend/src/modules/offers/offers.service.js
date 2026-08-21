@@ -13,6 +13,11 @@ import {
   findPotentialCustomerByContact,
   upsertPotentialCustomerByContact,
 } from '../customers/customer-helpers.js';
+import {
+  isValidEmail,
+  isValidRequiredPersonName,
+  isValidUruguayMobile,
+} from '../../../../frontend/src/shared/customer-profile.js';
 
 const OFFER_SORTS = {
   createdAt: (direction) => `o.created_at ${direction}, o.id ${direction}`,
@@ -632,6 +637,18 @@ async function getUserIdForOfferCustomer(customerId, connection) {
 async function resolveAuthenticatedOfferOwner(userId, connection) {
   const customer = await findCustomerByUserId(userId, connection)
     || await ensureCustomerForUser(userId, connection);
+  const fields = [
+    !isValidRequiredPersonName(customer.firstName) ? 'firstName' : null,
+    !isValidRequiredPersonName(customer.lastName) ? 'lastName' : null,
+    !isValidEmail(customer.email) ? 'email' : null,
+    !isValidUruguayMobile(customer.phone) ? 'phone' : null,
+  ].filter(Boolean);
+  if (fields.length) {
+    throw badRequest('Completá tus datos de contacto antes de enviar una oferta.', {
+      code: 'CUSTOMER_CONTACT_INCOMPLETE',
+      fields,
+    });
+  }
 
   return {
     customerId: customer.id,

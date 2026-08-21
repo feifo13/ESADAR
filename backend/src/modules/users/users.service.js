@@ -5,6 +5,12 @@ import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { buildSqlLimitOffsetClause, buildSqlPlaceholders, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { hashPassword } from '../../utils/password.js';
+import {
+  ensureCustomerForUser,
+  ensurePotentialCustomerForCustomer,
+  findCustomerProfileByUserId,
+  syncDefaultCustomerAddress,
+} from '../customers/customer-helpers.js';
 
 const USER_SORTS = {
   createdAt: (direction) => `u.created_at ${direction}, u.id ${direction}`,
@@ -76,7 +82,15 @@ async function getUserForAdmin(userId, connection = pool, options = {}) {
   );
 
   if (!rows.length) return null;
-  return normalizeUserRow(rows[0]);
+  const user = normalizeUserRow(rows[0]);
+  if (!user.roles.includes('CUSTOMER')) return { ...user, defaultAddress: null };
+  const customer = await findCustomerProfileByUserId(user.id, connection);
+  return {
+    ...user,
+    phone: customer?.phone || user.phone || null,
+    address: customer?.defaultAddress?.addressLine || user.address || null,
+    defaultAddress: customer?.defaultAddress || null,
+  };
 }
 
 export async function listUsers({ filters, pagination }) {
@@ -300,6 +314,43 @@ export async function updateUserForAdmin(userId, input, auditContext) {
           [userId, role.id, auditContext.actorUserId || null],
         );
       }
+    }
+
+    if (nextRoles.includes('CUSTOMER')) {
+      const customer = await ensureCustomerForUser(userId, connection);
+      await connection.execute(
+        `
+          UPDATE customers
+          SET first_name = ?, last_name = ?, email = ?, phone = ?, address = ?,
+              instagram = ?, updated_by = ?
+          WHERE id = ?
+        `,
+        [
+          input.firstName,
+          input.lastName,
+          input.email,
+          input.phone,
+          input.defaultAddress.addressLine,
+          input.instagram,
+          auditContext.actorUserId || null,
+          customer.id,
+        ],
+      );
+      const defaultAddress = await syncDefaultCustomerAddress(customer.id, input.defaultAddress, connection);
+      await ensurePotentialCustomerForCustomer(
+        {
+          ...customer,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          phone: input.phone,
+          instagram: input.instagram,
+          address: input.defaultAddress.addressLine,
+          defaultAddress,
+        },
+        { source: 'MANUAL' },
+        connection,
+      );
     }
 
     const after = await getUserForAdmin(userId, connection);

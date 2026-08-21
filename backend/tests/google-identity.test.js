@@ -21,7 +21,7 @@ test('normalizes a verified Google identity payload', () => {
   );
 });
 
-test('falls back to the display name when split names are absent', () => {
+test('does not parse an unstructured Google display name', () => {
   assert.deepEqual(
     normalizeGoogleIdentityPayload({
       sub: 'google-subject-456',
@@ -33,8 +33,27 @@ test('falls back to the display name when split names are absent', () => {
       provider: 'GOOGLE',
       subject: 'google-subject-456',
       email: 'cliente@example.com',
-      firstName: 'Ana',
-      lastName: 'Pérez Silva',
+      firstName: null,
+      lastName: null,
+    },
+  );
+});
+
+test('preserves a missing Google family name as missing', () => {
+  assert.deepEqual(
+    normalizeGoogleIdentityPayload({
+      sub: 'google-subject-no-family',
+      email: 'juan@example.com',
+      email_verified: true,
+      given_name: 'Juan',
+      name: 'Juan Persona',
+    }),
+    {
+      provider: 'GOOGLE',
+      subject: 'google-subject-no-family',
+      email: 'juan@example.com',
+      firstName: 'Juan',
+      lastName: null,
     },
   );
 });

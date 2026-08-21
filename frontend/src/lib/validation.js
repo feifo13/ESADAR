@@ -1,19 +1,40 @@
 import { scrollElementIntoViewWithSiteChromeOffset } from './siteChromeOffset.js';
+import {
+  getCustomerProfileValidationIssues,
+  isCustomerProfileComplete,
+  isUruguayDepartment,
+  isValidEmail,
+  isValidUruguayMobile,
+  normalizeEmail,
+  normalizeUruguayMobile,
+} from '../shared/customer-profile.js';
 
-export function normalizeEmail(value) {
-  return String(value || '').trim();
-}
-
-export function isValidEmail(value) {
-  const email = normalizeEmail(value);
-  if (!email) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email);
-}
+export {
+  getCustomerProfileValidationIssues,
+  isCustomerProfileComplete,
+  isUruguayDepartment,
+  isValidEmail,
+  isValidUruguayMobile,
+  normalizeEmail,
+  normalizeUruguayMobile,
+};
 
 export function getEmailValidationMessage(value, label = 'email') {
   const email = normalizeEmail(value);
   if (!email) return '';
   return isValidEmail(email) ? '' : `Revisa el ${label}: parece no tener un formato válido.`;
+}
+
+export function getUruguayMobileValidationMessage(value, label = 'celular') {
+  if (!String(value ?? '').trim()) return '';
+  return isValidUruguayMobile(value)
+    ? ''
+    : `Revisa el ${label}: ingresá un celular uruguayo válido.`;
+}
+
+export function getDepartmentValidationMessage(value) {
+  if (!String(value ?? '').trim()) return '';
+  return isUruguayDepartment(value) ? '' : 'Seleccioná un departamento válido.';
 }
 
 

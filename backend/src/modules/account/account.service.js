@@ -7,9 +7,16 @@ import {
   ensurePotentialCustomerForCustomer,
   findCustomerByUserId,
   findPotentialCustomerByLinkedCustomerId,
+  getDefaultCustomerAddress,
+  syncDefaultCustomerAddress,
 } from '../customers/customer-helpers.js';
 import { getOrderDetail } from '../orders/orders.service.js';
 import { generateOrderReceiptPdf } from './pdf/order-receipt-pdf.js';
+import {
+  getCustomerProfileValidationIssues,
+  isCustomerProfileComplete,
+  normalizeEmail,
+} from '../../../../frontend/src/shared/customer-profile.js';
 
 function parseJsonField(value, fallback = []) {
   if (value == null || value === '') return fallback;
@@ -19,44 +26,6 @@ function parseJsonField(value, fallback = []) {
     return JSON.parse(value);
   } catch {
     return fallback;
-  }
-}
-
-function normalizeAddressRow(row) {
-  if (!row?.id) return null;
-  return {
-    id: Number(row.id),
-    label: row.label || null,
-    addressLine: row.addressLine || null,
-    city: row.city || null,
-    state: row.state || null,
-    country: row.country || null,
-    postalCode: row.postalCode || null,
-    deliveryNotes: row.deliveryNotes || null,
-    isDefault: Boolean(row.isDefault),
-  };
-}
-
-
-async function ensureUserEmailAvailable(email, userId, connection = pool) {
-  if (!email) return;
-
-  const [rows] = await connection.execute(
-    `
-      SELECT id
-      FROM users
-      WHERE email = ?
-        AND id <> ?
-      LIMIT 1
-    `,
-    [email, userId],
-  );
-
-  if (rows.length) {
-    throw conflict('Ese email ya está asociado a otra cuenta.', {
-      field: 'email',
-      code: 'EMAIL_ALREADY_EXISTS',
-    });
   }
 }
 
@@ -84,30 +53,6 @@ async function getUserRow(userId, connection = pool) {
   }
 
   return rows[0];
-}
-
-async function getDefaultCustomerAddress(customerId, connection = pool) {
-  const [rows] = await connection.execute(
-    `
-      SELECT
-        id,
-        label,
-        address_line AS addressLine,
-        city,
-        state,
-        country,
-        postal_code AS postalCode,
-        delivery_notes AS deliveryNotes,
-        is_default AS isDefault
-      FROM customer_addresses
-      WHERE customer_id = ?
-      ORDER BY is_default DESC, updated_at DESC, id DESC
-      LIMIT 1
-    `,
-    [customerId],
-  );
-
-  return normalizeAddressRow(rows[0] || null);
 }
 
 async function getLeadPreferencesByPotentialCustomerId(potentialCustomerId, connection = pool) {
@@ -236,7 +181,7 @@ async function buildAccountProfile(customer, connection = pool) {
   const preferences = await getLeadPreferencesByPotentialCustomerId(linkedPotentialCustomer?.id, connection);
   const preferredShippingMethod = await resolveShippingPreference(customer.preferredShippingMethodId, connection);
 
-  return {
+  const profile = {
     customerId: Number(customer.id),
     userId: Number(user.id),
     firstName: customer.firstName || user.firstName || '',
@@ -258,6 +203,12 @@ async function buildAccountProfile(customer, connection = pool) {
     preferenceNotes: preferences.notes || null,
     linkedPotentialCustomerId: linkedPotentialCustomer?.id ? Number(linkedPotentialCustomer.id) : null,
   };
+  const validationIssues = getCustomerProfileValidationIssues(profile);
+  return {
+    ...profile,
+    profileComplete: validationIssues.length === 0,
+    validationIssues,
+  };
 }
 
 function mergeProfileInput(current, input = {}) {
@@ -265,7 +216,7 @@ function mergeProfileInput(current, input = {}) {
     firstName: input.firstName ?? current.firstName ?? '',
     lastName: input.lastName ?? current.lastName ?? '',
     birthDate: input.birthDate ?? current.birthDate ?? null,
-    email: current.email ? current.email.trim().toLowerCase() : null,
+    email: normalizeEmail(input.email ?? current.email),
     phone: input.phone ?? current.phone ?? null,
     instagram: input.instagram ?? current.instagram ?? null,
     defaultAddress: input.defaultAddress === undefined
@@ -281,79 +232,6 @@ function mergeProfileInput(current, input = {}) {
   };
 }
 
-async function syncDefaultAddress(customerId, nextAddress, connection) {
-  const currentAddress = await getDefaultCustomerAddress(customerId, connection);
-  const hasAddressData = [
-    nextAddress?.addressLine,
-    nextAddress?.city,
-    nextAddress?.state,
-    nextAddress?.country,
-    nextAddress?.postalCode,
-    nextAddress?.deliveryNotes,
-  ].some(Boolean);
-
-  if (!hasAddressData) {
-    if (currentAddress?.id) {
-      await connection.execute('DELETE FROM customer_addresses WHERE id = ?', [currentAddress.id]);
-    }
-    return null;
-  }
-
-  const values = [
-    nextAddress?.label || 'Envio principal',
-    nextAddress?.addressLine,
-    nextAddress?.city || null,
-    nextAddress?.state || null,
-    nextAddress?.country || 'Uruguay',
-    nextAddress?.postalCode || null,
-    nextAddress?.deliveryNotes || null,
-  ];
-
-  if (currentAddress?.id) {
-    await connection.execute(
-      `
-        UPDATE customer_addresses
-        SET
-          label = ?,
-          address_line = ?,
-          city = ?,
-          state = ?,
-          country = ?,
-          postal_code = ?,
-          delivery_notes = ?,
-          is_default = 1
-        WHERE id = ?
-      `,
-      [...values, currentAddress.id],
-    );
-    return getDefaultCustomerAddress(customerId, connection);
-  }
-
-  await connection.execute(
-    'UPDATE customer_addresses SET is_default = 0 WHERE customer_id = ?',
-    [customerId],
-  );
-
-  await connection.execute(
-    `
-      INSERT INTO customer_addresses (
-        customer_id,
-        label,
-        address_line,
-        city,
-        state,
-        country,
-        postal_code,
-        delivery_notes,
-        is_default
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-    `,
-    [customerId, ...values],
-  );
-
-  return getDefaultCustomerAddress(customerId, connection);
-}
-
 export async function getAccountProfile(userId) {
   const customer = await findCustomerByUserId(userId);
   if (!customer) {
@@ -367,6 +245,12 @@ export async function saveAccountProfile(userId, input, auditContext) {
   return withTransaction(async (connection) => {
     const customer = await ensureCustomerForUser(userId, connection);
     const before = await buildAccountProfile(customer, connection);
+    if (normalizeEmail(input.email) !== normalizeEmail(before.email)) {
+      throw conflict('El email de acceso no puede modificarse desde el perfil.', {
+        field: 'email',
+        code: 'ACCOUNT_EMAIL_CHANGE_NOT_AVAILABLE',
+      });
+    }
     const next = mergeProfileInput(before, input);
 
     await connection.execute(
@@ -423,7 +307,7 @@ export async function saveAccountProfile(userId, input, auditContext) {
       ],
     );
 
-    await syncDefaultAddress(customer.id, next.defaultAddress, connection);
+    await syncDefaultCustomerAddress(customer.id, next.defaultAddress, connection);
 
     const potentialCustomer = await ensurePotentialCustomerForCustomer(
       {
@@ -433,6 +317,7 @@ export async function saveAccountProfile(userId, input, auditContext) {
         birthDate: next.birthDate || null,
         email: next.email || null,
         address: next.defaultAddress?.addressLine || null,
+        defaultAddress: next.defaultAddress,
         phone: next.phone || null,
         instagram: next.instagram || null,
       },
@@ -454,6 +339,13 @@ export async function saveAccountProfile(userId, input, auditContext) {
 
     const refreshedCustomer = await findCustomerByUserId(userId, connection);
     const profile = await buildAccountProfile(refreshedCustomer, connection);
+    if (!isCustomerProfileComplete(profile)) {
+      throw conflict('El perfil del cliente está incompleto.', {
+        code: 'CUSTOMER_PROFILE_INCOMPLETE',
+        fields: profile.validationIssues.map((issue) => issue.field),
+        issues: profile.validationIssues,
+      });
+    }
 
     await logAudit(
       {

@@ -99,10 +99,10 @@ function buildCompletedOrderFilters(filters = {}) {
         WHERE oi_search.order_id = o.id
           AND (a_search.title LIKE ? OR a_search.internal_code LIKE ?)
       )
-      OR COALESCE(c.first_name, pc.first_name, '') LIKE ?
-      OR COALESCE(c.last_name, pc.last_name, '') LIKE ?
-      OR COALESCE(c.email, pc.email, '') LIKE ?
-      OR COALESCE(c.phone, pc.phone, '') LIKE ?
+      OR COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name, '') LIKE ?
+      OR COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name, '') LIKE ?
+      OR COALESCE(o.customer_email_snapshot, c.email, pc.email, '') LIKE ?
+      OR COALESCE(o.customer_phone_snapshot, c.phone, pc.phone, '') LIKE ?
     )`);
     params.push(like, like, like, like, like, like, like);
   }
@@ -157,8 +157,8 @@ function buildSalesItemFilters(filters = {}) {
       a.title LIKE ?
       OR a.internal_code LIKE ?
       OR oi.article_title_snapshot LIKE ?
-      OR COALESCE(c.first_name, pc.first_name, '') LIKE ?
-      OR COALESCE(c.last_name, pc.last_name, '') LIKE ?
+      OR COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name, '') LIKE ?
+      OR COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name, '') LIKE ?
       OR o.order_number LIKE ?
     )`);
     params.push(like, like, like, like, like, like);
@@ -430,9 +430,14 @@ export async function getStatisticsTopCustomers(filters = {}, limit = 10) {
       SELECT
         COALESCE(c.id, 0) AS customerId,
         COALESCE(pc.id, 0) AS potentialCustomerId,
-        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', c.first_name, c.last_name)), ''), NULLIF(TRIM(CONCAT_WS(' ', pc.first_name, pc.last_name)), ''), 'Cliente sin nombre') AS customerName,
-        COALESCE(c.email, pc.email) AS email,
-        COALESCE(c.phone, pc.phone) AS phone,
+        COALESCE(
+          NULLIF(TRIM(CONCAT_WS(' ', o.customer_first_name_snapshot, o.customer_last_name_snapshot)), ''),
+          NULLIF(TRIM(CONCAT_WS(' ', c.first_name, c.last_name)), ''),
+          NULLIF(TRIM(CONCAT_WS(' ', pc.first_name, pc.last_name)), ''),
+          'Cliente sin nombre'
+        ) AS customerName,
+        COALESCE(o.customer_email_snapshot, c.email, pc.email) AS email,
+        COALESCE(o.customer_phone_snapshot, c.phone, pc.phone) AS phone,
         COUNT(DISTINCT o.id) AS ordersCount,
         COALESCE(SUM(oi.quantity), 0) AS itemsCount,
         COALESCE(SUM(oi.line_total_snapshot), 0) AS totalSpent,

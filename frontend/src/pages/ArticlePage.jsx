@@ -46,6 +46,7 @@ import { trackPublicPageVisit } from "../lib/pageVisits.js";
 import {
   focusValidationTarget,
   getEmailValidationMessage,
+  getUruguayMobileValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
 import WishlistHeartButton from "../components/WishlistHeartButton.jsx";
@@ -575,6 +576,10 @@ export default function ArticlePage() {
         {
           target: "stock-alert-email",
           message: getEmailValidationMessage(alertForm.email),
+        },
+        {
+          target: "stock-alert-phone",
+          message: getUruguayMobileValidationMessage(alertForm.phone, "WhatsApp"),
         },
       ];
       const validationIssue = validationChecks.find((check) =>

@@ -11,6 +11,7 @@ import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import LeadCaptureCta from "../components/LeadCaptureCta.jsx";
 import SmartImage from "../components/SmartImage.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
+import CustomerProfileFields, { createEmptyCustomerAddress } from "../components/CustomerProfileFields.jsx";
 import { formatCurrency } from "../lib/format.js";
 import {
   calculateShippingCost,
@@ -20,7 +21,7 @@ import {
 import { apiFetch } from "../lib/api.js";
 import { articlePath } from "../lib/routes.js";
 import {
-  getEmailValidationMessage,
+  getCustomerProfileValidationIssues,
   getFriendlyErrorMessage,
   getRequiredValidationMessage,
   notifyFormStatus,
@@ -35,10 +36,22 @@ const initialGuest = {
   lastName: "",
   birthDate: "",
   email: "",
-  address: "",
   phone: "",
   instagram: "",
+  defaultAddress: createEmptyCustomerAddress(),
 };
+
+function normalizeSavedGuest(savedGuest) {
+  if (!savedGuest) return initialGuest;
+  return {
+    ...initialGuest,
+    ...savedGuest,
+    defaultAddress: savedGuest.defaultAddress || {
+      ...createEmptyCustomerAddress(),
+      addressLine: typeof savedGuest.address === "string" ? savedGuest.address : "",
+    },
+  };
+}
 
 const steps = [
   { key: "resumen", label: "Resumen de compra", kicker: "Paso 1" },
@@ -185,7 +198,11 @@ export default function CheckoutPage() {
   const checkoutInterestTrackRef = useRef(null);
 
   const savedDraft = readDraft();
-  const [guest, setGuest] = useState(savedDraft?.guest || initialGuest);
+  const [guest, setGuest] = useState(normalizeSavedGuest(savedDraft?.guest));
+  const [authenticatedProfile, setAuthenticatedProfile] = useState(null);
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [shippingMethodId, setShippingMethodId] = useState(
     savedDraft?.shippingMethodId || "",
   );
@@ -198,6 +215,43 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [interestArticles, setInterestArticles] = useState([]);
   const [interestArticlesLoaded, setInterestArticlesLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAuthenticatedProfile(null);
+      setProfileDirty(false);
+      setProfileLoading(false);
+      return undefined;
+    }
+
+    let ignore = false;
+    setProfileLoading(true);
+    apiFetch("/api/public/account/profile")
+      .then((response) => {
+        if (ignore) return;
+        const profile = response.profile || {};
+        setAuthenticatedProfile({
+          ...profile,
+          firstName: profile.firstName || user?.firstName || "",
+          lastName: profile.lastName || user?.lastName || "",
+          email: profile.email || user?.email || "",
+          phone: profile.phone || "",
+          defaultAddress: {
+            ...createEmptyCustomerAddress(),
+            ...(profile.defaultAddress || {}),
+          },
+        });
+        setProfileDirty(false);
+      })
+      .catch((loadError) => {
+        if (!ignore) setError(loadError.message || "No pudimos cargar tus datos de compra.");
+      })
+      .finally(() => {
+        if (!ignore) setProfileLoading(false);
+      });
+
+    return () => { ignore = true; };
+  }, [isAuthenticated, user?.email, user?.firstName, user?.lastName]);
 
   const cartAvailabilitySignature = useMemo(
     () =>
@@ -408,7 +462,9 @@ export default function CheckoutPage() {
       ? `El método seleccionado no tiene tarifa configurada para ${formatWeightKg(packageWeightKg)}. Elegí otro método o contactá a ESADAR para coordinar el envío.`
       : "";
 
-  const buyerComplete = isAuthenticated || !getGuestBuyerValidationMessage();
+  const buyerComplete = isAuthenticated
+    ? Boolean(authenticatedProfile && !profileLoading && !profileDirty && !getAuthenticatedProfileValidationIssue())
+    : !getGuestBuyerValidationMessage();
   const paymentComplete = Boolean(
     paymentMethod &&
     paymentMethodOptions.some((item) => item.id === paymentMethod),
@@ -480,43 +536,20 @@ export default function CheckoutPage() {
   ]);
 
   function getGuestBuyerValidationIssue() {
+    const profileIssue = getCustomerProfileValidationIssues(guest)[0];
+    if (profileIssue) {
+      return {
+        target: `checkout-guest-${profileIssue.field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
+        message: profileIssue.message,
+      };
+    }
     const checks = [
-      {
-        target: "checkout-guest-first-name",
-        message: getRequiredValidationMessage(
-          guest.firstName,
-          "el nombre del comprador",
-        ),
-      },
-      {
-        target: "checkout-guest-last-name",
-        message: getRequiredValidationMessage(
-          guest.lastName,
-          "el apellido del comprador",
-        ),
-      },
       {
         target: "checkout-guest-birth-date",
         message: getRequiredValidationMessage(
           guest.birthDate,
           "la fecha de nacimiento",
         ),
-      },
-      {
-        target: "checkout-guest-phone",
-        message: getRequiredValidationMessage(guest.phone, "el teléfono"),
-      },
-      {
-        target: "checkout-guest-address",
-        message: getRequiredValidationMessage(guest.address, "la dirección"),
-      },
-      {
-        target: "checkout-guest-email",
-        message: getRequiredValidationMessage(guest.email, "el email"),
-      },
-      {
-        target: "checkout-guest-email",
-        message: getEmailValidationMessage(guest.email),
       },
     ];
 
@@ -525,6 +558,16 @@ export default function CheckoutPage() {
 
   function getGuestBuyerValidationMessage() {
     return getGuestBuyerValidationIssue()?.message || "";
+  }
+
+  function getAuthenticatedProfileValidationIssue() {
+    const issue = getCustomerProfileValidationIssues(authenticatedProfile || {})[0];
+    return issue
+      ? {
+          target: `checkout-profile-${issue.field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
+          message: issue.message,
+        }
+      : null;
   }
 
   function scrollCheckoutStepTop({ behavior = "smooth" } = {}) {
@@ -595,8 +638,14 @@ export default function CheckoutPage() {
       return false;
     }
 
-    if (currentStepKey === "comprador" && !isAuthenticated) {
-      const validationIssue = getGuestBuyerValidationIssue();
+    if (currentStepKey === "comprador") {
+      if (isAuthenticated && profileLoading) {
+        showCheckoutMessage("error", "Esperá mientras cargamos tus datos de compra.");
+        return false;
+      }
+      const validationIssue = isAuthenticated
+        ? getAuthenticatedProfileValidationIssue()
+        : getGuestBuyerValidationIssue();
       if (validationIssue) {
         showCheckoutMessage("error", validationIssue.message, {
           target: validationIssue.target,
@@ -642,8 +691,45 @@ export default function CheckoutPage() {
     return true;
   }
 
-  function handleNext() {
+  async function saveAuthenticatedCheckoutProfile() {
+    if (!isAuthenticated || !authenticatedProfile) return true;
+    try {
+      setProfileSaving(true);
+      const response = await apiFetch("/api/public/account/profile", {
+        method: "PATCH",
+        body: {
+          ...authenticatedProfile,
+          email: authenticatedProfile.email,
+          defaultAddress: authenticatedProfile.defaultAddress,
+        },
+      });
+      setAuthenticatedProfile({
+        ...response.profile,
+        defaultAddress: {
+          ...createEmptyCustomerAddress(),
+          ...(response.profile?.defaultAddress || {}),
+        },
+      });
+      setProfileDirty(false);
+      showCheckoutMessage("success", "Guardamos tus datos para esta compra y las próximas.");
+      return true;
+    } catch (saveError) {
+      showCheckoutMessage(
+        "error",
+        getFriendlyErrorMessage(saveError, "No pudimos guardar tus datos de compra."),
+      );
+      return false;
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function handleNext() {
     if (!validateCurrentStep()) return;
+    if (currentStepKey === "comprador" && isAuthenticated) {
+      const saved = await saveAuthenticatedCheckoutProfile();
+      if (!saved) return;
+    }
     const nextIndex = Math.min(currentStepIndex + 1, steps.length - 1);
     navigate(`/checkout/${steps[nextIndex].key}`, {
       state: { preserveScroll: true, source: "checkout-wizard" },
@@ -711,7 +797,7 @@ export default function CheckoutPage() {
           ...guest,
           birthDate: guest.birthDate,
           email: guest.email,
-          address: guest.address,
+          address: guest.defaultAddress,
           phone: guest.phone,
           instagram: guest.instagram || null,
         };
@@ -759,6 +845,24 @@ export default function CheckoutPage() {
         state: completionPayload,
       });
     } catch (err) {
+      if (err?.payload?.details?.code === "CUSTOMER_PROFILE_INCOMPLETE" && isAuthenticated) {
+        try {
+          const refreshed = await apiFetch("/api/public/account/profile");
+          setAuthenticatedProfile({
+            ...refreshed.profile,
+            defaultAddress: {
+              ...createEmptyCustomerAddress(),
+              ...(refreshed.profile?.defaultAddress || {}),
+            },
+          });
+          setProfileDirty(false);
+        } catch {
+          // The actionable backend error remains the primary message.
+        }
+        navigate("/checkout/comprador", { replace: true });
+        showCheckoutMessage("error", "Revisá tus datos de compra antes de confirmar la orden.");
+        return;
+      }
       showCheckoutMessage(
         "error",
         getFriendlyErrorMessage(err, "No se pudo crear la orden."),
@@ -1035,68 +1139,42 @@ export default function CheckoutPage() {
   function renderBuyerStep() {
     if (isAuthenticated) {
       return (
-        <div className="section-card nested-card">
-          <p className="section-kicker">Comprador autenticado</p>
-          <h2>
-            {user.firstName} {user.lastName}
-          </h2>
-          <div className="detail-meta-list checkout-meta-list">
-            <div>
-              <span>Email</span>
-              <strong>{user.email || "Sin email"}</strong>
-            </div>
-            <div>
-              <span>Teléfono</span>
-              <strong>{user.phone || "Sin teléfono"}</strong>
-            </div>
-            <div>
-              <span>Instagram</span>
-              <strong>{user.instagram || "Sin Instagram"}</strong>
-            </div>
+        <div className="section-card nested-card page-stack">
+          <div>
+            <p className="section-kicker">Datos para tu compra</p>
+            <h2>Completá o corregí tus datos</h2>
+            <p className="muted-copy">
+              Guardaremos los cambios en tu perfil para tus próximas compras.
+            </p>
           </div>
-          <p className="muted-copy">La orden se generará con esta cuenta.</p>
+          {profileLoading || !authenticatedProfile ? (
+            <p className="muted-copy">Cargando tus datos…</p>
+          ) : (
+            <CustomerProfileFields
+              profile={authenticatedProfile}
+              onChange={(nextProfile) => {
+                setAuthenticatedProfile(nextProfile);
+                setProfileDirty(true);
+              }}
+              validationPrefix="checkout-profile"
+              emailReadOnly
+            />
+          )}
         </div>
       );
     }
 
     return (
-      <div className="section-card nested-card">
+      <div className="section-card nested-card page-stack">
         <p className="section-kicker">Datos del comprador</p>
+        <CustomerProfileFields
+          profile={guest}
+          onChange={setGuest}
+          validationPrefix="checkout-guest"
+        />
         <div className="form-grid-two">
           <label className="field-group">
-            <span>Nombre</span>
-            <input
-              className="input"
-              name="firstName"
-              data-validation-field="checkout-guest-first-name"
-              value={guest.firstName}
-              onChange={(event) =>
-                setGuest((current) => ({
-                  ...current,
-                  firstName: event.target.value,
-                }))
-              }
-              required
-            />
-          </label>
-          <label className="field-group">
-            <span>Apellido</span>
-            <input
-              className="input"
-              name="lastName"
-              data-validation-field="checkout-guest-last-name"
-              value={guest.lastName}
-              onChange={(event) =>
-                setGuest((current) => ({
-                  ...current,
-                  lastName: event.target.value,
-                }))
-              }
-              required
-            />
-          </label>
-          <label className="field-group">
-            <span>Fecha de nacimiento</span>
+            <span>Fecha de nacimiento *</span>
             <input
               className="input"
               type="date"
@@ -1107,38 +1185,6 @@ export default function CheckoutPage() {
                 setGuest((current) => ({
                   ...current,
                   birthDate: event.target.value,
-                }))
-              }
-              required
-            />
-          </label>
-          <label className="field-group">
-            <span>Teléfono</span>
-            <input
-              className="input"
-              name="phone"
-              data-validation-field="checkout-guest-phone"
-              value={guest.phone}
-              onChange={(event) =>
-                setGuest((current) => ({
-                  ...current,
-                  phone: event.target.value,
-                }))
-              }
-              required
-            />
-          </label>
-          <label className="field-group form-grid-span-two">
-            <span>Dirección</span>
-            <input
-              className="input"
-              name="address"
-              data-validation-field="checkout-guest-address"
-              value={guest.address}
-              onChange={(event) =>
-                setGuest((current) => ({
-                  ...current,
-                  address: event.target.value,
                 }))
               }
               required
@@ -1156,23 +1202,6 @@ export default function CheckoutPage() {
                   instagram: event.target.value,
                 }))
               }
-            />
-          </label>
-          <label className="field-group">
-            <span>Email</span>
-            <input
-              className="input"
-              type="email"
-              name="email"
-              data-validation-field="checkout-guest-email"
-              value={guest.email}
-              onChange={(event) =>
-                setGuest((current) => ({
-                  ...current,
-                  email: event.target.value,
-                }))
-              }
-              required
             />
           </label>
         </div>
@@ -1318,7 +1347,7 @@ export default function CheckoutPage() {
               <span>Comprador</span>
               <strong>
                 {isAuthenticated
-                  ? `${user.firstName} ${user.lastName}`
+                  ? `${authenticatedProfile?.firstName || ""} ${authenticatedProfile?.lastName || ""}`.trim()
                   : `${guest.firstName} ${guest.lastName}`}
               </strong>
             </div>
@@ -1449,7 +1478,7 @@ export default function CheckoutPage() {
                   ]
                     .filter(Boolean)
                     .join(" ")}
-                  disabled={!isAllowed || submitting}
+                  disabled={!isAllowed || submitting || profileSaving}
                   onClick={() => goToStep(index)}
                   aria-current={isCurrent ? "step" : undefined}
                 >
@@ -1479,7 +1508,8 @@ export default function CheckoutPage() {
             className="checkout-navigation"
             previousClassName="button button-secondary"
             nextClassName="button button-primary"
-            previousDisabled={currentStepIndex === 0 || submitting}
+            previousDisabled={currentStepIndex === 0 || submitting || profileSaving}
+            nextDisabled={submitting || profileSaving || (currentStepKey === "comprador" && profileLoading)}
             onPrevious={handleBack}
             onNext={handleNext}
             nextSlot={

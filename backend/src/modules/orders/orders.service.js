@@ -27,8 +27,13 @@ import {
 } from "./orders.mailer.js";
 import {
   createPotentialCustomerFromInput,
-  findCustomerByUserId,
+  ensureCustomerForUser,
+  findCustomerProfileByUserId,
 } from "../customers/customer-helpers.js";
+import {
+  formatCustomerAddress,
+  getCustomerProfileValidationIssues,
+} from "../../../../frontend/src/shared/customer-profile.js";
 import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
 import { getCollectingSettings, getCostingSettings } from "../collecting/collecting.service.js";
 import {
@@ -44,7 +49,7 @@ const ORDER_SORTS = {
   orderStatus: (direction) => `o.order_status ${direction}, o.id DESC`,
   paymentStatus: (direction) => `o.payment_status ${direction}, o.id DESC`,
   customerName: (direction) =>
-    `COALESCE(c.last_name, pc.last_name) ${direction}, COALESCE(c.first_name, pc.first_name) ${direction}, o.id DESC`,
+    `COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name) ${direction}, COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name) ${direction}, o.id DESC`,
 };
 
 function parseJsonValue(value) {
@@ -341,11 +346,23 @@ export async function createOrder(input, actor, auditContext) {
           subtotal_snapshot,
           discount_total_snapshot,
           total_snapshot,
+          customer_first_name_snapshot,
+          customer_last_name_snapshot,
+          customer_email_snapshot,
+          customer_phone_snapshot,
+          customer_address_line_snapshot,
+          customer_city_snapshot,
+          customer_state_snapshot,
+          customer_country_snapshot,
+          customer_postal_code_snapshot,
+          customer_dwelling_type_snapshot,
+          customer_apartment_snapshot,
+          customer_delivery_notes_snapshot,
           reserved_until,
           internal_notes,
           created_by,
           updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'RESERVED', ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'RESERVED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), ?, ?, ?)
       `,
       [
         orderNumber,
@@ -360,6 +377,18 @@ export async function createOrder(input, actor, auditContext) {
         subtotal,
         discountTotal,
         total,
+        owner.profile.firstName,
+        owner.profile.lastName,
+        owner.profile.email,
+        owner.profile.phone,
+        owner.profile.address.addressLine,
+        owner.profile.address.city,
+        owner.profile.address.state,
+        owner.profile.address.country,
+        owner.profile.address.postalCode,
+        owner.profile.address.dwellingType,
+        owner.profile.address.apartment,
+        owner.profile.address.deliveryNotes,
         input.notes || null,
         auditContext.actorUserId,
         auditContext.actorUserId,
@@ -599,9 +628,9 @@ export async function listOrders({ filters, pagination }) {
     clauses.push(`(
       o.order_number LIKE ?
       OR o.payment_method LIKE ?
-      OR COALESCE(c.first_name, pc.first_name) LIKE ?
-      OR COALESCE(c.last_name, pc.last_name) LIKE ?
-      OR COALESCE(c.email, pc.email) LIKE ?
+      OR COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name) LIKE ?
+      OR COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name) LIKE ?
+      OR COALESCE(o.customer_email_snapshot, c.email, pc.email) LIKE ?
       OR EXISTS (
         SELECT 1
         FROM order_items oi_search
@@ -644,9 +673,9 @@ export async function listOrders({ filters, pagination }) {
         o.cancelled_at AS cancelledAt,
         o.shipped_at AS shippedAt,
         o.tracking_code AS trackingCode,
-        COALESCE(c.first_name, pc.first_name) AS customerFirstName,
-        COALESCE(c.last_name, pc.last_name) AS customerLastName,
-        COALESCE(c.email, pc.email) AS customerEmail,
+        COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name) AS customerFirstName,
+        COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name) AS customerLastName,
+        COALESCE(o.customer_email_snapshot, c.email, pc.email) AS customerEmail,
         (
           SELECT COUNT(*)
           FROM order_items oi
@@ -1484,12 +1513,18 @@ export async function applyMercadoPagoPaymentToOrder(
 
 async function resolveOrderOwner(input, actor, connection) {
   if (actor?.userId) {
-    const customer = await findCustomerByUserId(actor.userId, connection);
+    let profile = await findCustomerProfileByUserId(actor.userId, connection);
+    if (!profile) {
+      await ensureCustomerForUser(actor.userId, connection);
+      profile = await findCustomerProfileByUserId(actor.userId, connection);
+    }
+    assertCompleteOrderProfile(profile);
 
     return {
       userId: actor.userId,
-      customerId: customer?.id || null,
+      customerId: profile.id,
       potentialCustomerId: null,
+      profile: { ...profile, address: profile.defaultAddress },
     };
   }
 
@@ -1504,12 +1539,25 @@ async function resolveOrderOwner(input, actor, connection) {
     { source: "CHECKOUT" },
     connection,
   );
+  const profile = { ...input.guest, defaultAddress: input.guest.address };
+  assertCompleteOrderProfile(profile);
 
   return {
     userId: null,
     customerId: null,
     potentialCustomerId: potentialCustomer.id,
+    profile: { ...profile, address: input.guest.address },
   };
+}
+
+export function assertCompleteOrderProfile(profile) {
+  const issues = getCustomerProfileValidationIssues(profile || {});
+  if (!issues.length) return;
+  throw badRequest("El perfil del cliente está incompleto.", {
+    code: "CUSTOMER_PROFILE_INCOMPLETE",
+    fields: issues.map((issue) => issue.field),
+    issues,
+  });
 }
 
 async function getShippingMethod(id, connection) {
@@ -1760,11 +1808,18 @@ async function getOrderById(id, connection) {
         o.tracking_code AS trackingCode,
         o.created_at AS createdAt,
         o.updated_at AS updatedAt,
-        COALESCE(c.first_name, pc.first_name) AS customerFirstName,
-        COALESCE(c.last_name, pc.last_name) AS customerLastName,
-        COALESCE(c.email, pc.email) AS customerEmail,
-        COALESCE(c.phone, pc.phone) AS customerPhone,
-        COALESCE(c.address, pc.address) AS customerAddress,
+        COALESCE(o.customer_first_name_snapshot, c.first_name, pc.first_name) AS customerFirstName,
+        COALESCE(o.customer_last_name_snapshot, c.last_name, pc.last_name) AS customerLastName,
+        COALESCE(o.customer_email_snapshot, c.email, pc.email) AS customerEmail,
+        COALESCE(o.customer_phone_snapshot, c.phone, pc.phone) AS customerPhone,
+        COALESCE(o.customer_address_line_snapshot, c.address, pc.address) AS customerAddressLine,
+        COALESCE(o.customer_city_snapshot, pc.city) AS customerCity,
+        COALESCE(o.customer_state_snapshot, pc.state) AS customerState,
+        COALESCE(o.customer_country_snapshot, pc.country) AS customerCountry,
+        COALESCE(o.customer_postal_code_snapshot, pc.postal_code) AS customerPostalCode,
+        COALESCE(o.customer_dwelling_type_snapshot, pc.dwelling_type) AS customerDwellingType,
+        COALESCE(o.customer_apartment_snapshot, pc.apartment) AS customerApartment,
+        COALESCE(o.customer_delivery_notes_snapshot, pc.delivery_notes) AS customerDeliveryNotes,
         c.id AS customerId,
         pc.id AS potentialCustomerId,
         o.user_id AS userId,
@@ -2169,6 +2224,16 @@ function normalizeOrderListRow(row) {
 }
 
 function normalizeOrderDetailRow(row) {
+  const customerAddress = {
+    addressLine: row.customerAddressLine,
+    city: row.customerCity,
+    state: row.customerState,
+    country: row.customerCountry,
+    postalCode: row.customerPostalCode,
+    dwellingType: row.customerDwellingType,
+    apartment: row.customerApartment,
+    deliveryNotes: row.customerDeliveryNotes,
+  };
   return {
     id: row.id,
     orderNumber: row.orderNumber,
@@ -2202,7 +2267,8 @@ function normalizeOrderDetailRow(row) {
       lastName: row.customerLastName,
       email: row.customerEmail,
       phone: row.customerPhone,
-      address: row.customerAddress,
+      address: formatCustomerAddress(customerAddress),
+      defaultAddress: customerAddress,
     },
     items: [],
     history: [],

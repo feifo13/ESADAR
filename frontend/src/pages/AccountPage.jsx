@@ -24,12 +24,13 @@ import { formatPaymentMethod } from "../lib/paymentMethods.js";
 import { articlePath } from "../lib/routes.js";
 import { getNextSortDirection, sortRows } from "../lib/tableSort.js";
 import {
+  getCustomerProfileValidationIssues,
   getFriendlyErrorMessage,
-  getMinLengthValidationMessage,
   getRequiredValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
 import AppLoader from "../components/AppLoader.jsx";
+import CustomerProfileFields, { createEmptyCustomerAddress } from "../components/CustomerProfileFields.jsx";
 
 
 const PAYMENT_STATUS_LABELS = {
@@ -114,14 +115,7 @@ const initialForm = {
   instagram: "",
   preferredPaymentMethod: "",
   preferredShippingMethodId: "",
-  defaultAddress: {
-    addressLine: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: "Uruguay",
-    deliveryNotes: "",
-  },
+  defaultAddress: createEmptyCustomerAddress(),
   preferredCategories: [],
   preferredBrands: [],
   preferredSizes: [],
@@ -231,6 +225,10 @@ export default function AccountPage() {
               profileResponse.profile?.defaultAddress?.postalCode || "",
             country:
               profileResponse.profile?.defaultAddress?.country || "Uruguay",
+            dwellingType:
+              profileResponse.profile?.defaultAddress?.dwellingType || "HOUSE",
+            apartment:
+              profileResponse.profile?.defaultAddress?.apartment || "",
             deliveryNotes:
               profileResponse.profile?.defaultAddress?.deliveryNotes || "",
           },
@@ -495,23 +493,6 @@ export default function AccountPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
-  function notifyEmailLocked(event) {
-    event.preventDefault();
-    notifyFormStatus(notifyMobileStatus, "info", LOCKED_EMAIL_MESSAGE, {
-      icon: "info",
-    });
-  }
-
-  function updateAddressField(name, value) {
-    setForm((current) => ({
-      ...current,
-      defaultAddress: {
-        ...current.defaultAddress,
-        [name]: value,
-      },
-    }));
-  }
-
   function togglePreferenceField(name, value) {
     setForm((current) => {
       const values = current[name] || [];
@@ -525,26 +506,15 @@ export default function AccountPage() {
   }
 
   function getProfileValidationIssue() {
+    const profileIssue = getCustomerProfileValidationIssues(form)[0];
+    if (profileIssue) {
+      return {
+        target: `account-${profileIssue.field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`,
+        message: profileIssue.message,
+      };
+    }
     const checks = [
-      { target: "account-first-name", message: getRequiredValidationMessage(form.firstName, "el nombre") },
-      { target: "account-first-name", message: getMinLengthValidationMessage(form.firstName, 2, "el nombre") },
-      { target: "account-last-name", message: getRequiredValidationMessage(form.lastName, "el apellido") },
-      { target: "account-last-name", message: getMinLengthValidationMessage(form.lastName, 2, "el apellido") },
-      { target: "account-phone", message: getRequiredValidationMessage(form.phone, "el teléfono") },
       { target: "account-birth-date", message: getRequiredValidationMessage(form.birthDate, "la fecha de nacimiento") },
-      {
-        target: "account-address-line",
-        message: getRequiredValidationMessage(form.defaultAddress.addressLine, "la dirección de envío"),
-      },
-      { target: "account-city", message: getRequiredValidationMessage(form.defaultAddress.city, "la ciudad") },
-      {
-        target: "account-state",
-        message: getRequiredValidationMessage(form.defaultAddress.state, "el departamento"),
-      },
-      {
-        target: "account-postal-code",
-        message: getRequiredValidationMessage(form.defaultAddress.postalCode, "el código postal"),
-      },
     ];
 
     return checks.find((check) => Boolean(check.message)) || null;
@@ -567,18 +537,15 @@ export default function AccountPage() {
       setProfileLoading(true);
       setProfileError("");
       setProfileMessage("");
-      const { email: _email, ...profilePayload } = form;
       await apiFetch("/api/public/account/profile", {
         method: "PATCH",
         body: {
-          ...profilePayload,
+          ...form,
           preferredShippingMethodId: form.preferredShippingMethodId
             ? Number(form.preferredShippingMethodId)
             : null,
           preferredPaymentMethod: form.preferredPaymentMethod || null,
-          defaultAddress: form.defaultAddress?.addressLine
-            ? form.defaultAddress
-            : null,
+          defaultAddress: form.defaultAddress,
         },
       });
       const successMessage = "Datos guardados";
@@ -704,56 +671,14 @@ export default function AccountPage() {
           </div>
 
           <form className="page-stack" onSubmit={handleSubmit} noValidate>
+            <CustomerProfileFields
+              profile={form}
+              onChange={setForm}
+              validationPrefix="account"
+              emailReadOnly
+            />
+            <p className="muted-copy">{LOCKED_EMAIL_MESSAGE}</p>
             <div className="form-grid-two">
-              <label className="field-group">
-                <span>Nombre</span>
-                <input
-                  className="input"
-                  name="firstName"
-                  data-validation-field="account-first-name"
-                  value={form.firstName}
-                  onChange={(event) =>
-                    updateField("firstName", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group">
-                <span>Apellido</span>
-                <input
-                  className="input"
-                  name="lastName"
-                  data-validation-field="account-last-name"
-                  value={form.lastName}
-                  onChange={(event) =>
-                    updateField("lastName", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group" onPointerDownCapture={notifyEmailLocked}>
-                <span>Email</span>
-                <input
-                  className="input"
-                  type="email"
-                  name="email"
-                  data-validation-field="account-email"
-                  value={form.email}
-                  disabled
-                  onFocus={notifyEmailLocked}
-                />
-              </label>
-              <label className="field-group">
-                <span>Teléfono / WhatsApp</span>
-                <input
-                  className="input"
-                  name="phone"
-                  data-validation-field="account-phone"
-                  value={form.phone}
-                  onChange={(event) => updateField("phone", event.target.value)}
-                  required
-                />
-              </label>
               <label className="field-group">
                 <span>Instagram</span>
                 <input
@@ -775,58 +700,6 @@ export default function AccountPage() {
                   value={form.birthDate}
                   onChange={(event) =>
                     updateField("birthDate", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group field-group-span-2">
-                <span>Dirección de envío</span>
-                <input
-                  className="input"
-                  name="addressLine"
-                  data-validation-field="account-address-line"
-                  value={form.defaultAddress.addressLine}
-                  onChange={(event) =>
-                    updateAddressField("addressLine", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group">
-                <span>Ciudad</span>
-                <input
-                  className="input"
-                  name="city"
-                  data-validation-field="account-city"
-                  value={form.defaultAddress.city}
-                  onChange={(event) =>
-                    updateAddressField("city", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group">
-                <span>Departamento</span>
-                <input
-                  className="input"
-                  name="state"
-                  data-validation-field="account-state"
-                  value={form.defaultAddress.state}
-                  onChange={(event) =>
-                    updateAddressField("state", event.target.value)
-                  }
-                  required
-                />
-              </label>
-              <label className="field-group">
-                <span>Código postal</span>
-                <input
-                  className="input"
-                  name="postalCode"
-                  data-validation-field="account-postal-code"
-                  value={form.defaultAddress.postalCode}
-                  onChange={(event) =>
-                    updateAddressField("postalCode", event.target.value)
                   }
                   required
                 />
@@ -864,17 +737,6 @@ export default function AccountPage() {
                     </option>
                   ))}
                 </select>
-              </label>
-              <label className="field-group field-group-span-2">
-                <span>Notas de entrega</span>
-                <textarea
-                  className="input textarea"
-                  rows="3"
-                  value={form.defaultAddress.deliveryNotes}
-                  onChange={(event) =>
-                    updateAddressField("deliveryNotes", event.target.value)
-                  }
-                />
               </label>
             </div>
 

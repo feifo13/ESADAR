@@ -3,7 +3,7 @@ import SeoHead from '../components/SeoHead.jsx';
 import { useSiteSeo } from '../contexts/SiteSeoContext.jsx';
 import { apiFetch } from '../lib/api.js';
 import { useNotification } from '../contexts/NotificationContext.jsx';
-import { firstValidationMessage, focusFirstInvalidField, getEmailValidationMessage, getRequiredValidationMessage } from '../lib/validation.js';
+import { firstValidationMessage, focusFirstInvalidField, getEmailValidationMessage, getRequiredValidationMessage, getUruguayMobileValidationMessage } from '../lib/validation.js';
 import { toAbsoluteUrl } from '../lib/seo.js';
 
 const initialState = {
@@ -36,6 +36,7 @@ export default function ContactPage() {
         getRequiredValidationMessage(form.lastName, 'el apellido'),
         getRequiredValidationMessage(form.email, 'el email'),
         getEmailValidationMessage(form.email),
+        getUruguayMobileValidationMessage(form.phone),
         getRequiredValidationMessage(form.message, 'la consulta'),
       );
       if (validationMessage) {

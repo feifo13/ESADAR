@@ -10,6 +10,11 @@ import { env } from '../../config/env.js';
 import { sanitizePublicUrl } from '../../utils/assets.js';
 import { verifyGoogleCredential } from './google-identity.js';
 import { isGoogleCustomerEligible } from './google-auth-policy.js';
+import {
+  findCustomerProfileByUserId,
+  syncDefaultCustomerAddress,
+} from '../customers/customer-helpers.js';
+import { isCustomerProfileComplete } from '../../../../frontend/src/shared/customer-profile.js';
 
 async function getUserByEmail(email, connection = pool) {
   const [rows] = await connection.execute(
@@ -157,8 +162,16 @@ function toAuthPayload(user) {
     sub: String(user.id),
     userId: user.id,
     email: user.email,
-    name: `${user.firstName} ${user.lastName}`.trim(),
+    name: [user.firstName, user.lastName].filter(Boolean).join(' '),
     roles: user.roles,
+  };
+}
+
+async function withDerivedProfileState(user, connection = pool) {
+  const profile = await findCustomerProfileByUserId(user.id, connection);
+  return {
+    ...user,
+    profileComplete: isCustomerProfileComplete(profile || {}),
   };
 }
 
@@ -229,7 +242,7 @@ export async function registerUser(input, auditContext) {
         input.birthDate || null,
         input.email,
         passwordHash,
-        input.address || null,
+        input.address.addressLine,
         input.phone || null,
         input.instagram || null,
         auditContext.actorUserId || null,
@@ -246,7 +259,7 @@ export async function registerUser(input, auditContext) {
       [userId, customerRoleId, auditContext.actorUserId || null],
     );
 
-    await connection.execute(
+    const [customerInsert] = await connection.execute(
       `
         INSERT INTO customers (
           user_id,
@@ -268,7 +281,7 @@ export async function registerUser(input, auditContext) {
         input.lastName,
         input.birthDate || null,
         input.email,
-        input.address || null,
+        input.address.addressLine,
         input.phone || null,
         input.instagram || null,
         auditContext.actorUserId || null,
@@ -276,7 +289,9 @@ export async function registerUser(input, auditContext) {
       ],
     );
 
-    const user = await getUserById(userId, connection);
+    await syncDefaultCustomerAddress(customerInsert.insertId, input.address, connection);
+
+    const user = await withDerivedProfileState(await getUserById(userId, connection), connection);
 
     await logAudit(
       {
@@ -345,8 +360,9 @@ export async function loginUser(input, auditContext) {
     userAgent: auditContext.userAgent,
   });
 
-  const token = signAccessToken(toAuthPayload(user));
-  return { user: sanitizeUser(user), token };
+  const authUser = await withDerivedProfileState(user);
+  const token = signAccessToken(toAuthPayload(authUser));
+  return { user: sanitizeUser(authUser), token };
 }
 
 
@@ -404,7 +420,10 @@ async function completeGoogleLogin(user, googleIdentity, auditContext) {
       connection,
     );
 
-    const refreshedUser = await getUserById(currentUser.id, connection);
+    const refreshedUser = await withDerivedProfileState(
+      await getUserById(currentUser.id, connection),
+      connection,
+    );
     const token = signAccessToken(toAuthPayload(refreshedUser));
     return { user: sanitizeUser(refreshedUser), token };
   });
@@ -479,7 +498,7 @@ async function createGoogleCustomer(googleIdentity, auditContext) {
       [userId, googleIdentity.subject, googleIdentity.email],
     );
 
-    const user = await getUserById(userId, connection);
+    const user = await withDerivedProfileState(await getUserById(userId, connection), connection);
 
     await logAudit(
       {
@@ -540,8 +559,12 @@ async function createGoogleCustomer(googleIdentity, auditContext) {
   return result;
 }
 
-export async function loginWithGoogle(input, auditContext) {
-  const googleIdentity = await verifyGoogleCredential(input.credential);
+export async function loginWithGoogle(
+  input,
+  auditContext,
+  { verifyCredential = verifyGoogleCredential } = {},
+) {
+  const googleIdentity = await verifyCredential(input.credential);
   const linkedUser = await getUserByGoogleSubject(googleIdentity.subject);
 
   if (linkedUser) {
@@ -713,7 +736,10 @@ export async function linkGoogleAccount(input, auditContext) {
         connection,
       );
 
-      const refreshedUser = await getUserById(currentUser.id, connection);
+      const refreshedUser = await withDerivedProfileState(
+        await getUserById(currentUser.id, connection),
+        connection,
+      );
       const token = signAccessToken(toAuthPayload(refreshedUser));
       return { user: sanitizeUser(refreshedUser), token };
     });
@@ -871,7 +897,8 @@ export async function resetUserPassword(input, auditContext) {
 }
 
 export async function getCurrentUser(userId) {
-  const user = await getUserById(userId);
+  const storedUser = await getUserById(userId);
+  const user = storedUser ? await withDerivedProfileState(storedUser) : null;
   if (!user) {
     throw notFound('User not found');
   }
@@ -891,5 +918,6 @@ function sanitizeUser(user) {
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt,
     roles: user.roles,
+    profileComplete: Boolean(user.profileComplete),
   };
 }

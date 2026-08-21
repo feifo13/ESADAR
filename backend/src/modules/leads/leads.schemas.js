@@ -9,6 +9,10 @@ import {
   pageSizeSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
+import {
+  optionalUruguayMobileSchema,
+  requiredEmailSchema,
+} from '../customers/customer-profile.schemas.js';
 
 const optionalContactString = (max) => z.string().trim().max(max).optional().nullable();
 const preferenceArraySchema = z.array(z.union([z.string().trim(), z.coerce.number()])).max(100).optional().nullable();
@@ -17,8 +21,8 @@ const leadIdentitySchema = z.object({
   firstName: optionalContactString(100),
   lastName: optionalContactString(100),
   birthDate: z.string().date().optional().nullable(),
-  email: z.string().trim().email().max(255),
-  phone: optionalContactString(50),
+  email: requiredEmailSchema,
+  phone: optionalUruguayMobileSchema,
   instagram: optionalContactString(100),
   address: optionalContactString(255),
 });

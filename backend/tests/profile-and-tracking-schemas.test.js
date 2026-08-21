@@ -8,15 +8,24 @@ import { orderTrackingUpdateSchema } from '../src/modules/orders/orders.schemas.
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-test('account profile schema strips email changes from user profile updates', () => {
+test('account profile schema validates the immutable credential email and complete profile', () => {
   const parsed = accountProfileUpdateSchema.parse({
     firstName: 'Lucia',
     lastName: 'Cliente',
     email: 'nuevo@example.test',
     phone: '099123456',
+    defaultAddress: {
+      addressLine: 'Calle 1',
+      city: 'Montevideo',
+      state: 'Montevideo',
+      country: 'Uruguay',
+      postalCode: '11600',
+      dwellingType: 'HOUSE',
+    },
   });
 
-  assert.equal(parsed.email, undefined);
+  assert.equal(parsed.email, 'nuevo@example.test');
+  assert.equal(parsed.phone, '99123456');
   assert.equal(parsed.firstName, 'Lucia');
 });
 

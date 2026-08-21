@@ -38,8 +38,8 @@ function parseJsonField(value, fallback = null) {
 
 function normalizeLeadInput(input = {}) {
   return {
-    firstName: input.firstName?.trim() || 'Lead',
-    lastName: input.lastName?.trim() || 'ESADAR',
+    firstName: input.firstName?.trim() || null,
+    lastName: input.lastName?.trim() || null,
     birthDate: input.birthDate || null,
     email: input.email || null,
     phone: input.phone || null,

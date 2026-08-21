@@ -1,18 +1,20 @@
 import { z } from 'zod';
+import {
+  customerAddressSchema,
+  customerIdentityContactShape,
+  requiredEmailSchema,
+} from '../customers/customer-profile.schemas.js';
 
 export const registerSchema = z.object({
-  firstName: z.string().trim().min(2).max(100),
-  lastName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(255),
+  ...customerIdentityContactShape,
   password: z.string().min(6).max(100),
   birthDate: z.string().date().optional().nullable(),
-  address: z.string().trim().max(255).optional().nullable(),
-  phone: z.string().trim().max(50).optional().nullable(),
+  address: customerAddressSchema,
   instagram: z.string().trim().max(100).optional().nullable(),
 });
 
 export const loginSchema = z.object({
-  email: z.string().trim().email().max(255),
+  email: requiredEmailSchema,
   password: z.string().min(6).max(100),
 });
 
@@ -26,7 +28,7 @@ export const googleLinkSchema = googleCredentialSchema.extend({
 
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().trim().email().max(255),
+  email: requiredEmailSchema,
 });
 
 export const resetPasswordSchema = z.object({

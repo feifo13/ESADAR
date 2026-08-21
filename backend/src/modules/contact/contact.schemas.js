@@ -8,14 +8,19 @@ import {
   pageSizeSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
+import {
+  optionalUruguayMobileSchema,
+  requiredEmailSchema,
+  requiredPersonNameSchema,
+} from '../customers/customer-profile.schemas.js';
 
 export const createContactMessageSchema = z.object({
-  firstName: z.string().trim().min(2).max(100),
-  lastName: z.string().trim().min(2).max(100),
+  firstName: requiredPersonNameSchema,
+  lastName: requiredPersonNameSchema,
   birthDate: z.string().date().optional().nullable(),
-  phone: z.string().trim().max(50).optional().nullable(),
+  phone: optionalUruguayMobileSchema,
   instagram: z.string().trim().max(100).optional().nullable(),
-  email: z.string().trim().email().max(255),
+  email: requiredEmailSchema,
   message: z.string().trim().min(2).max(3000),
 });
 

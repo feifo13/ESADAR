@@ -9,14 +9,15 @@ import {
   pageSizeSchema,
   sortDirSchema,
 } from '../../utils/listing.js';
+import {
+  customerAddressSchema,
+  customerIdentityContactShape,
+} from '../customers/customer-profile.schemas.js';
 
 const guestSchema = z.object({
-  firstName: z.string().trim().min(2).max(100),
-  lastName: z.string().trim().min(2).max(100),
+  ...customerIdentityContactShape,
   birthDate: z.string().date().optional().nullable(),
-  email: z.string().trim().email().max(255),
-  address: z.string().trim().max(255).optional().nullable(),
-  phone: z.string().trim().max(50).optional().nullable(),
+  address: customerAddressSchema,
   instagram: z.string().trim().max(100).optional().nullable(),
 });
 

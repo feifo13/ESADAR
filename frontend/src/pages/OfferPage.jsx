@@ -20,6 +20,7 @@ import {
   getEmailValidationMessage,
   getPositiveNumberValidationMessage,
   getRequiredValidationMessage,
+  getUruguayMobileValidationMessage,
   notifyFormStatus,
 } from "../lib/validation.js";
 import AppLoader from "../components/AppLoader.jsx";
@@ -188,6 +189,12 @@ export default function OfferPage() {
           target: "offer-email",
           message: !isAuthenticated
             ? getEmailValidationMessage(guest.email)
+            : "",
+        },
+        {
+          target: "offer-phone",
+          message: !isAuthenticated
+            ? getUruguayMobileValidationMessage(guest.phone)
             : "",
         },
         {

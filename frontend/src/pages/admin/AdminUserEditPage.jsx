@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useNotification } from '../../contexts/NotificationContext.jsx';
 import { apiFetch } from '../../lib/api.js';
 import AppLoader from '../../components/AppLoader.jsx';
+import CustomerProfileFields, { createEmptyCustomerAddress } from '../../components/CustomerProfileFields.jsx';
+import { getCustomerProfileValidationIssues } from '../../lib/validation.js';
 
 const ROLE_OPTIONS = [
   { value: 'SUPER_ADMIN', label: 'Super admin' },
@@ -25,6 +27,7 @@ const emptyForm = {
   phone: '',
   instagram: '',
   address: '',
+  defaultAddress: createEmptyCustomerAddress(),
   isActive: true,
   roles: ['CUSTOMER'],
 };
@@ -70,6 +73,10 @@ export default function AdminUserEditPage() {
           phone: user.phone || '',
           instagram: user.instagram || '',
           address: user.address || '',
+          defaultAddress: {
+            ...createEmptyCustomerAddress(),
+            ...(user.defaultAddress || {}),
+          },
           isActive: Boolean(user.isActive),
           roles: user.roles?.length ? user.roles : ['CUSTOMER'],
         });
@@ -114,6 +121,14 @@ export default function AdminUserEditPage() {
       setError(message);
       notifyError(message);
       return;
+    }
+    if (form.roles.includes('CUSTOMER')) {
+      const issue = getCustomerProfileValidationIssues(form)[0];
+      if (issue) {
+        setError(issue.message);
+        notifyError(issue.message);
+        return;
+      }
     }
 
     try {
@@ -195,6 +210,13 @@ export default function AdminUserEditPage() {
         {error ? <p className="error-copy">{error}</p> : null}
 
         <form className="page-stack" onSubmit={handleSubmit}>
+          {selectedRoles.has('CUSTOMER') ? (
+            <CustomerProfileFields
+              profile={form}
+              onChange={setForm}
+              validationPrefix="admin-customer"
+            />
+          ) : (
           <div className="admin-filter-grid">
             <label className="field-group">
               <span>Nombre</span>
@@ -212,14 +234,19 @@ export default function AdminUserEditPage() {
               <span>Teléfono</span>
               <input className="input" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} />
             </label>
+          </div>
+          )}
+          <div className="admin-filter-grid">
             <label className="field-group">
               <span>Instagram</span>
               <input className="input" value={form.instagram} onChange={(event) => updateField('instagram', event.target.value)} />
             </label>
-            <label className="field-group">
-              <span>Dirección</span>
-              <input className="input" value={form.address} onChange={(event) => updateField('address', event.target.value)} />
-            </label>
+            {!selectedRoles.has('CUSTOMER') ? (
+              <label className="field-group">
+                <span>Dirección</span>
+                <input className="input" value={form.address} onChange={(event) => updateField('address', event.target.value)} />
+              </label>
+            ) : null}
             <label className="field-group">
               <span>Estado</span>
               <select className="input" value={form.isActive ? 'true' : 'false'} onChange={(event) => updateField('isActive', event.target.value === 'true')} disabled={isEditingSelf}>
