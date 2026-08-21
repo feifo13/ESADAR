@@ -8,6 +8,7 @@ import {
   URUGUAY_DEPARTMENTS,
   getCustomerProfileValidationIssues,
   isCustomerProfileComplete,
+  normalizeDateOnly,
 } from '../src/shared/customer-profile.js';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,26 @@ const completeProfile = {
     dwellingType: DWELLING_TYPES.HOUSE,
   },
 };
+
+test('date-only profile values round-trip through canonical API representation', () => {
+  assert.equal(normalizeDateOnly('1990-01-02'), '1990-01-02');
+  assert.equal(
+    normalizeDateOnly('1990-01-02T00:00:00.000Z'),
+    '1990-01-02',
+  );
+  assert.equal(normalizeDateOnly(new Date(1990, 0, 2)), '1990-01-02');
+  assert.equal(normalizeDateOnly(''), null);
+  assert.equal(normalizeDateOnly(null), null);
+
+  const accountServiceSource = source(
+    '../../backend/src/modules/account/account.service.js',
+  );
+
+  assert.match(
+    accountServiceSource,
+    /birthDate: normalizeDateOnly\(customer\.birthDate\) \|\| normalizeDateOnly\(user\.birthDate\)/,
+  );
+});
 
 test('frontend profile completeness derives Google partial and completed states', () => {
   const firstGoogleLogin = {

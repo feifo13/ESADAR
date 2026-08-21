@@ -15,6 +15,7 @@ import { generateOrderReceiptPdf } from './pdf/order-receipt-pdf.js';
 import {
   getCustomerProfileValidationIssues,
   isCustomerProfileComplete,
+  normalizeDateOnly,
   normalizeEmail,
 } from '../../../../frontend/src/shared/customer-profile.js';
 
@@ -186,7 +187,7 @@ async function buildAccountProfile(customer, connection = pool) {
     userId: Number(user.id),
     firstName: customer.firstName || user.firstName || '',
     lastName: customer.lastName || user.lastName || '',
-    birthDate: customer.birthDate || user.birthDate || null,
+    birthDate: normalizeDateOnly(customer.birthDate) || normalizeDateOnly(user.birthDate),
     email: customer.email || user.email || null,
     phone: customer.phone || user.phone || null,
     instagram: customer.instagram || user.instagram || null,
