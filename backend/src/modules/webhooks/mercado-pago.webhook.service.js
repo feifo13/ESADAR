@@ -1,8 +1,11 @@
-import crypto from 'node:crypto';
 import { pool } from '../../db/pool.js';
-import { forbidden } from '../../utils/app-error.js';
 import { getCollectingSettings } from '../collecting/collecting.service.js';
 import { applyMercadoPagoPaymentToOrder } from '../orders/orders.service.js';
+import {
+  getMercadoPagoSignedPaymentId,
+  normalizeMercadoPagoPaymentId,
+  verifyMercadoPagoSignature,
+} from './mercado-pago.webhook-security.js';
 
 const MERCADO_PAGO_PAYMENT_URL = 'https://api.mercadopago.com/v1/payments';
 
@@ -15,11 +18,6 @@ function normalizeEventType(value) {
   const text = clean(value).toLowerCase().slice(0, 80);
   if (text === 'payments') return 'payment';
   return text;
-}
-
-function normalizeMercadoPagoPaymentId(value) {
-  const text = clean(value);
-  return /^\d{1,40}$/.test(text) ? text : '';
 }
 
 function normalizeJson(value) {
@@ -36,83 +34,26 @@ function getQueryValue(query, key) {
   return clean(value);
 }
 
-function getNotificationPaymentId({ payload, query }) {
-  const candidates = [
-    getQueryValue(query, 'data.id'),
-    clean(payload?.data?.id),
-    getQueryValue(query, 'id'),
-    clean(payload?.id),
-  ];
+function getProviderEventId(payload, query, requestId) {
+  const value =
+    clean(payload?.id)
+    || getQueryValue(query, 'id')
+    || clean(requestId);
 
-  return candidates.map(normalizeMercadoPagoPaymentId).find(Boolean) || '';
+  return value
+    ? value.slice(0, 120)
+    : null;
 }
 
-function getProviderEventId(payload, query) {
-  const value = clean(payload?.id) || getQueryValue(query, 'id') || '';
-  return value ? value.slice(0, 120) : null;
-}
-
-function parseSignatureHeader(signatureHeader) {
-  const parts = String(signatureHeader || '').split(',');
-  const parsed = {};
-
-  for (const part of parts) {
-    const [rawKey, ...rest] = part.split('=');
-    const key = clean(rawKey);
-    const value = clean(rest.join('='));
-    if (key && value) parsed[key] = value;
-  }
-
-  return parsed;
-}
-
-function safeEqualHex(a, b) {
-  const left = Buffer.from(String(a || ''), 'hex');
-  const right = Buffer.from(String(b || ''), 'hex');
-  if (!left.length || left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
-}
-
-function verifyMercadoPagoSignature({ secret, signatureHeader, requestId, dataId }) {
-  const signatureSecret = clean(secret);
-  if (!signatureSecret) {
-    return { required: false, valid: false, skipped: true };
-  }
-
-  const parsed = parseSignatureHeader(signatureHeader);
-  const ts = parsed.ts;
-  const receivedHash = parsed.v1;
-
-  if (!signatureHeader || !ts || !receivedHash) {
-    throw forbidden('Firma Mercado Pago ausente o incompleta.');
-  }
-
-  const normalizedRequestId = clean(requestId);
-  const dataIdCandidates = [...new Set([clean(dataId).toLowerCase(), ''])];
-  const manifests = dataIdCandidates.map((candidateDataId) => {
-    const manifestParts = [];
-    if (candidateDataId) manifestParts.push(`id:${candidateDataId};`);
-    if (normalizedRequestId) manifestParts.push(`request-id:${normalizedRequestId};`);
-    manifestParts.push(`ts:${ts};`);
-    return manifestParts.join('');
-  });
-
-  const isValid = manifests.some((manifest) => {
-    const calculatedHash = crypto
-      .createHmac('sha256', signatureSecret)
-      .update(manifest)
-      .digest('hex');
-    return safeEqualHex(calculatedHash, receivedHash);
-  });
-
-  if (!isValid) {
-    throw forbidden('Firma Mercado Pago invalida.');
-  }
-
-  return { required: true, valid: true, skipped: false };
-}
-
-async function recordWebhookEvent({ providerEventId, requestId, eventType, action, paymentId, payload, signatureValidated }) {
+async function recordWebhookEvent({
+  providerEventId,
+  requestId,
+  eventType,
+  action,
+  paymentId,
+  payload,
+  signatureValidated,
+}) {
   const [result] = await pool.execute(
     `
       INSERT INTO mercado_pago_webhook_events (
@@ -130,11 +71,12 @@ async function recordWebhookEvent({ providerEventId, requestId, eventType, actio
         event_type = VALUES(event_type),
         action = VALUES(action),
         payment_id = VALUES(payment_id),
-        processing_status = 'RECEIVED',
-        signature_validated = VALUES(signature_validated),
+        signature_validated =
+          GREATEST(
+            signature_validated,
+            VALUES(signature_validated)
+          ),
         payload_json = VALUES(payload_json),
-        received_at = NOW(),
-        processed_at = NULL,
         attempt_count = attempt_count + 1
     `,
     [
@@ -148,17 +90,58 @@ async function recordWebhookEvent({ providerEventId, requestId, eventType, actio
     ],
   );
 
-  if (result.insertId) return result.insertId;
+  const inserted =
+    Number(result.affectedRows || 0) === 1;
 
-  if (providerEventId) {
-    const [rows] = await pool.execute(
-      'SELECT id FROM mercado_pago_webhook_events WHERE provider_event_id = ? LIMIT 1',
-      [providerEventId],
-    );
-    return rows[0]?.id || null;
-  }
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        id,
+        processing_status AS processingStatus,
+        received_at AS receivedAt
+      FROM mercado_pago_webhook_events
+      WHERE provider_event_id = ?
+      LIMIT 1
+    `,
+    [providerEventId],
+  );
 
-  return null;
+  const event = rows[0] || null;
+
+  return {
+    id: event?.id || result.insertId || null,
+    duplicate: !inserted,
+    processingStatus:
+      event?.processingStatus || 'RECEIVED',
+    receivedAt:
+      event?.receivedAt || null,
+  };
+}
+
+async function claimWebhookEventRetry(event) {
+  if (!event?.id) return false;
+
+  const [result] = await pool.execute(
+    `
+      UPDATE mercado_pago_webhook_events
+      SET
+        processing_status = 'RECEIVED',
+        status_message = NULL,
+        processed_at = NULL,
+        received_at = NOW()
+      WHERE id = ?
+        AND (
+          processing_status = 'FAILED'
+          OR (
+            processing_status = 'RECEIVED'
+            AND received_at < DATE_SUB(NOW(), INTERVAL 30 SECOND)
+          )
+        )
+    `,
+    [event.id],
+  );
+
+  return Number(result.affectedRows || 0) === 1;
 }
 
 async function finishWebhookEvent(eventId, { status, message, orderId = null, payment = null }) {
@@ -222,73 +205,219 @@ async function fetchMercadoPagoPayment(paymentId, accessToken) {
   }
 }
 
-export async function handleMercadoPagoWebhook({ payload, query, headers, auditContext }) {
+export async function handleMercadoPagoWebhook({
+  payload,
+  query,
+  headers,
+  auditContext,
+}) {
   const settings = await getCollectingSettings();
-  const requestId = clean(headers['x-request-id']).slice(0, 120);
-  const eventType = normalizeEventType(payload?.type || getQueryValue(query, 'type') || getQueryValue(query, 'topic'));
-  const action = clean(payload?.action || getQueryValue(query, 'action')).slice(0, 120) || null;
-  const paymentId = getNotificationPaymentId({ payload, query });
-  const providerEventId = getProviderEventId(payload, query);
 
-  const signature = verifyMercadoPagoSignature({
-    secret: settings.mercadoPagoWebhookSecret,
-    signatureHeader: headers['x-signature'],
-    requestId,
-    dataId: getQueryValue(query, 'data.id') || paymentId,
-  });
-
-  const eventId = await recordWebhookEvent({
-    providerEventId,
-    requestId,
-    eventType,
-    action,
-    paymentId,
-    payload,
-    signatureValidated: signature.valid,
-  });
-
-  if (eventType !== 'payment') {
-    const message = `Evento Mercado Pago ignorado: ${eventType || 'sin tipo'}.`;
-    await finishWebhookEvent(eventId, { status: 'IGNORED', message });
-    return { status: 'ignored', message };
+  if (!settings.isMercadoPagoEnabled) {
+    return {
+      status: 'ignored',
+      message: 'Mercado Pago esta deshabilitado.',
+    };
   }
 
-  if (!paymentId) {
-    const message = 'Notificacion Mercado Pago sin data.id/payment id.';
-    await finishWebhookEvent(eventId, { status: 'IGNORED', message });
-    return { status: 'ignored', message };
+  const requestId =
+    clean(headers['x-request-id']).slice(0, 120);
+
+  const eventType = normalizeEventType(
+    payload?.type
+    || getQueryValue(query, 'type')
+    || getQueryValue(query, 'topic'),
+  );
+
+  const action =
+    clean(
+      payload?.action
+      || getQueryValue(query, 'action'),
+    ).slice(0, 120) || null;
+
+  /*
+   * Security boundary:
+   * the payment identity used for signature verification and
+   * provider lookup comes ONLY from query data.id.
+   *
+   * Body id/data.id and generic query id are not trusted as
+   * substitutes for the signed resource identity.
+   */
+  const paymentId =
+    getMercadoPagoSignedPaymentId(query);
+
+  const signature =
+    verifyMercadoPagoSignature({
+      secret: settings.mercadoPagoWebhookSecret,
+      signatureHeader: headers['x-signature'],
+      requestId,
+      dataId: paymentId,
+    });
+
+  const providerEventId =
+    getProviderEventId(
+      payload,
+      query,
+      requestId,
+    );
+
+  const event =
+    await recordWebhookEvent({
+      providerEventId,
+      requestId,
+      eventType,
+      action,
+      paymentId,
+      payload,
+      signatureValidated: signature.valid,
+    });
+
+  /*
+   * Provider notifications are at-least-once.
+   * A terminal event is never fetched/applied twice.
+   */
+  if (
+    event.duplicate
+    && ['PROCESSED', 'IGNORED'].includes(
+      event.processingStatus,
+    )
+  ) {
+    return {
+      status: 'ignored',
+      message:
+        'Evento Mercado Pago ya procesado anteriormente.',
+    };
+  }
+
+  if (event.duplicate) {
+    const retryClaimed =
+      await claimWebhookEventRetry(event);
+
+    if (!retryClaimed) {
+      return {
+        status: 'ignored',
+        message:
+          'Evento Mercado Pago ya se encuentra en procesamiento.',
+      };
+    }
+  }
+
+  const eventId = event.id;
+
+  if (eventType !== 'payment') {
+    const message =
+      `Evento Mercado Pago ignorado: ${
+        eventType || 'sin tipo'
+      }.`;
+
+    await finishWebhookEvent(
+      eventId,
+      {
+        status: 'IGNORED',
+        message,
+      },
+    );
+
+    return {
+      status: 'ignored',
+      message,
+    };
   }
 
   if (!settings.mercadoPagoAccessToken) {
-    const message = 'No hay Access Token de Mercado Pago configurado.';
-    await finishWebhookEvent(eventId, { status: 'FAILED', message });
-    return { status: 'failed', message };
-  }
+    const message =
+      'No hay Access Token de Mercado Pago configurado.';
 
-  const paymentResponse = await fetchMercadoPagoPayment(paymentId, settings.mercadoPagoAccessToken);
-  if (!paymentResponse.ok) {
-    const message = `No se pudo consultar el pago ${paymentId}: ${paymentResponse.message}`;
-    await finishWebhookEvent(eventId, {
-      status: 'FAILED',
+    await finishWebhookEvent(
+      eventId,
+      {
+        status: 'FAILED',
+        message,
+      },
+    );
+
+    return {
+      status: 'failed',
       message,
-      payment: paymentResponse.body,
-    });
-    return { status: 'failed', message };
+    };
   }
 
-  const result = await applyMercadoPagoPaymentToOrder(paymentResponse.payment, auditContext);
-  const eventStatus = result.status === 'processed'
-    ? 'PROCESSED'
-    : result.status === 'ignored'
-      ? 'IGNORED'
-      : 'FAILED';
+  const paymentResponse =
+    await fetchMercadoPagoPayment(
+      paymentId,
+      settings.mercadoPagoAccessToken,
+    );
 
-  await finishWebhookEvent(eventId, {
-    status: eventStatus,
-    message: result.message,
-    orderId: result.orderId,
-    payment: paymentResponse.payment,
-  });
+  if (!paymentResponse.ok) {
+    const message =
+      `No se pudo consultar el pago ${paymentId}: `
+      + paymentResponse.message;
+
+    await finishWebhookEvent(
+      eventId,
+      {
+        status: 'FAILED',
+        message,
+        payment: paymentResponse.body,
+      },
+    );
+
+    return {
+      status: 'failed',
+      message,
+    };
+  }
+
+  const authoritativePaymentId =
+    normalizeMercadoPagoPaymentId(
+      paymentResponse.payment?.id,
+    );
+
+  if (
+    !authoritativePaymentId
+    || authoritativePaymentId !== paymentId
+  ) {
+    const message =
+      'El pago consultado no coincide con el data.id '
+      + 'firmado por Mercado Pago.';
+
+    await finishWebhookEvent(
+      eventId,
+      {
+        status: 'FAILED',
+        message,
+        payment: paymentResponse.payment,
+      },
+    );
+
+    return {
+      status: 'failed',
+      message,
+    };
+  }
+
+  const result =
+    await applyMercadoPagoPaymentToOrder(
+      paymentResponse.payment,
+      auditContext,
+    );
+
+  const eventStatus =
+    result.status === 'processed'
+      ? 'PROCESSED'
+      : result.status === 'ignored'
+        ? 'IGNORED'
+        : 'FAILED';
+
+  await finishWebhookEvent(
+    eventId,
+    {
+      status: eventStatus,
+      message: result.message,
+      orderId: result.orderId,
+      payment: paymentResponse.payment,
+    },
+  );
 
   return result;
 }
