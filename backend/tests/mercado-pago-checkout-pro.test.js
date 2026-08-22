@@ -310,7 +310,7 @@ test("Checkout Pro return URLs use the public checkout completion route", () => 
       url.searchParams.get(
         "order",
       ),
-      order.orderNumber,
+      null,
     );
 
     assert.doesNotMatch(
@@ -592,3 +592,55 @@ test("live Mercado Pago provider delegates to isolated Checkout Pro service", ()
     /getMercadoPagoPaymentInstructionsForOrder/,
   );
 });
+
+
+test(
+  "Mercado Pago back URLs expose only the return result and no order identity",
+  () => {
+    const urls =
+      buildMercadoPagoBackUrls(
+        {
+          id: 42,
+          orderNumber: "ORD-42",
+        },
+        {
+          publicSiteUrl:
+            "https://sandbox.esadar.com.uy",
+        },
+      );
+
+    for (
+      const [result, value]
+      of Object.entries(urls)
+    ) {
+      const url =
+        new URL(value);
+
+      assert.equal(
+        url.pathname,
+        "/checkout/completa",
+      );
+
+      assert.equal(
+        url.searchParams.get(
+          "mp_result",
+        ),
+        result,
+      );
+
+      assert.equal(
+        url.searchParams.has(
+          "order",
+        ),
+        false,
+      );
+
+      assert.deepEqual(
+        [
+          ...url.searchParams.keys(),
+        ],
+        ["mp_result"],
+      );
+    }
+  },
+);

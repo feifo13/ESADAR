@@ -93,9 +93,6 @@ export function buildMercadoPagoBackUrls(
       options.publicSiteUrl,
     );
 
-  const orderLabel =
-    getOrderLabel(order);
-
   const buildUrl = (result) => {
     const url = new URL(
       "/checkout/completa",
@@ -105,11 +102,6 @@ export function buildMercadoPagoBackUrls(
     url.searchParams.set(
       "mp_result",
       result,
-    );
-
-    url.searchParams.set(
-      "order",
-      orderLabel,
     );
 
     return url.toString();
