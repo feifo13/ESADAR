@@ -52,6 +52,58 @@ function isPrexTransfer(paymentInstructions) {
   return haystack.includes("prex");
 }
 
+const MERCADO_PAGO_RETURN_RESULTS = new Set([
+  "success",
+  "failure",
+  "pending",
+]);
+
+function getMercadoPagoReturnResult(search) {
+  const params = new URLSearchParams(String(search || ""));
+  const result = params.get("mp_result");
+
+  return MERCADO_PAGO_RETURN_RESULTS.has(result)
+    ? result
+    : null;
+}
+
+function getSafeMercadoPagoCheckoutUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+
+    return url.protocol === "https:"
+      ? url.toString()
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+function getMercadoPagoReturnMessage(result) {
+  if (result === "success") {
+    return (
+      "Volviste de Mercado Pago. Esto no significa que el pago ya esté "
+      + "confirmado: estamos esperando la confirmación automática del pago."
+    );
+  }
+
+  if (result === "pending") {
+    return (
+      "Volviste de Mercado Pago con una operación pendiente. "
+      + "Tu orden seguirá pendiente hasta que recibamos la confirmación del pago."
+    );
+  }
+
+  if (result === "failure") {
+    return (
+      "El pago no se completó en Mercado Pago. Tu orden sigue registrada "
+      + "y podés volver a intentar el pago mientras el enlace esté disponible."
+    );
+  }
+
+  return null;
+}
+
 export default function CheckoutCompletePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,6 +122,35 @@ export default function CheckoutCompletePage() {
   const paymentInstructions = completedOrder?.paymentInstructions || null;
   const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
   const showTransferDetails = isBankTransfer && paymentInstructions?.enabled;
+
+  const isMercadoPago =
+    paymentInstructions?.method === "MERCADO_PAGO";
+
+  const mercadoPagoCheckoutUrl = isMercadoPago
+    ? getSafeMercadoPagoCheckoutUrl(paymentInstructions?.checkoutUrl)
+    : "";
+
+  const mercadoPagoReturnResult = isMercadoPago
+    ? getMercadoPagoReturnResult(location.search)
+    : null;
+
+  const mercadoPagoAwaitingConfirmation =
+    mercadoPagoReturnResult === "success"
+    || mercadoPagoReturnResult === "pending";
+
+  const mercadoPagoReady =
+    isMercadoPago
+    && paymentInstructions?.enabled === true
+    && paymentInstructions?.status === "READY"
+    && Boolean(mercadoPagoCheckoutUrl);
+
+  const showMercadoPagoCheckout =
+    mercadoPagoReady
+    && !mercadoPagoAwaitingConfirmation;
+
+  const mercadoPagoUnavailable =
+    isMercadoPago
+    && !mercadoPagoReady;
   const transferLabel = isPrexTransfer(paymentInstructions)
     ? "Transferencia Prex"
     : "Transferencia bancaria";
@@ -180,6 +261,73 @@ export default function CheckoutCompletePage() {
     );
   }
 
+  function renderMercadoPagoDetails() {
+    if (!isMercadoPago) return null;
+
+    const returnMessage =
+      getMercadoPagoReturnMessage(mercadoPagoReturnResult);
+
+    return (
+      <div className="checkout-complete-transfer-panel checkout-complete-mercado-pago-panel">
+        <p className="section-kicker">
+          {mercadoPagoAwaitingConfirmation
+            ? "Verificando pago"
+            : "Pago pendiente"}
+        </p>
+
+        <h2>Mercado Pago</h2>
+
+        {returnMessage ? (
+          <p
+            className="checkout-complete-copy payment-reference-note offer-sidebar-accent"
+            aria-live="polite"
+          >
+            {returnMessage}
+          </p>
+        ) : (
+          <p className="checkout-complete-copy">
+            Para completar la compra, continuá hacia Mercado Pago.
+            Al regresar, ESADAR seguirá esperando la confirmación
+            automática del pago antes de marcar la orden como pagada.
+          </p>
+        )}
+
+        {mercadoPagoUnavailable ? (
+          <>
+            <p className="checkout-complete-copy payment-reference-note offer-sidebar-accent">
+              Enlace de pago temporalmente no disponible
+            </p>
+
+            <p className="checkout-complete-copy">
+              {paymentInstructions?.instructions
+                || (
+                  "Tu orden quedó registrada correctamente, pero no pudimos "
+                  + "generar el enlace de Mercado Pago en este momento."
+                )}
+            </p>
+          </>
+        ) : null}
+
+        {showMercadoPagoCheckout ? (
+          <div className="checkout-complete-actions">
+            <a
+              className="button button-primary"
+              href={mercadoPagoCheckoutUrl}
+            >
+              Pagar con Mercado Pago
+            </a>
+          </div>
+        ) : null}
+
+        {!mercadoPagoUnavailable && paymentInstructions?.instructions ? (
+          <p className="muted-copy checkout-complete-bank-instructions">
+            {paymentInstructions.instructions}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (!completedOrder?.orderNumber) {
     return null;
   }
@@ -227,6 +375,7 @@ export default function CheckoutCompletePage() {
           </p>
 
           {renderTransferDetails()}
+          {renderMercadoPagoDetails()}
 
           <div className="checkout-complete-actions">
             <button
