@@ -1,3 +1,7 @@
+import {
+  getMercadoPagoPaymentInstructionsForOrder,
+} from "../../collecting/collecting.service.js";
+
 function hasText(value) {
   return String(value || "").trim().length > 0;
 }
@@ -12,6 +16,14 @@ export const mercadoPagoProvider = Object.freeze({
           hasText(settings.mercadoPagoAccessToken) ||
           hasText(settings.mercadoPagoCheckoutUrl)
         ),
+    );
+  },
+
+  async prepare(order, connection, options = {}) {
+    return getMercadoPagoPaymentInstructionsForOrder(
+      order,
+      connection,
+      options,
     );
   },
 });

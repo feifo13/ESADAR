@@ -22,7 +22,6 @@ import {
 import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   sendApprovedOrderEmail,
-  sendReceivedOrderPendingPaymentEmail,
   sendShippedOrderEmail,
 } from "./orders.mailer.js";
 import {
@@ -550,15 +549,6 @@ export async function createOrder(input, actor, auditContext) {
     );
 
     return order;
-  });
-
-  sendReceivedOrderPendingPaymentEmail(order, {
-    publicSiteUrl: auditContext.publicSiteUrl,
-  }).catch((error) => {
-    console.warn(
-      "[orders] received order pending payment email failed",
-      error?.message || error,
-    );
   });
 
   return order;

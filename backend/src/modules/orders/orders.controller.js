@@ -2,13 +2,13 @@ import {
   approveOrder,
   batchUpdateOrders,
   cancelOrder,
-  createOrder,
   createOrderPayment,
   getOrderDetail,
   listOrders,
   shipOrder,
   updateOrderTrackingCode,
 } from './orders.service.js';
+import { createCheckoutOrder } from './orders.checkout.service.js';
 import { expireReservedOrders } from './orders.expiration.service.js';
 import {
   createOrderPaymentSchema,
@@ -22,7 +22,6 @@ import {
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
-import { getPaymentInstructionsForOrder } from '../collecting/collecting.service.js';
 
 function getAuditContext(req) {
   return {
@@ -37,15 +36,16 @@ function getAuditContext(req) {
 
 export async function createPublicOrder(req, res) {
   const input = createOrderSchema.parse(req.body);
-  const order = await createOrder(input, req.auth || null, getAuditContext(req));
-  const paymentInstructions =
-    order.paymentMethod === 'BANK_TRANSFER'
-      ? await getPaymentInstructionsForOrder(order)
-      : null;
+
+  const order = await createCheckoutOrder(
+    input,
+    req.auth || null,
+    getAuditContext(req),
+  );
 
   return res.status(201).json({
     ok: true,
-    order: paymentInstructions ? { ...order, paymentInstructions } : order,
+    order,
   });
 }
 

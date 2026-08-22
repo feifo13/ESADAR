@@ -669,19 +669,50 @@ function buildMercadoPagoDetails(settings, preference = null) {
   };
 }
 
-export async function getPaymentInstructionsForOrder(order, connection = pool, options = {}) {
+export async function getBankTransferPaymentInstructions(
+  connection = pool,
+) {
   const settings = await getCollectingSettings(connection);
+  return buildBankTransferDetails(settings);
+}
+
+export async function getMercadoPagoPaymentInstructionsForOrder(
+  order,
+  connection = pool,
+  options = {},
+) {
+  const settings = await getCollectingSettings(connection);
+
+  const preference =
+    order?.id && Number(order?.total || 0) > 0
+      ? await createMercadoPagoPreference(
+          order,
+          settings,
+          connection,
+          options,
+        )
+      : null;
+
+  return buildMercadoPagoDetails(settings, preference);
+}
+
+export async function getPaymentInstructionsForOrder(
+  order,
+  connection = pool,
+  options = {},
+) {
   const paymentMethod = order?.paymentMethod;
 
-  if (paymentMethod === "BANK_TRANSFER")
-    return buildBankTransferDetails(settings);
+  if (paymentMethod === "BANK_TRANSFER") {
+    return getBankTransferPaymentInstructions(connection);
+  }
 
   if (paymentMethod === "MERCADO_PAGO") {
-    const preference =
-      order?.id && Number(order?.total || 0) > 0
-        ? await createMercadoPagoPreference(order, settings, connection, options)
-        : null;
-    return buildMercadoPagoDetails(settings, preference);
+    return getMercadoPagoPaymentInstructionsForOrder(
+      order,
+      connection,
+      options,
+    );
   }
 
   return {
