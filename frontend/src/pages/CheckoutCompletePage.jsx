@@ -1,7 +1,9 @@
-﻿import { useEffect, useMemo, useRef } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
 import { formatCurrency } from "../lib/format.js";
+import { apiFetch } from "../lib/api.js";
+import { getFriendlyErrorMessage } from "../lib/validation.js";
 import CopyValueButton from "../components/CopyValueButton.jsx";
 
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
@@ -110,14 +112,16 @@ export default function CheckoutCompletePage() {
   const { clearCart } = useCart();
   const didCleanupRef = useRef(false);
 
-  const completedOrder = useMemo(() => {
+  const [completedOrder, setCompletedOrder] = useState(() => {
     const stored = readCompletedOrder() || {};
     return location.state?.orderNumber
       ? { ...stored, ...location.state }
       : stored.orderNumber
         ? stored
         : null;
-  }, [location.state]);
+  });
+  const [retryingPayment, setRetryingPayment] = useState(false);
+  const [retryError, setRetryError] = useState("");
 
   const paymentInstructions = completedOrder?.paymentInstructions || null;
   const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
@@ -151,6 +155,18 @@ export default function CheckoutCompletePage() {
   const mercadoPagoUnavailable =
     isMercadoPago
     && !mercadoPagoReady;
+
+  const paymentRetryToken = String(
+    completedOrder?.paymentRetryToken || "",
+  ).trim();
+
+  const mercadoPagoRetryAvailable =
+    mercadoPagoUnavailable
+    && paymentInstructions?.retryable === true
+    && Number.isInteger(Number(completedOrder?.orderId))
+    && Number(completedOrder?.orderId) > 0
+    && /^[a-f0-9]{64}$/i.test(paymentRetryToken);
+
   const transferLabel = isPrexTransfer(paymentInstructions)
     ? "Transferencia Prex"
     : "Transferencia bancaria";
@@ -175,6 +191,81 @@ export default function CheckoutCompletePage() {
       window.sessionStorage.removeItem("esadar-checkout-draft");
     }
   }, [clearCart, completedOrder?.orderNumber, navigate]);
+
+  async function handleRetryMercadoPagoPayment() {
+    if (
+      !mercadoPagoRetryAvailable
+      || retryingPayment
+    ) {
+      return;
+    }
+
+    setRetryingPayment(true);
+    setRetryError("");
+
+    try {
+      const response = await apiFetch(
+        `/api/public/orders/${encodeURIComponent(
+          completedOrder.orderId,
+        )}/payment/retry`,
+        {
+          method: "POST",
+          body: {
+            retryToken: paymentRetryToken,
+          },
+        },
+      );
+
+      const nextPaymentInstructions =
+        response?.paymentInstructions || null;
+
+      const sameOrder =
+        Number(response?.orderId)
+          === Number(completedOrder.orderId)
+        && String(response?.orderNumber || "")
+          === String(completedOrder.orderNumber || "");
+
+      if (
+        !sameOrder
+        || nextPaymentInstructions?.method
+          !== "MERCADO_PAGO"
+      ) {
+        throw new Error(
+          "No pudimos validar el reintento de pago.",
+        );
+      }
+
+      const nextCompletedOrder = {
+        ...completedOrder,
+        paymentInstructions:
+          nextPaymentInstructions,
+      };
+
+      setCompletedOrder(
+        nextCompletedOrder,
+      );
+
+      if (
+        typeof window !== "undefined"
+      ) {
+        window.sessionStorage.setItem(
+          COMPLETE_STORAGE_KEY,
+          JSON.stringify(
+            nextCompletedOrder,
+          ),
+        );
+      }
+    } catch (error) {
+      setRetryError(
+        getFriendlyErrorMessage(
+          error,
+          "No pudimos volver a generar el enlace de Mercado Pago. Intentá nuevamente en unos minutos.",
+        ),
+      );
+    } finally {
+      setRetryingPayment(false);
+    }
+  }
 
   function handleAccept() {
     if (typeof window !== "undefined") {
@@ -305,6 +396,30 @@ export default function CheckoutCompletePage() {
                   + "generar el enlace de Mercado Pago en este momento."
                 )}
             </p>
+
+            {retryError ? (
+              <p
+                className="checkout-complete-copy payment-reference-note offer-sidebar-accent"
+                aria-live="polite"
+              >
+                {retryError}
+              </p>
+            ) : null}
+
+            {mercadoPagoRetryAvailable ? (
+              <div className="checkout-complete-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  disabled={retryingPayment}
+                  onClick={() => void handleRetryMercadoPagoPayment()}
+                >
+                  {retryingPayment
+                    ? "Reintentando..."
+                    : "Reintentar pago"}
+                </button>
+              </div>
+            ) : null}
           </>
         ) : null}
 

@@ -181,8 +181,22 @@ test("checkout completion remains based on the existing normalized order payload
     /navigate\("\/checkout\/completa"/,
   );
 
+  const completeApiCallCount =
+    (completeSource.match(/apiFetch\s*\(/g) || []).length;
+
+  assert.equal(
+    completeApiCallCount,
+    1,
+    "CheckoutCompletePage may call the API only for the secure payment retry flow.",
+  );
+
+  assert.match(
+    completeSource,
+    /apiFetch\([\s\S]*\/api\/public\/orders\/[\s\S]*\/payment\/retry/,
+  );
+
   assert.doesNotMatch(
     completeSource,
-    /apiFetch/,
+    /apiFetch\(\s*["'`]\/api\/public\/orders["'`]/,
   );
 });

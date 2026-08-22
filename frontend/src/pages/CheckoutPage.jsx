@@ -822,6 +822,7 @@ export default function CheckoutPage() {
         total: createdOrder?.total ?? total,
         paymentMethod: createdOrder?.paymentMethod || paymentMethod,
         paymentInstructions: createdOrder?.paymentInstructions || null,
+        paymentRetryToken: createdOrder?.paymentRetryToken || null,
       };
 
       if (typeof window !== "undefined") {
@@ -842,7 +843,13 @@ export default function CheckoutPage() {
 
       navigate("/checkout/completa", {
         replace: true,
-        state: completionPayload,
+        state: {
+          orderNumber: completionPayload.orderNumber,
+          orderId: completionPayload.orderId,
+          total: completionPayload.total,
+          paymentMethod: completionPayload.paymentMethod,
+          paymentInstructions: completionPayload.paymentInstructions,
+        },
       });
     } catch (err) {
       if (err?.payload?.details?.code === "CUSTOMER_PROFILE_INCOMPLETE" && isAuthenticated) {
