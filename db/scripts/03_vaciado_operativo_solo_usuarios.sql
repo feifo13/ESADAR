@@ -27,6 +27,7 @@ START TRANSACTION;
 
 DELETE FROM audit_log;
 DELETE FROM client_error_logs;
+DELETE FROM mercado_pago_checkout_preferences;
 DELETE FROM mercado_pago_preference_events;
 DELETE FROM mercado_pago_webhook_events;
 DELETE FROM payments;
@@ -69,6 +70,7 @@ COMMIT;
 
 ALTER TABLE audit_log AUTO_INCREMENT = 1;
 ALTER TABLE client_error_logs AUTO_INCREMENT = 1;
+ALTER TABLE mercado_pago_checkout_preferences AUTO_INCREMENT = 1;
 ALTER TABLE mercado_pago_preference_events AUTO_INCREMENT = 1;
 ALTER TABLE mercado_pago_webhook_events AUTO_INCREMENT = 1;
 ALTER TABLE payments AUTO_INCREMENT = 1;
