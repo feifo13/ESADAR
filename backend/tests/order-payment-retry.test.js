@@ -65,7 +65,7 @@ test(
 
     assert.match(
       calls[0].sql,
-      /payment_method = 'Mercado Pago'/,
+      /payment_method = 'MERCADO_PAGO'/,
     );
 
     const storedHash =
@@ -99,7 +99,7 @@ test(
 
         assert.match(
           String(sql),
-          /o\.payment_method = 'Mercado Pago'/,
+          /o\.payment_method = 'MERCADO_PAGO'/,
         );
 
         assert.deepEqual(
@@ -199,7 +199,7 @@ test(
         orderNumber:
           "ORD-RETRY-42",
         paymentMethod:
-          "Mercado Pago",
+          "MERCADO_PAGO",
       });
 
     let prepareCount = 0;
@@ -363,6 +363,41 @@ test(
     assert.doesNotMatch(
       source,
       /const mailOrder = \{[\s\S]*paymentRetryToken[\s\S]*\};/,
+    );
+  },
+);
+
+
+test(
+  "retry capability SQL stays aligned with persisted MERCADO_PAGO payment code",
+  () => {
+    const source =
+      readFileSync(
+        new URL(
+          "../src/modules/orders/order-payment-retry-capability.js",
+          import.meta.url,
+        ),
+        "utf8",
+      );
+
+    const legacyLabel =
+      ["Mercado", "Pago"].join(" ");
+
+    assert.equal(
+      source.includes(
+        `payment_method = '${legacyLabel}'`,
+      ),
+      false,
+    );
+
+    assert.equal(
+      (
+        source.match(
+          /payment_method\s*=\s*'MERCADO_PAGO'/g,
+        )
+        || []
+      ).length,
+      2,
     );
   },
 );

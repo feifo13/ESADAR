@@ -63,7 +63,7 @@ export async function issueOrderPaymentRetryCapability(
         WHERE id = ?
           AND order_status = 'RESERVED'
           AND payment_status = 'PENDING'
-          AND payment_method = 'Mercado Pago'
+          AND payment_method = 'MERCADO_PAGO'
           AND reserved_until IS NOT NULL
           AND reserved_until > NOW()
         ON DUPLICATE KEY UPDATE
@@ -120,7 +120,7 @@ export async function authorizeOrderPaymentRetryCapability(
           AND oprc.expires_at > NOW()
           AND o.order_status = 'RESERVED'
           AND o.payment_status = 'PENDING'
-          AND o.payment_method = 'Mercado Pago'
+          AND o.payment_method = 'MERCADO_PAGO'
           AND o.reserved_until IS NOT NULL
           AND o.reserved_until > NOW()
         LIMIT 1
