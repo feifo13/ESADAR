@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import SeoHead from "../components/SeoHead.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
+import CopyValueButton from "../components/CopyValueButton.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -150,6 +151,12 @@ export default function AccountOrderDetailPage() {
                 <h1>{order.orderNumber}</h1>
               </div>
               <div className="inline-action-group account-order-hero-actions">
+                <CopyValueButton
+                  value={order.orderNumber}
+                  ariaLabel={`Copiar número de orden ${order.orderNumber}`}
+                  title="Copiar número de orden"
+                  successMessage="Número de orden copiado"
+                />
                 {order.hasOffers ? (
                   <span className="pill pill-offer">
                     {order.offerCount || 1} oferta
@@ -191,7 +198,15 @@ export default function AccountOrderDetailPage() {
               {order.trackingCode ? (
                 <p className="summary-line">
                   <span>Código de seguimiento</span>
-                  <strong>{order.trackingCode}</strong>
+                  <strong className="inline-action-group">
+                    <span>{order.trackingCode}</span>
+                    <CopyValueButton
+                      value={order.trackingCode}
+                      ariaLabel={`Copiar código de seguimiento ${order.trackingCode}`}
+                      title="Copiar código de seguimiento"
+                      successMessage="Código de seguimiento copiado"
+                    />
+                  </strong>
                 </p>
               ) : null}
               <p className="summary-line">

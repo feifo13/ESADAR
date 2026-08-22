@@ -11,6 +11,7 @@ import ArticleImageGallery from "../components/ArticleImageGallery.jsx";
 import ScrollRailControls from "../components/ScrollRailControls.jsx";
 import { EditIcon } from "../components/ActionIcons.jsx";
 import { apiFetch } from "../lib/api.js";
+import { copyTextToClipboard } from "../lib/clipboard.js";
 import {
   formatArticleAgeGroup,
   formatArticleGender,
@@ -476,14 +477,6 @@ export default function ArticlePage() {
       canonicalUrl,
     );
 
-    const copyShareMessage = () => {
-      if (!navigator.clipboard?.writeText) return Promise.resolve(false);
-      return navigator.clipboard
-        .writeText(shareMessage)
-        .then(() => true)
-        .catch(() => false);
-    };
-
     const trackShareIntent = () =>
       apiFetch("/api/public/article-events", {
         method: "POST",
@@ -494,7 +487,7 @@ export default function ArticlePage() {
         },
       }).catch(() => undefined);
 
-    const copied = await copyShareMessage();
+    const copied = await copyTextToClipboard(shareMessage);
 
     if (!shouldUseNativeArticleShare()) {
       notifyInfo(

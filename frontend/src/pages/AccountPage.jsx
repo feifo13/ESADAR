@@ -6,6 +6,7 @@ import StatusBadge from "../components/StatusBadge.jsx";
 import SummaryItemCard from "../components/SummaryItemCard.jsx";
 import SortableTh from "../components/SortableTh.jsx";
 import OrderStatusBadge from "../components/OrderStatusBadge.jsx";
+import CopyValueButton from "../components/CopyValueButton.jsx";
 import {
   BellIcon,
   CartIcon,
@@ -1556,7 +1557,15 @@ export default function AccountPage() {
                       ].filter(Boolean)}
                       price={formatCurrency(order.total)}
                       actions={[
+                        <CopyValueButton
+                          key={`copy-order-${order.id}`}
+                          value={order.orderNumber}
+                          ariaLabel={`Copiar número de orden ${order.orderNumber}`}
+                          title="Copiar número de orden"
+                          successMessage="Número de orden copiado"
+                        />,
                         <Link
+                          key={`view-order-${order.id}`}
                           to={`/cuenta/ordenes/${order.id}`}
                           className="icon-action-button"
                           aria-label={`Ver ${order.orderNumber}`}
@@ -1664,6 +1673,12 @@ export default function AccountPage() {
                           <td>{formatDate(latestStatusDate)}</td>
                           <td>
                             <div className="table-actions">
+                              <CopyValueButton
+                                value={order.orderNumber}
+                                ariaLabel={`Copiar número de orden ${order.orderNumber}`}
+                                title="Copiar número de orden"
+                                successMessage="Número de orden copiado"
+                              />
                               <Link
                                 to={`/cuenta/ordenes/${order.id}`}
                                 className="icon-action-button"

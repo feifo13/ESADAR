@@ -2,6 +2,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
 import { formatCurrency } from "../lib/format.js";
+import CopyValueButton from "../components/CopyValueButton.jsx";
 
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
 
@@ -136,7 +137,13 @@ export default function CheckoutCompletePage() {
           </strong>
         </p>
         <p className="checkout-complete-copy payment-reference-note">
-          {completedOrder.orderNumber}
+          {completedOrder.orderNumber}{" "}
+          <CopyValueButton
+            value={completedOrder.orderNumber}
+            ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
+            title="Copiar número de orden"
+            successMessage="Número de orden copiado"
+          />
         </p>
 
         <div className="checkout-complete-payment-details">
@@ -196,7 +203,13 @@ export default function CheckoutCompletePage() {
             Tienes <strong>24 horas</strong> para completar el pago.
           </p>
           <p className="checkout-complete-order">
-            Orden <strong>{completedOrder.orderNumber}</strong>
+            Orden <strong>{completedOrder.orderNumber}</strong>{" "}
+            <CopyValueButton
+              value={completedOrder.orderNumber}
+              ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
+              title="Copiar número de orden"
+              successMessage="Número de orden copiado"
+            />
           </p>
           <p className="checkout-complete-copy">
             Cuando tu orden sea aprobada y despachada, te enviaremos un correo
