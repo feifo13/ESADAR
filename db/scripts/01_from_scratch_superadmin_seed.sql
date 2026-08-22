@@ -862,6 +862,7 @@ CREATE TABLE payments (
   KEY idx_payments_order_id (order_id),
   KEY idx_payments_status (status),
   KEY idx_payments_provider_reference (provider_reference),
+  UNIQUE KEY uq_payments_provider_name_reference (provider_name, provider_reference),
   KEY idx_payments_created_by (created_by),
   KEY idx_payments_updated_by (updated_by),
   CONSTRAINT chk_payments_amount CHECK (amount >= 0),
