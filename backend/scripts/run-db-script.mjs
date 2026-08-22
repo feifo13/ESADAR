@@ -1,8 +1,12 @@
 import 'dotenv/config';
 
+import bcrypt from 'bcryptjs';
+
 import {
   isProductionTarget,
   loadSqlForRunner,
+  renderBootstrapAdminCredentials,
+  requiresBootstrapAdminCredentials,
   runMysqlScript,
   validateTargetDatabases,
 } from './lib/mysql-script-runner.mjs';
@@ -72,6 +76,9 @@ async function main() {
 
   const loaded = await loadSqlForRunner(options.file);
 
+  const bootstrapCredentialsRequired =
+    requiresBootstrapAdminCredentials(loaded.sql);
+
   validateTargetDatabases(
     loaded.inspection.targetDatabases,
     dbName,
@@ -116,6 +123,11 @@ async function main() {
     `DESTRUCTIVE=${loaded.inspection.destructive ? 'YES' : 'NO'}\n`,
   );
   process.stdout.write(
+    `BOOTSTRAP_ADMIN_CREDENTIALS_REQUIRED=${
+      bootstrapCredentialsRequired ? 'YES' : 'NO'
+    }\n`,
+  );
+  process.stdout.write(
     `EXPLICIT_DB_TARGETS=${
       loaded.inspection.targetDatabases.join(',') || 'NONE'
     }\n`,
@@ -132,6 +144,41 @@ async function main() {
   if (!options.execute) {
     process.stdout.write('RESULT=PASS_DRY_RUN\n');
     return;
+  }
+
+  let executionSql = loaded.sql;
+
+  if (bootstrapCredentialsRequired) {
+    const bootstrapEmail = String(
+      process.env.ESADAR_BOOTSTRAP_ADMIN_EMAIL || '',
+    ).trim();
+
+    const bootstrapPassword = String(
+      process.env.ESADAR_BOOTSTRAP_ADMIN_PASSWORD || '',
+    );
+
+    if (!bootstrapEmail || !bootstrapPassword) {
+      throw new Error(
+        'Execution blocked: bootstrap admin credentials are required in environment.',
+      );
+    }
+
+    if (bootstrapPassword.length < 12) {
+      throw new Error(
+        'Execution blocked: bootstrap admin password must contain at least 12 characters.',
+      );
+    }
+
+    const bootstrapPasswordHash =
+      await bcrypt.hash(bootstrapPassword, 12);
+
+    executionSql = renderBootstrapAdminCredentials(
+      loaded.sql,
+      {
+        email: bootstrapEmail,
+        passwordHash: bootstrapPasswordHash,
+      },
+    );
   }
 
   if (!dbName) {
@@ -162,7 +209,7 @@ async function main() {
   }
 
   await runMysqlScript(
-    loaded.sql,
+    executionSql,
     {
       selectDatabase: !explicitDatabaseTarget,
     },

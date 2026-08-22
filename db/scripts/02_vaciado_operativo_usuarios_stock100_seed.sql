@@ -18,6 +18,11 @@ SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 SET collation_connection = 'utf8mb4_unicode_ci';
 SET time_zone = '+00:00';
 
+-- Credenciales obligatorias inyectadas por backend/scripts/run-db-script.mjs.
+-- No ejecutar este script destructivo directamente con mysql.
+SET @esadar_super_admin_email := __ESADAR_SUPER_ADMIN_EMAIL_SQL__;
+SET @esadar_super_admin_password_hash := __ESADAR_SUPER_ADMIN_PASSWORD_HASH_SQL__;
+
 SET @OLD_FOREIGN_KEY_CHECKS := @@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -99,8 +104,6 @@ ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   is_active = 1;
 
-SET @esadar_super_admin_email := _utf8mb4'fefio1313@gmail.com' COLLATE utf8mb4_unicode_ci;
-SET @esadar_super_admin_password_hash := '$2b$10$Z7dhGDzCSsn0bU5TrJWCc.mkmdYN0Cbn88l6t5kjuAh/eaGEK2xHK';
 
 INSERT INTO users (
   first_name,

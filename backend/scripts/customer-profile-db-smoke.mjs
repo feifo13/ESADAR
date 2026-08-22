@@ -4,8 +4,12 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import 'dotenv/config';
+import bcrypt from 'bcryptjs';
 import mysql from 'mysql2/promise';
-import { runLocalMysqlAdminScript } from './lib/mysql-script-runner.mjs';
+import {
+  renderBootstrapAdminCredentials,
+  runLocalMysqlAdminScript,
+} from './lib/mysql-script-runner.mjs';
 
 const SCRATCH_DATABASE = 'esadar_codex_customer_profile_smoke_tmp';
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -32,8 +36,21 @@ let primaryError = null;
 
 try {
   const fromScratchPath = resolve(currentDir, '../../db/scripts/01_from_scratch_superadmin_seed.sql');
-  const fromScratchSql = (await readFile(fromScratchPath, 'utf8'))
-    .replaceAll('esadar_sandbox', SCRATCH_DATABASE);
+
+  const smokeBootstrapPasswordHash = await bcrypt.hash(
+    randomBytes(24).toString('hex'),
+    10,
+  );
+
+  const fromScratchSql = renderBootstrapAdminCredentials(
+    (await readFile(fromScratchPath, 'utf8'))
+      .replaceAll('esadar_sandbox', SCRATCH_DATABASE),
+    {
+      email: `smoke-super-admin-${process.pid}@example.invalid`,
+      passwordHash: smokeBootstrapPasswordHash,
+    },
+  );
+
   await runLocalMysqlAdminScript(
     fromScratchSql,
     {

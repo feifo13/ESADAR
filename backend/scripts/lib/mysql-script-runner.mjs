@@ -20,6 +20,12 @@ export const ALLOWED_SQL_ROOTS = Object.freeze([
   resolve(REPO_ROOT, 'db/migrations'),
 ]);
 
+export const BOOTSTRAP_ADMIN_EMAIL_TOKEN =
+  '__ESADAR_SUPER_ADMIN_EMAIL_SQL__';
+
+export const BOOTSTRAP_ADMIN_PASSWORD_HASH_TOKEN =
+  '__ESADAR_SUPER_ADMIN_PASSWORD_HASH_SQL__';
+
 function isWithin(root, candidate) {
   const rel = relative(root, candidate);
 
@@ -103,10 +109,104 @@ export function isProductionTarget({ nodeEnv, dbName }) {
     .trim()
     .toLowerCase();
 
-  return (
-    env === 'production'
-    || /(?:^|[_-])(prod|production)(?:$|[_-])/.test(name)
-  );
+  const explicitNonProductionDatabase =
+    /(?:^|[_-])(sandbox|test|testing|dev|development)(?:$|[_-])/.test(name);
+
+  if (explicitNonProductionDatabase) {
+    return false;
+  }
+
+  const explicitProductionDatabase =
+    /(?:^|[_-])(prod|production)(?:$|[_-])/.test(name);
+
+  if (explicitProductionDatabase) {
+    return true;
+  }
+
+  return env === 'production';
+}
+
+function sqlStringLiteral(value, label) {
+  const normalized = String(value || '').trim();
+
+  if (!normalized) {
+    throw new Error(`${label} is required.`);
+  }
+
+  if (/[\u0000-\u001f\u007f]/.test(normalized)) {
+    throw new Error(`${label} contains control characters.`);
+  }
+
+  return `'${normalized.replaceAll("'", "''")}'`;
+}
+
+export function requiresBootstrapAdminCredentials(sql) {
+  const text = String(sql || '');
+
+  const hasEmailToken =
+    text.includes(BOOTSTRAP_ADMIN_EMAIL_TOKEN);
+
+  const hasHashToken =
+    text.includes(BOOTSTRAP_ADMIN_PASSWORD_HASH_TOKEN);
+
+  if (hasEmailToken !== hasHashToken) {
+    throw new Error(
+      'Bootstrap admin credential template is incomplete.',
+    );
+  }
+
+  return hasEmailToken;
+}
+
+export function renderBootstrapAdminCredentials(
+  sql,
+  {
+    email,
+    passwordHash,
+  },
+) {
+  const text = String(sql || '');
+
+  if (!requiresBootstrapAdminCredentials(text)) {
+    return text;
+  }
+
+  const normalizedEmail = String(email || '').trim();
+  const normalizedHash = String(passwordHash || '').trim();
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+  ) {
+    throw new Error(
+      'Bootstrap admin email is invalid.',
+    );
+  }
+
+  if (
+    !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(
+      normalizedHash,
+    )
+  ) {
+    throw new Error(
+      'Bootstrap admin password hash must be bcrypt.',
+    );
+  }
+
+  return text
+    .replaceAll(
+      BOOTSTRAP_ADMIN_EMAIL_TOKEN,
+      sqlStringLiteral(
+        normalizedEmail,
+        'Bootstrap admin email',
+      ),
+    )
+    .replaceAll(
+      BOOTSTRAP_ADMIN_PASSWORD_HASH_TOKEN,
+      sqlStringLiteral(
+        normalizedHash,
+        'Bootstrap admin password hash',
+      ),
+    );
 }
 
 export async function resolveAllowedSqlFile(inputPath) {
