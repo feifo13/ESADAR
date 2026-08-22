@@ -6,6 +6,28 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createGzip } from 'node:zlib';
 
+const cliArgs = process.argv.slice(2);
+
+if (cliArgs.includes('--help') || cliArgs.includes('-h')) {
+  process.stdout.write([
+    'Usage:',
+    '  npm run db:backup',
+    '',
+    'Creates a compressed backup of DB_NAME using mysqldump.',
+    'Local backup artifacts are written outside Git tracking.',
+    '',
+  ].join('\n'));
+
+  process.exit(0);
+}
+
+if (cliArgs.length > 0) {
+  console.error(
+    `[backup-db] Argumento no reconocido: ${cliArgs[0]}`,
+  );
+  process.exit(1);
+}
+
 const requiredEnv = ['DB_HOST', 'DB_USER', 'DB_NAME'];
 const missing = requiredEnv.filter((key) => !process.env[key]);
 if (missing.length) {
@@ -54,6 +76,7 @@ async function runBackup() {
     '--quick',
     '--routines',
     '--triggers',
+    '--no-tablespaces',
     dbName,
   ];
 
