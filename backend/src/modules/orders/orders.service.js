@@ -35,7 +35,8 @@ import {
   getCustomerProfileValidationIssues,
 } from "../../../../frontend/src/shared/customer-profile.js";
 import { markUsedOffersConsumedByCancelledOrder } from "../offers/offers.service.js";
-import { getCollectingSettings, getCostingSettings } from "../collecting/collecting.service.js";
+import { getCostingSettings } from "../collecting/collecting.service.js";
+import { assertPaymentMethodAvailable } from "../payments/payment-orchestrator.service.js";
 import {
   calculateShippingCost,
   usesWeightRanges,
@@ -107,7 +108,7 @@ function aggregateOrderItemQuantities(items = []) {
 export async function createOrder(input, actor, auditContext) {
   const order = await withTransaction(async (connection) => {
     const owner = await resolveOrderOwner(input, actor, connection);
-    await assertPaymentMethodIsAvailable(input.paymentMethod, connection);
+    await assertPaymentMethodAvailable(input.paymentMethod, connection);
     if (!input.shippingMethodId) {
       throw badRequest(
         "Selecciona un método de envío para confirmar la orden.",
@@ -1638,30 +1639,7 @@ function amountsMatch(a, b) {
   return Math.round(Number(a || 0) * 100) === Math.round(Number(b || 0) * 100);
 }
 
-function hasText(value) {
-  return String(value || "").trim().length > 0;
-}
 
-async function assertPaymentMethodIsAvailable(paymentMethod, connection) {
-  const settings = await getCollectingSettings(connection);
-
-  if (paymentMethod === "BANK_TRANSFER" && settings.isBankTransferEnabled) {
-    return;
-  }
-
-  if (
-    paymentMethod === "MERCADO_PAGO" &&
-    settings.isMercadoPagoEnabled &&
-    (hasText(settings.mercadoPagoAccessToken) ||
-      hasText(settings.mercadoPagoCheckoutUrl))
-  ) {
-    return;
-  }
-
-  throw badRequest(
-    "El medio de pago seleccionado no está disponible. Actualizá el checkout e intentalo nuevamente.",
-  );
-}
 
 async function ensureApprovedPaymentRecordForOrder(
   connection,
