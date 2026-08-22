@@ -6,20 +6,16 @@ import {
   prepareMercadoPagoCheckout,
 } from "./mercado-pago.checkout-pro.service.js";
 
-function hasText(value) {
-  return String(value || "").trim().length > 0;
-}
+import {
+  isMercadoPagoConfigurationReady,
+} from "../../collecting/mercado-pago-configuration.js";
 
 export const mercadoPagoProvider = Object.freeze({
   id: "MERCADO_PAGO",
 
   isAvailable(settings = {}) {
-    return Boolean(
-      settings.isMercadoPagoEnabled &&
-        (
-          hasText(settings.mercadoPagoAccessToken) ||
-          hasText(settings.mercadoPagoCheckoutUrl)
-        ),
+    return isMercadoPagoConfigurationReady(
+      settings,
     );
   },
 

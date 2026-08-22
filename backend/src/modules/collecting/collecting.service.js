@@ -4,6 +4,10 @@ import { pool } from "../../db/pool.js";
 import { withTransaction } from "../../db/transaction.js";
 import { logAudit } from "../audit/audit.service.js";
 import { getPaymentMethodLabel } from "../payment-methods.js";
+import { badRequest } from "../../utils/app-error.js";
+import {
+  getMercadoPagoConfigurationIssues,
+} from "./mercado-pago-configuration.js";
 import {
   DEFAULT_BANK_TAX_RATE,
   bankTaxRateToPercent,
@@ -142,7 +146,7 @@ function normalizeSettingsRow(row = {}) {
     bankAlias: row.bankAlias || "",
     bankDocument: row.bankDocument || "",
     bankInstructions: row.bankInstructions || "",
-    isMercadoPagoEnabled: bool(row.isMercadoPagoEnabled, true),
+    isMercadoPagoEnabled: bool(row.isMercadoPagoEnabled, false),
     mercadoPagoEnvironment: normalizeMercadoPagoEnvironment(
       row.mercadoPagoEnvironment,
     ),
@@ -180,6 +184,206 @@ function normalizeSettingsForAudit(settings) {
     mercadoPagoWebhookSecret: settings.mercadoPagoWebhookSecret
       ? "[configured]"
       : "",
+  };
+}
+
+
+function hasOwn(input, key) {
+  return Object.prototype.hasOwnProperty.call(
+    input,
+    key,
+  );
+}
+
+function resolveNullableSetting(
+  input,
+  key,
+  beforeValue,
+) {
+  if (!hasOwn(input, key)) {
+    return clean(beforeValue);
+  }
+
+  return clean(input[key]);
+}
+
+function resolveBooleanSetting(
+  input,
+  key,
+  beforeValue,
+  fallback = false,
+) {
+  if (
+    !hasOwn(input, key)
+    || input[key] == null
+  ) {
+    if (beforeValue == null) {
+      return fallback;
+    }
+
+    return Boolean(beforeValue);
+  }
+
+  return Boolean(input[key]);
+}
+
+export function buildCollectingSettingsUpdate(
+  input = {},
+  before = {},
+) {
+  const bankTaxRate =
+    resolveBankTaxRateInput(
+      input,
+      before.bankTaxRate,
+    );
+
+  const mercadoPagoAccessToken =
+    clean(input.mercadoPagoAccessToken)
+    || clean(before.mercadoPagoAccessToken)
+    || null;
+
+  const mercadoPagoWebhookSecret =
+    clean(input.mercadoPagoWebhookSecret)
+    || clean(before.mercadoPagoWebhookSecret)
+    || null;
+
+  return {
+    bankTaxRate,
+
+    isBankTransferEnabled:
+      resolveBooleanSetting(
+        input,
+        "isBankTransferEnabled",
+        before.isBankTransferEnabled,
+        true,
+      ),
+
+    bankAccountHolder:
+      resolveNullableSetting(
+        input,
+        "bankAccountHolder",
+        before.bankAccountHolder,
+      ),
+
+    bankName:
+      resolveNullableSetting(
+        input,
+        "bankName",
+        before.bankName,
+      ),
+
+    bankAccountType:
+      resolveNullableSetting(
+        input,
+        "bankAccountType",
+        before.bankAccountType,
+      ),
+
+    bankAccountNumber:
+      resolveNullableSetting(
+        input,
+        "bankAccountNumber",
+        before.bankAccountNumber,
+      ),
+
+    bankBranch:
+      resolveNullableSetting(
+        input,
+        "bankBranch",
+        before.bankBranch,
+      ),
+
+    bankCurrency:
+      hasOwn(input, "bankCurrency")
+        ? clean(input.bankCurrency) || "UYU"
+        : clean(before.bankCurrency) || "UYU",
+
+    bankAlias:
+      resolveNullableSetting(
+        input,
+        "bankAlias",
+        before.bankAlias,
+      ),
+
+    bankDocument:
+      resolveNullableSetting(
+        input,
+        "bankDocument",
+        before.bankDocument,
+      ),
+
+    bankInstructions:
+      resolveNullableSetting(
+        input,
+        "bankInstructions",
+        before.bankInstructions,
+      ),
+
+    isMercadoPagoEnabled:
+      resolveBooleanSetting(
+        input,
+        "isMercadoPagoEnabled",
+        before.isMercadoPagoEnabled,
+        false,
+      ),
+
+    mercadoPagoEnvironment:
+      hasOwn(
+        input,
+        "mercadoPagoEnvironment",
+      )
+        ? normalizeMercadoPagoEnvironment(
+            input.mercadoPagoEnvironment,
+          )
+        : normalizeMercadoPagoEnvironment(
+            before.mercadoPagoEnvironment,
+          ),
+
+    mercadoPagoPublicKey:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoPublicKey",
+        before.mercadoPagoPublicKey,
+      ),
+
+    mercadoPagoAccessToken,
+
+    mercadoPagoUserId:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoUserId",
+        before.mercadoPagoUserId,
+      ),
+
+    mercadoPagoCheckoutUrl:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoCheckoutUrl",
+        before.mercadoPagoCheckoutUrl,
+      ),
+
+    mercadoPagoNotificationUrl:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoNotificationUrl",
+        before.mercadoPagoNotificationUrl,
+      ),
+
+    mercadoPagoWebhookSecret,
+
+    mercadoPagoPreferenceNote:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoPreferenceNote",
+        before.mercadoPagoPreferenceNote,
+      ),
+
+    mercadoPagoInstructions:
+      resolveNullableSetting(
+        input,
+        "mercadoPagoInstructions",
+        before.mercadoPagoInstructions,
+      ),
   };
 }
 
@@ -239,10 +443,37 @@ export async function getCostingSettings(connection = pool) {
   };
 }
 
-export async function updateCollectingSettings(input, auditContext) {
+export async function updateCollectingSettings(
+  input,
+  auditContext,
+) {
   return withTransaction(async (connection) => {
-    const before = await getCollectingSettings(connection);
-    const bankTaxRate = resolveBankTaxRateInput(input, before.bankTaxRate);
+    const before =
+      await getCollectingSettings(
+        connection,
+      );
+
+    const next =
+      buildCollectingSettingsUpdate(
+        input,
+        before,
+      );
+
+    if (next.isMercadoPagoEnabled) {
+      const issues =
+        getMercadoPagoConfigurationIssues(
+          next,
+        );
+
+      if (issues.length) {
+        throw badRequest(
+          "Mercado Pago no puede habilitarse hasta completar su configuracion segura.",
+          {
+            missingFields: issues,
+          },
+        );
+      }
+    }
 
     await connection.execute(
       `
@@ -273,59 +504,92 @@ export async function updateCollectingSettings(input, auditContext) {
         WHERE id = 1
       `,
       [
-        bankTaxRate,
-        input.isBankTransferEnabled ? 1 : 0,
-        clean(input.bankAccountHolder),
-        clean(input.bankName),
-        clean(input.bankAccountType),
-        clean(input.bankAccountNumber),
-        clean(input.bankBranch),
-        clean(input.bankCurrency) || "UYU",
-        clean(input.bankAlias),
-        clean(input.bankDocument),
-        clean(input.bankInstructions),
-        input.isMercadoPagoEnabled ? 1 : 0,
-        normalizeMercadoPagoEnvironment(input.mercadoPagoEnvironment),
-        clean(input.mercadoPagoPublicKey),
-        clean(input.mercadoPagoAccessToken) ||
-          before.mercadoPagoAccessToken ||
-          null,
-        clean(input.mercadoPagoUserId),
-        clean(input.mercadoPagoCheckoutUrl),
-        clean(input.mercadoPagoNotificationUrl),
-        clean(input.mercadoPagoWebhookSecret) ||
-          before.mercadoPagoWebhookSecret ||
-          null,
-        clean(input.mercadoPagoPreferenceNote),
-        clean(input.mercadoPagoInstructions),
+        next.bankTaxRate,
+        next.isBankTransferEnabled ? 1 : 0,
+        next.bankAccountHolder,
+        next.bankName,
+        next.bankAccountType,
+        next.bankAccountNumber,
+        next.bankBranch,
+        next.bankCurrency,
+        next.bankAlias,
+        next.bankDocument,
+        next.bankInstructions,
+
+        next.isMercadoPagoEnabled ? 1 : 0,
+        next.mercadoPagoEnvironment,
+        next.mercadoPagoPublicKey,
+        next.mercadoPagoAccessToken,
+        next.mercadoPagoUserId,
+        next.mercadoPagoCheckoutUrl,
+        next.mercadoPagoNotificationUrl,
+        next.mercadoPagoWebhookSecret,
+        next.mercadoPagoPreferenceNote,
+        next.mercadoPagoInstructions,
+
         auditContext.actorUserId || null,
       ],
     );
 
-    const after = await getCollectingSettings(connection);
+    const after =
+      await getCollectingSettings(
+        connection,
+      );
 
     await logAudit(
       {
-        actorUserId: auditContext.actorUserId,
-        actorLabel: auditContext.actorLabel,
-        actionCode: "COLLECTING_SETTINGS_UPDATED",
-        entityType: "company_collecting_settings",
+        actorUserId:
+          auditContext.actorUserId,
+
+        actorLabel:
+          auditContext.actorLabel,
+
+        actionCode:
+          "COLLECTING_SETTINGS_UPDATED",
+
+        entityType:
+          "company_collecting_settings",
+
         entityId: 1,
-        beforeJson: normalizeSettingsForAudit(before),
-        afterJson: normalizeSettingsForAudit(after),
+
+        beforeJson:
+          normalizeSettingsForAudit(
+            before,
+          ),
+
+        afterJson:
+          normalizeSettingsForAudit(
+            after,
+          ),
+
         metadataJson: {
           bankTaxRate: {
             from: before.bankTaxRate,
             to: after.bankTaxRate,
           },
+
           bankTaxPercent: {
             from: before.bankTaxPercent,
             to: after.bankTaxPercent,
           },
+
+          mercadoPagoEnabled: {
+            from:
+              before.isMercadoPagoEnabled,
+
+            to:
+              after.isMercadoPagoEnabled,
+          },
         },
-        source: auditContext.source,
-        ipAddress: auditContext.ipAddress,
-        userAgent: auditContext.userAgent,
+
+        source:
+          auditContext.source,
+
+        ipAddress:
+          auditContext.ipAddress,
+
+        userAgent:
+          auditContext.userAgent,
       },
       connection,
     );

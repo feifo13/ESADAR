@@ -72,8 +72,13 @@ test("Mercado Pago availability does not alter bank transfer availability", () =
   const settings = {
     isBankTransferEnabled: true,
     isMercadoPagoEnabled: true,
+    mercadoPagoEnvironment: "test",
     mercadoPagoAccessToken: "TEST_TOKEN_NOT_REAL",
     mercadoPagoCheckoutUrl: "",
+    mercadoPagoNotificationUrl:
+      "https://sandbox.esadar.com.uy/api/webhooks/mercado-pago",
+    mercadoPagoWebhookSecret:
+      "TEST_SECRET_NOT_REAL",
   };
 
   assert.equal(
@@ -160,5 +165,35 @@ test("orders and lookups no longer implement provider-specific availability bran
   assert.match(
     lookupsSource,
     /listAvailablePaymentMethods/,
+  );
+});
+
+
+test("Mercado Pago fallback URL alone is not considered available", () => {
+  const settings = {
+    isBankTransferEnabled: true,
+    isMercadoPagoEnabled: true,
+    mercadoPagoEnvironment: "test",
+    mercadoPagoAccessToken: "",
+    mercadoPagoCheckoutUrl:
+      "https://example.test/fallback",
+    mercadoPagoNotificationUrl: "",
+    mercadoPagoWebhookSecret: "",
+  };
+
+  assert.equal(
+    isPaymentMethodAvailable(
+      "MERCADO_PAGO",
+      settings,
+    ),
+    false,
+  );
+
+  assert.equal(
+    isPaymentMethodAvailable(
+      "BANK_TRANSFER",
+      settings,
+    ),
+    true,
   );
 });
