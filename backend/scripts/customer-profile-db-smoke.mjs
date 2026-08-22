@@ -1,37 +1,15 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import 'dotenv/config';
 import mysql from 'mysql2/promise';
+import { runLocalMysqlAdminScript } from './lib/mysql-script-runner.mjs';
 
 const SCRATCH_DATABASE = 'esadar_codex_customer_profile_smoke_tmp';
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const dbHost = String(process.env.DB_HOST || '').trim().toLowerCase();
-
-function runMysqlScript(sql) {
-  return new Promise((resolvePromise, rejectPromise) => {
-    const mysqlProcess = spawn('mysql', [
-      `--host=${process.env.DB_HOST}`,
-      `--port=${Number(process.env.DB_PORT || 3306)}`,
-      `--user=${process.env.DB_USER}`,
-      '--default-character-set=utf8mb4',
-    ], {
-      env: { ...process.env, MYSQL_PWD: process.env.DB_PASSWORD || '' },
-      stdio: ['pipe', 'ignore', 'pipe'],
-      windowsHide: true,
-    });
-    let stderr = '';
-    mysqlProcess.stderr.on('data', (chunk) => { stderr += chunk; });
-    mysqlProcess.on('error', rejectPromise);
-    mysqlProcess.on('close', (code) => {
-      if (code === 0) resolvePromise();
-      else rejectPromise(new Error(`mysql client exited with ${code}: ${stderr.trim()}`));
-    });
-    mysqlProcess.stdin.end(sql);
-  });
-}
 
 if (!['127.0.0.1', 'localhost', '::1'].includes(dbHost)) {
   throw new Error('Customer profile DB smoke refuses to run against a non-local database host.');
@@ -40,23 +18,51 @@ if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
   throw new Error('Customer profile DB smoke refuses to run in production mode.');
 }
 
-const adminConnection = await mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD || '',
-  multipleStatements: true,
-});
+const smokeDbUser = `esadar_smoke_${process.pid}`;
+const smokeDbPassword = randomBytes(24).toString('hex');
+
+const smokeDbAccounts = [
+  `'${smokeDbUser}'@'localhost'`,
+  `'${smokeDbUser}'@'127.0.0.1'`,
+  `'${smokeDbUser}'@'::1'`,
+];
 
 let pool;
+let primaryError = null;
+
 try {
   const fromScratchPath = resolve(currentDir, '../../db/scripts/01_from_scratch_superadmin_seed.sql');
   const fromScratchSql = (await readFile(fromScratchPath, 'utf8'))
     .replaceAll('esadar_sandbox', SCRATCH_DATABASE);
-  await runMysqlScript(fromScratchSql);
+  await runLocalMysqlAdminScript(
+    fromScratchSql,
+    {
+      stdout: null,
+      stderr: null,
+    },
+  );
+
+  await runLocalMysqlAdminScript(
+    [
+      `DROP USER IF EXISTS ${smokeDbAccounts.join(', ')};`,
+      `CREATE USER ${smokeDbAccounts
+        .map((account) => `${account} IDENTIFIED BY '${smokeDbPassword}'`)
+        .join(', ')};`,
+      ...smokeDbAccounts.map(
+        (account) =>
+          `GRANT ALL PRIVILEGES ON \`${SCRATCH_DATABASE}\`.* TO ${account};`,
+      ),
+    ].join('\n'),
+    {
+      stdout: null,
+      stderr: null,
+    },
+  );
 
   process.env.NODE_ENV = 'test';
   process.env.DB_NAME = SCRATCH_DATABASE;
+  process.env.DB_USER = smokeDbUser;
+  process.env.DB_PASSWORD = smokeDbPassword;
   process.env.SMTP_HOST = '';
   process.env.SMTP_USER = '';
   process.env.SMTP_PASSWORD = '';
@@ -257,8 +263,46 @@ try {
 
   await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));
   process.stdout.write('Customer profile DB smoke passed.\n');
+} catch (error) {
+  primaryError = error;
+  throw error;
 } finally {
-  if (pool) await pool.end();
-  await adminConnection.query(`DROP DATABASE IF EXISTS \`${SCRATCH_DATABASE}\``);
-  await adminConnection.end();
+  const cleanupErrors = [];
+
+  if (pool) {
+    try {
+      await pool.end();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  try {
+    await runLocalMysqlAdminScript(
+      [
+        `DROP DATABASE IF EXISTS \`${SCRATCH_DATABASE}\`;`,
+        `DROP USER IF EXISTS ${smokeDbAccounts.join(', ')};`,
+      ].join('\n'),
+      {
+        stdout: null,
+        stderr: null,
+      },
+    );
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  if (cleanupErrors.length > 0) {
+    if (primaryError) {
+      process.stderr.write(
+        `Customer profile DB smoke cleanup warning: ${
+          cleanupErrors
+            .map((error) => error.message)
+            .join(' | ')
+        }\n`,
+      );
+    } else {
+      throw cleanupErrors[0];
+    }
+  }
 }
