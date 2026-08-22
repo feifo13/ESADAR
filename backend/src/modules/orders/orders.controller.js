@@ -8,7 +8,10 @@ import {
   shipOrder,
   updateOrderTrackingCode,
 } from './orders.service.js';
-import { createCheckoutOrder } from './orders.checkout.service.js';
+import {
+  createCheckoutOrder,
+  retryCheckoutOrderPayment,
+} from './orders.checkout.service.js';
 import { expireReservedOrders } from './orders.expiration.service.js';
 import {
   createOrderPaymentSchema,
@@ -19,6 +22,9 @@ import {
   expireReservationsSchema,
   orderTrackingUpdateSchema,
 } from './orders.schemas.js';
+import {
+  retryOrderPaymentSchema,
+} from './orders.payment-retry.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
@@ -46,6 +52,31 @@ export async function createPublicOrder(req, res) {
   return res.status(201).json({
     ok: true,
     order,
+  });
+}
+
+export async function retryPublicOrderPayment(req, res) {
+  const orderId =
+    parsePositiveIntParam(
+      req.params.id,
+      'id',
+    );
+
+  const input =
+    retryOrderPaymentSchema.parse(
+      req.body,
+    );
+
+  const result =
+    await retryCheckoutOrderPayment(
+      orderId,
+      input.retryToken,
+      getAuditContext(req),
+    );
+
+  return res.json({
+    ok: true,
+    ...result,
   });
 }
 

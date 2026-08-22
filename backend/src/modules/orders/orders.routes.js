@@ -9,6 +9,7 @@ import {
   cancelAdminOrder,
   createAdminOrderPayment,
   createPublicOrder,
+  retryPublicOrderPayment,
   expireAdminOrderReservations,
   getAdminOrder,
   getAdminOrderReceiptPdf,
@@ -21,6 +22,12 @@ const publicRouter = Router();
 const adminRouter = Router();
 
 publicRouter.post('/', optionalAuth, checkoutRateLimit, asyncHandler(createPublicOrder));
+publicRouter.post(
+  '/:id/payment/retry',
+  optionalAuth,
+  checkoutRateLimit,
+  asyncHandler(retryPublicOrderPayment),
+);
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminOrders));
