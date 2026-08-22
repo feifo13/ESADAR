@@ -156,6 +156,8 @@ export default function AccountOrderDetailPage() {
                   ariaLabel={`Copiar número de orden ${order.orderNumber}`}
                   title="Copiar número de orden"
                   successMessage="Número de orden copiado"
+                  className="icon-action-button account-order-copy-button"
+                  responsiveLabel="Copiar código de compra"
                 />
                 {order.hasOffers ? (
                   <span className="pill pill-offer">

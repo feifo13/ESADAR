@@ -586,3 +586,33 @@
     white-space: nowrap;
   }
 }
+
+/* ESADAR responsive order-code copy action */
+.account-order-detail-page
+  .account-order-copy-button
+  .copy-value-button__responsive-label {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .account-order-detail-page .account-order-copy-button {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: auto;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    justify-content: center;
+  }
+
+  .account-order-detail-page .account-order-copy-button svg {
+    display: none;
+  }
+
+  .account-order-detail-page
+    .account-order-copy-button
+    .copy-value-button__responsive-label {
+    display: inline;
+    font-weight: 700;
+  }
+}

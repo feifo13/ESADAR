@@ -137,14 +137,18 @@ export default function CheckoutCompletePage() {
           </strong>
         </p>
         <p className="checkout-complete-copy payment-reference-note">
-          {completedOrder.orderNumber}{" "}
-          <CopyValueButton
-            value={completedOrder.orderNumber}
-            ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
-            title="Copiar número de orden"
-            successMessage="Número de orden copiado"
-          />
+          {completedOrder.orderNumber}
         </p>
+        <CopyValueButton
+          value={completedOrder.orderNumber}
+          ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
+          title="Copiar número de orden"
+          successMessage="Número de orden copiado"
+          className="button button-secondary"
+          style={{ width: "100%", justifyContent: "center" }}
+        >
+          Copiar código de compra
+        </CopyValueButton>
 
         <div className="checkout-complete-payment-details">
           {fields.map((field) => (
@@ -203,14 +207,18 @@ export default function CheckoutCompletePage() {
             Tienes <strong>24 horas</strong> para completar el pago.
           </p>
           <p className="checkout-complete-order">
-            Orden <strong>{completedOrder.orderNumber}</strong>{" "}
-            <CopyValueButton
-              value={completedOrder.orderNumber}
-              ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
-              title="Copiar número de orden"
-              successMessage="Número de orden copiado"
-            />
+            Orden <strong>{completedOrder.orderNumber}</strong>
           </p>
+          <CopyValueButton
+            value={completedOrder.orderNumber}
+            ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
+            title="Copiar número de orden"
+            successMessage="Número de orden copiado"
+            className="button button-secondary"
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            Copiar código de compra
+          </CopyValueButton>
           <p className="checkout-complete-copy">
             Cuando tu orden sea aprobada y despachada, te enviaremos un correo
             de notificación con la información del envío y el código de

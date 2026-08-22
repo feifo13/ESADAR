@@ -25,6 +25,8 @@ export default function CopyValueButton({
   successMessage = "Copiado",
   errorMessage = "No pudimos copiar automáticamente.",
   className = "icon-action-button",
+  style = undefined,
+  responsiveLabel = null,
   children = null,
   onCopied = null,
 }) {
@@ -51,12 +53,22 @@ export default function CopyValueButton({
     <button
       type="button"
       className={className}
+      style={style}
       aria-label={ariaLabel}
       title={title}
       disabled={disabled}
       onClick={handleCopy}
     >
-      {children ?? <CopyIcon />}
+      {responsiveLabel ? (
+        <>
+          <CopyIcon />
+          <span className="copy-value-button__responsive-label">
+            {responsiveLabel}
+          </span>
+        </>
+      ) : (
+        children ?? <CopyIcon />
+      )}
     </button>
   );
 }
