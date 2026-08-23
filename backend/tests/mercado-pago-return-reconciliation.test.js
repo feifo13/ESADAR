@@ -420,3 +420,68 @@ test(
     );
   },
 );
+
+test(
+  "authoritative return forces system audit provenance for authenticated caller",
+  async () => {
+    let receivedAuditContext = null;
+
+    await reconcileReturnedMercadoPagoPayment(
+      18,
+      "123456789",
+      TOKEN,
+      {
+        actorUserId: 77,
+        actorLabel:
+          "authenticated-customer@example.test",
+        source: "FRONTEND",
+        ipAddress: "127.0.0.1",
+        userAgent: "test-agent",
+      },
+      dependencies({
+        applyPayment:
+          async (
+            _payment,
+            auditContext,
+          ) => {
+            receivedAuditContext =
+              auditContext;
+
+            return {
+              status: "processed",
+              manualReviewRequired: false,
+            };
+          },
+      }),
+    );
+
+    assert.equal(
+      receivedAuditContext?.actorLabel,
+      "Mercado Pago return verification",
+    );
+
+    /*
+     * Conservamos quién inició la solicitud y su contexto,
+     * pero no lo presentamos como quien confirmó el pago.
+     */
+    assert.equal(
+      receivedAuditContext?.actorUserId,
+      77,
+    );
+
+    assert.equal(
+      receivedAuditContext?.source,
+      "FRONTEND",
+    );
+
+    assert.equal(
+      receivedAuditContext?.ipAddress,
+      "127.0.0.1",
+    );
+
+    assert.equal(
+      receivedAuditContext?.userAgent,
+      "test-agent",
+    );
+  },
+);
