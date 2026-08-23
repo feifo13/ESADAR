@@ -461,12 +461,13 @@ test(
     );
 
     /*
-     * Conservamos quién inició la solicitud y su contexto,
-     * pero no lo presentamos como quien confirmó el pago.
+     * La confirmación es una acción de sistema.
+     * Conservamos contexto de transporte, no identidad humana
+     * como actor de la aprobación.
      */
     assert.equal(
       receivedAuditContext?.actorUserId,
-      77,
+      null,
     );
 
     assert.equal(

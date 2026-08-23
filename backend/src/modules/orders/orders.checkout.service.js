@@ -334,6 +334,7 @@ export async function reconcileReturnedMercadoPagoPayment(
       payment,
       {
         ...auditContext,
+        actorUserId: null,
         actorLabel:
           "Mercado Pago return verification",
       },
