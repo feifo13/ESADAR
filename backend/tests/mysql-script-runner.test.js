@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 import {
+  REPO_ROOT,
   inspectSql,
   isProductionTarget,
+  loadSqlForRunner,
   renderBootstrapAdminCredentials,
   requiresBootstrapAdminCredentials,
   resolveAllowedSqlFile,
@@ -110,12 +113,12 @@ test(
   'runner accepts SQL under the canonical DB roots',
   async () => {
     const accepted = await resolveAllowedSqlFile(
-      'db/scripts/02_vaciado_operativo_usuarios_stock100_seed.sql',
+      'db/scripts/02_vaciado_operativo_sandbox.sql',
     );
 
     assert.match(
       accepted,
-      /db[\\/]scripts[\\/]02_vaciado_operativo_usuarios_stock100_seed\.sql$/,
+      /db[\\/]scripts[\\/]02_vaciado_operativo_sandbox\.sql$/,
     );
 
     await assert.rejects(
@@ -123,6 +126,105 @@ test(
         'backend/package.json',
       ),
       /Only \.sql files/,
+    );
+  },
+);
+
+test(
+  'canonical operational reset loads as destructive without bootstrap credentials',
+  async () => {
+    const loaded = await loadSqlForRunner(
+      'db/scripts/02_vaciado_operativo_sandbox.sql',
+    );
+
+    assert.equal(loaded.inspection.destructive, true);
+    assert.deepEqual(
+      loaded.inspection.targetDatabases,
+      ['esadar_sandbox'],
+    );
+    assert.equal(
+      requiresBootstrapAdminCredentials(loaded.sql),
+      false,
+    );
+  },
+);
+
+function runRunner(args) {
+  const env = {
+    ...process.env,
+    NODE_ENV: 'test',
+    DB_HOST: '127.0.0.1',
+    DB_USER: 'test',
+    DB_NAME: 'esadar_sandbox',
+  };
+
+  delete env.ESADAR_BOOTSTRAP_ADMIN_EMAIL;
+  delete env.ESADAR_BOOTSTRAP_ADMIN_PASSWORD;
+
+  return spawnSync(
+    process.execPath,
+    ['backend/scripts/run-db-script.mjs', ...args],
+    {
+      cwd: REPO_ROOT,
+      env,
+      encoding: 'utf8',
+    },
+  );
+}
+
+test(
+  'canonical operational reset dry-run passes without bootstrap variables',
+  () => {
+    const result = runRunner([
+      '--file',
+      'db/scripts/02_vaciado_operativo_sandbox.sql',
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(
+      result.stdout,
+      /BOOTSTRAP_ADMIN_CREDENTIALS_REQUIRED=NO/,
+    );
+    assert.match(result.stdout, /RESULT=PASS_DRY_RUN/);
+  },
+);
+
+test(
+  'canonical execute reaches normal confirmation guard without bootstrap variables',
+  () => {
+    const result = runRunner([
+      '--file',
+      'db/scripts/02_vaciado_operativo_sandbox.sql',
+      '--execute',
+      '--allow-destructive',
+    ]);
+
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      /--confirm-db must exactly match DB_NAME/,
+    );
+    assert.doesNotMatch(
+      result.stderr,
+      /bootstrap admin credentials are required/i,
+    );
+  },
+);
+
+test(
+  'from-scratch script keeps the bootstrap execution guard',
+  () => {
+    const result = runRunner([
+      '--file',
+      'db/scripts/01_from_scratch_superadmin_seed.sql',
+      '--execute',
+      '--allow-destructive',
+    ]);
+
+    assert.equal(result.status, 1);
+    assert.match(
+      result.stderr,
+      /bootstrap admin credentials are required/i,
     );
   },
 );

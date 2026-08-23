@@ -75,10 +75,11 @@ npm run build
 Para preparar sandbox, usar solamente los scripts activos de `db/scripts/`:
 
 - `01_from_scratch_superadmin_seed.sql`
-- `02_vaciado_operativo_usuarios_stock100_seed.sql`
-- `03_vaciado_operativo_solo_usuarios.sql`
+- `02_vaciado_operativo_sandbox.sql`: único vaciado operativo; preserva usuarios,
+  clientes, catálogo y configuración, y normaliza todo el inventario a 100.
 
 Antes de resetear o migrar una base con datos utiles, hacer backup. El flujo detallado esta en `docs/DB_BACKUPS.md`.
+El contrato y el comando seguro del reset están en `docs/OPERATIONAL_RESET.md`.
 
 ## Validacion antes de sandbox
 

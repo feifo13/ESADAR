@@ -10,9 +10,10 @@ Desde esta version tambien existe un webhook para sincronizar el pago automatica
 
 Las migraciones historicas ya fueron consolidadas/aplicadas. Para preparar sandbox usa solamente los scripts activos de `db/scripts/`:
 
-- `01_from_scratch_superadmin_seed.sql`
-- `02_vaciado_operativo_usuarios_stock100_seed.sql`
-- `03_vaciado_operativo_solo_usuarios.sql`
+- `01_from_scratch_superadmin_seed.sql` para crear una base nueva.
+- `02_vaciado_operativo_sandbox.sql` como único vaciado operativo habitual.
+
+El vaciado operativo elimina pagos, preferencias, webhooks y demás evidencia transaccional anterior, pero preserva exactamente `company_collecting_settings` y toda la configuración vigente de Mercado Pago. Consulta `docs/OPERATIONAL_RESET.md` para el contrato y el comando seguro.
 
 ## Configuracion recomendada para pruebas
 

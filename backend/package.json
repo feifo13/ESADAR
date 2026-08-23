@@ -17,7 +17,8 @@
     "images:backfill:dry-run": "node scripts/backfill-article-image-variants.mjs --dry-run",
     "db:backup": "node scripts/backup-db.mjs",
     "db:script": "node scripts/run-db-script.mjs",
-    "test:db-runner": "node --test tests/mysql-script-runner.test.js"
+    "test:db-runner": "node --test tests/mysql-script-runner.test.js",
+    "test:operational-reset": "node --test tests/mysql-script-runner.test.js tests/operational-reset-contract.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
