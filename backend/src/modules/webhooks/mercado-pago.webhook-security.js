@@ -100,12 +100,9 @@ export function verifyMercadoPagoSignature({
     );
   }
 
-  if (
-    !normalizedRequestId
-    || !normalizedDataId
-  ) {
+  if (!normalizedDataId) {
     throw unauthorized(
-      'Firma Mercado Pago sin request-id o data.id valido.',
+      'Firma Mercado Pago sin data.id valido.',
     );
   }
 
@@ -137,7 +134,11 @@ export function verifyMercadoPagoSignature({
    */
   const manifest =
     `id:${normalizedDataId};`
-    + `request-id:${normalizedRequestId};`
+    + (
+      normalizedRequestId
+        ? `request-id:${normalizedRequestId};`
+        : ''
+    )
     + `ts:${ts};`;
 
   const calculatedHash =

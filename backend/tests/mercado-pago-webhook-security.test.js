@@ -40,7 +40,11 @@ function signature({
 }) {
   const manifest =
     `id:${String(dataId).toLowerCase()};`
-    + `request-id:${requestId};`
+    + (
+      requestId
+        ? `request-id:${requestId};`
+        : ''
+    )
     + `ts:${ts};`;
 
   return crypto
@@ -161,6 +165,25 @@ test(
 test(
   'signature requires request id and signed data id',
   () => {
+    const hashWithoutRequestId =
+      signature({
+        secret: 'secret',
+        requestId: '',
+        dataId: '123',
+        ts: '1',
+      });
+
+    assert.doesNotThrow(
+      () =>
+        verifyMercadoPagoSignature({
+          secret: 'secret',
+          requestId: '',
+          dataId: '123',
+          signatureHeader:
+            `ts=1,v1=${hashWithoutRequestId}`,
+        }),
+    );
+
     assert.throws(
       () =>
         verifyMercadoPagoSignature({
@@ -168,9 +191,9 @@ test(
           requestId: '',
           dataId: '123',
           signatureHeader:
-            'ts=1,v1=abcd',
+            `ts=1,v1=${'0'.repeat(64)}`,
         }),
-      /request-id o data\.id/i,
+      /invalida/i,
     );
 
     assert.throws(
@@ -182,7 +205,7 @@ test(
           signatureHeader:
             'ts=1,v1=abcd',
         }),
-      /request-id o data\.id/i,
+      /data\.id/i,
     );
   },
 );
