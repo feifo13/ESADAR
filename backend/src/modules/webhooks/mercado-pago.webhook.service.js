@@ -1,13 +1,12 @@
 import { pool } from '../../db/pool.js';
 import { getCollectingSettings } from '../collecting/collecting.service.js';
+import { fetchMercadoPagoPayment } from '../payments/providers/mercado-pago.payment.service.js';
 import { applyMercadoPagoPaymentToOrder } from '../orders/orders.service.js';
 import {
   getMercadoPagoSignedPaymentId,
   normalizeMercadoPagoPaymentId,
   verifyMercadoPagoSignature,
 } from './mercado-pago.webhook-security.js';
-
-const MERCADO_PAGO_PAYMENT_URL = 'https://api.mercadopago.com/v1/payments';
 
 function clean(value) {
   if (value == null) return '';
@@ -166,43 +165,6 @@ async function finishWebhookEvent(eventId, { status, message, orderId = null, pa
       eventId,
     ],
   );
-}
-
-async function fetchMercadoPagoPayment(paymentId, accessToken) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const response = await fetch(`${MERCADO_PAGO_PAYMENT_URL}/${encodeURIComponent(paymentId)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    });
-
-    const responseText = await response.text();
-    let body = null;
-    try {
-      body = responseText ? JSON.parse(responseText) : null;
-    } catch {
-      body = { raw: responseText };
-    }
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        status: response.status,
-        body,
-        message: body?.message || `Mercado Pago respondio ${response.status}`,
-      };
-    }
-
-    return { ok: true, payment: body };
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 export async function handleMercadoPagoWebhook({

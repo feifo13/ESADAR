@@ -9,6 +9,7 @@ import {
   cancelAdminOrder,
   createAdminOrderPayment,
   createPublicOrder,
+  reconcilePublicMercadoPagoReturn,
   retryPublicOrderPayment,
   expireAdminOrderReservations,
   getAdminOrder,
@@ -22,6 +23,13 @@ const publicRouter = Router();
 const adminRouter = Router();
 
 publicRouter.post('/', optionalAuth, checkoutRateLimit, asyncHandler(createPublicOrder));
+publicRouter.post(
+  '/:id/payment/mercado-pago/reconcile',
+  optionalAuth,
+  checkoutRateLimit,
+  asyncHandler(reconcilePublicMercadoPagoReturn),
+);
+
 publicRouter.post(
   '/:id/payment/retry',
   optionalAuth,

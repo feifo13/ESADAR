@@ -369,7 +369,7 @@ test(
 
 
 test(
-  "retry capability SQL stays aligned with persisted MERCADO_PAGO payment code",
+  "payment capabilities SQL stay aligned with persisted MERCADO_PAGO payment code",
   () => {
     const source =
       readFileSync(
@@ -397,7 +397,7 @@ test(
         )
         || []
       ).length,
-      2,
+      3,
     );
   },
 );

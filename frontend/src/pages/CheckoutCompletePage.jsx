@@ -69,6 +69,23 @@ function getMercadoPagoReturnResult(search) {
     : null;
 }
 
+function getMercadoPagoReturnPaymentId(search) {
+  const params =
+    new URLSearchParams(
+      String(search || ""),
+    );
+
+  const paymentId =
+    String(
+      params.get("payment_id")
+      || "",
+    ).trim();
+
+  return /^\d{1,40}$/.test(paymentId)
+    ? paymentId
+    : "";
+}
+
 function getSafeMercadoPagoCheckoutUrl(value) {
   try {
     const url = new URL(String(value || "").trim());
@@ -122,6 +139,13 @@ export default function CheckoutCompletePage() {
   });
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [retryError, setRetryError] = useState("");
+  const [mercadoPagoVerification, setMercadoPagoVerification] =
+    useState({
+      status: "idle",
+      message: "",
+    });
+  const didMercadoPagoVerificationRef =
+    useRef("");
 
   const paymentInstructions = completedOrder?.paymentInstructions || null;
   const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
@@ -138,9 +162,19 @@ export default function CheckoutCompletePage() {
     ? getMercadoPagoReturnResult(location.search)
     : null;
 
+  const mercadoPagoReturnPaymentId = isMercadoPago
+    ? getMercadoPagoReturnPaymentId(location.search)
+    : "";
+
+  const mercadoPagoConfirmed =
+    mercadoPagoVerification.status === "confirmed";
+
   const mercadoPagoAwaitingConfirmation =
-    mercadoPagoReturnResult === "success"
-    || mercadoPagoReturnResult === "pending";
+    !mercadoPagoConfirmed
+    && (
+      mercadoPagoReturnResult === "success"
+      || mercadoPagoReturnResult === "pending"
+    );
 
   const mercadoPagoReady =
     isMercadoPago
@@ -191,6 +225,134 @@ export default function CheckoutCompletePage() {
       window.sessionStorage.removeItem("esadar-checkout-draft");
     }
   }, [clearCart, completedOrder?.orderNumber, navigate]);
+
+  useEffect(() => {
+    const orderId =
+      Number(
+        completedOrder?.orderId
+        || 0,
+      );
+
+    const canVerify =
+      isMercadoPago
+      && (
+        mercadoPagoReturnResult === "success"
+        || mercadoPagoReturnResult === "pending"
+      )
+      && Number.isInteger(orderId)
+      && orderId > 0
+      && /^\d{1,40}$/.test(
+        mercadoPagoReturnPaymentId,
+      )
+      && /^[a-f0-9]{64}$/i.test(
+        paymentRetryToken,
+      );
+
+    if (!canVerify) {
+      return undefined;
+    }
+
+    const attemptKey =
+      [
+        orderId,
+        mercadoPagoReturnPaymentId,
+        paymentRetryToken,
+      ].join(":");
+
+    if (
+      didMercadoPagoVerificationRef.current
+      === attemptKey
+    ) {
+      return undefined;
+    }
+
+    didMercadoPagoVerificationRef.current =
+      attemptKey;
+
+    let cancelled = false;
+
+    setMercadoPagoVerification({
+      status: "checking",
+      message:
+        "Estamos verificando el pago directamente con Mercado Pago.",
+    });
+
+    apiFetch(
+      `/api/public/orders/${encodeURIComponent(
+        orderId,
+      )}/payment/mercado-pago/reconcile`,
+      {
+        method: "POST",
+        body: {
+          paymentId:
+            mercadoPagoReturnPaymentId,
+          retryToken:
+            paymentRetryToken,
+        },
+      },
+    )
+      .then((response) => {
+        if (cancelled) return;
+
+        const sameOrder =
+          Number(response?.orderId)
+            === orderId
+          && String(
+            response?.orderNumber
+            || "",
+          ) === String(
+            completedOrder?.orderNumber
+            || "",
+          );
+
+        if (!sameOrder) {
+          throw new Error(
+            "No pudimos validar la identidad de la orden.",
+          );
+        }
+
+        if (
+          response?.confirmed === true
+          && response?.paymentStatus === "PAID"
+        ) {
+          setMercadoPagoVerification({
+            status: "confirmed",
+            message:
+              "Mercado Pago confirmó el pago de tu orden.",
+          });
+          return;
+        }
+
+        setMercadoPagoVerification({
+          status: "pending",
+          message:
+            "Mercado Pago todavía no confirmó el pago. Seguiremos esperando la confirmación automática.",
+        });
+      })
+      .catch((error) => {
+        if (cancelled) return;
+
+        setMercadoPagoVerification({
+          status: "error",
+          message:
+            getFriendlyErrorMessage(
+              error,
+              "No pudimos verificar el pago en este momento. La orden seguirá esperando la confirmación automática.",
+            ),
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    completedOrder?.orderId,
+    completedOrder?.orderNumber,
+    isMercadoPago,
+    mercadoPagoReturnPaymentId,
+    mercadoPagoReturnResult,
+    paymentRetryToken,
+  ]);
 
   async function handleRetryMercadoPagoPayment() {
     if (
@@ -356,14 +518,19 @@ export default function CheckoutCompletePage() {
     if (!isMercadoPago) return null;
 
     const returnMessage =
-      getMercadoPagoReturnMessage(mercadoPagoReturnResult);
+      mercadoPagoVerification.message
+      || getMercadoPagoReturnMessage(
+        mercadoPagoReturnResult,
+      );
 
     return (
       <div className="checkout-complete-transfer-panel checkout-complete-mercado-pago-panel">
         <p className="section-kicker">
-          {mercadoPagoAwaitingConfirmation
-            ? "Verificando pago"
-            : "Pago pendiente"}
+          {mercadoPagoConfirmed
+            ? "Pago confirmado"
+            : mercadoPagoAwaitingConfirmation
+              ? "Verificando pago"
+              : "Pago pendiente"}
         </p>
 
         <h2>Mercado Pago</h2>
@@ -462,13 +629,21 @@ export default function CheckoutCompletePage() {
         <section className="section-card checkout-complete-card">
           <p className="section-kicker">Compra confirmada</p>
           <h1>Muchas gracias por tu compra</h1>
-          <p className="checkout-complete-copy">
-            Tu orden quedó registrada correctamente y permanece pendiente de
-            validación manual.
-          </p>
-          <p className="checkout-complete-copy">
-            Tienes <strong>24 horas</strong> para completar el pago.
-          </p>
+          {mercadoPagoConfirmed ? (
+            <p className="checkout-complete-copy">
+              Tu orden quedó registrada correctamente y el pago fue confirmado por Mercado Pago.
+            </p>
+          ) : (
+            <>
+              <p className="checkout-complete-copy">
+                Tu orden quedó registrada correctamente y permanece pendiente de
+                validación.
+              </p>
+              <p className="checkout-complete-copy">
+                Tienes <strong>24 horas</strong> para completar el pago.
+              </p>
+            </>
+          )}
           <p className="checkout-complete-order">
             Orden <strong>{completedOrder.orderNumber}</strong>
           </p>

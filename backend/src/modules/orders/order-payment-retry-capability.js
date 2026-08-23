@@ -133,3 +133,48 @@ export async function authorizeOrderPaymentRetryCapability(
 
   return rows?.[0] || null;
 }
+
+export async function authorizeOrderPaymentReturnCapability(
+  orderId,
+  token,
+  connection = pool,
+) {
+  const normalizedOrderId =
+    Number(orderId || 0);
+
+  const tokenHash =
+    hashOrderPaymentRetryToken(token);
+
+  if (
+    !Number.isInteger(normalizedOrderId)
+    || normalizedOrderId <= 0
+    || !tokenHash
+  ) {
+    return null;
+  }
+
+  const [rows] =
+    await connection.execute(
+      `
+        SELECT
+          oprc.order_id AS orderId,
+          oprc.expires_at AS expiresAt,
+          o.order_status AS orderStatus,
+          o.payment_status AS paymentStatus
+        FROM order_payment_retry_capabilities oprc
+        INNER JOIN orders o
+          ON o.id = oprc.order_id
+        WHERE oprc.order_id = ?
+          AND oprc.token_hash = ?
+          AND oprc.expires_at > NOW()
+          AND o.payment_method = 'MERCADO_PAGO'
+        LIMIT 1
+      `,
+      [
+        normalizedOrderId,
+        tokenHash,
+      ],
+    );
+
+  return rows?.[0] || null;
+}

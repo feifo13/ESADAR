@@ -10,6 +10,7 @@ import {
 } from './orders.service.js';
 import {
   createCheckoutOrder,
+  reconcileReturnedMercadoPagoPayment,
   retryCheckoutOrderPayment,
 } from './orders.checkout.service.js';
 import { expireReservedOrders } from './orders.expiration.service.js';
@@ -25,6 +26,9 @@ import {
 import {
   retryOrderPaymentSchema,
 } from './orders.payment-retry.schemas.js';
+import {
+  reconcileReturnedMercadoPagoPaymentSchema,
+} from './orders.payment-return.schemas.js';
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
@@ -52,6 +56,35 @@ export async function createPublicOrder(req, res) {
   return res.status(201).json({
     ok: true,
     order,
+  });
+}
+
+export async function reconcilePublicMercadoPagoReturn(
+  req,
+  res,
+) {
+  const orderId =
+    parsePositiveIntParam(
+      req.params.id,
+      "id",
+    );
+
+  const input =
+    reconcileReturnedMercadoPagoPaymentSchema.parse(
+      req.body,
+    );
+
+  const result =
+    await reconcileReturnedMercadoPagoPayment(
+      orderId,
+      input.paymentId,
+      input.retryToken,
+      getAuditContext(req),
+    );
+
+  return res.json({
+    ok: true,
+    ...result,
   });
 }
 
