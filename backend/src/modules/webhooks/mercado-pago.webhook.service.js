@@ -220,8 +220,11 @@ export async function handleMercadoPagoWebhook({
     };
   }
 
+  const rawRequestId =
+    headers['x-request-id'];
+
   const requestId =
-    clean(headers['x-request-id']).slice(0, 120);
+    clean(rawRequestId).slice(0, 120);
 
   const eventType = normalizeEventType(
     payload?.type
@@ -251,7 +254,9 @@ export async function handleMercadoPagoWebhook({
       secret: settings.mercadoPagoWebhookSecret,
       signatureHeader: headers['x-signature'],
       requestId,
+      rawRequestId,
       dataId: paymentId,
+      bodyDataId: payload?.data?.id,
     });
 
   const providerEventId =

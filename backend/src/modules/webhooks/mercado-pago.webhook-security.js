@@ -81,10 +81,25 @@ export function verifyMercadoPagoSignature({
   secret,
   signatureHeader,
   requestId,
+  rawRequestId,
   dataId,
+  bodyDataId,
 }) {
   const signatureSecret =
     clean(secret);
+
+  const effectiveRawRequestId =
+    rawRequestId == null
+      ? requestId
+      : rawRequestId;
+
+  const rawRequestIdText =
+    effectiveRawRequestId == null
+      ? ''
+      : String(effectiveRawRequestId);
+
+  const cleanRawRequestId =
+    clean(effectiveRawRequestId);
 
   const normalizedRequestId =
     clean(requestId);
@@ -92,6 +107,11 @@ export function verifyMercadoPagoSignature({
   const normalizedDataId =
     normalizeMercadoPagoPaymentId(
       dataId,
+    ).toLowerCase();
+
+  const normalizedBodyDataId =
+    normalizeMercadoPagoPaymentId(
+      bodyDataId,
     ).toLowerCase();
 
   if (!signatureSecret) {
@@ -173,6 +193,77 @@ export function verifyMercadoPagoSignature({
         .update(withoutRequestIdManifest)
         .digest('hex');
 
+    const diagnosticHash = (
+      manifestValue,
+    ) =>
+      crypto
+        .createHmac(
+          'sha256',
+          signatureSecret,
+        )
+        .update(manifestValue)
+        .digest('hex');
+
+    /*
+     * Diagnostic only.
+     *
+     * Compare the exact provider request-id before
+     * application trimming/storage bounding.
+     */
+    const rawRequestIdManifest =
+      `id:${normalizedDataId};`
+      + (
+        rawRequestIdText
+          ? `request-id:${rawRequestIdText};`
+          : ''
+      )
+      + `ts:${ts};`;
+
+    const rawRequestIdHash =
+      diagnosticHash(
+        rawRequestIdManifest,
+      );
+
+    const cleanUnslicedRequestIdManifest =
+      `id:${normalizedDataId};`
+      + (
+        cleanRawRequestId
+          ? `request-id:${cleanRawRequestId};`
+          : ''
+      )
+      + `ts:${ts};`;
+
+    const cleanUnslicedRequestIdHash =
+      diagnosticHash(
+        cleanUnslicedRequestIdManifest,
+      );
+
+    /*
+     * Diagnostic only.
+     *
+     * Body data.id remains non-authoritative and is
+     * never used to accept a signature or fetch payment.
+     */
+    const bodyDataIdManifest =
+      normalizedBodyDataId
+        ? (
+          `id:${normalizedBodyDataId};`
+          + (
+            rawRequestIdText
+              ? `request-id:${rawRequestIdText};`
+              : ''
+          )
+          + `ts:${ts};`
+        )
+        : '';
+
+    const bodyDataIdHash =
+      bodyDataIdManifest
+        ? diagnosticHash(
+          bodyDataIdManifest,
+        )
+        : '';
+
     /*
      * Intentionally sanitized diagnostic.
      *
@@ -203,6 +294,36 @@ export function verifyMercadoPagoSignature({
           ),
         manifestIncludesRequestId:
           Boolean(normalizedRequestId),
+        rawRequestIdPresent:
+          Boolean(rawRequestIdText),
+        requestIdTrimChanged:
+          rawRequestIdText
+            !== cleanRawRequestId,
+        requestIdTruncated:
+          cleanRawRequestId
+            !== normalizedRequestId,
+        bodyDataIdPresent:
+          Boolean(normalizedBodyDataId),
+        bodyDataIdMatchesQuery:
+          Boolean(normalizedBodyDataId)
+          && normalizedBodyDataId
+            === normalizedDataId,
+        hmacRawRequestIdMatches:
+          safeEqualHex(
+            rawRequestIdHash,
+            receivedHash,
+          ),
+        hmacCleanUnslicedRequestIdMatches:
+          safeEqualHex(
+            cleanUnslicedRequestIdHash,
+            receivedHash,
+          ),
+        hmacBodyDataIdMatches:
+          Boolean(bodyDataIdHash)
+          && safeEqualHex(
+            bodyDataIdHash,
+            receivedHash,
+          ),
         hmacWithoutRequestIdMatches:
           safeEqualHex(
             withoutRequestIdHash,
