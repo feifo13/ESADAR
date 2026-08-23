@@ -184,10 +184,12 @@ export default function CheckoutCompletePage() {
 
   const showMercadoPagoCheckout =
     mercadoPagoReady
-    && !mercadoPagoAwaitingConfirmation;
+    && !mercadoPagoAwaitingConfirmation
+    && !mercadoPagoConfirmed;
 
   const mercadoPagoUnavailable =
     isMercadoPago
+    && !mercadoPagoConfirmed
     && !mercadoPagoReady;
 
   const paymentRetryToken = String(
@@ -601,7 +603,9 @@ export default function CheckoutCompletePage() {
           </div>
         ) : null}
 
-        {!mercadoPagoUnavailable && paymentInstructions?.instructions ? (
+        {!mercadoPagoConfirmed
+        && !mercadoPagoUnavailable
+        && paymentInstructions?.instructions ? (
           <p className="muted-copy checkout-complete-bank-instructions">
             {paymentInstructions.instructions}
           </p>

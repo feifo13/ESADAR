@@ -1373,7 +1373,7 @@ export async function applyMercadoPagoPaymentToOrder(
       await logAudit(
         {
           actorUserId: null,
-          actorLabel: "Mercado Pago webhook",
+          actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
           actionCode:
             "MERCADO_PAGO_PAYMENT_METHOD_REVIEW_REQUIRED",
           entityType: "orders",
@@ -1459,7 +1459,7 @@ export async function applyMercadoPagoPaymentToOrder(
       await logAudit(
         {
           actorUserId: null,
-          actorLabel: "Mercado Pago webhook",
+          actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
           actionCode:
             "MERCADO_PAGO_PROVIDER_REFERENCE_CONFLICT",
           entityType: "orders",
@@ -1513,8 +1513,7 @@ export async function applyMercadoPagoPaymentToOrder(
         await logAudit(
           {
             actorUserId: null,
-            actorLabel:
-              "Mercado Pago webhook",
+            actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
             actionCode:
               "MERCADO_PAGO_IDENTITY_REVIEW_REQUIRED",
             entityType: "orders",
@@ -1552,8 +1551,7 @@ export async function applyMercadoPagoPaymentToOrder(
         await logAudit(
           {
             actorUserId: null,
-            actorLabel:
-              "Mercado Pago webhook",
+            actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
             actionCode:
               "MERCADO_PAGO_CURRENCY_MISMATCH",
             entityType: "orders",
@@ -1710,8 +1708,7 @@ export async function applyMercadoPagoPaymentToOrder(
           await logAudit(
             {
               actorUserId: null,
-              actorLabel:
-                "Mercado Pago webhook",
+              actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
               actionCode:
                 "ORDER_APPROVED_BY_MERCADO_PAGO",
               entityType: "orders",
@@ -1763,8 +1760,7 @@ export async function applyMercadoPagoPaymentToOrder(
         await logAudit(
           {
             actorUserId: null,
-            actorLabel:
-              "Mercado Pago webhook",
+            actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
             actionCode:
               "MERCADO_PAGO_LATE_PAYMENT_REVIEW_REQUIRED",
             entityType: "orders",
@@ -1893,8 +1889,7 @@ export async function applyMercadoPagoPaymentToOrder(
     await logAudit(
       {
         actorUserId: null,
-        actorLabel:
-          "Mercado Pago webhook",
+        actorLabel: auditContext.actorLabel || "Mercado Pago webhook",
         actionCode:
           "MERCADO_PAGO_PAYMENT_SYNCED",
         entityType: "orders",

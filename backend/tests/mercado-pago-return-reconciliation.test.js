@@ -325,3 +325,98 @@ test(
     );
   },
 );
+
+test(
+  "canonical Mercado Pago apply preserves caller provenance",
+  async () => {
+    const {
+      readFile,
+    } = await import(
+      "node:fs/promises"
+    );
+
+    const source =
+      await readFile(
+        new URL(
+          "../src/modules/orders/orders.service.js",
+          import.meta.url,
+        ),
+        "utf8",
+      );
+
+    const marker =
+      "export async function "
+      + "applyMercadoPagoPaymentToOrder(";
+
+    const start =
+      source.indexOf(marker);
+
+    assert.ok(start >= 0);
+
+    const next =
+      source.indexOf(
+        "\nexport ",
+        start + 1,
+      );
+
+    const applySource =
+      next >= 0
+        ? source.slice(start, next)
+        : source.slice(start);
+
+    assert.equal(
+      (
+        applySource.match(
+          /actorLabel:\s*"Mercado Pago webhook"/g,
+        )
+        || []
+      ).length,
+      0,
+    );
+
+    assert.equal(
+      (
+        applySource.match(
+          /actorLabel:\s*auditContext\.actorLabel\s*\|\|\s*"Mercado Pago webhook"/g,
+        )
+        || []
+      ).length,
+      9,
+    );
+  },
+);
+
+test(
+  "confirmed Mercado Pago return hides all additional payment actions",
+  async () => {
+    const {
+      readFile,
+    } = await import(
+      "node:fs/promises"
+    );
+
+    const source =
+      await readFile(
+        new URL(
+          "../../frontend/src/pages/CheckoutCompletePage.jsx",
+          import.meta.url,
+        ),
+        "utf8",
+      );
+
+    assert.match(
+      source,
+      /const showMercadoPagoCheckout\s*=[\s\S]{0,220}?&& !mercadoPagoConfirmed;/,
+    );
+
+    assert.match(
+      source,
+      /const mercadoPagoUnavailable\s*=[\s\S]{0,220}?&& !mercadoPagoConfirmed[\s\S]{0,100}?&& !mercadoPagoReady;/,
+    );
+
+    assert.match(
+      source,
+      /\{!mercadoPagoConfirmed[\s\S]{0,100}?&& !mercadoPagoUnavailable[\s\S]{0,100}?&& paymentInstructions\?\.instructions \? \(/,
+    );
+  },
+);
