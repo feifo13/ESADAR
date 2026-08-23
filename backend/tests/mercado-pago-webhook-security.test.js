@@ -381,3 +381,180 @@ test(
     );
   },
 );
+
+test(
+  'diagnostico Mercado Pago es sanitizado y activable',
+  () => {
+    const envName =
+      'MERCADO_PAGO_WEBHOOK_DIAGNOSTICS';
+
+    const previousEnv =
+      process.env[envName];
+
+    const originalWarn =
+      console.warn;
+
+    const lines = [];
+
+    const secret =
+      'diag-secret-never-log';
+
+    const requestId =
+      'diag-request-never-log';
+
+    const dataId =
+      '987654321098765432';
+
+    const ts =
+      '1720001111';
+
+    const validHash =
+      signature({
+        secret,
+        requestId,
+        dataId,
+        ts,
+      });
+
+    const noRequestHash =
+      signature({
+        secret,
+        requestId: '',
+        dataId,
+        ts,
+      });
+
+    try {
+      process.env[envName] = '1';
+
+      console.warn =
+        (...args) => {
+          lines.push(
+            args.join(' '),
+          );
+        };
+
+      assert.doesNotThrow(
+        () =>
+          verifyMercadoPagoSignature({
+            secret,
+            requestId,
+            dataId,
+            signatureHeader:
+              `ts=${ts},v1=${validHash}`,
+          }),
+      );
+
+      assert.throws(
+        () =>
+          verifyMercadoPagoSignature({
+            secret,
+            requestId: '',
+            dataId,
+            signatureHeader:
+              `ts=${ts},v1=${'0'.repeat(64)}`,
+          }),
+        /invalida/i,
+      );
+    } finally {
+      console.warn =
+        originalWarn;
+
+      if (previousEnv === undefined) {
+        delete process.env[envName];
+      } else {
+        process.env[envName] =
+          previousEnv;
+      }
+    }
+
+    assert.equal(
+      lines.length,
+      2,
+    );
+
+    const prefix =
+      'MERCADO_PAGO_SIGNATURE_DIAGNOSTIC ';
+
+    for (const line of lines) {
+      assert.match(
+        line,
+        /^MERCADO_PAGO_SIGNATURE_DIAGNOSTIC /,
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(secret),
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(requestId),
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(dataId),
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(ts),
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(validHash),
+      );
+
+      assert.doesNotMatch(
+        line,
+        new RegExp(noRequestHash),
+      );
+    }
+
+    const validDiagnostic =
+      JSON.parse(
+        lines[0].slice(prefix.length),
+      );
+
+    const invalidDiagnostic =
+      JSON.parse(
+        lines[1].slice(prefix.length),
+      );
+
+    assert.deepEqual(
+      validDiagnostic,
+      {
+        signatureValid: true,
+        requestIdPresent: true,
+        dataIdPresent: true,
+        dataIdDecimalOnly: true,
+        signatureHeaderPresent: true,
+        tsPresent: true,
+        tsNumeric: true,
+        v1Present: true,
+        v1Hex64: true,
+        manifestIncludesRequestId: true,
+        hmacWithoutRequestIdMatches: false,
+      },
+    );
+
+    assert.deepEqual(
+      invalidDiagnostic,
+      {
+        signatureValid: false,
+        requestIdPresent: false,
+        dataIdPresent: true,
+        dataIdDecimalOnly: true,
+        signatureHeaderPresent: true,
+        tsPresent: true,
+        tsNumeric: true,
+        v1Present: true,
+        v1Hex64: true,
+        manifestIncludesRequestId: false,
+        hmacWithoutRequestIdMatches: false,
+      },
+    );
+  },
+);

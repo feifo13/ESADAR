@@ -150,12 +150,69 @@ export function verifyMercadoPagoSignature({
       .update(manifest)
       .digest('hex');
 
-  if (
-    !safeEqualHex(
+  const signatureValid =
+    safeEqualHex(
       calculatedHash,
       receivedHash,
-    )
+    );
+
+  if (
+    process.env.MERCADO_PAGO_WEBHOOK_DIAGNOSTICS
+      === '1'
   ) {
+    const withoutRequestIdManifest =
+      `id:${normalizedDataId};`
+      + `ts:${ts};`;
+
+    const withoutRequestIdHash =
+      crypto
+        .createHmac(
+          'sha256',
+          signatureSecret,
+        )
+        .update(withoutRequestIdManifest)
+        .digest('hex');
+
+    /*
+     * Intentionally sanitized diagnostic.
+     *
+     * Never log secret, signature, request-id,
+     * data.id, ts or any payment/customer data.
+     */
+    console.warn(
+      'MERCADO_PAGO_SIGNATURE_DIAGNOSTIC '
+      + JSON.stringify({
+        signatureValid,
+        requestIdPresent:
+          Boolean(normalizedRequestId),
+        dataIdPresent:
+          Boolean(normalizedDataId),
+        dataIdDecimalOnly:
+          /^\d+$/.test(normalizedDataId),
+        signatureHeaderPresent:
+          Boolean(signatureHeader),
+        tsPresent:
+          Boolean(ts),
+        tsNumeric:
+          /^\d+$/.test(ts),
+        v1Present:
+          Boolean(receivedHash),
+        v1Hex64:
+          /^[a-f0-9]{64}$/i.test(
+            receivedHash,
+          ),
+        manifestIncludesRequestId:
+          Boolean(normalizedRequestId),
+        hmacWithoutRequestIdMatches:
+          safeEqualHex(
+            withoutRequestIdHash,
+            receivedHash,
+          ),
+      }),
+    );
+  }
+
+  if (!signatureValid) {
     throw unauthorized(
       'Firma Mercado Pago invalida.',
     );
