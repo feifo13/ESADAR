@@ -1,6 +1,10 @@
 import { withTransaction } from '../../db/transaction.js';
 import { buildSqlLimitClause } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
+import {
+  lockInventoryOperationsCanonical,
+  sortInventoryOperationsCanonical,
+} from '../inventory/inventory-lock-order.js';
 import { releaseReservation } from '../inventory/inventory.service.js';
 import { restoreUsedOffersForOrder } from '../offers/offers.service.js';
 
@@ -32,6 +36,8 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
     );
 
     const expiredOrderIds = [];
+    const inventoryOperationsByOrderId = new Map();
+    const allInventoryOperations = [];
 
     for (const order of orders) {
       const [items] = await connection.execute(
@@ -47,10 +53,29 @@ export async function expireReservedOrders({ now = new Date(), limit = 100, audi
         [order.id],
       );
 
-      for (const item of items) {
-        await releaseReservation(connection, {
+      const inventoryOperations = sortInventoryOperationsCanonical(
+        items.map((item) => ({
           articleId: Number(item.articleId),
           quantity: Number(item.quantity || 0),
+        })),
+      );
+      inventoryOperationsByOrderId.set(Number(order.id), inventoryOperations);
+      allInventoryOperations.push(...inventoryOperations);
+    }
+
+    await lockInventoryOperationsCanonical(
+      connection,
+      allInventoryOperations,
+    );
+
+    for (const order of orders) {
+      const inventoryOperations =
+        inventoryOperationsByOrderId.get(Number(order.id)) || [];
+
+      for (const item of inventoryOperations) {
+        await releaseReservation(connection, {
+          articleId: item.articleId,
+          quantity: item.quantity,
           orderId: Number(order.id),
           userId: auditContext.actorUserId || null,
           reason: 'Reserva vencida',

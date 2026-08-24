@@ -19,6 +19,10 @@ import {
   releaseReservation,
   reserveForOrder,
 } from "../inventory/inventory.service.js";
+import {
+  aggregateInventoryOperationsCanonical,
+  lockInventoryOperationsCanonical,
+} from "../inventory/inventory-lock-order.js";
 import { convertActiveCartForUser } from "../cart/cart.service.js";
 import {
   sendApprovedOrderEmail,
@@ -96,18 +100,7 @@ function buildOrderItemCostSnapshot(article, quantity, lineTotal, bankTaxRate) {
 }
 
 function aggregateOrderItemQuantities(items = []) {
-  const quantitiesByArticle = new Map();
-
-  for (const item of items) {
-    if (!item.articleId) continue;
-    quantitiesByArticle.set(
-      Number(item.articleId),
-      Number(quantitiesByArticle.get(Number(item.articleId)) || 0) +
-        Number(item.quantity || 0),
-    );
-  }
-
-  return quantitiesByArticle;
+  return aggregateInventoryOperationsCanonical(items);
 }
 
 export async function createOrder(input, actor, auditContext) {
@@ -123,9 +116,16 @@ export async function createOrder(input, actor, auditContext) {
       ? await getShippingMethod(input.shippingMethodId, connection)
       : null;
 
-    const requestedArticleIds = [
-      ...new Set(input.items.map((item) => item.articleId)),
-    ];
+    const requestedInventoryOperations = aggregateOrderItemQuantities(
+      input.items,
+    );
+    const requestedArticleIds = requestedInventoryOperations.map(
+      ({ articleId }) => articleId,
+    );
+    await lockInventoryOperationsCanonical(
+      connection,
+      requestedInventoryOperations,
+    );
     const placeholders = buildSqlPlaceholders(requestedArticleIds);
     const [articleRows] = await connection.execute(
       `
@@ -173,16 +173,7 @@ export async function createOrder(input, actor, auditContext) {
     );
 
     const articlesById = new Map(articleRows.map((row) => [row.id, row]));
-    const requestedQuantityByArticle = new Map();
-    for (const item of input.items) {
-      requestedQuantityByArticle.set(
-        item.articleId,
-        Number(requestedQuantityByArticle.get(item.articleId) || 0) +
-          Number(item.quantity || 0),
-      );
-    }
-
-    for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
+    for (const { articleId, quantity } of requestedInventoryOperations) {
       const article = articlesById.get(articleId);
       if (!article) {
         throw notFound(`Articulo ${articleId} no encontrado.`);
@@ -509,7 +500,7 @@ export async function createOrder(input, actor, auditContext) {
       }
     }
 
-    for (const [articleId, quantity] of requestedQuantityByArticle.entries()) {
+    for (const { articleId, quantity } of requestedInventoryOperations) {
       await reserveForOrder(connection, {
         articleId,
         quantity,
@@ -829,9 +820,12 @@ export async function approveOrder(id, auditContext) {
       [id],
     );
 
-    for (const [articleId, quantity] of aggregateOrderItemQuantities(
-      items,
-    ).entries()) {
+    const inventoryOperations = await lockInventoryOperationsCanonical(
+      connection,
+      aggregateOrderItemQuantities(items),
+    );
+
+    for (const { articleId, quantity } of inventoryOperations) {
       await confirmSale(connection, {
         articleId,
         quantity,
@@ -905,9 +899,12 @@ export async function cancelOrder(id, reason, auditContext) {
       [id],
     );
 
-    for (const [articleId, quantity] of aggregateOrderItemQuantities(
-      items,
-    ).entries()) {
+    const inventoryOperations = await lockInventoryOperationsCanonical(
+      connection,
+      aggregateOrderItemQuantities(items),
+    );
+
+    for (const { articleId, quantity } of inventoryOperations) {
       await releaseReservation(connection, {
         articleId,
         quantity,
@@ -1668,12 +1665,13 @@ export async function applyMercadoPagoPaymentToOrder(
             [before.id],
           );
 
-        for (
-          const [articleId, quantity]
-          of aggregateOrderItemQuantities(
-            items,
-          ).entries()
-        ) {
+        const inventoryOperations =
+          await lockInventoryOperationsCanonical(
+            connection,
+            aggregateOrderItemQuantities(items),
+          );
+
+        for (const { articleId, quantity } of inventoryOperations) {
           await confirmSale(
             connection,
             {
