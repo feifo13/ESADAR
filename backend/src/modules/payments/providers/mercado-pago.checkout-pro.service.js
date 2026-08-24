@@ -1,4 +1,7 @@
 import { pool } from "../../../db/pool.js";
+import {
+  getCollectingSettingsReadOnly,
+} from "../../collecting/collecting.service.js";
 import { resolveMailSiteUrl } from "../../mail/mail.url-context.js";
 import { getPaymentMethodLabel } from "../../payment-methods.js";
 
@@ -687,7 +690,7 @@ export async function getStoredMercadoPagoCheckoutInstructions(
   connection = pool,
 ) {
   const settings =
-    await getCollectingSettings(
+    await getCollectingSettingsReadOnly(
       connection,
     );
 

@@ -397,8 +397,7 @@ async function ensureSettingsRow(connection = pool) {
   );
 }
 
-export async function getCollectingSettings(connection = pool) {
-  await ensureSettingsRow(connection);
+export async function getCollectingSettingsReadOnly(connection = pool) {
   const [rows] = await connection.execute(
     `
       SELECT
@@ -433,6 +432,11 @@ export async function getCollectingSettings(connection = pool) {
   );
 
   return normalizeSettingsRow(rows[0] || { id: 1 });
+}
+
+export async function getCollectingSettings(connection = pool) {
+  await ensureSettingsRow(connection);
+  return getCollectingSettingsReadOnly(connection);
 }
 
 export async function getCostingSettings(connection = pool) {
