@@ -742,7 +742,11 @@ function normalizeBatchError(error) {
   return error?.message || "No se pudo procesar el elemento.";
 }
 
-export async function batchUpdateOrders(input, auditContext) {
+export async function batchUpdateOrders(
+  input,
+  auditContext,
+  dependencyOverrides = {},
+) {
   const actionLabels = {
     APPROVE: "aprobada",
     CANCEL: "cancelada",
@@ -762,7 +766,7 @@ export async function batchUpdateOrders(input, auditContext) {
           auditContext,
         );
       } else if (input.action === "SHIP") {
-        order = await shipOrder(id, auditContext);
+        order = await shipOrder(id, auditContext, dependencyOverrides);
       } else {
         throw badRequest("Acción de lote no permitida para órdenes.");
       }
@@ -987,16 +991,37 @@ export async function cancelOrder(id, reason, auditContext) {
   });
 }
 
-export async function shipOrder(id, auditContext) {
-  const order = await withTransaction(async (connection) => {
-    const before = await getOrderById(id, connection);
+export async function shipOrder(
+  id,
+  auditContext,
+  dependencyOverrides = {},
+) {
+  const runInTransaction =
+    dependencyOverrides.runInTransaction || withTransaction;
+  const loadOrderById =
+    dependencyOverrides.getOrderById || getOrderById;
+  const writeAudit = dependencyOverrides.logAudit || logAudit;
+  const sendShippedEmail =
+    dependencyOverrides.sendShippedOrderEmail || sendShippedOrderEmail;
+
+  const result = await runInTransaction(async (connection) => {
+    await lockOrderForUpdate(id, connection);
+    const before = await loadOrderById(id, connection);
+
+    if (before.orderStatus === "SHIPPED") {
+      return {
+        order: before,
+        transitionPerformed: false,
+      };
+    }
+
     if (before.orderStatus !== "APPROVED") {
       throw badRequest(
         "Solo se pueden marcar como enviadas las órdenes aprobadas.",
       );
     }
 
-    await connection.execute(
+    const [orderUpdateResult] = await connection.execute(
       `
         UPDATE orders
         SET
@@ -1004,9 +1029,14 @@ export async function shipOrder(id, auditContext) {
           shipped_at = NOW(),
           updated_by = ?
         WHERE id = ?
+          AND order_status = 'APPROVED'
       `,
       [auditContext.actorUserId, id],
     );
+
+    if (!orderUpdateResult.affectedRows) {
+      throw badRequest("La orden ya fue actualizada por otro proceso.");
+    }
 
     await connection.execute(
       `
@@ -1022,9 +1052,9 @@ export async function shipOrder(id, auditContext) {
       [id, before.orderStatus, auditContext.actorUserId, auditContext.source],
     );
 
-    const after = await getOrderById(id, connection);
+    const after = await loadOrderById(id, connection);
 
-    await logAudit(
+    await writeAudit(
       {
         actorUserId: auditContext.actorUserId,
         actorLabel: auditContext.actorLabel,
@@ -1040,19 +1070,26 @@ export async function shipOrder(id, auditContext) {
       connection,
     );
 
-    return after;
+    return {
+      order: after,
+      transitionPerformed: true,
+    };
   });
 
-  sendShippedOrderEmail(order, {
-    publicSiteUrl: auditContext.publicSiteUrl,
-  }).catch((error) => {
-    console.warn(
-      "[orders] shipped order email failed",
-      error?.message || error,
-    );
-  });
+  if (result.transitionPerformed) {
+    Promise.resolve(
+      sendShippedEmail(result.order, {
+        publicSiteUrl: auditContext.publicSiteUrl,
+      }),
+    ).catch((error) => {
+      console.warn(
+        "[orders] shipped order email failed",
+        error?.message || error,
+      );
+    });
+  }
 
-  return order;
+  return result.order;
 }
 
 export async function updateOrderTrackingCode(id, input, auditContext) {

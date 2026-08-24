@@ -18,7 +18,8 @@
     "db:backup": "node scripts/backup-db.mjs",
     "db:script": "node scripts/run-db-script.mjs",
     "test:db-runner": "node --test tests/mysql-script-runner.test.js",
-    "test:operational-reset": "node --test tests/mysql-script-runner.test.js tests/operational-reset-contract.test.js"
+    "test:operational-reset": "node --test tests/mysql-script-runner.test.js tests/operational-reset-contract.test.js",
+    "test:ship-concurrency-db": "node scripts/order-ship-idempotency-db-smoke.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
