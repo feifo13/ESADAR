@@ -52,6 +52,7 @@ function sanitizeSupplementalObject(value) {
 export function createReportProjection({
   columns,
   rows = [],
+  totalRow = null,
   summary = {},
   metadata = {},
 } = {}) {
@@ -69,9 +70,27 @@ export function createReportProjection({
   return {
     columns: normalizedColumns,
     rows: (Array.isArray(rows) ? rows : []).map((row) => pickAllowedCells(row, normalizedColumns)),
+    totalRow: totalRow == null ? null : pickAllowedCells(totalRow, normalizedColumns),
     summary: sanitizeSupplementalObject(summary),
     metadata: sanitizeSupplementalObject(metadata),
   };
+}
+
+export function sumReportNumericField(rows, key, { decimalPlaces = null } = {}) {
+  const total = (rows || []).reduce((sum, row) => {
+    const value = Number(row?.[key] ?? 0);
+    return sum + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  return Number.isInteger(decimalPlaces) ? Number(total.toFixed(decimalPlaces)) : total;
+}
+
+export function calculateReportAggregatePercentage(numerator, denominator) {
+  const safeNumerator = Number(numerator ?? 0);
+  const safeDenominator = Number(denominator ?? 0);
+  if (!Number.isFinite(safeNumerator)
+    || !Number.isFinite(safeDenominator)
+    || safeDenominator <= 0) return 0;
+  return Number(((safeNumerator / safeDenominator) * 100).toFixed(2));
 }
 
 export function isForbiddenReportColumnKey(key) {

@@ -1,5 +1,9 @@
 import { evaluateHistoricalSaleCostIntegrity } from './cost-integrity.js';
-import { createReportProjection } from './report-projection.js';
+import {
+  calculateReportAggregatePercentage,
+  createReportProjection,
+  sumReportNumericField,
+} from './report-projection.js';
 import {
   CANONICAL_COMPLETED_SALE_STATUSES,
   CANONICAL_SALE_DATE_FIELD,
@@ -123,10 +127,27 @@ export function buildCanonicalRealizedProfitProjection(sourceRows = [], options 
   const reliableProfitTotal = Number(completeRows
     .reduce((sum, row) => sum + Number(row.realizedProfit || 0), 0)
     .toFixed(2));
+  const totals = {
+    quantity: sumReportNumericField(rows, 'quantity'),
+    revenue: sumReportNumericField(rows, 'revenue', { decimalPlaces: 2 }),
+    purchasePriceItem: sumReportNumericField(rows, 'purchasePriceItem', { decimalPlaces: 2 }),
+    purchasePriceShipping: sumReportNumericField(rows, 'purchasePriceShipping', { decimalPlaces: 2 }),
+    purchasePriceCourier: sumReportNumericField(rows, 'purchasePriceCourier', { decimalPlaces: 2 }),
+    purchasePriceTotal: sumReportNumericField(rows, 'purchasePriceTotal', { decimalPlaces: 2 }),
+    bankTaxBase: sumReportNumericField(rows, 'bankTaxBase', { decimalPlaces: 2 }),
+    bankTax: sumReportNumericField(rows, 'bankTax', { decimalPlaces: 2 }),
+    totalCost: sumReportNumericField(rows, 'totalCost', { decimalPlaces: 2 }),
+    realizedProfit: sumReportNumericField(rows, 'realizedProfit', { decimalPlaces: 2 }),
+  };
 
   return createReportProjection({
     columns: REALIZED_PROFIT_COLUMNS,
     rows,
+    totalRow: {
+      orderNumber: 'TOTAL',
+      ...totals,
+      realizedMargin: calculateReportAggregatePercentage(totals.realizedProfit, totals.revenue),
+    },
     summary: {
       completedSaleRowCount: rows.length,
       completeRowCount: completeRows.length,

@@ -1,5 +1,9 @@
 import { deriveStockStatus } from '../inventory/inventory.constants.js';
-import { createReportProjection } from './report-projection.js';
+import {
+  calculateReportAggregatePercentage,
+  createReportProjection,
+  sumReportNumericField,
+} from './report-projection.js';
 
 export const ROTATION_HISTORY_SCOPES = Object.freeze({
   RECORDED_LEDGER: 'RECORDED_LEDGER',
@@ -100,11 +104,30 @@ export function projectCurrentStockRow(row = {}) {
   };
 }
 
+function buildInventoryTotalRow(rows, { includeSoldPercentage = false } = {}) {
+  const totalRow = {
+    internalCode: 'TOTAL',
+    quantityTotal: sumReportNumericField(rows, 'quantityTotal'),
+    quantityAvailable: sumReportNumericField(rows, 'quantityAvailable'),
+    quantityReserved: sumReportNumericField(rows, 'quantityReserved'),
+    quantitySold: sumReportNumericField(rows, 'quantitySold'),
+    quantityLost: sumReportNumericField(rows, 'quantityLost'),
+  };
+  if (includeSoldPercentage) {
+    totalRow.netSoldPercentage = calculateReportAggregatePercentage(
+      totalRow.quantitySold,
+      totalRow.quantityTotal,
+    );
+  }
+  return totalRow;
+}
+
 export function buildCurrentStockProjection(sourceRows = []) {
   const rows = sourceRows.map(projectCurrentStockRow);
   return createReportProjection({
     columns: CURRENT_STOCK_COLUMNS,
     rows,
+    totalRow: buildInventoryTotalRow(rows),
     summary: {
       rowCount: rows.length,
       invalidBalanceRowCount: rows.filter(
@@ -153,9 +176,10 @@ export function projectStockRotationV1Row(row = {}, { asOfDate = new Date() } = 
     intakeDate: row.intakeDate || null,
     daysSinceIntake: calculateDaysSinceIntake(row.intakeDate, asOfDate),
     ...balances,
-    netSoldPercentage: balances.quantityTotal > 0
-      ? Number(((balances.quantitySold / balances.quantityTotal) * 100).toFixed(2))
-      : 0,
+    netSoldPercentage: calculateReportAggregatePercentage(
+      balances.quantitySold,
+      balances.quantityTotal,
+    ),
     lastRecordedSaleAt: row.lastRecordedSaleAt || null,
     historyScope: resolveRotationHistoryScope(row),
   };
@@ -166,6 +190,7 @@ export function buildStockRotationV1Projection(sourceRows = [], options = {}) {
   return createReportProjection({
     columns: STOCK_ROTATION_V1_COLUMNS,
     rows,
+    totalRow: buildInventoryTotalRow(rows, { includeSoldPercentage: true }),
     summary: {
       rowCount: rows.length,
       partialHistoryRowCount: rows.filter(

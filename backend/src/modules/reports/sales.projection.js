@@ -62,14 +62,20 @@ export function projectCanonicalSaleRow(row = {}) {
 
 export function buildCanonicalSalesProjection(sourceRows = []) {
   const rows = sourceRows.map(projectCanonicalSaleRow).filter(Boolean);
+  const summary = {
+    saleRowCount: rows.length,
+    quantityTotal: rows.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
+    revenueTotal: Number(rows.reduce((sum, row) => sum + Number(row.lineTotal || 0), 0).toFixed(2)),
+  };
   return createReportProjection({
     columns: SALES_REPORT_COLUMNS,
     rows,
-    summary: {
-      saleRowCount: rows.length,
-      quantityTotal: rows.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
-      revenueTotal: Number(rows.reduce((sum, row) => sum + Number(row.lineTotal || 0), 0).toFixed(2)),
+    totalRow: {
+      orderNumber: 'TOTAL',
+      quantity: summary.quantityTotal,
+      lineTotal: summary.revenueTotal,
     },
+    summary,
     metadata: {
       reportId: 'SALES',
       saleDateField: CANONICAL_SALE_DATE_FIELD,

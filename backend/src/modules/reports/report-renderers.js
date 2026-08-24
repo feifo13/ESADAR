@@ -1,4 +1,9 @@
-import { rowsToCsvBuffer, rowsToXlsxBuffer } from '../../utils/export-files.js';
+import {
+  appendRowsSheet,
+  createWorkbook,
+  rowsToCsvBuffer,
+  workbookToXlsxBuffer,
+} from '../../utils/export-files.js';
 
 function normalizeProjectionCell(value) {
   if (value == null) return '';
@@ -12,7 +17,11 @@ function normalizeProjectionCell(value) {
 }
 
 export function projectionToExportRows(projection) {
-  return (projection.rows || []).map((row) => Object.fromEntries(
+  const projectionRows = [
+    ...(projection.rows || []),
+    ...(projection.totalRow ? [projection.totalRow] : []),
+  ];
+  return projectionRows.map((row) => Object.fromEntries(
     projection.columns.map((column) => [
       column.header,
       normalizeProjectionCell(row[column.key]),
@@ -25,7 +34,15 @@ export function renderReportProjectionCsv(projection) {
   return rowsToCsvBuffer(rows, projection.columns.map(({ header }) => header));
 }
 
-export function renderReportProjectionXlsx(projection, { sheetName = 'Reporte' } = {}) {
+export async function renderReportProjectionXlsx(projection, { sheetName = 'Reporte' } = {}) {
   const rows = projectionToExportRows(projection);
-  return rowsToXlsxBuffer(rows, sheetName, projection.columns.map(({ header }) => header));
+  const workbook = createWorkbook();
+  const worksheet = appendRowsSheet(
+    workbook,
+    sheetName,
+    rows,
+    projection.columns.map(({ header }) => header),
+  );
+  if (projection.totalRow) worksheet.getRow(worksheet.rowCount).font = { bold: true };
+  return workbookToXlsxBuffer(workbook);
 }

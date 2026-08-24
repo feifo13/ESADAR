@@ -103,13 +103,26 @@ export function buildCanonicalCostIntegrityProjection({
     if (filters.issueCode && !row.issueCodes.includes(filters.issueCode)) return false;
     return true;
   });
+  const problemRowCount = rows.filter(
+    ({ dataQuality }) => dataQuality === 'INCOMPLETE',
+  ).length;
+  const issueCount = rows.reduce(
+    (count, row) => count + (Array.isArray(row.issueCodes) ? row.issueCodes.length : 0),
+    0,
+  );
 
   return createReportProjection({
     columns: COST_INTEGRITY_REPORT_COLUMNS,
     rows,
+    totalRow: {
+      scope: 'TOTAL',
+      dataQuality: `Filas con problemas: ${problemRowCount}`,
+      issueCodes: `Incidencias detectadas: ${issueCount}`,
+    },
     summary: {
       rowCount: rows.length,
-      incompleteRowCount: rows.filter(({ dataQuality }) => dataQuality === 'INCOMPLETE').length,
+      incompleteRowCount: problemRowCount,
+      issueCount,
       currentArticleRowCount: rows.filter(({ scope: rowScope }) => (
         rowScope === COST_INTEGRITY_SCOPES.CURRENT_ARTICLES
       )).length,

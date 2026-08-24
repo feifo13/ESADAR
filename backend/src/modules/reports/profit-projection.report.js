@@ -3,7 +3,10 @@ import {
   buildArticleFinancialProjectionRows,
   buildArticleProfitProjectionSummary,
 } from '../articles/article-financial-projection.js';
-import { createReportProjection } from './report-projection.js';
+import {
+  createReportProjection,
+  sumReportNumericField,
+} from './report-projection.js';
 
 export const PROFIT_PROJECTION_REPORT_COLUMNS = Object.freeze([
   { key: 'internalCode', header: 'Código' },
@@ -46,11 +49,30 @@ export function buildCanonicalProfitProjection(sourceRows = [], costingSettings 
       quantityLost: Number(source.quantityLost || 0),
     };
   });
+  const summary = buildArticleProfitProjectionSummary(financialRows);
 
   return createReportProjection({
     columns: PROFIT_PROJECTION_REPORT_COLUMNS,
     rows,
-    summary: buildArticleProfitProjectionSummary(financialRows),
+    totalRow: {
+      internalCode: 'TOTAL',
+      quantityTotal: sumReportNumericField(rows, 'quantityTotal'),
+      quantityAvailable: sumReportNumericField(rows, 'quantityAvailable'),
+      quantityReserved: sumReportNumericField(rows, 'quantityReserved'),
+      quantitySold: sumReportNumericField(rows, 'quantitySold'),
+      quantityLost: sumReportNumericField(rows, 'quantityLost'),
+      purchasePriceItem: summary.totalPurchasePriceItem,
+      purchasePriceShipping: summary.totalPurchasePriceShipping,
+      purchasePriceCourier: summary.totalPurchasePriceCourier,
+      purchasePriceTotal: summary.totalPurchasePrice,
+      bankTaxBase: summary.totalBankTaxBase,
+      bankTax: summary.totalBankTax,
+      totalCost: summary.totalCost,
+      effectiveSalePrice: summary.totalEffectiveSalePrice,
+      estimatedProfit: summary.totalEstimatedProfit,
+      estimatedMargin: summary.weightedMargin,
+    },
+    summary,
     metadata: { reportId: 'PROFIT_PROJECTION' },
   });
 }
