@@ -212,6 +212,51 @@
   max-width: none;
 }
 
+.account-order-payment-panel {
+  gap: 12px;
+  border-color: color-mix(in srgb, var(--aqua) 38%, var(--border));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface) 94%, var(--aqua) 6%),
+      var(--surface)
+    );
+}
+
+.account-order-payment-panel--confirmed {
+  border-color: color-mix(in srgb, #0e8f62 44%, var(--border));
+}
+
+.account-order-payment-panel--failed {
+  border-color: color-mix(in srgb, var(--orange) 48%, var(--border));
+}
+
+.account-order-payment-panel__heading,
+.account-order-payment-panel__copy,
+.account-order-payment-panel__error {
+  max-width: 760px;
+}
+
+.account-order-payment-panel__heading h2 {
+  margin: 0;
+}
+
+.account-order-payment-panel__copy,
+.account-order-payment-panel__error {
+  margin: 0;
+}
+
+.account-order-payment-panel__actions {
+  justify-content: flex-start;
+}
+
+@media (max-width: 620px) {
+  .account-order-payment-panel__actions .button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .account-order-detail-hero-card {
   gap: clamp(14px, 1.8vw, 22px);
 }

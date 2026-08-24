@@ -29,20 +29,19 @@ const sections = [
     title: "4. Órdenes y reserva",
     copy: [
       "Al confirmar una compra, la orden queda registrada y puede permanecer pendiente de validación manual. Las prendas asociadas a la orden se reservan por 24 horas desde la confirmación.",
-      "Si el pago no se completa, no se identifica correctamente, no puede validarse dentro del plazo informado o la información de contacto/envío es insuficiente, ESADAR podrá cancelar la orden y liberar nuevamente la prenda.",
+      "Si el pago no se completa o no puede validarse dentro del plazo informado, o si la información de contacto o envío es insuficiente, ESADAR podrá cancelar la orden.",
     ],
   },
   {
     title: "5. Medios de pago",
     copy: [
-      "ESADAR puede ofrecer, según disponibilidad, transferencia bancaria, Prex, Mercado Pago u otros medios configurados en el sistema.",
-      "En pagos por transferencia o medios equivalentes, el cliente debe utilizar los datos informados al finalizar la compra y enviados por correo. También deberá indicar el número de orden en el motivo, concepto o referencia del pago para facilitar su validación.",
+      "ESADAR puede ofrecer, según disponibilidad, transferencia bancaria, Mercado Pago u otros medios configurados en el sistema. En pagos por transferencia, el cliente debe utilizar los datos informados al finalizar la compra y transferir el importe indicado. ESADAR validará el pago antes de aprobar la orden.",
     ],
   },
   {
     title: "6. Validación del pago",
     copy: [
-      "La aprobación de una orden depende de la validación del pago por parte de ESADAR. El envío de un comprobante no implica aprobación automática hasta que el pago sea confirmado correctamente.",
+      "Una transferencia o un intento de pago no implican aprobación automática hasta que el pago sea confirmado correctamente.",
       "Una vez aprobada la orden, ESADAR enviará el correo de confirmación correspondiente y, cuando aplique, el comprobante de compra en PDF.",
     ],
   },

@@ -1548,10 +1548,10 @@ VALUES (
   0.025000,
   1,
   'UYU',
-  'Luego de transferir, responde este correo con el comprobante para validar tu orden.',
+  NULL,
   0,
   'test',
-  'Paga con el boton o escanea el QR de Mercado Pago. Luego responde este correo con el comprobante para validar tu orden.',
+  NULL,
   @admin_user_id,
   @admin_user_id
 )

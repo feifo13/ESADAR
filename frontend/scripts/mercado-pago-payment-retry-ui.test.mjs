@@ -68,7 +68,7 @@ test(
   () => {
     assert.match(
       completeSource,
-      /\/api\/public\/orders\/\$\{encodeURIComponent\([\s\S]*completedOrder\.orderId[\s\S]*\)\}\/payment\/retry/,
+      /\/api\/public\/orders\/\$\{encodeURIComponent\(orderId\)\}\/payment\/retry/,
     );
 
     assert.match(
@@ -83,7 +83,7 @@ test(
 
     assert.match(
       completeSource,
-      /Number\(response\?\.orderId\)[\s\S]*Number\(completedOrder\.orderId\)/,
+      /Number\(response\?\.orderId\)\s*===\s*orderId/,
     );
 
     assert.match(
@@ -99,7 +99,7 @@ test(
   () => {
     assert.match(
       completeSource,
-      /setCompletedOrder\(/,
+      /updateCompletedOrder\(/,
     );
 
     assert.match(
@@ -109,23 +109,23 @@ test(
 
     assert.doesNotMatch(
       completeSource,
-      /apiFetch\(\s*["']\/api\/public\/orders["'][\s\S]*handleRetryMercadoPagoPayment/,
+      /apiFetch\(\s*["']\/api\/public\/orders["'][\s\S]*handleMercadoPagoPaymentAction/,
     );
   },
 );
 
 
 test(
-  "retry is shown only for retryable unavailable Mercado Pago instructions",
+  "payment actions require server eligibility and always use the protected click handler",
   () => {
     assert.match(
       completeSource,
-      /mercadoPagoUnavailable[\s\S]*paymentInstructions\?\.retryable === true/,
+      /paymentActionAllowed[\s\S]*completedOrder\?\.paymentActionAllowed === true/,
     );
 
     assert.match(
       completeSource,
-      /Reintentar pago/,
+      /presentation\.showRetry/,
     );
 
     assert.match(
@@ -136,6 +136,16 @@ test(
     assert.match(
       completeSource,
       /Reintentando\.\.\./,
+    );
+
+    assert.doesNotMatch(
+      completeSource,
+      /href=\{mercadoPagoCheckoutUrl\}/,
+    );
+
+    assert.match(
+      completeSource,
+      /onClick=\{\(\) => void handleMercadoPagoPaymentAction\(\)\}/,
     );
   },
 );
@@ -177,7 +187,7 @@ test(
   () => {
     assert.match(
       completeSource,
-      /sessionStorage\.setItem\(\s*COMPLETE_STORAGE_KEY,\s*JSON\.stringify\([\s\S]*nextCompletedOrder/,
+      /updateCompletedOrder[\s\S]*sessionStorage\.setItem\([\s\S]*COMPLETE_STORAGE_KEY/,
     );
 
     assert.match(

@@ -213,8 +213,11 @@ export default function AdminCollectingPage() {
                   <input className="input" value={form.bankDocument} onChange={(event) => updateField("bankDocument", event.target.value)} />
                 </label>
                 <label className="field-group field-group-span-2">
-                  <span>Instrucciones para el mail</span>
+                  <span>Instrucciones adicionales para el cliente (checkout y email)</span>
                   <textarea className="input textarea" rows="4" value={form.bankInstructions} onChange={(event) => updateField("bankInstructions", event.target.value)} />
+                  <span className="field-helper">
+                    Campo opcional. No redefinas el estado del pago, no pidas comprobantes innecesarios ni agregues instrucciones dependientes de un proveedor bancario salvo que sean deliberadamente operativas.
+                  </span>
                 </label>
               </div>
             </section>
@@ -288,8 +291,11 @@ export default function AdminCollectingPage() {
                   <textarea className="input textarea" rows="3" value={form.mercadoPagoPreferenceNote} onChange={(event) => updateField("mercadoPagoPreferenceNote", event.target.value)} />
                 </label>
                 <label className="field-group field-group-span-2">
-                  <span>Instrucciones para el mail</span>
+                  <span>Instrucciones adicionales para el cliente (checkout y email)</span>
                   <textarea className="input textarea" rows="4" value={form.mercadoPagoInstructions} onChange={(event) => updateField("mercadoPagoInstructions", event.target.value)} />
+                  <span className="field-helper">
+                    Campo opcional. No redefinas el estado del pago, no pidas comprobantes, no prometas QR y no dupliques el botón de pago.
+                  </span>
                 </label>
               </div>
             </section>

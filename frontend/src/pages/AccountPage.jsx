@@ -38,7 +38,7 @@ const PAYMENT_STATUS_LABELS = {
   PENDING: "Pendiente",
   APPROVED: "Aprobado",
   REJECTED: "Rechazado",
-  FAILED: "Fallido",
+  FAILED: "No completado",
   REFUNDED: "Reintegrado",
   PAID: "Pagado",
 };
@@ -1550,6 +1550,11 @@ export default function AccountPage() {
                         `Pago: ${
                           formatPaymentMethod(order.paymentMethod)
                         }`,
+                        `Estado del pago: ${
+                          PAYMENT_STATUS_LABELS[order.paymentStatus]
+                          || order.paymentStatus
+                          || "Sin datos"
+                        }`,
                         order.shippingMethodName
                           ? `Envío: ${order.shippingMethodName}`
                           : null,
@@ -1663,6 +1668,10 @@ export default function AccountPage() {
                           <td>
                             <div className="cell-stack cell-stack--compact">
                               <OrderStatusBadge status={order.orderStatus} />
+                              <StatusBadge
+                                status={order.paymentStatus}
+                                labels={PAYMENT_STATUS_LABELS}
+                              />
                               {order.hasOffers ? (
                                 <span className="pill pill-offer">
                                   Con oferta

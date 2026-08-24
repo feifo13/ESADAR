@@ -41,13 +41,13 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
   const articleCount = formatOrderArticleCount(items);
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
-  const subject = `Tu orden fue aprobada - ${orderLabel}`;
-  const preheader = "Ya podés revisar los detalles de tu compra.";
+  const subject = `Pago confirmado - Orden ${orderLabel}`;
+  const preheader = "Confirmamos el pago y aprobamos tu orden.";
 
   const textLines = [
     `Hola ${name},`,
     "",
-    "Tu orden fue aprobada.",
+    "Confirmamos el pago de tu orden. Tu compra quedó aprobada.",
     "",
     `Orden: ${orderLabel}`,
     `Total de artículos: ${articleCount}`,
@@ -69,8 +69,7 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
-    <p style="margin:0 0 14px;">Tu orden fue <strong style="color:#102b34;">aprobada</strong>.</p>
-    <p style="margin:0 0 14px;">Te dejamos el resumen para que puedas revisar los detalles y continuar con el proceso de compra.</p>
+    <p style="margin:0 0 14px;">Confirmamos el pago de tu orden. Tu compra quedó <strong style="color:#102b34;">aprobada</strong>.</p>
     <p style="margin:0 0 18px;">Adjuntamos el comprobante de compra en PDF.</p>
     <p style="margin:0 0 18px; color:#56737a; font-size:14px; line-height:1.55;">Cuando tu orden sea enviada te enviaremos un nuevo correo electrónico confirmando el envío. En el verás el codigo de seguimiento de la orden, sujeto a disponibilidad del proveedor del servicio de correspondencia/correo.</p>
   `;
@@ -100,8 +99,8 @@ export function renderApprovedOrderEmail({ order, publicSiteUrl } = {}) {
     html: renderEmailShell({
       subject,
       preheader,
-      eyebrow: "ORDEN APROBADA",
-      title: "Tu orden fue aprobada",
+      eyebrow: "PAGO CONFIRMADO",
+      title: "Tu compra está aprobada",
       bodyHtml,
       detailsHtml,
       ctaHtml: renderButton(orderUrl, "Ver mi orden"),

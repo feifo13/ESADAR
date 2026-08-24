@@ -404,20 +404,11 @@ test(
         "utf8",
       );
 
-    assert.match(
-      source,
-      /const showMercadoPagoCheckout\s*=[\s\S]{0,220}?&& !mercadoPagoConfirmed;/,
-    );
-
-    assert.match(
-      source,
-      /const mercadoPagoUnavailable\s*=[\s\S]{0,220}?&& !mercadoPagoConfirmed[\s\S]{0,100}?&& !mercadoPagoReady;/,
-    );
-
-    assert.match(
-      source,
-      /\{!mercadoPagoConfirmed[\s\S]{0,100}?&& !mercadoPagoUnavailable[\s\S]{0,100}?&& paymentInstructions\?\.instructions \? \(/,
-    );
+    assert.match(source, /getCheckoutPaymentPresentation/);
+    assert.match(source, /presentation\.showPaymentCta/);
+    assert.match(source, /presentation\.showRetry/);
+    assert.match(source, /paymentStatus: completedOrder\?\.paymentStatus/);
+    assert.match(source, /orderStatus: completedOrder\?\.orderStatus/);
   },
 );
 

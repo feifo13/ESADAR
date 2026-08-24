@@ -821,8 +821,14 @@ export default function CheckoutPage() {
         orderId: createdOrder?.id || null,
         total: createdOrder?.total ?? total,
         paymentMethod: createdOrder?.paymentMethod || paymentMethod,
+        orderStatus: createdOrder?.orderStatus || null,
+        paymentStatus: createdOrder?.paymentStatus || null,
+        reservedUntil: createdOrder?.reservedUntil || null,
+        latestProviderPaymentStatus: null,
         paymentInstructions: createdOrder?.paymentInstructions || null,
         paymentRetryToken: createdOrder?.paymentRetryToken || null,
+        paymentActionAllowed:
+          createdOrder?.paymentActionAllowed === true,
       };
 
       if (typeof window !== "undefined") {
@@ -848,7 +854,12 @@ export default function CheckoutPage() {
           orderId: completionPayload.orderId,
           total: completionPayload.total,
           paymentMethod: completionPayload.paymentMethod,
+          orderStatus: completionPayload.orderStatus,
+          paymentStatus: completionPayload.paymentStatus,
+          reservedUntil: completionPayload.reservedUntil,
           paymentInstructions: completionPayload.paymentInstructions,
+          paymentActionAllowed:
+            completionPayload.paymentActionAllowed,
         },
       });
     } catch (err) {
@@ -1380,15 +1391,17 @@ export default function CheckoutPage() {
             </div>
           </div>
           <p className="muted-copy">
-            La reserva dura 24 horas y la orden será validada desde
-            administración una vez confirmado el pago.
+            {isBankTransferPayment
+              ? (
+                  "Tu orden quedará reservada por 24 horas. Al confirmarla, "
+                  + "te mostraremos los datos para transferir el total. "
+                  + "La aprobaremos cuando validemos el pago."
+                )
+              : (
+                  "Tu orden quedará reservada por 24 horas. "
+                  + "La aprobaremos cuando el pago esté confirmado."
+                )}
           </p>
-          {isBankTransferPayment ? (
-            <p className="inline-note payment-reference-note">
-              En el motivo/concepto de la transferencia indicá el número de
-              orden. Al confirmarla te mostramos el número exacto.
-            </p>
-          ) : null}
           <p className="muted-copy checkout-tracking-availability-copy">
             Cuando tu orden sea aprobada y despachada, te enviaremos un correo
             de notificación con la información del envío y el código de

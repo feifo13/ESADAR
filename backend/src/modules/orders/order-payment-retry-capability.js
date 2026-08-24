@@ -27,6 +27,52 @@ export function hashOrderPaymentRetryToken(token) {
     .digest("hex");
 }
 
+export function isOrderPaymentRetryEligible(
+  order,
+  now = new Date(),
+) {
+  const reservedUntil =
+    order?.reservedUntil instanceof Date
+      ? order.reservedUntil
+      : new Date(order?.reservedUntil || "");
+
+  const currentTime =
+    now instanceof Date
+      ? now.getTime()
+      : new Date(now).getTime();
+
+  const latestProviderPaymentStatus =
+    String(
+      order
+        ?.latestProviderPaymentStatus
+        || "",
+    ).toUpperCase();
+
+  return (
+    String(order?.paymentMethod || "")
+      === "MERCADO_PAGO"
+    && String(order?.orderStatus || "")
+      === "RESERVED"
+    && ["PENDING", "FAILED"].includes(
+      String(order?.paymentStatus || ""),
+    )
+    && ![
+      "PENDING",
+      "APPROVED",
+      "PAID",
+      "REFUNDED",
+    ].includes(
+      latestProviderPaymentStatus,
+    )
+    && Number.isFinite(
+      reservedUntil.getTime(),
+    )
+    && Number.isFinite(currentTime)
+    && reservedUntil.getTime()
+      > currentTime
+  );
+}
+
 export async function issueOrderPaymentRetryCapability(
   order,
   connection = pool,
@@ -62,10 +108,20 @@ export async function issueOrderPaymentRetryCapability(
         FROM orders
         WHERE id = ?
           AND order_status = 'RESERVED'
-          AND payment_status = 'PENDING'
+          AND payment_status IN ('PENDING', 'FAILED')
           AND payment_method = 'MERCADO_PAGO'
           AND reserved_until IS NOT NULL
           AND reserved_until > NOW()
+          AND COALESCE(
+            (
+              SELECT p.status
+              FROM payments p
+              WHERE p.order_id = orders.id
+              ORDER BY p.updated_at DESC, p.id DESC
+              LIMIT 1
+            ),
+            'NO_PAYMENT'
+          ) IN ('NO_PAYMENT', 'FAILED', 'REJECTED')
         ON DUPLICATE KEY UPDATE
           token_hash = VALUES(token_hash),
           expires_at = VALUES(expires_at),
@@ -119,10 +175,20 @@ export async function authorizeOrderPaymentRetryCapability(
           AND oprc.token_hash = ?
           AND oprc.expires_at > NOW()
           AND o.order_status = 'RESERVED'
-          AND o.payment_status = 'PENDING'
+          AND o.payment_status IN ('PENDING', 'FAILED')
           AND o.payment_method = 'MERCADO_PAGO'
           AND o.reserved_until IS NOT NULL
           AND o.reserved_until > NOW()
+          AND COALESCE(
+            (
+              SELECT p.status
+              FROM payments p
+              WHERE p.order_id = o.id
+              ORDER BY p.updated_at DESC, p.id DESC
+              LIMIT 1
+            ),
+            'NO_PAYMENT'
+          ) IN ('NO_PAYMENT', 'FAILED', 'REJECTED')
         LIMIT 1
       `,
       [

@@ -40,8 +40,7 @@ const guideSteps = [
     title: "4. Pagá y dejá tu orden reservada",
     emoji: "⏳",
     copy: [
-      "Si elegís transferencia, te mostramos los datos de pago al finalizar la compra y también te los enviamos por correo.",
-      "En el motivo o concepto de la transferencia, indicá tu número de orden para que podamos identificar el pago correctamente.",
+      "Si elegís transferencia bancaria, te mostramos los datos al finalizar la compra y también te los enviamos por correo. Transferí el total usando esos datos. ESADAR validará el pago antes de aprobar la orden.",
       "Cuando confirmás la orden, la prenda queda reservada por 24 horas mientras esperamos la validación del pago.",
     ],
   },

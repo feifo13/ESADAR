@@ -19,6 +19,25 @@ import {
   retryOrderPaymentSchema,
 } from "../src/modules/orders/orders.payment-retry.schemas.js";
 
+function eligibleProjection(overrides = {}) {
+  return {
+    orderId: 42,
+    orderNumber:
+      "ORD-RETRY-42",
+    paymentMethod:
+      "MERCADO_PAGO",
+    orderStatus:
+      "RESERVED",
+    paymentStatus:
+      "PENDING",
+    reservedUntil:
+      "2099-01-01T00:00:00.000Z",
+    latestProviderPaymentStatus:
+      null,
+    ...overrides,
+  };
+}
+
 
 test(
   "retry capability uses 256-bit opaque token and stores only its SHA-256 hash",
@@ -102,6 +121,11 @@ test(
           /o\.payment_method = 'MERCADO_PAGO'/,
         );
 
+        assert.match(
+          String(sql),
+          /o\.payment_status IN \('PENDING', 'FAILED'\)/,
+        );
+
         assert.deepEqual(
           args,
           [
@@ -147,6 +171,7 @@ test(
   "invalid retry capability fails before order lookup or provider preparation",
   async () => {
     let loadCount = 0;
+    let projectionCount = 0;
     let prepareCount = 0;
 
     await assert.rejects(
@@ -165,6 +190,12 @@ test(
                 return {};
               },
 
+            loadProjection:
+              async () => {
+                projectionCount += 1;
+                return {};
+              },
+
             prepare:
               async () => {
                 prepareCount += 1;
@@ -179,6 +210,11 @@ test(
 
     assert.equal(
       loadCount,
+      0,
+    );
+
+    assert.equal(
+      projectionCount,
       0,
     );
 
@@ -227,6 +263,18 @@ test(
               );
 
               return order;
+            },
+
+          loadProjection:
+            async (
+              orderId,
+            ) => {
+              assert.equal(
+                orderId,
+                42,
+              );
+
+              return eligibleProjection();
             },
 
           prepare:
@@ -285,6 +333,210 @@ test(
         .status,
       "READY",
     );
+
+    assert.equal(
+      result.paymentActionAllowed,
+      true,
+    );
+  },
+);
+
+
+test(
+  "click-time revalidation blocks state transitions before provider preparation",
+  async () => {
+    const order = {
+      id: 42,
+      orderNumber:
+        "ORD-RETRY-42",
+      paymentMethod:
+        "MERCADO_PAGO",
+    };
+
+    const unsafeTransitions = [
+      [
+        "approved before click",
+        {
+          orderStatus: "APPROVED",
+          paymentStatus: "PAID",
+          latestProviderPaymentStatus:
+            "APPROVED",
+        },
+      ],
+      [
+        "provider pending before click",
+        {
+          latestProviderPaymentStatus:
+            "PENDING",
+        },
+      ],
+      [
+        "provider approved awaiting manual review before click",
+        {
+          latestProviderPaymentStatus:
+            "APPROVED",
+        },
+      ],
+      [
+        "reservation expired before click",
+        {
+          paymentStatus: "FAILED",
+          reservedUntil:
+            "2000-01-01T00:00:00.000Z",
+          latestProviderPaymentStatus:
+            "REJECTED",
+        },
+      ],
+    ];
+
+    let prepareCount = 0;
+
+    for (const [name, transition] of unsafeTransitions) {
+      await assert.rejects(
+        () => retryCheckoutOrderPayment(
+          42,
+          "a".repeat(64),
+          {},
+          {
+            authorize:
+              async () => ({ orderId: 42 }),
+            loadOrder:
+              async () => order,
+            loadProjection:
+              async () => eligibleProjection(
+                transition,
+              ),
+            prepare:
+              async () => {
+                prepareCount += 1;
+                return {};
+              },
+          },
+        ),
+        (error) =>
+          Number(error?.statusCode) === 404,
+        name,
+      );
+    }
+
+    assert.equal(
+      prepareCount,
+      0,
+    );
+  },
+);
+
+
+test(
+  "authoritative failed remains eligible after click-time revalidation",
+  async () => {
+    let prepareCount = 0;
+
+    const result =
+      await retryCheckoutOrderPayment(
+        42,
+        "a".repeat(64),
+        {},
+        {
+          authorize:
+            async () => ({ orderId: 42 }),
+          loadOrder:
+            async () => ({
+              id: 42,
+              orderNumber:
+                "ORD-RETRY-42",
+              paymentMethod:
+                "MERCADO_PAGO",
+            }),
+          loadProjection:
+            async () => eligibleProjection({
+              paymentStatus: "FAILED",
+              latestProviderPaymentStatus:
+                "REJECTED",
+            }),
+          prepare:
+            async () => {
+              prepareCount += 1;
+              return {
+                method:
+                  "MERCADO_PAGO",
+                enabled: true,
+                status: "READY",
+                checkoutUrl:
+                  "https://example.invalid/reused-preference",
+              };
+            },
+        },
+      );
+
+    assert.equal(prepareCount, 1);
+    assert.equal(
+      result.paymentActionAllowed,
+      true,
+    );
+    assert.equal(
+      result.paymentInstructions
+        .checkoutUrl,
+      "https://example.invalid/reused-preference",
+    );
+  },
+);
+
+
+test(
+  "state transition during preference preparation blocks the redirect response",
+  async () => {
+    let projectionCount = 0;
+    let prepareCount = 0;
+
+    await assert.rejects(
+      () => retryCheckoutOrderPayment(
+        42,
+        "a".repeat(64),
+        {},
+        {
+          authorize:
+            async () => ({ orderId: 42 }),
+          loadOrder:
+            async () => ({
+              id: 42,
+              orderNumber:
+                "ORD-RETRY-42",
+              paymentMethod:
+                "MERCADO_PAGO",
+            }),
+          loadProjection:
+            async () => {
+              projectionCount += 1;
+
+              return projectionCount === 1
+                ? eligibleProjection()
+                : eligibleProjection({
+                    orderStatus: "APPROVED",
+                    paymentStatus: "PAID",
+                    latestProviderPaymentStatus:
+                      "APPROVED",
+                  });
+            },
+          prepare:
+            async () => {
+              prepareCount += 1;
+              return {
+                method: "MERCADO_PAGO",
+                enabled: true,
+                status: "READY",
+                checkoutUrl:
+                  "https://example.invalid/preference",
+              };
+            },
+        },
+      ),
+      (error) =>
+        Number(error?.statusCode) === 404,
+    );
+
+    assert.equal(projectionCount, 2);
+    assert.equal(prepareCount, 1);
   },
 );
 

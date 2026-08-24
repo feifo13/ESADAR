@@ -34,27 +34,62 @@ function renderSummaryRow(label, value, options = {}) {
 const TRACKING_AVAILABILITY_COPY =
   "Cuando tu orden sea aprobada y despachada, te enviaremos un correo de notificación con la información del envío y el código de seguimiento, siempre que el proveedor de cadetería o correspondencia lo tenga disponible.";
 
-function renderPaymentInstructions(paymentInstructions, orderLabel) {
+function getPendingPaymentCopy(paymentInstructions = {}) {
+  const method = String(paymentInstructions.method || "").trim();
+  const mercadoPagoReady =
+    method === "MERCADO_PAGO"
+    && paymentInstructions.enabled === true
+    && paymentInstructions.status === "READY"
+    && Boolean(paymentInstructions.checkoutUrl);
+
+  if (method === "BANK_TRANSFER") {
+    return {
+      subject: "Recibimos tu orden - Completá la transferencia",
+      preheader:
+        "Reservamos tus prendas por 24 horas. Te enviamos los datos para transferir.",
+      paragraphs: [
+        "Recibimos tu orden y reservamos tus prendas por 24 horas. Para completar la compra, transferí el total usando los datos incluidos en este correo. ESADAR validará el pago antes de aprobar la orden.",
+      ],
+      showMercadoPagoCta: false,
+    };
+  }
+
+  if (mercadoPagoReady) {
+    return {
+      subject: "Recibimos tu orden - Completá el pago",
+      preheader:
+        "Reservamos tus prendas por 24 horas. Completá el pago con Mercado Pago.",
+      paragraphs: [
+        "Recibimos tu orden y reservamos tus prendas por 24 horas. El pago todavía está pendiente. Para completar la compra, usá el botón «Pagar con Mercado Pago».",
+        "No necesitás enviarnos un comprobante. Confirmaremos el pago directamente con Mercado Pago.",
+      ],
+      showMercadoPagoCta: true,
+    };
+  }
+
+  return {
+    subject: "Recibimos tu orden - Pago pendiente",
+    preheader: "Tu orden quedó reservada por 24 horas.",
+    paragraphs: [
+      "Recibimos tu orden y reservamos tus prendas por 24 horas. El pago todavía está pendiente.",
+      "No pudimos habilitar el acceso a Mercado Pago en este momento. Si todavía tenés abierta la pantalla de confirmación, podés volver a intentarlo desde allí. Si el problema continúa, contactanos.",
+    ],
+    showMercadoPagoCta: false,
+  };
+}
+
+function renderPaymentDetails(paymentInstructions, copy) {
   if (!paymentInstructions) return "";
 
   const fields = Array.isArray(paymentInstructions.fields)
     ? paymentInstructions.fields.filter((field) => field?.value)
     : [];
-  const hasInstructions = Boolean(paymentInstructions.instructions);
-  const checkoutUrl = paymentInstructions.checkoutUrl || "";
-  const qrCodeUrl = paymentInstructions.qrCodeUrl || "";
-  const isMercadoPago = paymentInstructions.method === "MERCADO_PAGO";
-  const isBankTransfer = paymentInstructions.method === "BANK_TRANSFER";
-  const shouldShowTransferReason = Boolean(isBankTransfer && orderLabel);
+  const instructions = String(paymentInstructions.instructions || "").trim();
+  const checkoutUrl = copy.showMercadoPagoCta
+    ? String(paymentInstructions.checkoutUrl || "").trim()
+    : "";
 
-  if (
-    !fields.length &&
-    !hasInstructions &&
-    !checkoutUrl &&
-    !qrCodeUrl &&
-    !shouldShowTransferReason
-  )
-    return "";
+  if (!fields.length && !instructions && !checkoutUrl) return "";
 
   const rows = fields
     .map(
@@ -67,48 +102,13 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
     )
     .join("");
 
-  const instructionsHtml = hasInstructions
-    ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(paymentInstructions.instructions).replace(/\n/g, "<br />")}</p>`
+  const paymentButton = checkoutUrl
+    ? renderButton(checkoutUrl, "Pagar con Mercado Pago")
     : "";
 
-  const transferReasonHtml = shouldShowTransferReason
-    ? `
-      <div style="margin:14px 0 0; padding:12px 14px; background:#fff4eb; border:1px solid rgba(236,103,43,0.36); color:#102b34; font-size:14px; line-height:1.5; font-weight:700;">
-        <div style="margin:0; color:#102b34;">Importante</div>
-        <div style="margin:0; color:#102b34;">En el motivo/concepto de la transferencia escribí tu número de orden:</div>
-        <div style="margin:4px 0 0; color:#ec672b;">${escapeHtml(orderLabel)}</div>
-      </div>
-    `
+  const instructionsHtml = instructions
+    ? `<p style="margin:12px 0 0; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(instructions).replace(/\n/g, "<br />")}</p>`
     : "";
-
-  const mercadoPagoButtonHtml =
-    isMercadoPago && checkoutUrl
-      ? `
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
-        <tr>
-          <td>
-            <a href="${escapeHtml(checkoutUrl)}" target="_blank" style="display:inline-block; padding:12px 18px; background:#008e97; color:#ffffff; text-decoration:none; font-weight:700; border:1px solid #008e97;">Pagar ahora con Mercado Pago</a>
-          </td>
-        </tr>
-      </table>
-    `
-      : "";
-
-  const qrHtml =
-    isMercadoPago && qrCodeUrl
-      ? `
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;">
-        <tr>
-          <td style="padding:12px; border:1px solid rgba(16,43,52,0.14); background:#ffffff;">
-            <img src="${escapeHtml(qrCodeUrl)}" width="180" height="180" alt="QR para pagar con Mercado Pago" style="display:block; width:180px; height:180px; border:0; outline:none; text-decoration:none;" />
-          </td>
-        </tr>
-        <tr>
-          <td style="padding-top:8px; color:#56737a; font-size:12px; line-height:1.45;">Escaneá este QR para abrir el pago en Mercado Pago. Si no ves la imagen, usá el botón o el link de pago.</td>
-        </tr>
-      </table>
-    `
-      : "";
 
   return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0; background:#ffffff; border:1px solid rgba(16,43,52,0.14);">
@@ -118,9 +118,7 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="email-meta-table">
             ${rows}
           </table>
-          ${mercadoPagoButtonHtml}
-          ${qrHtml}
-          ${transferReasonHtml}
+          ${paymentButton}
           ${instructionsHtml}
         </td>
       </tr>
@@ -128,44 +126,26 @@ function renderPaymentInstructions(paymentInstructions, orderLabel) {
   `;
 }
 
-function formatPaymentInstructionLines(paymentInstructions, orderLabel) {
+function formatPaymentInstructionLines(paymentInstructions, copy) {
   if (!paymentInstructions) return [];
+
   const lines = [];
   const fields = Array.isArray(paymentInstructions.fields)
     ? paymentInstructions.fields.filter((field) => field?.value)
     : [];
+  const instructions = String(paymentInstructions.instructions || "").trim();
+  const checkoutUrl = copy.showMercadoPagoCta
+    ? String(paymentInstructions.checkoutUrl || "").trim()
+    : "";
 
-  if (
-    !fields.length &&
-    !paymentInstructions.instructions &&
-    !paymentInstructions.checkoutUrl &&
-    !(paymentInstructions.method === "BANK_TRANSFER" && orderLabel)
-  )
-    return lines;
+  if (!fields.length && !instructions && !checkoutUrl) return lines;
 
   lines.push("", paymentInstructions.title || "Datos de pago");
   fields.forEach((field) => lines.push(`${field.label}: ${field.value}`));
-  if (
-    paymentInstructions.method === "MERCADO_PAGO" &&
-    paymentInstructions.checkoutUrl
-  ) {
-    lines.push(
-      `Pagar ahora con Mercado Pago: ${paymentInstructions.checkoutUrl}`,
-    );
-    if (paymentInstructions.qrCodeUrl) {
-      lines.push(`QR de pago: ${paymentInstructions.qrCodeUrl}`);
-    }
+  if (checkoutUrl) {
+    lines.push(`Pagar con Mercado Pago: ${checkoutUrl}`);
   }
-  if (paymentInstructions.instructions) {
-    lines.push(String(paymentInstructions.instructions));
-  }
-  if (paymentInstructions.method === "BANK_TRANSFER" && orderLabel) {
-    lines.push(
-      "Importante",
-      "En el motivo/concepto de la transferencia escribí tu número de orden:",
-      String(orderLabel),
-    );
-  }
+  if (instructions) lines.push(instructions);
   return lines;
 }
 
@@ -183,15 +163,14 @@ export function renderReceivedOrderPendingPaymentEmail({
   const paymentMethod = getPaymentMethodLabel(order?.paymentMethod);
   const shippingMethod = order?.shippingMethodDescription || "";
   const paymentInstructions = order?.paymentInstructions || null;
-  const subject = `Recibimos tu orden - Pago pendiente`;
-  const preheader = "Recibimos tu orden y reservamos tus prendas por 24 horas.";
+  const copy = getPendingPaymentCopy(paymentInstructions || {
+    method: order?.paymentMethod,
+  });
 
   const textLines = [
     `Hola ${name},`,
     "",
-    "Recibimos tu orden en ESADAR.",
-    "La recepción del pago está pendiente.",
-    "Reservamos tu orden por 24 horas.",
+    ...copy.paragraphs,
     "",
     `Orden: ${orderLabel}`,
     `Total de artículos: ${articleCount}`,
@@ -201,12 +180,9 @@ export function renderReceivedOrderPendingPaymentEmail({
   if (paymentMethod) textLines.push(`Método de pago: ${paymentMethod}`);
   if (shippingMethod) textLines.push(`Método de envío: ${shippingMethod}`);
   textLines.push(...formatOrderItemsTextLines(items));
-  textLines.push(
-    ...formatPaymentInstructionLines(paymentInstructions, orderLabel),
-  );
+  textLines.push(...formatPaymentInstructionLines(paymentInstructions, copy));
   textLines.push(
     "",
-    "Los datos de pago también quedan incluidos en este correo.",
     TRACKING_AVAILABILITY_COPY,
     "Podés revisar los detalles desde tu cuenta.",
     orderUrl,
@@ -216,10 +192,9 @@ export function renderReceivedOrderPendingPaymentEmail({
 
   const bodyHtml = `
     <p style="margin:0 0 14px;">Hola ${escapeHtml(name)},</p>
-    <p style="margin:0 0 14px;">Recibimos tu orden en <strong style="color:#102b34;">ESADAR</strong>.</p>
-    <p style="margin:0 0 14px;">La recepción del pago está <strong style="color:#102b34;">pendiente</strong>.</p>
-    <p style="margin:0 0 18px;">Reservamos tu orden por <strong style="color:#102b34;">24 horas</strong>.</p>
-    <p style="margin:0 0 18px;">Los datos de pago también quedan incluidos en este correo. El comprobante PDF se enviará cuando la orden sea aprobada.</p>
+    ${copy.paragraphs
+      .map((paragraph) => `<p style="margin:0 0 14px;">${escapeHtml(paragraph)}</p>`)
+      .join("")}
     <p style="margin:0 0 18px; color:#56737a; font-size:14px; line-height:1.55;">${escapeHtml(TRACKING_AVAILABILITY_COPY)}</p>
   `;
 
@@ -238,17 +213,17 @@ export function renderReceivedOrderPendingPaymentEmail({
         </td>
       </tr>
     </table>
-    ${renderPaymentInstructions(paymentInstructions, orderLabel)}
+    ${renderPaymentDetails(paymentInstructions, copy)}
     ${renderOrderItemsTable(items, urlOptions)}
   `;
 
   return {
-    subject,
-    preheader,
+    subject: copy.subject,
+    preheader: copy.preheader,
     text: textLines.join("\n"),
     html: renderEmailShell({
-      subject,
-      preheader,
+      subject: copy.subject,
+      preheader: copy.preheader,
       eyebrow: "ORDEN RECIBIDA",
       title: "Recibimos tu orden",
       bodyHtml,

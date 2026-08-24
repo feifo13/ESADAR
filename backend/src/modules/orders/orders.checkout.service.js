@@ -1,4 +1,5 @@
 import { AppError } from "../../utils/app-error.js";
+import { pool } from "../../db/pool.js";
 
 import {
   prepareOrderPayment,
@@ -7,6 +8,7 @@ import {
 import {
   authorizeOrderPaymentReturnCapability,
   authorizeOrderPaymentRetryCapability,
+  isOrderPaymentRetryEligible,
   issueOrderPaymentRetryCapability,
 } from "./order-payment-retry-capability.js";
 
@@ -81,6 +83,11 @@ export async function createCheckoutOrder(
     ...order,
     paymentInstructions,
     paymentRetryToken,
+    paymentActionAllowed:
+      Boolean(paymentRetryToken)
+      && isOrderPaymentRetryEligible(
+        order,
+      ),
   };
 
   const mailOrder = {
@@ -104,6 +111,116 @@ export async function createCheckoutOrder(
   return enrichedOrder;
 }
 
+export async function getLocalOrderPaymentStatusProjection(
+  orderId,
+  connection = pool,
+) {
+  const [rows] =
+    await connection.execute(
+      `
+        SELECT
+          o.id AS orderId,
+          o.order_number AS orderNumber,
+          o.payment_method AS paymentMethod,
+          o.order_status AS orderStatus,
+          o.payment_status AS paymentStatus,
+          o.reserved_until AS reservedUntil,
+          (
+            SELECT p.status
+            FROM payments p
+            WHERE p.order_id = o.id
+            ORDER BY p.updated_at DESC, p.id DESC
+            LIMIT 1
+          ) AS latestProviderPaymentStatus
+        FROM orders o
+        WHERE o.id = ?
+          AND o.payment_method = 'MERCADO_PAGO'
+        LIMIT 1
+      `,
+      [Number(orderId)],
+    );
+
+  const row = rows?.[0] || null;
+
+  if (!row) return null;
+
+  const projection = {
+    orderId: Number(row.orderId),
+    orderNumber: String(row.orderNumber || ""),
+    paymentMethod: String(row.paymentMethod || ""),
+    orderStatus: String(row.orderStatus || ""),
+    paymentStatus: String(row.paymentStatus || ""),
+    reservedUntil: row.reservedUntil || null,
+    latestProviderPaymentStatus:
+      row.latestProviderPaymentStatus
+        ? String(row.latestProviderPaymentStatus)
+        : null,
+  };
+
+  return {
+    ...projection,
+    paymentActionAllowed:
+      isOrderPaymentRetryEligible(
+        projection,
+      ),
+  };
+}
+
+export async function getCheckoutOrderPaymentStatus(
+  orderId,
+  retryToken,
+  dependencies = {},
+) {
+  const normalizedOrderId =
+    Number(orderId || 0);
+
+  const connection =
+    dependencies.connection || pool;
+
+  const authorize =
+    dependencies.authorize
+    || authorizeOrderPaymentReturnCapability;
+
+  const capability =
+    await authorize(
+      normalizedOrderId,
+      retryToken,
+      connection,
+    );
+
+  if (!capability) {
+    throw new AppError(
+      "No pudimos consultar el estado de esta orden.",
+      404,
+    );
+  }
+
+  const loadProjection =
+    dependencies.loadProjection
+    || getLocalOrderPaymentStatusProjection;
+
+  const projection =
+    await loadProjection(
+      normalizedOrderId,
+      connection,
+    );
+
+  if (
+    !projection
+    || Number(projection.orderId)
+      !== normalizedOrderId
+    || projection.paymentMethod
+      !== "MERCADO_PAGO"
+  ) {
+    throw new AppError(
+      "No pudimos consultar el estado de esta orden.",
+      404,
+    );
+  }
+
+  return projection;
+}
+
 export async function retryCheckoutOrderPayment(
   orderId,
   retryToken,
@@ -120,6 +237,10 @@ export async function retryCheckoutOrderPayment(
   const loadOrder =
     dependencies.loadOrder
     || getOrderDetail;
+
+  const loadProjection =
+    dependencies.loadProjection
+    || getLocalOrderPaymentStatusProjection;
 
   const prepare =
     dependencies.prepare
@@ -144,7 +265,26 @@ export async function retryCheckoutOrderPayment(
       Number(orderId),
     );
 
-  if (!order) {
+  const projection =
+    await loadProjection(
+      Number(orderId),
+      connection,
+    );
+
+  const sameOrder =
+    Number(projection?.orderId)
+      === Number(order?.id)
+    && String(projection?.orderNumber || "")
+      === String(order?.orderNumber || "")
+    && projection?.paymentMethod
+      === "MERCADO_PAGO";
+
+  if (
+    !sameOrder
+    || !isOrderPaymentRetryEligible(
+      projection,
+    )
+  ) {
     throw new AppError(
       "No se pudo reintentar el pago de esta orden.",
       404,
@@ -161,12 +301,41 @@ export async function retryCheckoutOrderPayment(
       },
     );
 
+  const refreshedProjection =
+    await loadProjection(
+      Number(orderId),
+      connection,
+    );
+
+  const stillSameOrder =
+    Number(refreshedProjection?.orderId)
+      === Number(order.id)
+    && String(
+      refreshedProjection?.orderNumber
+      || "",
+    ) === String(order.orderNumber || "")
+    && refreshedProjection?.paymentMethod
+      === "MERCADO_PAGO";
+
+  if (
+    !stillSameOrder
+    || !isOrderPaymentRetryEligible(
+      refreshedProjection,
+    )
+  ) {
+    throw new AppError(
+      "No se pudo reintentar el pago de esta orden.",
+      404,
+    );
+  }
+
   return {
     orderId:
       order.id,
     orderNumber:
       order.orderNumber,
     paymentInstructions,
+    paymentActionAllowed: true,
   };
 }
 

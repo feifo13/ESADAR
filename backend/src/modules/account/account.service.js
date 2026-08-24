@@ -11,6 +11,17 @@ import {
   syncDefaultCustomerAddress,
 } from '../customers/customer-helpers.js';
 import { getOrderDetail } from '../orders/orders.service.js';
+import {
+  getLocalOrderPaymentStatusProjection,
+  retryCheckoutOrderPayment,
+} from '../orders/orders.checkout.service.js';
+import {
+  isOrderPaymentRetryEligible,
+  issueOrderPaymentRetryCapability,
+} from '../orders/order-payment-retry-capability.js';
+import {
+  getStoredMercadoPagoCheckoutInstructions,
+} from '../payments/providers/mercado-pago.checkout-pro.service.js';
 import { generateOrderReceiptPdf } from './pdf/order-receipt-pdf.js';
 import {
   getCustomerProfileValidationIssues,
@@ -415,16 +426,29 @@ export async function listAccountOrders(userId) {
 
 async function assertAccountOrderOwnership(userId, orderId) {
   const customer = await findCustomerByUserId(userId);
+  const customerId =
+    customer?.id || null;
 
   const [ownershipRows] = await pool.execute(
     `
       SELECT id
       FROM orders
       WHERE id = ?
-        AND (user_id = ? OR customer_id <=> ?)
+        AND (
+          user_id = ?
+          OR (
+            ? IS NOT NULL
+            AND customer_id = ?
+          )
+        )
       LIMIT 1
     `,
-    [orderId, userId, customer?.id || null],
+    [
+      orderId,
+      userId,
+      customerId,
+      customerId,
+    ],
   );
 
   if (!ownershipRows.length) {
@@ -432,16 +456,140 @@ async function assertAccountOrderOwnership(userId, orderId) {
   }
 }
 
-export async function getAccountOrderDetail(userId, orderId) {
-  await assertAccountOrderOwnership(userId, orderId);
+async function buildAccountOrderPaymentRecovery(
+  order,
+  dependencies = {},
+) {
+  if (
+    order?.paymentMethod
+    !== 'MERCADO_PAGO'
+  ) {
+    return null;
+  }
 
-  const order = await getOrderDetail(orderId);
+  const connection =
+    dependencies.connection || pool;
+
+  const loadProjection =
+    dependencies.loadPaymentProjection
+    || getLocalOrderPaymentStatusProjection;
+
+  const loadStoredInstructions =
+    dependencies.loadStoredPaymentInstructions
+    || getStoredMercadoPagoCheckoutInstructions;
+
+  const [projection, instructions] =
+    await Promise.all([
+      loadProjection(
+        order.id,
+        connection,
+      ),
+      loadStoredInstructions(
+        order,
+        connection,
+      ),
+    ]);
+
+  const sameOrder =
+    Number(projection?.orderId)
+      === Number(order.id)
+    && String(projection?.orderNumber || '')
+      === String(order.orderNumber || '')
+    && projection?.paymentMethod
+      === 'MERCADO_PAGO';
+
+  if (!sameOrder) {
+    return null;
+  }
+
+  const paymentState = {
+    ...order,
+    orderStatus:
+      projection.orderStatus,
+    paymentStatus:
+      projection.paymentStatus,
+    reservedUntil:
+      projection.reservedUntil,
+    latestProviderPaymentStatus:
+      projection
+        .latestProviderPaymentStatus,
+  };
+
+  const instructionsReady =
+    instructions?.enabled === true
+    && instructions?.status === 'READY'
+    && Boolean(
+      instructions?.checkoutUrl,
+    );
+
+  const paymentActionAllowed =
+    isOrderPaymentRetryEligible(
+      paymentState,
+    );
+
+  return {
+    orderStatus:
+      projection.orderStatus,
+    paymentStatus:
+      projection.paymentStatus,
+    reservedUntil:
+      projection.reservedUntil,
+    latestProviderPaymentStatus:
+      projection
+        .latestProviderPaymentStatus
+        || null,
+    instructionsStatus:
+      instructionsReady
+        ? 'READY'
+        : 'TEMPORARILY_UNAVAILABLE',
+    checkoutUrl:
+      instructionsReady
+        ? instructions.checkoutUrl
+        : null,
+    paymentActionAllowed,
+    retryAllowed:
+      paymentActionAllowed,
+  };
+}
+
+export async function getAccountOrderDetail(
+  userId,
+  orderId,
+  dependencies = {},
+) {
+  const assertOwnership =
+    dependencies.assertOwnership
+    || assertAccountOrderOwnership;
+
+  const loadOrder =
+    dependencies.loadOrder
+    || getOrderDetail;
+
+  await assertOwnership(
+    userId,
+    orderId,
+  );
+
+  const order =
+    await loadOrder(orderId);
+
+  const paymentRecovery =
+    await buildAccountOrderPaymentRecovery(
+      order,
+      dependencies,
+    );
 
   return {
     id: Number(order.id),
     orderNumber: order.orderNumber,
-    orderStatus: order.orderStatus,
-    paymentStatus: order.paymentStatus,
+    orderStatus:
+      paymentRecovery
+        ?.orderStatus
+        || order.orderStatus,
+    paymentStatus:
+      paymentRecovery
+        ?.paymentStatus
+        || order.paymentStatus,
     paymentMethod: order.paymentMethod,
     shippingMethodDescription: order.shippingMethodDescription || null,
     packageWeightKg: Number(order.packageWeightKg || 0),
@@ -450,7 +598,10 @@ export async function getAccountOrderDetail(userId, orderId) {
     subtotal: Number(order.subtotal || 0),
     discountTotal: Number(order.discountTotal || 0),
     total: Number(order.total || 0),
-    reservedUntil: order.reservedUntil,
+    reservedUntil:
+      paymentRecovery
+        ?.reservedUntil
+        || order.reservedUntil,
     approvedAt: order.approvedAt,
     cancelledAt: order.cancelledAt,
     shippedAt: order.shippedAt,
@@ -459,6 +610,7 @@ export async function getAccountOrderDetail(userId, orderId) {
     updatedAt: order.updatedAt,
     offerCount: Number(order.offerCount || 0),
     hasOffers: Number(order.offerCount || 0) > 0,
+    paymentRecovery,
     customer: order.customer
       ? {
           firstName: order.customer.firstName || null,
@@ -495,6 +647,96 @@ export async function getAccountOrderDetail(userId, orderId) {
       source: entry.source || null,
     })),
   };
+}
+
+export async function retryAccountOrderPayment(
+  userId,
+  orderId,
+  auditContext = {},
+  dependencies = {},
+) {
+  const assertOwnership =
+    dependencies.assertOwnership
+    || assertAccountOrderOwnership;
+
+  const loadOrder =
+    dependencies.loadOrder
+    || getOrderDetail;
+
+  const issueCapability =
+    dependencies.issueCapability
+    || issueOrderPaymentRetryCapability;
+
+  const retryPayment =
+    dependencies.retryPayment
+    || retryCheckoutOrderPayment;
+
+  const loadProjection =
+    dependencies.loadPaymentProjection
+    || getLocalOrderPaymentStatusProjection;
+
+  const connection =
+    dependencies.connection || pool;
+
+  await assertOwnership(
+    userId,
+    orderId,
+  );
+
+  const [order, projection] =
+    await Promise.all([
+      loadOrder(orderId),
+      loadProjection(
+        orderId,
+        connection,
+      ),
+    ]);
+
+  const sameOrder =
+    Number(projection?.orderId)
+      === Number(order?.id)
+    && String(projection?.orderNumber || '')
+      === String(order?.orderNumber || '')
+    && projection?.paymentMethod
+      === 'MERCADO_PAGO';
+
+  if (
+    !sameOrder
+    ||
+    !isOrderPaymentRetryEligible(
+      {
+        ...order,
+        orderStatus:
+          projection?.orderStatus,
+        paymentStatus:
+          projection?.paymentStatus,
+        reservedUntil:
+          projection?.reservedUntil,
+        latestProviderPaymentStatus:
+          projection
+            ?.latestProviderPaymentStatus,
+      },
+    )
+  ) {
+    throw notFound('Order not found');
+  }
+
+  const retryToken =
+    await issueCapability(
+      order,
+      connection,
+    );
+
+  if (!retryToken) {
+    throw notFound('Order not found');
+  }
+
+  return retryPayment(
+    orderId,
+    retryToken,
+    auditContext,
+    { connection },
+  );
 }
 
 

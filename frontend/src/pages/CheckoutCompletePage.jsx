@@ -1,17 +1,19 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext.jsx";
-import { formatCurrency } from "../lib/format.js";
-import { apiFetch } from "../lib/api.js";
-import { getFriendlyErrorMessage } from "../lib/validation.js";
 import CopyValueButton from "../components/CopyValueButton.jsx";
+import { apiFetch } from "../lib/api.js";
+import {
+  CHECKOUT_PAYMENT_STATES,
+  getCheckoutPaymentPresentation,
+} from "../lib/checkoutPaymentPresentation.js";
+import { formatCurrency } from "../lib/format.js";
+import { getFriendlyErrorMessage } from "../lib/validation.js";
 
 const COMPLETE_STORAGE_KEY = "esadar-checkout-complete";
 
 function readCompletedOrder() {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
 
   try {
     return JSON.parse(
@@ -20,38 +22,6 @@ function readCompletedOrder() {
   } catch {
     return null;
   }
-}
-
-function getInstructionField(paymentInstructions, label) {
-  const normalizedLabel = String(label || "")
-    .trim()
-    .toLowerCase();
-  return (paymentInstructions?.fields || []).find(
-    (field) =>
-      String(field.label || "")
-        .trim()
-        .toLowerCase() === normalizedLabel,
-  );
-}
-
-function getPaymentFieldValue(paymentInstructions, label) {
-  return getInstructionField(paymentInstructions, label)?.value || "";
-}
-
-function isPrexTransfer(paymentInstructions) {
-  const haystack = [
-    paymentInstructions?.label,
-    paymentInstructions?.title,
-    getPaymentFieldValue(paymentInstructions, "Banco"),
-    paymentInstructions?.instructions,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-
-  return haystack.includes("prex");
 }
 
 const MERCADO_PAGO_RETURN_RESULTS = new Set([
@@ -63,64 +33,26 @@ const MERCADO_PAGO_RETURN_RESULTS = new Set([
 function getMercadoPagoReturnResult(search) {
   const params = new URLSearchParams(String(search || ""));
   const result = params.get("mp_result");
-
-  return MERCADO_PAGO_RETURN_RESULTS.has(result)
-    ? result
-    : null;
+  return MERCADO_PAGO_RETURN_RESULTS.has(result) ? result : null;
 }
 
 function getMercadoPagoReturnPaymentId(search) {
-  const params =
-    new URLSearchParams(
-      String(search || ""),
-    );
-
-  const paymentId =
-    String(
-      params.get("payment_id")
-      || "",
-    ).trim();
-
-  return /^\d{1,40}$/.test(paymentId)
-    ? paymentId
-    : "";
+  const params = new URLSearchParams(String(search || ""));
+  const paymentId = String(params.get("payment_id") || "").trim();
+  return /^\d{1,40}$/.test(paymentId) ? paymentId : "";
 }
 
 function getSafeMercadoPagoCheckoutUrl(value) {
   try {
     const url = new URL(String(value || "").trim());
-
-    return url.protocol === "https:"
-      ? url.toString()
-      : "";
+    return url.protocol === "https:" ? url.toString() : "";
   } catch {
     return "";
   }
 }
 
-function getMercadoPagoReturnMessage(result) {
-  if (result === "success") {
-    return (
-      "Volviste de Mercado Pago. Esto no significa que el pago ya esté "
-      + "confirmado: estamos esperando la confirmación automática del pago."
-    );
-  }
-
-  if (result === "pending") {
-    return (
-      "Volviste de Mercado Pago con una operación pendiente. "
-      + "Tu orden seguirá pendiente hasta que recibamos la confirmación del pago."
-    );
-  }
-
-  if (result === "failure") {
-    return (
-      "El pago no se completó en Mercado Pago. Tu orden sigue registrada "
-      + "y podés volver a intentar el pago mientras el enlace esté disponible."
-    );
-  }
-
-  return null;
+function isValidPaymentCapability(value) {
+  return /^[a-f0-9]{64}$/i.test(String(value || "").trim());
 }
 
 export default function CheckoutCompletePage() {
@@ -128,6 +60,7 @@ export default function CheckoutCompletePage() {
   const location = useLocation();
   const { clearCart } = useCart();
   const didCleanupRef = useRef(false);
+  const didMercadoPagoVerificationRef = useRef("");
 
   const [completedOrder, setCompletedOrder] = useState(() => {
     const stored = readCompletedOrder() || {};
@@ -140,75 +73,110 @@ export default function CheckoutCompletePage() {
   const [retryingPayment, setRetryingPayment] = useState(false);
   const [retryError, setRetryError] = useState("");
   const [mercadoPagoVerification, setMercadoPagoVerification] =
-    useState({
-      status: "idle",
-      message: "",
+    useState({ status: "idle" });
+
+  const updateCompletedOrder = useCallback((patch) => {
+    setCompletedOrder((current) => {
+      if (!current) return current;
+
+      const next = { ...current, ...patch };
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          COMPLETE_STORAGE_KEY,
+          JSON.stringify(next),
+        );
+      }
+
+      return next;
     });
-  const didMercadoPagoVerificationRef =
-    useRef("");
+  }, []);
 
   const paymentInstructions = completedOrder?.paymentInstructions || null;
-  const isBankTransfer = paymentInstructions?.method === "BANK_TRANSFER";
-  const showTransferDetails = isBankTransfer && paymentInstructions?.enabled;
-
-  const isMercadoPago =
-    paymentInstructions?.method === "MERCADO_PAGO";
+  const paymentMethod =
+    paymentInstructions?.method || completedOrder?.paymentMethod || "";
+  const isBankTransfer = paymentMethod === "BANK_TRANSFER";
+  const isMercadoPago = paymentMethod === "MERCADO_PAGO";
+  const showTransferDetails =
+    isBankTransfer && paymentInstructions?.enabled;
 
   const mercadoPagoCheckoutUrl = isMercadoPago
     ? getSafeMercadoPagoCheckoutUrl(paymentInstructions?.checkoutUrl)
     : "";
-
   const mercadoPagoReturnResult = isMercadoPago
     ? getMercadoPagoReturnResult(location.search)
     : null;
-
   const mercadoPagoReturnPaymentId = isMercadoPago
     ? getMercadoPagoReturnPaymentId(location.search)
     : "";
-
-  const mercadoPagoConfirmed =
-    mercadoPagoVerification.status === "confirmed";
-
-  const mercadoPagoAwaitingConfirmation =
-    !mercadoPagoConfirmed
-    && (
-      mercadoPagoReturnResult === "success"
-      || mercadoPagoReturnResult === "pending"
-    );
-
-  const mercadoPagoReady =
-    isMercadoPago
-    && paymentInstructions?.enabled === true
-    && paymentInstructions?.status === "READY"
-    && Boolean(mercadoPagoCheckoutUrl);
-
-  const showMercadoPagoCheckout =
-    mercadoPagoReady
-    && !mercadoPagoAwaitingConfirmation
-    && !mercadoPagoConfirmed;
-
-  const mercadoPagoUnavailable =
-    isMercadoPago
-    && !mercadoPagoConfirmed
-    && !mercadoPagoReady;
-
   const paymentRetryToken = String(
     completedOrder?.paymentRetryToken || "",
   ).trim();
+  const orderId = Number(completedOrder?.orderId || 0);
+  const hasPaymentCapability =
+    Number.isInteger(orderId)
+    && orderId > 0
+    && isValidPaymentCapability(paymentRetryToken);
+  const paymentActionAllowed =
+    isMercadoPago
+    && hasPaymentCapability
+    && completedOrder?.paymentActionAllowed === true;
 
-  const mercadoPagoRetryAvailable =
-    mercadoPagoUnavailable
-    && paymentInstructions?.retryable === true
-    && Number.isInteger(Number(completedOrder?.orderId))
-    && Number(completedOrder?.orderId) > 0
-    && /^[a-f0-9]{64}$/i.test(paymentRetryToken);
+  const presentation = getCheckoutPaymentPresentation({
+    paymentMethod,
+    orderStatus: completedOrder?.orderStatus,
+    paymentStatus: completedOrder?.paymentStatus,
+    latestProviderPaymentStatus:
+      completedOrder?.latestProviderPaymentStatus,
+    instructionsStatus:
+      paymentInstructions?.status
+      || (paymentInstructions?.enabled ? "READY" : "TEMPORARILY_UNAVAILABLE"),
+    mpReturnResult: mercadoPagoReturnResult,
+    verificationState: mercadoPagoVerification.status,
+    reservedUntil: completedOrder?.reservedUntil,
+    hasCheckoutUrl: Boolean(mercadoPagoCheckoutUrl),
+    paymentActionAllowed,
+  });
 
-  const transferLabel = isPrexTransfer(paymentInstructions)
-    ? "Transferencia Prex"
-    : "Transferencia bancaria";
-  const transferReference = completedOrder?.orderNumber
-    ? `${completedOrder.orderNumber}`
-    : "ESADAR";
+  const refreshLocalPaymentStatus = useCallback(async () => {
+    if (!isMercadoPago || !hasPaymentCapability) return null;
+
+    const response = await apiFetch(
+      `/api/public/orders/${encodeURIComponent(orderId)}/payment/status`,
+      {
+        method: "POST",
+        body: { retryToken: paymentRetryToken },
+      },
+    );
+
+    const sameOrder =
+      Number(response?.orderId) === orderId
+      && String(response?.orderNumber || "")
+        === String(completedOrder?.orderNumber || "");
+
+    if (!sameOrder) {
+      throw new Error("No pudimos validar la identidad de la orden.");
+    }
+
+    updateCompletedOrder({
+      orderStatus: response.orderStatus,
+      paymentStatus: response.paymentStatus,
+      reservedUntil: response.reservedUntil,
+      latestProviderPaymentStatus:
+        response.latestProviderPaymentStatus || null,
+      paymentActionAllowed:
+        response.paymentActionAllowed === true,
+    });
+
+    return response;
+  }, [
+    completedOrder?.orderNumber,
+    hasPaymentCapability,
+    isMercadoPago,
+    orderId,
+    paymentRetryToken,
+    updateCompletedOrder,
+  ]);
 
   useEffect(() => {
     if (!completedOrder?.orderNumber) {
@@ -216,9 +184,7 @@ export default function CheckoutCompletePage() {
       return;
     }
 
-    if (didCleanupRef.current) {
-      return;
-    }
+    if (didCleanupRef.current) return;
 
     didCleanupRef.current = true;
     clearCart();
@@ -229,12 +195,12 @@ export default function CheckoutCompletePage() {
   }, [clearCart, completedOrder?.orderNumber, navigate]);
 
   useEffect(() => {
-    const orderId =
-      Number(
-        completedOrder?.orderId
-        || 0,
-      );
+    void refreshLocalPaymentStatus().catch(() => {
+      // Missing or expired capabilities must not reveal order state.
+    });
+  }, [refreshLocalPaymentStatus]);
 
+  useEffect(() => {
     const canVerify =
       isMercadoPago
       && (
@@ -243,41 +209,25 @@ export default function CheckoutCompletePage() {
       )
       && Number.isInteger(orderId)
       && orderId > 0
-      && /^\d{1,40}$/.test(
-        mercadoPagoReturnPaymentId,
-      )
-      && /^[a-f0-9]{64}$/i.test(
-        paymentRetryToken,
-      );
+      && /^\d{1,40}$/.test(mercadoPagoReturnPaymentId)
+      && isValidPaymentCapability(paymentRetryToken);
 
-    if (!canVerify) {
+    if (!canVerify) return undefined;
+
+    const attemptKey = [
+      orderId,
+      mercadoPagoReturnPaymentId,
+      paymentRetryToken,
+    ].join(":");
+
+    if (didMercadoPagoVerificationRef.current === attemptKey) {
       return undefined;
     }
 
-    const attemptKey =
-      [
-        orderId,
-        mercadoPagoReturnPaymentId,
-        paymentRetryToken,
-      ].join(":");
-
-    if (
-      didMercadoPagoVerificationRef.current
-      === attemptKey
-    ) {
-      return undefined;
-    }
-
-    didMercadoPagoVerificationRef.current =
-      attemptKey;
-
+    didMercadoPagoVerificationRef.current = attemptKey;
     let cancelled = false;
 
-    setMercadoPagoVerification({
-      status: "checking",
-      message:
-        "Estamos verificando el pago directamente con Mercado Pago.",
-    });
+    setMercadoPagoVerification({ status: "checking" });
 
     apiFetch(
       `/api/public/orders/${encodeURIComponent(
@@ -286,79 +236,79 @@ export default function CheckoutCompletePage() {
       {
         method: "POST",
         body: {
-          paymentId:
-            mercadoPagoReturnPaymentId,
-          retryToken:
-            paymentRetryToken,
+          paymentId: mercadoPagoReturnPaymentId,
+          retryToken: paymentRetryToken,
         },
       },
     )
-      .then((response) => {
+      .then(async (response) => {
         if (cancelled) return;
 
         const sameOrder =
-          Number(response?.orderId)
-            === orderId
-          && String(
-            response?.orderNumber
-            || "",
-          ) === String(
-            completedOrder?.orderNumber
-            || "",
-          );
+          Number(response?.orderId) === orderId
+          && String(response?.orderNumber || "")
+            === String(completedOrder?.orderNumber || "");
 
         if (!sameOrder) {
-          throw new Error(
-            "No pudimos validar la identidad de la orden.",
-          );
+          throw new Error("No pudimos validar la identidad de la orden.");
         }
 
-        if (
-          response?.confirmed === true
-          && response?.paymentStatus === "PAID"
-        ) {
-          setMercadoPagoVerification({
-            status: "confirmed",
-            message:
-              "Mercado Pago confirmó el pago de tu orden.",
-          });
-          return;
-        }
-
-        setMercadoPagoVerification({
-          status: "pending",
-          message:
-            "Mercado Pago todavía no confirmó el pago. Seguiremos esperando la confirmación automática.",
+        updateCompletedOrder({
+          orderStatus: response.orderStatus,
+          paymentStatus: response.paymentStatus,
         });
-      })
-      .catch((error) => {
+
+        try {
+          await refreshLocalPaymentStatus();
+        } catch {
+          // Reconciliation already returned the safe local order state.
+        }
+
         if (cancelled) return;
 
         setMercadoPagoVerification({
-          status: "error",
-          message:
-            getFriendlyErrorMessage(
-              error,
-              "No pudimos verificar el pago en este momento. La orden seguirá esperando la confirmación automática.",
-            ),
+          status:
+            response?.confirmed === true
+            && response?.paymentStatus === "PAID"
+              ? "confirmed"
+              : "pending",
         });
+      })
+      .catch(async () => {
+        if (cancelled) return;
+
+        try {
+          await refreshLocalPaymentStatus();
+        } catch {
+          // The technical copy remains the safe fallback.
+        }
+
+        if (!cancelled) {
+          setMercadoPagoVerification({ status: "error" });
+        }
       });
 
     return () => {
       cancelled = true;
     };
   }, [
-    completedOrder?.orderId,
     completedOrder?.orderNumber,
     isMercadoPago,
     mercadoPagoReturnPaymentId,
     mercadoPagoReturnResult,
+    orderId,
     paymentRetryToken,
+    refreshLocalPaymentStatus,
+    updateCompletedOrder,
   ]);
 
-  async function handleRetryMercadoPagoPayment() {
+  async function handleMercadoPagoPaymentAction() {
     if (
-      !mercadoPagoRetryAvailable
+      !(
+        presentation.showPaymentCta
+        || presentation.showRetry
+      )
+      || !paymentActionAllowed
       || retryingPayment
     ) {
       return;
@@ -369,57 +319,53 @@ export default function CheckoutCompletePage() {
 
     try {
       const response = await apiFetch(
-        `/api/public/orders/${encodeURIComponent(
-          completedOrder.orderId,
-        )}/payment/retry`,
+        `/api/public/orders/${encodeURIComponent(orderId)}/payment/retry`,
         {
           method: "POST",
-          body: {
-            retryToken: paymentRetryToken,
-          },
+          body: { retryToken: paymentRetryToken },
         },
       );
-
-      const nextPaymentInstructions =
-        response?.paymentInstructions || null;
-
+      const nextPaymentInstructions = response?.paymentInstructions || null;
+      const nextCheckoutUrl =
+        getSafeMercadoPagoCheckoutUrl(
+          nextPaymentInstructions?.checkoutUrl,
+        );
       const sameOrder =
-        Number(response?.orderId)
-          === Number(completedOrder.orderId)
+        Number(response?.orderId) === orderId
         && String(response?.orderNumber || "")
-          === String(completedOrder.orderNumber || "");
+          === String(completedOrder?.orderNumber || "");
 
       if (
         !sameOrder
-        || nextPaymentInstructions?.method
-          !== "MERCADO_PAGO"
+        || nextPaymentInstructions?.method !== "MERCADO_PAGO"
+        || response?.paymentActionAllowed !== true
       ) {
-        throw new Error(
-          "No pudimos validar el reintento de pago.",
-        );
+        throw new Error("No pudimos validar el reintento de pago.");
       }
 
-      const nextCompletedOrder = {
-        ...completedOrder,
-        paymentInstructions:
-          nextPaymentInstructions,
-      };
-
-      setCompletedOrder(
-        nextCompletedOrder,
-      );
+      updateCompletedOrder({
+        paymentInstructions: nextPaymentInstructions,
+        paymentActionAllowed: true,
+      });
+      setMercadoPagoVerification({ status: "idle" });
 
       if (
-        typeof window !== "undefined"
+        nextPaymentInstructions?.enabled === true
+        && nextPaymentInstructions?.status === "READY"
       ) {
-        window.sessionStorage.setItem(
-          COMPLETE_STORAGE_KEY,
-          JSON.stringify(
-            nextCompletedOrder,
-          ),
-        );
+        if (!nextCheckoutUrl) {
+          throw new Error("No pudimos validar el reintento de pago.");
+        }
+
+        window.location.assign(nextCheckoutUrl);
       }
     } catch (error) {
+      try {
+        await refreshLocalPaymentStatus();
+      } catch {
+        // The click-time backend decision remains authoritative.
+      }
+
       setRetryError(
         getFriendlyErrorMessage(
           error,
@@ -431,7 +377,7 @@ export default function CheckoutCompletePage() {
     }
   }
 
-  function handleAccept() {
+  function handleCompletionPrimaryAction() {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(COMPLETE_STORAGE_KEY);
       window.dispatchEvent(
@@ -440,6 +386,16 @@ export default function CheckoutCompletePage() {
         }),
       );
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+
+    if (
+      presentation.state
+      === CHECKOUT_PAYMENT_STATES.CONFIRMED
+    ) {
+      navigate("/cuenta/ordenes", {
+        replace: true,
+      });
+      return;
     }
 
     navigate("/", {
@@ -456,36 +412,7 @@ export default function CheckoutCompletePage() {
 
     return (
       <div className="checkout-complete-transfer-panel">
-        <p className="section-kicker">Pago pendiente</p>
-        <h2>{transferLabel}</h2>
-        <p className="checkout-complete-copy">
-          Para completar la compra, realizá la transferencia con los datos de
-          cobro configurados en ESADAR. Estos datos también serán enviados por
-          correo para que los tengas a mano.
-        </p>
-        <p className="checkout-complete-copy payment-reference-note offer-sidebar-accent">
-          Importante
-        </p>
-        <p className="checkout-complete-copy">
-          <strong>
-            En el motivo/concepto de la transferencia escribí tu número de
-            orden:{" "}
-          </strong>
-        </p>
-        <p className="checkout-complete-copy payment-reference-note">
-          {completedOrder.orderNumber}
-        </p>
-        <CopyValueButton
-          value={completedOrder.orderNumber}
-          ariaLabel={`Copiar número de orden ${completedOrder.orderNumber}`}
-          title="Copiar número de orden"
-          successMessage="Número de orden copiado"
-          className="button button-secondary"
-          style={{ width: "100%", justifyContent: "center" }}
-        >
-          Copiar código de compra
-        </CopyValueButton>
-
+        <h2>{presentation.panelTitle}</h2>
         <div className="checkout-complete-payment-details">
           {fields.map((field) => (
             <div key={field.label} className="checkout-complete-payment-row">
@@ -493,20 +420,13 @@ export default function CheckoutCompletePage() {
               <strong>{field.value}</strong>
             </div>
           ))}
-
           {amount != null ? (
             <div className="checkout-complete-payment-row">
               <span>Monto</span>
               <strong>{formatCurrency(amount)}</strong>
             </div>
           ) : null}
-
-          <div className="checkout-complete-payment-row">
-            <span>Referencia</span>
-            <strong>{transferReference}</strong>
-          </div>
         </div>
-
         {paymentInstructions.instructions ? (
           <p className="muted-copy checkout-complete-bank-instructions">
             {paymentInstructions.instructions}
@@ -519,93 +439,66 @@ export default function CheckoutCompletePage() {
   function renderMercadoPagoDetails() {
     if (!isMercadoPago) return null;
 
-    const returnMessage =
-      mercadoPagoVerification.message
-      || getMercadoPagoReturnMessage(
-        mercadoPagoReturnResult,
-      );
+    const showPaymentCta =
+      presentation.showPaymentCta && Boolean(mercadoPagoCheckoutUrl);
+    const showRetry =
+      presentation.showRetry
+      && paymentActionAllowed;
+    const showDynamicInstructions =
+      presentation.state === CHECKOUT_PAYMENT_STATES.ACTION_REQUIRED
+      && Boolean(paymentInstructions?.instructions);
+
+    if (
+      !presentation.panelBody
+      && !showPaymentCta
+      && !showRetry
+      && !retryError
+      && !showDynamicInstructions
+    ) {
+      return null;
+    }
 
     return (
       <div className="checkout-complete-transfer-panel checkout-complete-mercado-pago-panel">
-        <p className="section-kicker">
-          {mercadoPagoConfirmed
-            ? "Pago confirmado"
-            : mercadoPagoAwaitingConfirmation
-              ? "Verificando pago"
-              : "Pago pendiente"}
-        </p>
-
-        <h2>Mercado Pago</h2>
-
-        {returnMessage ? (
+        <h2>{presentation.panelTitle}</h2>
+        {presentation.panelBody ? (
+          <p className="checkout-complete-copy">
+            {presentation.panelBody}
+          </p>
+        ) : null}
+        {retryError ? (
           <p
             className="checkout-complete-copy payment-reference-note offer-sidebar-accent"
             aria-live="polite"
           >
-            {returnMessage}
+            {retryError}
           </p>
-        ) : (
-          <p className="checkout-complete-copy">
-            Para completar la compra, continuá hacia Mercado Pago.
-            Al regresar, ESADAR seguirá esperando la confirmación
-            automática del pago antes de marcar la orden como pagada.
-          </p>
-        )}
-
-        {mercadoPagoUnavailable ? (
-          <>
-            <p className="checkout-complete-copy payment-reference-note offer-sidebar-accent">
-              Enlace de pago temporalmente no disponible
-            </p>
-
-            <p className="checkout-complete-copy">
-              {paymentInstructions?.instructions
-                || (
-                  "Tu orden quedó registrada correctamente, pero no pudimos "
-                  + "generar el enlace de Mercado Pago en este momento."
-                )}
-            </p>
-
-            {retryError ? (
-              <p
-                className="checkout-complete-copy payment-reference-note offer-sidebar-accent"
-                aria-live="polite"
-              >
-                {retryError}
-              </p>
-            ) : null}
-
-            {mercadoPagoRetryAvailable ? (
-              <div className="checkout-complete-actions">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  disabled={retryingPayment}
-                  onClick={() => void handleRetryMercadoPagoPayment()}
-                >
-                  {retryingPayment
-                    ? "Reintentando..."
-                    : "Reintentar pago"}
-                </button>
-              </div>
-            ) : null}
-          </>
         ) : null}
-
-        {showMercadoPagoCheckout ? (
+        {showRetry ? (
           <div className="checkout-complete-actions">
-            <a
-              className="button button-primary"
-              href={mercadoPagoCheckoutUrl}
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={retryingPayment}
+              onClick={() => void handleMercadoPagoPaymentAction()}
             >
-              Pagar con Mercado Pago
-            </a>
+              {retryingPayment ? "Reintentando..." : "Reintentar pago"}
+            </button>
           </div>
         ) : null}
-
-        {!mercadoPagoConfirmed
-        && !mercadoPagoUnavailable
-        && paymentInstructions?.instructions ? (
+        {showPaymentCta ? (
+          <div className="checkout-complete-actions">
+            <button
+              type="button"
+              className="button button-primary"
+              disabled={retryingPayment}
+              onClick={() => void handleMercadoPagoPaymentAction()}
+            >
+              {presentation.paymentCtaLabel}
+            </button>
+          </div>
+        ) : null}
+        {showDynamicInstructions ? (
           <p className="muted-copy checkout-complete-bank-instructions">
             {paymentInstructions.instructions}
           </p>
@@ -614,9 +507,7 @@ export default function CheckoutCompletePage() {
     );
   }
 
-  if (!completedOrder?.orderNumber) {
-    return null;
-  }
+  if (!completedOrder?.orderNumber) return null;
 
   return (
     <div className="container page-stack checkout-complete-page">
@@ -631,23 +522,11 @@ export default function CheckoutCompletePage() {
         </div>
 
         <section className="section-card checkout-complete-card">
-          <p className="section-kicker">Compra confirmada</p>
-          <h1>Muchas gracias por tu compra</h1>
-          {mercadoPagoConfirmed ? (
-            <p className="checkout-complete-copy">
-              Tu orden quedó registrada correctamente y el pago fue confirmado por Mercado Pago.
-            </p>
-          ) : (
-            <>
-              <p className="checkout-complete-copy">
-                Tu orden quedó registrada correctamente y permanece pendiente de
-                validación.
-              </p>
-              <p className="checkout-complete-copy">
-                Tienes <strong>24 horas</strong> para completar el pago.
-              </p>
-            </>
-          )}
+          <p className="section-kicker">{presentation.kicker}</p>
+          <h1>{presentation.title}</h1>
+          <p className="checkout-complete-copy" aria-live="polite">
+            {presentation.body}
+          </p>
           <p className="checkout-complete-order">
             Orden <strong>{completedOrder.orderNumber}</strong>
           </p>
@@ -659,25 +538,28 @@ export default function CheckoutCompletePage() {
             className="button button-secondary"
             style={{ width: "100%", justifyContent: "center" }}
           >
-            Copiar código de compra
+            Copiar número de orden
           </CopyValueButton>
+
+          {renderTransferDetails()}
+          {renderMercadoPagoDetails()}
+
           <p className="checkout-complete-copy">
             Cuando tu orden sea aprobada y despachada, te enviaremos un correo
             de notificación con la información del envío y el código de
             seguimiento, siempre que el proveedor de cadetería o correspondencia
             lo tenga disponible.
           </p>
-
-          {renderTransferDetails()}
-          {renderMercadoPagoDetails()}
-
           <div className="checkout-complete-actions">
             <button
               type="button"
               className="button button-primary"
-              onClick={handleAccept}
+              onClick={handleCompletionPrimaryAction}
             >
-              Aceptar
+              {presentation.state
+                === CHECKOUT_PAYMENT_STATES.CONFIRMED
+                ? "Ver mis órdenes"
+                : "Aceptar"}
             </button>
           </div>
         </section>

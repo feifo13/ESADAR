@@ -1,202 +1,89 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import {
-  dirname,
-  resolve,
-} from "node:path";
-import {
-  fileURLToPath,
-} from "node:url";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const currentDir =
-  dirname(
-    fileURLToPath(import.meta.url),
-  );
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 function source(relativePath) {
-  return readFileSync(
-    resolve(currentDir, relativePath),
-    "utf8",
-  );
+  return readFileSync(resolve(currentDir, relativePath), "utf8");
 }
 
-const completeSource =
-  source("../src/pages/CheckoutCompletePage.jsx");
+const completeSource = source("../src/pages/CheckoutCompletePage.jsx");
+const checkoutSource = source("../src/pages/CheckoutPage.jsx");
 
-const checkoutSource =
-  source("../src/pages/CheckoutPage.jsx");
-
-test("bank transfer completion rendering remains intact", () => {
-  assert.match(
-    completeSource,
-    /paymentInstructions\?\.method === "BANK_TRANSFER"/,
-  );
-
-  assert.match(
-    completeSource,
-    /renderTransferDetails\(\)/,
-  );
-
-  assert.match(
-    completeSource,
-    /showTransferDetails/,
-  );
+test("bank transfer completion keeps data and removes provider-coupled reference copy", () => {
+  assert.match(completeSource, /paymentMethod === "BANK_TRANSFER"/);
+  assert.match(completeSource, /renderTransferDetails\(\)/);
+  assert.match(completeSource, /paymentInstructions\.fields/);
+  assert.match(completeSource, /Monto/);
+  assert.match(completeSource, /Copiar número de orden/);
+  assert.doesNotMatch(completeSource, /isPrexTransfer|Transferencia Prex/);
+  assert.doesNotMatch(completeSource, /motivo\/concepto/);
+  assert.doesNotMatch(completeSource, /<span>Referencia<\/span>/);
 });
 
-test("Mercado Pago uses normalized checkout instructions from the order response", () => {
+test("Mercado Pago validates HTTPS instructions but never renders a direct provider anchor", () => {
+  assert.match(completeSource, /paymentMethod === "MERCADO_PAGO"/);
+  assert.match(completeSource, /paymentInstructions\?\.checkoutUrl/);
+  assert.match(completeSource, /url\.protocol === "https:"/);
+  assert.doesNotMatch(completeSource, /href=\{mercadoPagoCheckoutUrl\}/);
+  assert.match(completeSource, /window\.location\.assign\(nextCheckoutUrl\)/);
   assert.match(
     completeSource,
-    /paymentInstructions\?\.method === "MERCADO_PAGO"/,
+    /payment\/retry[\s\S]*window\.location\.assign\(nextCheckoutUrl\)/,
   );
-
-  assert.match(
-    completeSource,
-    /paymentInstructions\?\.checkoutUrl/,
-  );
-
-  assert.match(
-    completeSource,
-    /paymentInstructions\?\.status === "READY"/,
-  );
-
-  assert.match(
-    completeSource,
-    /paymentInstructions\?\.enabled === true/,
-  );
-
-  assert.match(
-    completeSource,
-    /href=\{mercadoPagoCheckoutUrl\}/,
-  );
-
-  assert.match(
-    completeSource,
-    />\s*Pagar con Mercado Pago\s*</,
-  );
+  assert.doesNotMatch(completeSource, /target=["']_blank["']/);
 });
 
-test("Mercado Pago checkout URL is restricted to absolute HTTPS navigation", () => {
-  assert.match(
-    completeSource,
-    /new URL\(String\(value \|\| ""\)\.trim\(\)\)/,
-  );
-
-  assert.match(
-    completeSource,
-    /url\.protocol === "https:"/,
-  );
-
+test("provider return is input to presentation and never direct approval", () => {
+  assert.match(completeSource, /params\.get\("mp_result"\)/);
+  assert.match(completeSource, /mpReturnResult: mercadoPagoReturnResult/);
+  assert.match(completeSource, /paymentStatus: completedOrder\?\.paymentStatus/);
+  assert.match(completeSource, /orderStatus: completedOrder\?\.orderStatus/);
   assert.doesNotMatch(
     completeSource,
-    /target=["']_blank["']/,
+    /mercadoPagoReturnResult\s*===\s*"success"[\s\S]{0,180}(?:PAID|APPROVED)/,
+  );
+  assert.doesNotMatch(
+    completeSource,
+    /mercadoPagoReturnResult\s*===\s*"failure"[\s\S]{0,180}(?:FAILED|REJECTED)/,
   );
 });
 
-test("provider return result is informational and never treated as payment approval", () => {
+test("completion reads local persisted status through the protected endpoint", () => {
   assert.match(
     completeSource,
-    /new URLSearchParams\(String\(search \|\| ""\)\)/,
+    /\/api\/public\/orders\/\$\{encodeURIComponent\(orderId\)\}\/payment\/status/,
   );
-
   assert.match(
     completeSource,
-    /params\.get\("mp_result"\)/,
+    /body: \{ retryToken: paymentRetryToken \}/,
   );
+  assert.match(completeSource, /latestProviderPaymentStatus/);
+  assert.match(completeSource, /window\.sessionStorage\.setItem/);
+});
 
-  for (const value of [
-    "success",
-    "failure",
-    "pending",
+test("checkout persists local domain state with the completion payload", () => {
+  for (const field of [
+    "orderStatus",
+    "paymentStatus",
+    "reservedUntil",
+    "paymentRetryToken",
+    "paymentActionAllowed",
   ]) {
-    assert.match(
-      completeSource,
-      new RegExp(`"${value}"`),
-    );
+    assert.match(checkoutSource, new RegExp(`${field}:`));
   }
 
   assert.match(
-    completeSource,
-    /Esto no significa que el pago ya esté/,
-  );
-
-  assert.match(
-    completeSource,
-    /esperando la confirmación automática del pago/,
-  );
-
-  assert.doesNotMatch(
-    completeSource,
-    /mp_result[\s\S]{0,200}(?:PAID|APPROVED|aprobado)/,
+    checkoutSource,
+    /sessionStorage\.setItem\([\s\S]*COMPLETE_STORAGE_KEY/,
   );
 });
 
-test("success and pending returns suppress a duplicate payment CTA", () => {
-  assert.match(
-    completeSource,
-    /mercadoPagoReturnResult === "success"/,
-  );
-
-  assert.match(
-    completeSource,
-    /mercadoPagoReturnResult === "pending"/,
-  );
-
-  assert.match(
-    completeSource,
-    /showMercadoPagoCheckout[\s\S]*mercadoPagoReady[\s\S]*!mercadoPagoAwaitingConfirmation/,
-  );
-});
-
-test("temporarily unavailable Mercado Pago keeps the local order valid without a checkout link", () => {
-  assert.match(
-    completeSource,
-    /mercadoPagoUnavailable/,
-  );
-
-  assert.match(
-    completeSource,
-    /Enlace de pago temporalmente no disponible/,
-  );
-
-  assert.match(
-    completeSource,
-    /Tu orden quedó registrada correctamente/,
-  );
-});
-
-test("checkout completion remains based on the existing normalized order payload", () => {
-  assert.match(
-    checkoutSource,
-    /paymentInstructions: createdOrder\?\.paymentInstructions \|\| null/,
-  );
-
-  assert.match(
-    checkoutSource,
-    /window\.sessionStorage\.setItem/,
-  );
-
-  assert.match(
-    checkoutSource,
-    /navigate\("\/checkout\/completa"/,
-  );
-
-  const completeApiCallCount =
-    (completeSource.match(/apiFetch\s*\(/g) || []).length;
-
-  assert.equal(
-    completeApiCallCount,
-    1,
-    "CheckoutCompletePage may call the API only for the secure payment retry flow.",
-  );
-
-  assert.match(
-    completeSource,
-    /apiFetch\([\s\S]*\/api\/public\/orders\/[\s\S]*\/payment\/retry/,
-  );
-
-  assert.doesNotMatch(
-    completeSource,
-    /apiFetch\(\s*["'`]\/api\/public\/orders["'`]/,
-  );
+test("pre-confirmation UI no longer announces a confirmed purchase or QR", () => {
+  assert.doesNotMatch(completeSource, /Compra confirmada/);
+  assert.doesNotMatch(completeSource, /Muchas gracias por tu compra/);
+  assert.doesNotMatch(completeSource, /QR|qrCodeUrl|escane/i);
 });

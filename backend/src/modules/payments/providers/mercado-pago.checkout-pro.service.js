@@ -682,6 +682,74 @@ function buildDetails(
   };
 }
 
+export async function getStoredMercadoPagoCheckoutInstructions(
+  order,
+  connection = pool,
+) {
+  const settings =
+    await getCollectingSettings(
+      connection,
+    );
+
+  const environment =
+    normalizeEnvironment(
+      settings
+        ?.mercadoPagoEnvironment,
+    );
+
+  const orderId =
+    Number(order?.id || 0);
+
+  const storedPreference =
+    Number.isInteger(orderId)
+    && orderId > 0
+      ? await getCanonicalPreference(
+          orderId,
+          environment,
+          connection,
+        )
+      : null;
+
+  if (
+    storedPreference?.status === "READY"
+    && clean(
+      storedPreference.preferenceId,
+    )
+    && clean(
+      storedPreference.checkoutUrl,
+    )
+  ) {
+    return buildDetails(
+      settings,
+      {
+        id:
+          storedPreference.preferenceId,
+        checkoutUrl:
+          storedPreference.checkoutUrl,
+        environment,
+        source:
+          "stored_preference",
+      },
+    );
+  }
+
+  return buildDetails(
+    settings,
+    {
+      environment,
+      source:
+        storedPreference?.status
+          === "FAILED"
+          ? "dynamic_preference_failed"
+          : "stored_preference_unavailable",
+      failureReason:
+        storedPreference
+          ?.lastFailureReason
+          || null,
+    },
+  );
+}
+
 export async function prepareMercadoPagoCheckout(
   order,
   settings,

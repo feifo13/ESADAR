@@ -12,6 +12,8 @@ import { formatCurrency, formatDate } from "../lib/format.js";
 import { formatPaymentMethod } from "../lib/paymentMethods.js";
 import { formatWeightKg } from "../lib/shippingRates.js";
 import AppLoader from "../components/AppLoader.jsx";
+import AccountOrderPaymentPanel from "../components/AccountOrderPaymentPanel.jsx";
+import { getFriendlyErrorMessage } from "../lib/validation.js";
 
 const ORDER_STATUS_LABELS = {
   RESERVED: "Reservada",
@@ -26,10 +28,24 @@ const PAYMENT_STATUS_LABELS = {
   PENDING: "Pendiente",
   APPROVED: "Aprobado",
   REJECTED: "Rechazado",
-  FAILED: "Fallido",
+  FAILED: "No completado",
   REFUNDED: "Reintegrado",
   PAID: "Pagado",
 };
+
+function getSafeMercadoPagoCheckoutUrl(value) {
+  try {
+    const url = new URL(
+      String(value || "").trim(),
+    );
+
+    return url.protocol === "https:"
+      ? url.toString()
+      : "";
+  } catch {
+    return "";
+  }
+}
 
 function getHistoryMetadata(entry) {
   const metadata = entry?.metadataJson ?? entry?.metadata ?? null;
@@ -70,6 +86,8 @@ export default function AccountOrderDetailPage() {
   const [error, setError] = useState("");
   const [receiptLoading, setReceiptLoading] = useState(false);
   const [receiptError, setReceiptError] = useState("");
+  const [paymentRetrying, setPaymentRetrying] = useState(false);
+  const [paymentRetryError, setPaymentRetryError] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
@@ -111,6 +129,129 @@ export default function AccountOrderDetailPage() {
       notifyError(errorMessage);
     } finally {
       setReceiptLoading(false);
+    }
+  }
+
+  async function retryMercadoPagoPayment() {
+    if (
+      !order?.id
+      || paymentRetrying
+    ) {
+      return;
+    }
+
+    try {
+      setPaymentRetrying(true);
+      setPaymentRetryError("");
+
+      const response = await apiFetch(
+        `/api/public/orders/${encodeURIComponent(order.id)}/payment/retry`,
+        {
+          method: "POST",
+          body: {
+            accountRecovery: true,
+          },
+        },
+      );
+
+      const instructions =
+        response?.paymentInstructions
+        || null;
+
+      const checkoutUrl =
+        getSafeMercadoPagoCheckoutUrl(
+          instructions?.checkoutUrl,
+        );
+
+      const sameOrder =
+        Number(response?.orderId)
+          === Number(order.id)
+        && String(response?.orderNumber || "")
+          === String(order.orderNumber || "");
+
+      if (
+        !sameOrder
+        || instructions?.method
+          !== "MERCADO_PAGO"
+        || response?.paymentActionAllowed
+          !== true
+      ) {
+        throw new Error(
+          "No pudimos validar el reintento de pago.",
+        );
+      }
+
+      setOrder((current) => ({
+        ...current,
+        paymentRecovery: {
+          ...(current
+            ?.paymentRecovery
+            || {}),
+          instructionsStatus:
+            instructions.status
+            || (
+              instructions.enabled
+                ? "READY"
+                : "TEMPORARILY_UNAVAILABLE"
+            ),
+          checkoutUrl:
+            instructions.enabled
+              ? instructions.checkoutUrl
+              : null,
+          paymentActionAllowed: true,
+          retryAllowed:
+            true,
+        },
+      }));
+
+      if (
+        instructions.enabled === true
+        && instructions.status === "READY"
+      ) {
+        if (!checkoutUrl) {
+          throw new Error(
+            "No pudimos validar el reintento de pago.",
+          );
+        }
+
+        window.location.assign(
+          checkoutUrl,
+        );
+      }
+    } catch (err) {
+      try {
+        const currentResponse =
+          await apiFetch(
+            `/api/public/account/orders/${order.id}`,
+          );
+
+        const currentOrder =
+          currentResponse?.order || null;
+
+        if (
+          Number(currentOrder?.id)
+            === Number(order.id)
+          && String(
+            currentOrder?.orderNumber
+            || "",
+          ) === String(
+            order.orderNumber || "",
+          )
+        ) {
+          setOrder(currentOrder);
+        }
+      } catch {
+        // The rejected click still guarantees no provider redirect.
+      }
+
+      setPaymentRetryError(
+        getFriendlyErrorMessage(
+          err,
+          "No pudimos volver a generar el enlace de Mercado Pago. Intentá nuevamente en unos minutos.",
+        ),
+      );
+    } finally {
+      setPaymentRetrying(false);
     }
   }
 
@@ -221,6 +362,13 @@ export default function AccountOrderDetailPage() {
               </p>
             </div>
           </section>
+
+          <AccountOrderPaymentPanel
+            order={order}
+            retrying={paymentRetrying}
+            error={paymentRetryError}
+            onPaymentAction={retryMercadoPagoPayment}
+          />
 
           <div className="account-order-detail-content-grid">
             <section className="section-card page-stack account-order-items-section">

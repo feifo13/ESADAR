@@ -86,19 +86,50 @@ const mockOrder = {
   paymentInstructions: {
     enabled: true,
     method: "BANK_TRANSFER",
-    title: "Datos de transferencia",
+    title: "Datos para transferencia bancaria",
     fields: [
       { label: "Banco", value: "Banco ejemplo" },
-      { label: "Cuenta", value: "123456789" },
+      { label: "Número de cuenta", value: "123456789" },
       { label: "Titular", value: "ESADAR" },
+      { label: "Moneda", value: "UYU" },
     ],
-    instructions: "Enviar comprobante respondiendo este correo.",
+    instructions: "",
   },
   shippingMethodDescription: "Ahiva / Correo Uruguayo",
   trackingCode: "UY123456789",
   shippedAt: "2026-05-23T14:30:00.000Z",
   customer: mockCustomer,
   items: mockItems,
+};
+
+const mockMercadoPagoOrder = {
+  ...mockOrder,
+  paymentMethod: "MERCADO_PAGO",
+  paymentInstructions: {
+    enabled: true,
+    method: "MERCADO_PAGO",
+    status: "READY",
+    title: "Datos para pagar con Mercado Pago",
+    fields: [],
+    instructions: "",
+    checkoutUrl: "https://www.mercadopago.com.uy/checkout/mock-preference",
+    qrCodeUrl: null,
+  },
+};
+
+const mockMercadoPagoUnavailableOrder = {
+  ...mockMercadoPagoOrder,
+  paymentInstructions: {
+    enabled: false,
+    method: "MERCADO_PAGO",
+    status: "TEMPORARILY_UNAVAILABLE",
+    title: "Datos para pagar con Mercado Pago",
+    fields: [],
+    instructions: "",
+    checkoutUrl: null,
+    qrCodeUrl: null,
+    retryable: true,
+  },
 };
 
 const mockOffer = {
@@ -125,10 +156,42 @@ const previews = [
     }),
   },
   {
-    filename: "orden-creada-pago-pendiente.html",
-    label: "Orden creada / pago pendiente",
+    filename: "bank-pending.html",
+    label: "BANK_PENDING",
     email: renderReceivedOrderPendingPaymentEmail({
       order: mockOrder,
+      publicSiteUrl,
+    }),
+  },
+  {
+    filename: "bank-approved.html",
+    label: "BANK_APPROVED",
+    email: renderApprovedOrderEmail({
+      order: mockOrder,
+      publicSiteUrl,
+    }),
+  },
+  {
+    filename: "mp-pending-ready.html",
+    label: "MP_PENDING_READY",
+    email: renderReceivedOrderPendingPaymentEmail({
+      order: mockMercadoPagoOrder,
+      publicSiteUrl,
+    }),
+  },
+  {
+    filename: "mp-pending-link-unavailable.html",
+    label: "MP_PENDING_LINK_UNAVAILABLE",
+    email: renderReceivedOrderPendingPaymentEmail({
+      order: mockMercadoPagoUnavailableOrder,
+      publicSiteUrl,
+    }),
+  },
+  {
+    filename: "mp-approved.html",
+    label: "MP_APPROVED",
+    email: renderApprovedOrderEmail({
+      order: mockMercadoPagoOrder,
       publicSiteUrl,
     }),
   },
@@ -137,14 +200,6 @@ const previews = [
     label: "Oferta aceptada",
     email: renderAcceptedOfferEmail({
       offer: mockOffer,
-      publicSiteUrl,
-    }),
-  },
-  {
-    filename: "orden-aprobada.html",
-    label: "Orden aprobada",
-    email: renderApprovedOrderEmail({
-      order: mockOrder,
       publicSiteUrl,
     }),
   },
@@ -222,12 +277,35 @@ function renderIndex() {
 </html>`;
 }
 
+// Keep the approval bundle deterministic: no previews from an older copy
+// contract may survive beside the files generated in this run.
+await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true });
 
 await Promise.all(
-  previews.map(({ filename, email }) =>
-    fs.writeFile(path.join(outputDir, filename), email.html, "utf8"),
-  ),
+  previews.flatMap(({ filename, email }) => {
+    const baseName = path.parse(filename).name;
+    return [
+      fs.writeFile(
+        path.join(outputDir, filename),
+        email.html,
+        "utf8",
+      ),
+      fs.writeFile(
+        path.join(outputDir, `${baseName}.txt`),
+        email.text,
+        "utf8",
+      ),
+      fs.writeFile(
+        path.join(outputDir, `${baseName}.metadata.json`),
+        `${JSON.stringify({
+          subject: email.subject,
+          preheader: email.preheader || "",
+        }, null, 2)}\n`,
+        "utf8",
+      ),
+    ];
+  }),
 );
 await fs.writeFile(path.join(outputDir, "index.html"), renderIndex(), "utf8");
 

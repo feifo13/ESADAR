@@ -2,9 +2,9 @@
 
 ## Objetivo
 
-La app usa Checkout Pro para generar un link de pago por orden cuando el cliente elige Mercado Pago. Ese link se envia en el mail de orden recibida / pago pendiente, junto con un QR que apunta al mismo pago y el PDF de la orden adjunto.
+La app usa Checkout Pro para generar un link de pago por orden cuando el cliente elige Mercado Pago. Cuando el link esta disponible, se muestra en el checkout completo y se envia en el mail de orden recibida / pago pendiente. Actualmente el flujo no genera QR y el mail pendiente no adjunta PDF.
 
-Desde esta version tambien existe un webhook para sincronizar el pago automaticamente: cuando Mercado Pago notifica un pago aprobado, ESADAR consulta el pago por API, registra/actualiza el pago, marca la orden como pagada y aprueba la orden vendiendo el stock reservado.
+El webhook y la reconciliacion del retorno sincronizan el estado autoritativo: ESADAR consulta el pago por API desde el backend, registra o actualiza el pago y, cuando corresponde, marca la orden como pagada y aprueba la orden vendiendo el stock reservado. El PDF de comprobante de compra se adjunta recien al mail de orden aprobada. No se solicita al cliente enviar un comprobante manual.
 
 ## Base de datos
 
@@ -29,10 +29,13 @@ El vaciado operativo elimina pagos, preferencias, webhooks y demás evidencia tr
    - Firma secreta del webhook: pega la firma generada en el panel de Mercado Pago > Webhooks.
 3. Guarda la configuracion.
 4. Crea una orden usando metodo de pago Mercado Pago. El email deberia incluir:
-   - boton `Pagar ahora con Mercado Pago`,
+   - boton `Pagar con Mercado Pago` cuando el link este disponible,
    - link directo,
-   - QR,
-   - PDF de la orden.
+   - detalle de la orden,
+   - sin QR,
+   - sin PDF mientras el pago siga pendiente.
+
+   Cuando el pago sea confirmado y la orden quede aprobada, el email de aprobacion adjunta el comprobante de compra en PDF.
 
 ## Configuracion en Mercado Pago
 

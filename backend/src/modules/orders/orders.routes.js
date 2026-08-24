@@ -15,6 +15,7 @@ import {
   getAdminOrder,
   getAdminOrderReceiptPdf,
   getAdminOrders,
+  getPublicOrderPaymentStatus,
   shipAdminOrder,
   updateAdminOrderTracking,
 } from './orders.controller.js';
@@ -35,6 +36,13 @@ publicRouter.post(
   optionalAuth,
   checkoutRateLimit,
   asyncHandler(retryPublicOrderPayment),
+);
+
+publicRouter.post(
+  '/:id/payment/status',
+  optionalAuth,
+  checkoutRateLimit,
+  asyncHandler(getPublicOrderPaymentStatus),
 );
 
 adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));

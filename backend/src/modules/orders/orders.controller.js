@@ -10,6 +10,7 @@ import {
 } from './orders.service.js';
 import {
   createCheckoutOrder,
+  getCheckoutOrderPaymentStatus,
   reconcileReturnedMercadoPagoPayment,
   retryCheckoutOrderPayment,
 } from './orders.checkout.service.js';
@@ -32,6 +33,7 @@ import {
 import { getPagination } from '../../utils/pagination.js';
 import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import { generateOrderReceiptPdf } from '../account/pdf/order-receipt-pdf.js';
+import { retryAccountOrderPayment } from '../account/account.service.js';
 
 function getAuditContext(req) {
   return {
@@ -95,16 +97,48 @@ export async function retryPublicOrderPayment(req, res) {
       'id',
     );
 
+  const accountRecovery =
+    req.body?.accountRecovery
+      === true;
+
+  const result =
+    accountRecovery
+    && req.auth?.userId
+      ? await retryAccountOrderPayment(
+          req.auth.userId,
+          orderId,
+          getAuditContext(req),
+        )
+      : await retryCheckoutOrderPayment(
+          orderId,
+          retryOrderPaymentSchema
+            .parse(req.body)
+            .retryToken,
+          getAuditContext(req),
+        );
+
+  return res.json({
+    ok: true,
+    ...result,
+  });
+}
+
+export async function getPublicOrderPaymentStatus(req, res) {
+  const orderId =
+    parsePositiveIntParam(
+      req.params.id,
+      'id',
+    );
+
   const input =
     retryOrderPaymentSchema.parse(
       req.body,
     );
 
   const result =
-    await retryCheckoutOrderPayment(
+    await getCheckoutOrderPaymentStatus(
       orderId,
       input.retryToken,
-      getAuditContext(req),
     );
 
   return res.json({

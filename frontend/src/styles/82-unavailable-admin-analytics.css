@@ -114,7 +114,17 @@
   margin-top: 10px;
   padding-top: 22px;
   border-top: 1px solid var(--border-soft, rgba(7, 22, 33, 0.12));
-  text-align: left;
+  text-align: center;
+}
+
+.checkout-complete-card,
+.checkout-complete-card h1,
+.checkout-complete-card h2,
+.checkout-complete-card .section-kicker,
+.checkout-complete-card .checkout-complete-copy,
+.checkout-complete-card .checkout-complete-order,
+.checkout-complete-card .muted-copy {
+  text-align: center;
 }
 
 .checkout-complete-transfer-panel h2 {
@@ -132,17 +142,24 @@
   margin-inline: auto;
 }
 
+.checkout-complete-payment-details {
+  width: min(100%, 460px);
+  margin-inline: auto;
+}
+
 .checkout-complete-payment-row {
-  grid-template-columns: minmax(130px, 0.42fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  text-align: center;
 }
 
 .checkout-complete-payment-row > span {
-  align-self: start;
+  align-self: center;
+  text-align: center;
 }
 
 .checkout-complete-payment-row > strong {
   margin-top: 0;
-  text-align: right;
+  text-align: center;
 }
 
 .footer-scroll-scene__copy--terms {
@@ -336,7 +353,7 @@
   .checkout-complete-payment-row,
   .checkout-complete-payment-row > strong {
     grid-template-columns: 1fr;
-    text-align: left;
+    text-align: center;
   }
 
   .guide-steps-grid {
