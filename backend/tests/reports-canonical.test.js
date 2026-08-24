@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import {
   REPORT_QUERY_SCHEMAS,
@@ -14,8 +17,10 @@ import {
   buildReportDownload,
   sanitizeReportAuditFilters,
 } from '../src/modules/reports/reports.service.js';
+import { logAudit } from '../src/modules/audit/audit.service.js';
 
 const FIXED_NOW = new Date('2026-08-23T12:00:00.000Z');
+const TEST_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 
 function historicalSale(overrides = {}) {
   return {
@@ -222,15 +227,49 @@ test('all six canonical reports share projections across CSV/XLSX and audit only
   }
 
   assert.equal(audits.length, 12);
-  for (const audit of audits) {
+  const expectedAuditReportIds = REPORT_IDS.flatMap((reportId) => [reportId, reportId]);
+  for (const [index, audit] of audits.entries()) {
     assert.equal(audit.actionCode, 'REPORT_EXPORT_CREATED');
     assert.equal(audit.entityType, 'reports');
+    assert.equal(audit.entityId, null);
+    assert.equal(audit.metadataJson.reportId, expectedAuditReportIds[index]);
     assert.equal(audit.metadataJson.rowCount > 0, true);
     assert.equal(audit.metadataJson.filters.hasCommercialSearch, true);
     assert.doesNotMatch(JSON.stringify(audit.metadataJson), /private-search-sentinel/);
   }
+  assert.equal(new Set(audits.map((audit) => audit.metadataJson.reportId)).size, REPORT_IDS.length);
   assert.ok(articleFilters.length > 0);
   assert.ok(articleFilters.every((filters) => filters.status === undefined));
+});
+
+test('report audit entity ID remains compatible with the nullable numeric DB column', () => {
+  const schema = readFileSync(
+    resolve(TEST_DIRECTORY, '../../db/scripts/01_from_scratch_superadmin_seed.sql'),
+    'utf8',
+  );
+  const auditTable = schema.match(/CREATE TABLE audit_log\s*\(([\s\S]*?)\) ENGINE=InnoDB;/i)?.[1];
+
+  assert.ok(auditTable);
+  assert.match(auditTable, /\bentity_id BIGINT UNSIGNED NULL\b/i);
+});
+
+test('generic audit persistence preserves a null report entity ID', async () => {
+  let capturedParams = null;
+  const connection = {
+    async execute(_sql, params) {
+      capturedParams = params;
+    },
+  };
+
+  await logAudit({
+    actionCode: 'REPORT_EXPORT_CREATED',
+    entityType: 'reports',
+    entityId: null,
+    metadataJson: { reportId: 'cost-integrity' },
+  }, connection);
+
+  assert.equal(capturedParams[4], null);
+  assert.deepEqual(JSON.parse(capturedParams[7]), { reportId: 'cost-integrity' });
 });
 
 test('safe audit filter projection replaces commercial text with presence flags', () => {

@@ -356,7 +356,7 @@ export async function buildReportDownload({
     actorLabel: auditContext.actorLabel,
     actionCode: 'REPORT_EXPORT_CREATED',
     entityType: 'reports',
-    entityId: reportId,
+    entityId: null,
     metadataJson: {
       reportId,
       format,
