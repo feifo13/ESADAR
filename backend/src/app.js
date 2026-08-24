@@ -21,6 +21,7 @@ import { adminRouter as adminLeadsRoutes, publicInteractionRouter, publicLeadRou
 import accountRoutes from './modules/account/account.routes.js';
 import wishlistsRoutes from './modules/wishlists/wishlists.routes.js';
 import statisticsRoutes from './modules/statistics/statistics.routes.js';
+import reportsRoutes from './modules/reports/reports.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import collectingRoutes from './modules/collecting/collecting.routes.js';
 import shippingRoutes from './modules/shipping/shipping.routes.js';
@@ -86,6 +87,7 @@ export function createApp() {
   app.use('/api/admin', adminLeadsRoutes);
   app.use('/api/admin', wishlistsRoutes);
   app.use('/api/admin', statisticsRoutes);
+  app.use('/api/admin/reports', reportsRoutes);
   app.use('/api/admin', usersRoutes);
   app.use('/api/admin', collectingRoutes);
   app.use('/api/admin', shippingRoutes);

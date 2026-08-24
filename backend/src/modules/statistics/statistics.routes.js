@@ -3,8 +3,6 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { requireAuth } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/require-role.js';
 import {
-  exportAdminStatisticsReport,
-  getAdminStatisticsArticleMarginsPdf,
   getAdminStatisticsMarketStudy,
   getAdminStatisticsProfit,
   getAdminStatisticsSalesOverTime,
@@ -26,7 +24,5 @@ router.get('/statistics/top-categories', asyncHandler(getAdminStatisticsTopCateg
 router.get('/statistics/profit', asyncHandler(getAdminStatisticsProfit));
 router.get('/statistics/wishlist', asyncHandler(getAdminStatisticsWishlist));
 router.get('/statistics/market-study', asyncHandler(getAdminStatisticsMarketStudy));
-router.get('/statistics/export.xlsx', asyncHandler(exportAdminStatisticsReport));
-router.get('/statistics/article-margins.pdf', asyncHandler(getAdminStatisticsArticleMarginsPdf));
 
 export default router;

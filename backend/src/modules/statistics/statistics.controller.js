@@ -1,12 +1,8 @@
 import {
-  statisticsArticleMarginsQuerySchema,
-  statisticsExportQuerySchema,
   statisticsFiltersSchema,
   statisticsTopQuerySchema,
 } from './statistics.schemas.js';
-import { exportArticleMarginsPdf } from './statistics.article-margins.service.js';
 import {
-  exportStatisticsReport,
   getStatisticsMarketStudy,
   getStatisticsProfit,
   getStatisticsSalesOverTime,
@@ -63,28 +59,4 @@ export async function getAdminStatisticsMarketStudy(req, res) {
   const filters = statisticsFiltersSchema.parse(req.query);
   const marketStudy = await getStatisticsMarketStudy(filters);
   return res.json({ ok: true, marketStudy });
-}
-
-export async function exportAdminStatisticsReport(req, res) {
-  const query = statisticsExportQuerySchema.parse(req.query);
-  const result = await exportStatisticsReport(query, query.type);
-
-  res.setHeader('Content-Type', result.contentType);
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
-  );
-  return res.send(result.payload);
-}
-
-export async function getAdminStatisticsArticleMarginsPdf(req, res) {
-  const filters = statisticsArticleMarginsQuerySchema.parse(req.query);
-  const result = await exportArticleMarginsPdf(filters);
-
-  res.setHeader('Content-Type', result.contentType);
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
-  );
-  return res.send(result.payload);
 }

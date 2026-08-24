@@ -3,7 +3,7 @@ import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import ResponsiveFilterPanel from "../../components/ResponsiveFilterPanel.jsx";
 import { useLookups } from "../../contexts/LookupsContext.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
-import { apiDownload, apiFetch } from "../../lib/api.js";
+import { apiFetch } from "../../lib/api.js";
 import { buildQueryString } from "../../lib/query.js";
 import { formatCurrency, formatDate } from "../../lib/format.js";
 import AppLoader from "../../components/AppLoader.jsx";
@@ -38,8 +38,6 @@ const SALES_GROUP_OPTIONS = [
   { value: "week", label: "Semana" },
   { value: "day", label: "Día" },
 ];
-
-const ARTICLE_MARGIN_STATUSES = new Set(["DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"]);
 
 function getGroupByLabel(groupBy) {
   return SALES_GROUP_OPTIONS.find((option) => option.value === groupBy)?.label || "Mes";
@@ -79,23 +77,6 @@ function formatPeriodLabel(periodLabel, groupBy) {
   }
 
   return label;
-}
-
-function buildArticleMarginsQuery(filters) {
-  const queryFilters = {
-    dateFrom: filters.dateFrom,
-    dateTo: filters.dateTo,
-    categoryId: filters.categoryId,
-    lotId: filters.lotId,
-    brandId: filters.brandId,
-    q: filters.q,
-  };
-
-  if (ARTICLE_MARGIN_STATUSES.has(filters.status)) {
-    queryFilters.status = filters.status;
-  }
-
-  return buildQueryString(queryFilters);
 }
 
 function HorizontalBars({
@@ -320,7 +301,6 @@ export default function AdminStatisticsPage() {
   const [wishlist, setWishlist] = useState(null);
   const [marketStudy, setMarketStudy] = useState(null);
   const [marketStudyMessage, setMarketStudyMessage] = useState("");
-  const [exporting, setExporting] = useState("");
   const [lotOptions, setLotOptions] = useState([]);
   const hasMarketStudyData = Boolean(
     marketStudy &&
@@ -451,40 +431,6 @@ export default function AdminStatisticsPage() {
   function updateSalesGroupBy(groupBy) {
     setDraftFilters((current) => ({ ...current, groupBy }));
     setFilters((current) => ({ ...current, groupBy }));
-  }
-
-  async function handleExport(type) {
-    try {
-      setExporting(type);
-      const query = buildQueryString({ ...filters, type });
-      await apiDownload(`/api/admin/statistics/export.xlsx?${query}`, {
-        fileName: `esadar-${type}.xlsx`,
-        extension: "xlsx",
-      });
-    } catch (err) {
-      const errorMessage = err.message || "No se pudo exportar el reporte.";
-      setError(errorMessage);
-      notifyError(errorMessage);
-    } finally {
-      setExporting("");
-    }
-  }
-
-  async function handleArticleMarginsPdfExport() {
-    try {
-      setExporting("article_margins_pdf");
-      const query = buildArticleMarginsQuery(filters);
-      await apiDownload(`/api/admin/statistics/article-margins.pdf?${query}`, {
-        fileName: "esadar-margenes-articulos.pdf",
-        extension: "pdf",
-      });
-    } catch (err) {
-      const errorMessage = err.message || "No se pudo exportar el PDF de márgenes.";
-      setError(errorMessage);
-      notifyError(errorMessage);
-    } finally {
-      setExporting("");
-    }
   }
 
   return (
@@ -646,63 +592,6 @@ export default function AdminStatisticsPage() {
             </label>
           </div>
         </ResponsiveFilterPanel>
-
-        <div className="inline-action-group">
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => handleExport("summary")}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "summary" ? "Exportando..." : "Exportar resumen"}
-          </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => handleExport("sales")}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "sales" ? "Exportando..." : "Exportar ventas"}
-          </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => handleExport("profits")}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "profits" ? "Exportando..." : "Exportar ganancias"}
-          </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={handleArticleMarginsPdfExport}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "article_margins_pdf"
-              ? "Exportando..."
-              : "Exportar PDF márgenes artículos"}
-          </button>
-          <button
-            type="button"
-            className="button button-secondary"
-            onClick={() => handleExport("market_study")}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "market_study"
-              ? "Exportando..."
-              : "Exportar estudio de mercado"}
-          </button>
-          <button
-            type="button"
-            className="button button-primary"
-            onClick={() => handleExport("full")}
-            disabled={Boolean(exporting)}
-          >
-            {exporting === "full"
-              ? "Exportando..."
-              : "Exportar reporte completo"}
-          </button>
-        </div>
 
       </section>
 

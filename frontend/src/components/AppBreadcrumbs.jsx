@@ -41,6 +41,7 @@ const ADMIN_LABELS = {
   audit: "Auditoría",
   leads: "Leads",
   statistics: "Estadísticas",
+  reports: "Reportes",
 };
 
 function detailLabel(prefix, value) {

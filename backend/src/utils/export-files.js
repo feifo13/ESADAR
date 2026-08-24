@@ -6,6 +6,13 @@ function normalizeCellValue(value) {
   return value;
 }
 
+const CSV_FORMULA_PREFIX = /^[\u0000-\u0020\u007f\u00a0]*[=+\-@]/;
+
+export function neutralizeCsvFormulaText(value) {
+  if (typeof value !== 'string' || !CSV_FORMULA_PREFIX.test(value)) return value;
+  return `'${value}`;
+}
+
 function collectColumns(rows, preferredColumns = null) {
   if (Array.isArray(preferredColumns) && preferredColumns.length) return preferredColumns;
 
@@ -24,7 +31,8 @@ function collectColumns(rows, preferredColumns = null) {
 }
 
 function escapeCsvCell(value) {
-  const text = String(normalizeCellValue(value));
+  const normalized = normalizeCellValue(value);
+  const text = String(neutralizeCsvFormulaText(normalized));
   if (/[",\r\n]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }
@@ -47,9 +55,13 @@ export function appendRowsSheet(workbook, name, rows, preferredColumns = null) {
   const columns = collectColumns(safeRows, preferredColumns);
   const worksheet = workbook.addWorksheet(String(name || 'Hoja').slice(0, 31));
 
-  worksheet.addRow(columns);
+  worksheet.addRow(columns.map((column) => String(column)));
   for (const row of safeRows) {
-    worksheet.addRow(columns.map((column) => normalizeCellValue(row?.[column])));
+    const excelRow = worksheet.addRow([]);
+    columns.forEach((column, index) => {
+      const value = normalizeCellValue(row?.[column]);
+      excelRow.getCell(index + 1).value = typeof value === 'string' ? String(value) : value;
+    });
   }
 
   worksheet.getRow(1).font = { bold: true };

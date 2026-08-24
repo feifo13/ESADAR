@@ -423,6 +423,7 @@ export default function Header({ hideBrand = false }) {
         ]
       : []),
     { key: "admin-statistics", label: "Estadísticas", to: "/admin/statistics" },
+    { key: "admin-reports", label: "Reportes", to: "/admin/reports" },
     { key: "admin-audit", label: "Auditoría", to: "/admin/audit" },
   ];
 

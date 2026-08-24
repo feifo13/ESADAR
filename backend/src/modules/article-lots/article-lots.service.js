@@ -5,8 +5,7 @@ import { buildLikeValue, resolveSortClause } from '../../utils/listing.js';
 import { buildSqlLimitOffsetClause, normalizeSqlLimit, normalizeSqlOffset } from '../../utils/sql-safety.js';
 import { logAudit } from '../audit/audit.service.js';
 import { getCostingSettings } from '../collecting/collecting.service.js';
-import { calculateArticlePricing } from '../articles/article-pricing-calculator.js';
-import { buildArticleProfitProjectionExport } from '../articles/articles.batch.service.js';
+import { buildArticleLotFinancialSummary } from '../articles/article-financial-projection.js';
 
 const INITIAL_LOT_CODE = 'LOTE-0001';
 
@@ -443,96 +442,6 @@ async function listLotReportArticles(lotId) {
   return rows;
 }
 
-function roundMoney(value) {
-  return Number(Number(value || 0).toFixed(2));
-}
-
-function roundPercent(value) {
-  return Number(Number(value || 0).toFixed(2));
-}
-
-function getProjectionResult(estimatedProfit) {
-  const cents = Math.round(Number(estimatedProfit || 0) * 100);
-  if (cents > 0) return 'profit';
-  if (cents < 0) return 'loss';
-  return 'breakEven';
-}
-
-function buildLotReportSummary(rows, costingSettings) {
-  const totals = rows.reduce(
-    (accumulator, row) => {
-      const metrics = calculateArticlePricing(row, {
-        bankTaxRate: costingSettings.bankTaxRate,
-      });
-      const result = getProjectionResult(metrics.estimatedProfit);
-
-      accumulator.articleCount += 1;
-      accumulator.stockTotal += Number(row.quantityTotal || 0);
-      accumulator.stockAvailable += Number(row.quantityAvailable || 0);
-      accumulator.stockReserved += Number(row.quantityReserved || 0);
-      accumulator.stockSold += Number(row.quantitySold || 0);
-      accumulator.totalSalePrice += metrics.salePrice;
-      accumulator.totalEffectiveSalePrice += metrics.effectiveSalePrice;
-      accumulator.totalPurchasePriceItem += metrics.purchasePriceItem;
-      accumulator.totalPurchasePriceShipping += metrics.purchasePriceShipping;
-      accumulator.totalPurchasePriceCourier += metrics.purchasePriceCourier;
-      accumulator.totalPurchasePriceTotal += metrics.purchasePriceTotal;
-      accumulator.totalBankTaxBase += metrics.bankTaxBase;
-      accumulator.totalBankTax += metrics.bankTax;
-      accumulator.totalCost += metrics.totalCost;
-      accumulator.totalEstimatedProfit += metrics.estimatedProfit;
-      if (result === 'profit') accumulator.profitCount += 1;
-      if (result === 'loss') accumulator.lossCount += 1;
-      if (result === 'breakEven') accumulator.breakEvenCount += 1;
-      return accumulator;
-    },
-    {
-      articleCount: 0,
-      stockTotal: 0,
-      stockAvailable: 0,
-      stockReserved: 0,
-      stockSold: 0,
-      totalSalePrice: 0,
-      totalEffectiveSalePrice: 0,
-      totalPurchasePriceItem: 0,
-      totalPurchasePriceShipping: 0,
-      totalPurchasePriceCourier: 0,
-      totalPurchasePriceTotal: 0,
-      totalBankTaxBase: 0,
-      totalBankTax: 0,
-      totalCost: 0,
-      totalEstimatedProfit: 0,
-      profitCount: 0,
-      lossCount: 0,
-      breakEvenCount: 0,
-    },
-  );
-
-  return {
-    articleCount: totals.articleCount,
-    stockTotal: totals.stockTotal,
-    stockAvailable: totals.stockAvailable,
-    stockReserved: totals.stockReserved,
-    stockSold: totals.stockSold,
-    totalSalePrice: roundMoney(totals.totalSalePrice),
-    totalEffectiveSalePrice: roundMoney(totals.totalEffectiveSalePrice),
-    totalPurchasePriceItem: roundMoney(totals.totalPurchasePriceItem),
-    totalPurchasePriceShipping: roundMoney(totals.totalPurchasePriceShipping),
-    totalPurchasePriceCourier: roundMoney(totals.totalPurchasePriceCourier),
-    totalPurchasePriceTotal: roundMoney(totals.totalPurchasePriceTotal),
-    totalBankTaxBase: roundMoney(totals.totalBankTaxBase),
-    totalBankTax: roundMoney(totals.totalBankTax),
-    totalCost: roundMoney(totals.totalCost),
-    totalEstimatedProfit: roundMoney(totals.totalEstimatedProfit),
-    weightedEstimatedMargin: totals.totalEffectiveSalePrice > 0
-      ? roundPercent((totals.totalEstimatedProfit / totals.totalEffectiveSalePrice) * 100)
-      : 0,
-    profitCount: totals.profitCount,
-    lossCount: totals.lossCount,
-    breakEvenCount: totals.breakEvenCount,
-  };
-}
-
 export async function getArticleLotReport(id) {
   const lot = await getArticleLotDetail(id);
   const [articles, costingSettings] = await Promise.all([
@@ -542,19 +451,6 @@ export async function getArticleLotReport(id) {
 
   return {
     lot,
-    summary: buildLotReportSummary(articles, costingSettings),
+    summary: buildArticleLotFinancialSummary(articles, costingSettings),
   };
-}
-
-export async function exportArticleLotProfitProjection({ id, format, auditContext }) {
-  const lot = await getArticleLotDetail(id);
-  return buildArticleProfitProjectionExport({
-    filters: { lotId: id },
-    format,
-    auditContext,
-    lot,
-    auditActionCode: 'ARTICLE_LOT_EXPORT_CREATED',
-    auditEntityType: 'article_lots',
-    auditEntityId: id,
-  });
 }

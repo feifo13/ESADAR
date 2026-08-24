@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import AdminToolbar from "../../components/admin/AdminToolbar.jsx";
 import StatusBadge from "../../components/StatusBadge.jsx";
 import { useNotification } from "../../contexts/NotificationContext.jsx";
-import { apiDownload, apiFetch } from "../../lib/api.js";
+import { apiFetch } from "../../lib/api.js";
 import { formatCurrency } from "../../lib/format.js";
 
 const LOT_STATUS_LABELS = {
@@ -23,10 +23,9 @@ function SummaryMetric({ label, value, currency = false, suffix = "" }) {
 
 export default function AdminArticleLotDetailPage() {
   const { id } = useParams();
-  const { notifyError, notifySuccess } = useNotification();
+  const { notifyError } = useNotification();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -54,20 +53,6 @@ export default function AdminArticleLotDetailPage() {
       ignore = true;
     };
   }, [id]);
-
-  async function exportProjection(format) {
-    try {
-      setExporting(format);
-      await apiDownload(`/api/admin/article-lots/${id}/profit-projection/export?format=${format}`, {
-        extension: format,
-      });
-      notifySuccess(`Export ${format.toUpperCase()} generado.`);
-    } catch (err) {
-      notifyError(err.message || "No se pudo exportar la proyeccion.");
-    } finally {
-      setExporting("");
-    }
-  }
 
   const lot = report?.lot;
   const summary = report?.summary || {};
@@ -115,14 +100,6 @@ export default function AdminArticleLotDetailPage() {
             <div>
               <p className="section-kicker">Balance</p>
               <h2>Resumen economico</h2>
-            </div>
-            <div className="inline-action-group">
-              <button type="button" className="button button-secondary" disabled={Boolean(exporting)} onClick={() => exportProjection("csv")}>
-                {exporting === "csv" ? "Exportando..." : "Exportar CSV"}
-              </button>
-              <button type="button" className="button button-primary" disabled={Boolean(exporting)} onClick={() => exportProjection("xlsx")}>
-                {exporting === "xlsx" ? "Exportando..." : "Exportar XLSX"}
-              </button>
             </div>
           </div>
 

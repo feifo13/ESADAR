@@ -38,6 +38,7 @@ const AdminLeadsPage = lazy(() => import('./pages/admin/AdminLeadsPage.jsx'));
 const AdminLeadDetailPage = lazy(() => import('./pages/admin/AdminLeadDetailPage.jsx'));
 const AdminWishlistsPage = lazy(() => import('./pages/admin/AdminWishlistsPage.jsx'));
 const AdminStatisticsPage = lazy(() => import('./pages/admin/AdminStatisticsPage.jsx'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage.jsx'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
 const AdminUserEditPage = lazy(() => import('./pages/admin/AdminUserEditPage.jsx'));
 const AdminCollectingPage = lazy(() => import('./pages/admin/AdminCollectingPage.jsx'));
@@ -254,6 +255,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
               <AdminStatisticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/reports"
+          element={
+            <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN', 'OPERATOR']}>
+              <AdminReportsPage />
             </ProtectedRoute>
           }
         />

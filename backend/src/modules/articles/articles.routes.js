@@ -10,7 +10,6 @@ import {
   createAdminArticleStockAdjustment,
   deleteAdminArticleImage,
   downloadAdminArticleImportTemplate,
-  exportAdminArticleProfitProjection,
   exportAdminArticles,
   getAdminArticle,
   getAdminArticleCostingSettings,
@@ -44,7 +43,6 @@ adminRouter.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN', 'OPERATOR'));
 adminRouter.get('/', asyncHandler(getAdminArticles));
 adminRouter.get('/costing-settings', asyncHandler(getAdminArticleCostingSettings));
 adminRouter.get('/export', asyncHandler(exportAdminArticles));
-adminRouter.get('/profit-projection/export', asyncHandler(exportAdminArticleProfitProjection));
 adminRouter.post('/bulk', asyncHandler(createAdminBulkArticles));
 adminRouter.get('/import/template', asyncHandler(downloadAdminArticleImportTemplate));
 adminRouter.post(

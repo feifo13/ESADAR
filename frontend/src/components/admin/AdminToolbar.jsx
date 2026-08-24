@@ -17,6 +17,7 @@ const rightLinks = [
   { to: '/admin/shipping', label: 'Envíos' },
   { to: '/admin/site-hero', label: 'Hero / ticker', adminOnly: true },
   { to: '/admin/statistics', label: 'Estadísticas' },
+  { to: '/admin/reports', label: 'Reportes' },
   { to: '/admin/audit', label: 'Auditoría' },
 ];
 

@@ -15,7 +15,8 @@
     "test:manual-sales": "node --test scripts/manual-sales-ui.test.mjs",
     "test:customer-profile": "node --test scripts/customer-profile-runtime.test.mjs",
     "test:clipboard": "node --test scripts/clipboard-runtime.test.mjs",
-    "test:mercado-pago": "node --test scripts/checkout-payment-presentation.test.mjs scripts/mercado-pago-checkout-ui.test.mjs scripts/mercado-pago-payment-retry-ui.test.mjs scripts/account-order-payment-recovery.test.mjs"
+    "test:mercado-pago": "node --test scripts/checkout-payment-presentation.test.mjs scripts/mercado-pago-checkout-ui.test.mjs scripts/mercado-pago-payment-retry-ui.test.mjs scripts/account-order-payment-recovery.test.mjs",
+    "test:reports": "node --test scripts/reports-ui.test.mjs"
   },
   "dependencies": {
     "motion": "^12.38.0",

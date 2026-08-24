@@ -61,7 +61,3 @@ export const articleLotWriteSchema = z.object({
 export const articleLotStatusSchema = z.object({
   status: z.enum(ARTICLE_LOT_STATUSES),
 });
-
-export const articleLotProfitProjectionExportQuerySchema = z.object({
-  format: z.enum(['csv', 'xlsx']).default('xlsx'),
-});

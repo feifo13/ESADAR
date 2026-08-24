@@ -3,13 +3,11 @@ import { parsePositiveIntParam } from '../../utils/request-validation.js';
 import {
   articleLotListQuerySchema,
   articleLotOptionsQuerySchema,
-  articleLotProfitProjectionExportQuerySchema,
   articleLotStatusSchema,
   articleLotWriteSchema,
 } from './article-lots.schemas.js';
 import {
   createArticleLot,
-  exportArticleLotProfitProjection,
   getArticleLotDetail,
   getArticleLotReport,
   listArticleLotOptions,
@@ -75,21 +73,4 @@ export async function updateAdminArticleLotStatus(req, res) {
 export async function getAdminArticleLotReport(req, res) {
   const result = await getArticleLotReport(parsePositiveIntParam(req.params.id, 'id'));
   return res.json({ ok: true, ...result });
-}
-
-export async function exportAdminArticleLotProfitProjection(req, res) {
-  const query = articleLotProfitProjectionExportQuerySchema.parse(req.query);
-  const result = await exportArticleLotProfitProjection({
-    id: parsePositiveIntParam(req.params.id, 'id'),
-    format: query.format,
-    auditContext: getAuditContext(req),
-  });
-
-  res.setHeader('Content-Type', result.contentType);
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="${result.fileName}"; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
-  );
-  res.setHeader('X-Export-Count', String(result.itemCount));
-  return res.send(result.payload);
 }

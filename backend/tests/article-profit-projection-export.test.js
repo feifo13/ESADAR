@@ -6,22 +6,36 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-test('article profit projection export exposes Spanish headers and explicit route', () => {
-  const batchSource = readFileSync(
-    resolve(__dirname, '../src/modules/articles/articles.batch.service.js'),
-    'utf8',
-  );
+test('article profitability moves to canonical Reports while operational article exports remain', () => {
   const routesSource = readFileSync(
     resolve(__dirname, '../src/modules/articles/articles.routes.js'),
     'utf8',
   );
+  const reportRoutesSource = readFileSync(
+    resolve(__dirname, '../src/modules/reports/reports.routes.js'),
+    'utf8',
+  );
+  const reportProjectionSource = readFileSync(
+    resolve(__dirname, '../src/modules/reports/profit-projection.report.js'),
+    'utf8',
+  );
+  const projectionSource = readFileSync(
+    resolve(__dirname, '../src/modules/articles/article-financial-projection.js'),
+    'utf8',
+  );
 
-  assert.match(routesSource, /\/profit-projection\/export/);
-  assert.match(batchSource, /ARTICLE_PROFIT_PROJECTION_EXPORT_CREATED/);
-  assert.match(batchSource, /Código interno/);
-  assert.match(batchSource, /Base impuestos bancarios/);
-  assert.match(batchSource, /Tasa impuestos bancarios %/);
-  assert.match(batchSource, /Ganancia estimada/);
-  assert.match(batchSource, /totalBankTax \+= asNumber\(row\.bankTax\)/);
-  assert.match(batchSource, /weightedMargin/);
+  assert.doesNotMatch(routesSource, /\/profit-projection\/export/);
+  assert.match(reportRoutesSource, /\/profit-projection/);
+  assert.match(routesSource, /adminRouter\.get\('\/export'/);
+  assert.match(routesSource, /adminRouter\.get\('\/import\/template'/);
+  assert.match(routesSource, /adminRouter\.post\(\s*'\/import\/preview'/);
+  assert.match(routesSource, /adminRouter\.post\(\s*'\/import'/);
+  assert.match(reportProjectionSource, /Código/);
+  assert.match(reportProjectionSource, /Base impuesto bancario/);
+  assert.match(reportProjectionSource, /Tasa bancaria %/);
+  assert.match(reportProjectionSource, /Ganancia proyectada/);
+  assert.match(reportProjectionSource, /buildArticleFinancialProjectionRows/);
+  assert.match(reportProjectionSource, /buildArticleProfitProjectionSummary/);
+  assert.match(projectionSource, /totalBankTax \+= asNumber\(row\.bankTax\)/);
+  assert.match(projectionSource, /weightedMargin/);
 });
