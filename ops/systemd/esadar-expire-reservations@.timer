@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ESADAR reservation expiration hourly (%i)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=esadar-expire-reservations@%i.service
+
+[Install]
+WantedBy=timers.target

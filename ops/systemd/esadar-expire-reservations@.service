@@ -1,0 +1,14 @@
+[Unit]
+Description=ESADAR reservation expiration job (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/esadar-%i/backend
+ExecStart=/usr/bin/node /var/www/esadar-%i/backend/scripts/expire-reservations.mjs
+TimeoutStartSec=15min
+StandardOutput=journal
+StandardError=journal
