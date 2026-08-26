@@ -109,13 +109,13 @@ test('LOCK-04: cancel prelocks aggregated inventory before RELEASE_RESERVATION',
   assertCanonicalLockBeforeTransition(section, 'releaseReservation');
 });
 
-test('LOCK-05: expiration prelocks the union of all selected-order inventory before release', () => {
+test('LOCK-05: expiration prelocks per-order canonical inventory before release', () => {
   const lockIndex = expirationSource.indexOf(
     'lockInventoryOperationsCanonical(',
   );
   const releaseIndex = expirationSource.indexOf('releaseReservation(');
 
-  assert.match(expirationSource, /allInventoryOperations\.push/);
+  assert.doesNotMatch(expirationSource, /allInventoryOperations/);
   assert.notEqual(lockIndex, -1);
   assert.notEqual(releaseIndex, -1);
   assert.ok(lockIndex < releaseIndex);
